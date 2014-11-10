@@ -22,11 +22,11 @@ public class RandomWordSpout extends BaseRichSpout {
   Random _rand;
   private final int sendingInterval;
 
-  RandomWordSpout() {
+  public RandomWordSpout() {
     this(DEFAULT_SENDING_INTERVAL);
   }
 
-  RandomWordSpout(int sendingInterval) {
+  public RandomWordSpout(int sendingInterval) {
     this.sendingInterval = sendingInterval;
   }
 

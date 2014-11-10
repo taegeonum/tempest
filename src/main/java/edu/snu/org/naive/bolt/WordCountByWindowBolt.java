@@ -46,7 +46,7 @@ public class WordCountByWindowBolt extends BaseRichBolt{
     return gcd(b, c);
   }
 
-  WordCountByWindowBolt(int windowLength, int slideInterval) {
+  public WordCountByWindowBolt(int windowLength, int slideInterval) {
     bucketLength = gcd(windowLength, slideInterval);
     slideIntervalByBucket = slideInterval/bucketLength;
     bucketNum = windowLength/bucketLength;

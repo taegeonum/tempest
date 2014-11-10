@@ -25,7 +25,7 @@ public class SortingBolt extends BaseBasicBolt {
   private ConcurrentSkipListMap<String, Integer> results;
   private ReduceFunc<Integer> countFunc;
 
-  SortingBolt(int numOfInputBolts) {
+  public SortingBolt(int numOfInputBolts) {
     this.numOfInputBolts = numOfInputBolts;
     count = 0;
     countFunc = new Count();
