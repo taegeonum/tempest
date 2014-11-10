@@ -2,20 +2,21 @@ package edu.snu.org.naive.util;
 
 import edu.snu.org.naive.ReduceFunc;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * Sliding Window for general reduce operation
  */
-public class SlidingWindow <K, V> {
+public class SlidingWindow <K, V> implements Serializable {
 
   private int bucketNum;
   ReduceFunc<V> reduceFunc;
   List<Bucket> bucketList;
   Bucket currentBucket;
 
-  private class Bucket {
+  private class Bucket implements Serializable {
     private ConcurrentSkipListMap<K, V> innerMap;
     Bucket () {
       innerMap = new ConcurrentSkipListMap<>();

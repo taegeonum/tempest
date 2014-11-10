@@ -41,7 +41,7 @@ public class RandomWordSpout extends BaseRichSpout {
     Utils.sleep(sendingInterval);
     String[] words = new String[]{"I", "want", "to", "watch", "interstellar"};
     String word = words[_rand.nextInt(words.length)];
-    _collector.emit(new Values(word));
+    _collector.emit(new Values(word, 1));
   }
 
   @Override
@@ -54,6 +54,6 @@ public class RandomWordSpout extends BaseRichSpout {
 
   @Override
   public void declareOutputFields(OutputFieldsDeclarer declarer) {
-    declarer.declare(new Fields("word"));
+    declarer.declare(new Fields("word", "count"));
   }
 }
