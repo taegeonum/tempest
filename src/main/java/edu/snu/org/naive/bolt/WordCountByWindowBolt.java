@@ -28,7 +28,6 @@ public class WordCountByWindowBolt extends BaseRichBolt{
   private int bucketNum;
   private int bucketCount;
   private SlidingWindow<String, Integer> slidingWindow;
-  private ReduceFunc<Integer> reduceFunc;
   private OutputCollector collector;
 
   /**
@@ -81,7 +80,7 @@ public class WordCountByWindowBolt extends BaseRichBolt{
     bucketCount++;
 
     // Slides the window and get results
-    if (bucketCount % bucketNum == 0) {
+    if (bucketCount % slideIntervalByBucket == 0) {
       HashMap<String, Integer> result = slidingWindow.getResultAndSlideBucket();
       collector.emit(new Values(result));
     }
