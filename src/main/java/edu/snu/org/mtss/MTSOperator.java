@@ -3,65 +3,99 @@ package edu.snu.org.mtss;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.reef.wake.EventHandler;
+
+import edu.snu.org.mtss.util.ReduceFunc;
+
 /*
- * Dependency table  
+ * MTSOperator
+ * TimeUnit is millisecond
  */
-public class MTSDependencyTable<V> {
+public class MTSOperator<K, V> {
 
   private final List<Timescale> timeScales; 
   private final long granularity;
   private final Table<Long, Long, OutputNode> table;
+  private final long period;
+  private final ReduceFunc<V> reduceFunc; 
+  private Map<K, V> innerMap;
+  private final EventHandler<MTSOutput<K, V>> outputHandler;
   private final boolean virtualNeeded;
   
-  public MTSDependencyTable(List<Timescale> timeScales) throws Exception {
+  public MTSOperator(List<Timescale> timeScales, 
+      ReduceFunc<V> reduceFunc, 
+      EventHandler<MTSOutput<K, V>> outputHandler) throws Exception {
     
     if (timeScales.size() == 0) {
       throw new Exception("MTSOperator should have multiple timescales");
     }
     
     this.timeScales = timeScales;
-    this.table = new TreeBasedTableImpl<>(new LongComparator(), new LongInvComparator());
-    granularity = calculateGranularitySize();
-    virtualNeeded = isVirtualTimescaleNeeded();
+    this.table = new TreeBasedTableImpl<>(new LongComparator(), new LongComparator());
+    this.granularity = calculateGranularitySize();
+    this.period = calculatePeriod();
+    this.reduceFunc = reduceFunc;
+    this.innerMap = new HashMap<>();
+    this.outputHandler = outputHandler;
+    this.virtualNeeded = isVirtualTimescaleNeeded();
     
     createDependencyTable();
   }
   
-  
+  /*
+   * This method add vertices and connect depedencies 
+   * 
+   * For example, we have 2 timescales (w=4, i=2), (w=6, i=4) 
+   * Then, this method add vertices to table like this: 
+   * 
+   * |time\window_size|            2           |           4             |           6             |
+   * |       2 sec    | range:(0,2), refCnt: 2 | range:(-2,2), refCnt: 0 |                         |
+   * |       4 sec    | range:(2,4), refCnt: 3 | range:(0,4),  refCnt: 1 | range:(-2,4), refCnt:0  |
+   * |       6 sec    | range:(4,6), refCnt: 2 | range:(2,6),  refCnt: 0 |                         |
+   * |       8 sec    | range:(6,8), refCnt: 3 | range:(4,8),  refCnt: 1 | range:(2,8),  refCnt: 0 |
+   * 
+   * period is 8 sec. 
+   * virtual timescale is added (w=2, i=2)
+   * 
+   * [2, 2] is referenced by [2,4], [4,4]   (  [row, col] )
+   * [4, 2] is referenced by [4,4], [6,4], [8,6]
+   * [6, 2] is referenced by [6,4], [8,4]
+   * [6, 8] is referenced by [8,4], [2,4], [4,6] 
+   * [4, 4] is referenced by [4,6]
+   * [8, 4] is referenced by [8,6]
+   * 
+   */
   private void createDependencyTable() {
   
-    boolean virtualNeeded = isVirtualTimescaleNeeded(); 
-
     if (virtualNeeded) {
       // add virtual timescale
-      timeScales.add(new Timescale((int)granularity, (int)granularity, TimeUnit.MILLISECONDS, TimeUnit.MILLISECONDS));
+      timeScales.add(new Timescale((int)granularity, (int)granularity, TimeUnit.SECONDS, TimeUnit.SECONDS));
     }
     
     Collections.sort(timeScales);
-    
+     
     // add vertex by period
-    long period = calculatePeriod();
     int colIndex = 0;
     
     /* Fix: improve algorithm
      * This algorithm add table cells by looping table. 
-     * Timescale represents column 
-     * time represents row
      */
     for (Timescale ts : timeScales) {
       for(long time = granularity; time <= period; time += granularity) {
         
+        // We need to create vertex when the time is multiplication of interval
         if (time % ts.getIntervalSize() == 0) {
           
           // create vertex and add it to the table cell of (time, windowsize)
           OutputNode referer = new OutputNode(time - ts.getWindowSize(), time);
-          System.out.println("Created outputnode: " + referer);
           table.put(time, ts.getWindowSize(), referer);
-          System.out.println("table size: " + table.size());
           
           // rangeList for determining which vertex is included in this vertex. 
           List<Range> rangeList = new LinkedList<>();
@@ -192,14 +226,97 @@ public class MTSDependencyTable<V> {
     return a * (b / gcd(a, b));
   }
   
-  public Table<Long, Long, OutputNode> getTable() {
-    return table;
+
+  public Map<Long, OutputNode> row(Long row) {
+    return table.row(row % period);
   }
   
-  public long getGranularity() {
+  /*
+   * compute data 
+   */
+  public void addData(K key, V value) {
+    V oldVal = innerMap.get(key);
+    
+    if (oldVal == null) {
+      innerMap.put(key, value);
+    } else {
+      innerMap.put(key, reduceFunc.compute(oldVal, value));
+    }
+  }
+  
+  /*
+   * Flush data
+   */
+  public void flush(Long time) throws Exception {
+    
+    // calculate row
+    long row = (time % period) == 0 ? period : (time % period);
+    Map<Long, OutputNode> outputNodes = table.row(row); 
+    Map<K, V> states = innerMap;
+    innerMap = new HashMap<>();
+    
+    // Each outputNode presents 
+    int i = 0;
+    for (OutputNode outputNode : outputNodes.values()) {
+      
+      if (outputNode.state != null) {
+        throw new Exception("OutputNode state should be null");
+      }
+      
+      // First column could be virtual or not
+      if (i == 0) {
+        // Don't have to flush the virtual timescale data
+        if (!virtualNeeded) {
+          outputHandler.onNext(new MTSOutput<K, V>(time, outputNode.end - outputNode.start, states));
+        }
+      } else {
+        // create state from dependencies 
+        states = null;
+        for (OutputNode referee : outputNode.dependencies) {
+          // When first iteration, the referee of pointed by redline could have null state. We can skip this when first iteration. 
+          if (referee.state != null) {
+            if (states == null) {
+              states = new HashMap<>(referee.state);
+            } else {
+              for (Entry<K, V> entry : referee.state.entrySet()) {
+                V oldVal = states.get(entry.getKey());
+                V newVal = null;
+                if (oldVal == null) {
+                  newVal = entry.getValue();
+                } else {
+                  newVal = reduceFunc.compute(oldVal, entry.getValue());
+                }
+                states.put(entry.getKey(), newVal);
+              }
+            }
+          }
+        }
+        
+        // Flush data to output handler
+        outputHandler.onNext(new MTSOutput<K, V>(time, outputNode.end - outputNode.start, states));
+      }
+
+      // save the state if other outputNodes reference it
+      if (outputNode.refCnt > 0) {
+        outputNode.state = states; 
+      }
+      
+      // decrease the dependencies refCnt
+      outputNode.decreaseDependenciesRefCnt();
+      i++;
+    }
+
+    
+  }
+  
+  public long tickTime() {
     return granularity;
   }
 
+  /*
+   * For debugging 
+   * 
+   */
   @Override
   public String toString() {
     
@@ -269,12 +386,12 @@ public class MTSDependencyTable<V> {
     return outputBuffer.toString();
   }
   
-  public class OutputNode {
+  private class OutputNode {
     private final List<OutputNode> dependencies; 
     private int refCnt;
     private int initialRefCnt;
     private int iter;
-    private V state;
+    private Map<K, V> state;
     private final long start;
     private final long end;
     private final Range range;
@@ -316,6 +433,11 @@ public class MTSDependencyTable<V> {
     public void decreaseDependenciesRefCnt() {
       
       for (OutputNode referee : dependencies) {
+        if (referee.state != null) {
+          referee.decreaseRefCnt();
+        }
+        
+        /*
         if (iter == 0) {
           // should not decrease the red line dependencies 
           if (referee.end <= end) {
@@ -324,13 +446,19 @@ public class MTSDependencyTable<V> {
         } else {
           referee.decreaseRefCnt();
         }
+        */
       }
+
       
       iter++;
     }
    
-    public void setState(V state) {
+    public void setState(Map<K, V> state) {
       this.state = state;
+    }
+    
+    public int getRefCnt() {
+      return refCnt;
     }
     
     public List<OutputNode> getDependencies() {
@@ -338,7 +466,8 @@ public class MTSDependencyTable<V> {
     }
     
     public String toString() {
-      return "(ref_cnt: " + refCnt + ", range: " + range + ")";
+      boolean isState = !(state == null);
+      return "(refCnt: " + refCnt + ", range: " + range + ", s: " + isState + ")";
     }
   }
   

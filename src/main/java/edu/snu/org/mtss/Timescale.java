@@ -5,15 +5,26 @@ import java.util.concurrent.TimeUnit;
 public class Timescale implements Comparable {
   private final long windowSize;
   private final long intervalSize;
+  private final TimeUnit windowTimeUnit;
+  private final TimeUnit intervalTimeUnit;
   
   public Timescale(int windowSize, int intervalSize, TimeUnit windowTimeUnit, TimeUnit intervalTimeUnit) {
-    this.windowSize = windowTimeUnit.toMillis(windowSize);
-    this.intervalSize = intervalTimeUnit.toMillis(intervalSize);
-    
+    this.windowSize = windowTimeUnit.toSeconds(windowSize);
+    this.intervalSize = intervalTimeUnit.toSeconds(intervalSize);
+    this.windowTimeUnit = windowTimeUnit;
+    this.intervalTimeUnit = intervalTimeUnit;
   }
   
   public long getWindowSize() { return windowSize; }
   public long getIntervalSize() { return intervalSize; }
+  
+  public TimeUnit getWindowSizeTimeUnit() {
+    return windowTimeUnit;
+  }
+  
+  public TimeUnit getIntervalTimeUnit() {
+    return intervalTimeUnit;
+  }
 
   @Override
   public int compareTo(Object o) {
@@ -26,5 +37,10 @@ public class Timescale implements Comparable {
     } else {
       return 0;
     }
+  }
+  
+  @Override
+  public String toString() {
+    return "[" + getWindowSize() + ", " + getIntervalSize() + "]";
   }
 }
