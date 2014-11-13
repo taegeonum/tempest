@@ -4,6 +4,7 @@ import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.generated.StormTopology;
 import backtype.storm.topology.TopologyBuilder;
+import backtype.storm.tuple.Fields;
 import edu.snu.org.naive.bolt.SortingBolt;
 import edu.snu.org.naive.bolt.WordCountByWindowBolt;
 import edu.snu.org.naive.spout.RandomWordSpout;
@@ -68,8 +69,8 @@ public class NaiveWordCountTopology {
       int windowSize = windowSizes.get(i);
       int slideInterval = slideIntervals.get(i);
       builder.setBolt(counterId + i, new WordCountByWindowBolt(windowSize, slideInterval), counterParallelism)
-          .shuffleGrouping(spoutId);
-      builder.setBolt(sorterId + i, new SortingBolt(counterParallelism), 1).allGrouping(counterId + i);
+          .fieldsGrouping(spoutId, new Fields("word"));
+      builder.setBolt(sorterId + i, new SortingBolt(sorterId + i, counterParallelism), 1).allGrouping(counterId + i);
     }
 
   }

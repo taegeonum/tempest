@@ -17,32 +17,21 @@ public class SlidingWindow <K, V> implements Serializable {
   Bucket currentBucket;
 
   private class Bucket implements Serializable {
-    private ConcurrentSkipListMap<K, V> innerMap;
+    private Map<K, V> innerMap;
     Bucket () {
-      innerMap = new ConcurrentSkipListMap<>();
+      innerMap = new HashMap<>();
     }
     public V get(K key) {
       return innerMap.get(key);
     }
     public void reduce(K key, V val) {
-      V oldVal = innerMap.get(key);
-      boolean succ = false;
-      do {
-        if (oldVal == null) {
-          succ = (null == (oldVal = innerMap.putIfAbsent(key, val)));
-          if (succ) {
-            break;
-          }
-        } else {
-          V newVal = reduceFunc.compute(oldVal, val);
-          succ = innerMap.replace(key, oldVal, newVal);
-          if (!succ)
-            oldVal = innerMap.get(key);
-          else {
-            break;
-          }
-        }
-      } while (true);
+      if (innerMap.containsKey(key)) {
+        V sofar = innerMap.get(key);
+        innerMap.put(key,reduceFunc.compute(val, sofar));
+      }
+      else {
+        innerMap.put(key, val);
+      }
     }
     public Set<K> keySet() {
       return innerMap.keySet();
@@ -69,11 +58,11 @@ public class SlidingWindow <K, V> implements Serializable {
     }
   }
 
-  public HashMap<K, V> getResultAndSlideBucket() {
+  public Map<K, V> getResultAndSlideBucket() {
     bucketList.add(0, new Bucket());
     currentBucket = bucketList.get(0);
 
-    HashMap<K, V> result = new HashMap<>();
+    Map<K, V> result = new HashMap<>();
     for(int i = 1; i < bucketList.size(); i++) {
       Bucket bucket = bucketList.get(i);
       for(K key: bucket.keySet()) {

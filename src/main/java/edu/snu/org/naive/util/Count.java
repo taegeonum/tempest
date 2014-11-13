@@ -7,9 +7,11 @@ import java.io.Serializable;
 /**
  * Count reduce function
  */
-public class Count implements ReduceFunc<Integer>, Serializable {
+public class Count implements ReduceFunc<ValueAndTimestamp<Integer>>, Serializable {
   @Override
-  public Integer compute(Integer value, Integer sofar) {
-    return value + sofar;
+  public ValueAndTimestamp<Integer> compute(ValueAndTimestamp<Integer> newRecord,
+                                          ValueAndTimestamp<Integer> sofarRecord) {
+    return new ValueAndTimestamp(newRecord.getValue() + sofarRecord.getValue(),
+        newRecord.getTimestamp() + sofarRecord.getTimestamp());
   }
 }

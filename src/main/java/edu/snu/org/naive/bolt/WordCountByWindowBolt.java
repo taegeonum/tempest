@@ -12,8 +12,12 @@ import backtype.storm.tuple.Values;
 import edu.snu.org.naive.ReduceFunc;
 import edu.snu.org.naive.util.Count;
 import edu.snu.org.naive.util.SlidingWindow;
+import edu.snu.org.naive.util.ValueAndTimestamp;
 import org.apache.log4j.Logger;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,7 +31,7 @@ public class WordCountByWindowBolt extends BaseRichBolt{
   private int bucketLength;
   private int bucketNum;
   private int bucketCount;
-  private SlidingWindow<String, Integer> slidingWindow;
+  private SlidingWindow<String, ValueAndTimestamp<Integer>> slidingWindow;
   private OutputCollector collector;
 
   /**
@@ -73,7 +77,7 @@ public class WordCountByWindowBolt extends BaseRichBolt{
 
   @Override
   public void declareOutputFields(OutputFieldsDeclarer declarer) {
-    declarer.declare(new Fields("countMap"));
+    declarer.declare(new Fields("countMap", "averageTimestamp", "totalCount"));
   }
 
   private void slide() {
@@ -81,8 +85,17 @@ public class WordCountByWindowBolt extends BaseRichBolt{
 
     // Slides the window and get results
     if (bucketCount % slideIntervalByBucket == 0) {
-      HashMap<String, Integer> result = slidingWindow.getResultAndSlideBucket();
-      collector.emit(new Values(result));
+      Map<String, ValueAndTimestamp<Integer>> reduced = slidingWindow.getResultAndSlideBucket();
+      Map<String, Integer> result = new HashMap<>();
+      long totalTimestamp = 0;
+      long totalCount = 0;
+      for(String key: reduced.keySet()) {
+        int count = reduced.get(key).getValue();
+        result.put(key, count);
+        totalTimestamp += reduced.get(key).getTimestamp();
+        totalCount += count;
+      }
+      collector.emit(new Values(result, totalTimestamp / totalCount, totalCount));
     }
     // Just slides the window
     else {
@@ -93,14 +106,15 @@ public class WordCountByWindowBolt extends BaseRichBolt{
   private void countAndAck(Tuple tuple) {
     String key = (String) tuple.getValue(0);
     Integer value = (Integer) tuple.getValue(1);
-    slidingWindow.reduce(key, value);
+    Long timestamp = (Long) tuple.getValue(2);
+    slidingWindow.reduce(key, new ValueAndTimestamp(value, timestamp));
     collector.ack(tuple);
   }
 
   @Override
   public Map<String, Object> getComponentConfiguration() {
     Map<String, Object> conf = new HashMap<String, Object>();
-    conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, bucketLength);
+    conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, bucketLength/1000);
     return conf;
   }
 }

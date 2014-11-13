@@ -39,9 +39,12 @@ public class RandomWordSpout extends BaseRichSpout {
   @Override
   public void nextTuple() {
     Utils.sleep(sendingInterval);
-    String[] words = new String[]{"I", "want", "to", "watch", "interstellar"};
-    String word = words[_rand.nextInt(words.length)];
-    _collector.emit(new Values(word, 1));
+    String[] sentences = new String[]{ "the cow jumped over the moon", "an apple a day keeps the doctor away",
+        "four score and seven years ago", "snow white and the seven dwarfs", "i am at two with nature" };
+    String sentence = sentences[_rand.nextInt(sentences.length)];
+    for(String word: sentence.split(" ")) {
+      _collector.emit(new Values(word, 1, System.currentTimeMillis()));
+    }
   }
 
   @Override
@@ -54,6 +57,6 @@ public class RandomWordSpout extends BaseRichSpout {
 
   @Override
   public void declareOutputFields(OutputFieldsDeclarer declarer) {
-    declarer.declare(new Fields("word", "count"));
+    declarer.declare(new Fields("word", "count", "timestamp"));
   }
 }

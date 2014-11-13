@@ -1,100 +1,115 @@
 package edu.snu.org.naive.bolt;
 
-import backtype.storm.topology.BasicOutputCollector;
+import backtype.storm.task.OutputCollector;
+import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.topology.base.BaseBasicBolt;
+import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import edu.snu.org.naive.ReduceFunc;
-import edu.snu.org.naive.util.Count;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Aggregates all counts and sorts by values
  */
-public class SortingBolt extends BaseBasicBolt {
+public class SortingBolt extends BaseRichBolt {
 
   private int numOfInputBolts;
   private int count;
-  private ConcurrentSkipListMap<String, Integer> results;
-  private ReduceFunc<Integer> countFunc;
+  private Map<String, Integer> results;
+  private long averageTimestamp;
+  private long totalWordCount;
+  private BufferedWriter out;
+  private OutputCollector collector;
+  private String boltName;
 
-  public SortingBolt(int numOfInputBolts) {
+  public SortingBolt(String boltName, int numOfInputBolts) {
     this.numOfInputBolts = numOfInputBolts;
     count = 0;
-    countFunc = new Count();
-    results = new ConcurrentSkipListMap<>();
+    results = new HashMap<>();
+    averageTimestamp = 0;
+    totalWordCount = 0;
+    this.boltName = boltName;
   }
 
-  class ValueComparator implements Comparator<String> {
+  private <K, V extends Comparable<? super V>> Map<K, V> sortByValue( Map<K, V> map )
+  {
+    List<Map.Entry<K, V>> list =
+        new LinkedList<>( map.entrySet() );
+    Collections.sort( list, new Comparator<Map.Entry<K, V>>()
+    {
+      public int compare( Map.Entry<K, V> o1, Map.Entry<K, V> o2 )
+      {
+        return (o2.getValue()).compareTo( o1.getValue() );
+      }
+    } );
 
-    Map<String, Integer> base;
-    public ValueComparator(Map<String, Integer> base) {
-      this.base = base;
+    Map<K, V> result = new LinkedHashMap<K, V>();
+    for (Map.Entry<K, V> entry : list)
+    {
+      result.put( entry.getKey(), entry.getValue() );
     }
+    return result;
+  }
 
-    // Note: this comparator imposes orderings that are inconsistent with equals.
-    public int compare(String a, String b) {
-      if (base.get(a) >= base.get(b)) {
-        return -1;
-      } else {
-        return 1;
-      } // returning 0 would merge keys
+  @Override
+  public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
+    this.collector = collector;
+    try {
+      out = new BufferedWriter(new FileWriter(boltName + ".txt"));
+    } catch (IOException e) {
+
     }
   }
 
   /**
-   * Aggregate results in a thread-safe way
+   * Aggregate partially counted results
    * @param tuple
    */
   public void aggregate(Tuple tuple) {
-    HashMap<String, Integer> partialResult = (HashMap) tuple.getValue(0);
+    Map<String, Integer> partialResult = (HashMap) tuple.getValue(0);
+    long partialAverageTimestamp = (Long) tuple.getValue(1);
+    long partialWordCount = (Long) tuple.getValue(2);
+
     for (String key: partialResult.keySet()) {
-      Integer val = partialResult.get(key);
-      Integer oldVal = results.get(key);
-      boolean succ = false;
-      do {
-        if (oldVal == null) {
-          succ = (null == (oldVal = results.putIfAbsent(key, val)));
-          if (succ) {
-            break;
-          }
-        } else {
-          Integer newVal = countFunc.compute(oldVal, val);
-          succ = results.replace(key, oldVal, newVal);
-          if (!succ)
-            oldVal = results.get(key);
-          else {
-            break;
-          }
-        }
-      } while (true);
+      results.put(key, partialResult.get(key));
     }
+    double ratio = (double) totalWordCount / (double) partialWordCount;
+    averageTimestamp = (long) ((ratio * averageTimestamp + partialAverageTimestamp) / (ratio + 1));
+    totalWordCount += partialWordCount;
   }
 
   @Override
-  public void execute(Tuple tuple, BasicOutputCollector collector) {
+  public void execute(Tuple tuple) {
     count++;
     aggregate(tuple);
     if (count == numOfInputBolts) {
-      ValueComparator comparator = new ValueComparator(results);
-      TreeMap<String, Integer> sorted_results = new TreeMap<String, Integer>(comparator);
-      sorted_results.putAll(results);
+      Map<String, Integer> sortedResults = sortByValue(results);
+      long latency = System.currentTimeMillis() - averageTimestamp;
+      collector.emit(new Values(sortedResults, latency, totalWordCount));
+      try {
+        for (String key : sortedResults.keySet()) {
+          out.write(key + "\t" + sortedResults.get(key) + "\n");
+        }
+        out.write("latency: " + latency + "\ttotalCnt: " + totalWordCount + "\n");
+        out.flush();
+      } catch(IOException e) {
+
+      }
       count = 0;
-      results = new ConcurrentSkipListMap<>();
-      collector.emit(new Values(sorted_results));
+      results = new HashMap<>();
+      averageTimestamp = 0;
+      totalWordCount = 0;
     }
   }
 
   @Override
   public void declareOutputFields(OutputFieldsDeclarer declarer) {
-    declarer.declare(new Fields("rankings"));
+    declarer.declare(new Fields("rankings", "latency", "totalCnt"));
   }
 
 }
