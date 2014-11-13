@@ -1,7 +1,5 @@
 package edu.snu.org.mtss.bolt;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,12 +31,10 @@ public class MTSWordcountBolt extends BaseRichBolt {
   private long tickTime;
   private long time;
   private OutputCollector collector;
-  private List<Tuple> anchors;
   
   public MTSWordcountBolt(List<Timescale> timescales) throws Exception {
     this.timescales = timescales;
     this.tickTime = MTSOperator.tickTime(timescales);
-    this.anchors = new LinkedList<>();
   }
   
   @Override
@@ -53,7 +49,6 @@ public class MTSWordcountBolt extends BaseRichBolt {
         e.printStackTrace();
       }
     } else {
-      anchors.add(tuple);
       String key = (String) tuple.getValue(0);
       int count = (int)tuple.getValue(1);
       long timestamp = (long)tuple.getValue(2);
@@ -75,16 +70,17 @@ public class MTSWordcountBolt extends BaseRichBolt {
           Map<String, ValueAndTimestamp<Integer>> map = data.getResult();
           
           long totalCnt = 0;
-          long avgTimestamp = 0;
+          long avgStartTime = 0;
           for (ValueAndTimestamp<Integer> val : map.values()) {
             totalCnt += val.getValue();
-            avgTimestamp += val.getTimestamp();
+            avgStartTime += val.getTimestamp();
           }
           
-          avgTimestamp /= totalCnt;
-          collector.emit("size" + data.getSizeOfWindow(), new Values(data.getResult(), avgTimestamp, totalCnt));
+          avgStartTime /= Math.max(1, totalCnt);
+          collector.emit("size" + data.getSizeOfWindow(), new Values(data.getResult(), avgStartTime, totalCnt));
         }
       });
+      
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -93,7 +89,7 @@ public class MTSWordcountBolt extends BaseRichBolt {
   @Override
   public void declareOutputFields(OutputFieldsDeclarer declarer) {
     for (Timescale ts : timescales) {
-      declarer.declareStream("size" + ts.getWindowSize(), new Fields("result", "timestamp", "totalCnt"));
+      declarer.declareStream("size" + ts.getWindowSize(), new Fields("result", "avgTimestamp", "totalCnt"));
     }
   }
 

@@ -1,14 +1,13 @@
 package edu.snu.org.mtss;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 
 import backtype.storm.Config;
-import backtype.storm.LocalCluster;
-import backtype.storm.generated.StormTopology;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import edu.snu.org.mtss.bolt.MTSWordcountBolt;
@@ -19,11 +18,11 @@ import edu.snu.org.mtss.util.StormRunner;
 public class WordcountTopology {
 
   private static final Logger LOG = Logger.getLogger(WordcountTopology.class);
-  private static final int DEFAULT_RUNTIME_IN_SECONDS = 60;
+  private static final int DEFAULT_RUNTIME_IN_SECONDS = 30;
   private static final int TOP_N = 10;
   
   private static final int NUM_SPOUT = 3;
-  private static final int NUM_WC_BOLT = 4;
+  private static final int NUM_WC_BOLT = 16;
 
   private final TopologyBuilder builder;
   private final String topologyName;
@@ -38,10 +37,11 @@ public class WordcountTopology {
     runtimeInSeconds = DEFAULT_RUNTIME_IN_SECONDS;
 
     timescales = new ArrayList<>();
-    timescales.add(new Timescale(5, 2, TimeUnit.SECONDS, TimeUnit.SECONDS));
-    timescales.add(new Timescale(10, 4, TimeUnit.SECONDS, TimeUnit.SECONDS));
-    timescales.add(new Timescale(20, 6, TimeUnit.SECONDS, TimeUnit.SECONDS));
-    
+    timescales.add(new Timescale(2, 1, TimeUnit.SECONDS, TimeUnit.SECONDS));
+    timescales.add(new Timescale(4, 2, TimeUnit.SECONDS, TimeUnit.SECONDS));
+    timescales.add(new Timescale(8, 4, TimeUnit.SECONDS, TimeUnit.SECONDS));
+    timescales.add(new Timescale(16, 8, TimeUnit.SECONDS, TimeUnit.SECONDS));
+
     wireTopology();
   }
 

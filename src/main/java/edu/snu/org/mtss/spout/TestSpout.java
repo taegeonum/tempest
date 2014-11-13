@@ -36,20 +36,16 @@ public class TestSpout extends BaseRichSpout {
         "four score and seven years ago", "snow white and the seven dwarfs", "i am at two with nature" };
     String sentence = sentences[_rand.nextInt(sentences.length)];
     for (String word : sentence.split(" ")) {
-      _collector.emit(new Values(word, System.currentTimeMillis()));
+      _collector.emit(new Values(word, 1, System.currentTimeMillis()));
     }
   }
 
   @Override
   public void ack(Object id) {
-    System.out.println("@Tuple " + id + " is acked");
   }
 
   @Override
   public void fail(Object id) {
-    
-    System.out.println("@Tuple " + id + " is failed");
-
   }
 
   @Override

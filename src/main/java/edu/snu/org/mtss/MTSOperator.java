@@ -165,7 +165,7 @@ public class MTSOperator<K, V> {
     
     for (Timescale ts : timeScales) {
       if (gcd == 0) { 
-        gcd = ts.getIntervalSize();
+        gcd = gcd(ts.getWindowSize(), ts.getIntervalSize());
       } else {
         gcd = gcd(gcd, ts.getIntervalSize());
       }
@@ -313,7 +313,7 @@ public class MTSOperator<K, V> {
     
     for (Timescale ts : timescales) {
       if (gcd == 0) { 
-        gcd = ts.getIntervalSize();
+        gcd = gcd(ts.getWindowSize(), ts.getIntervalSize());
       } else {
         gcd = gcd(gcd, ts.getIntervalSize());
       }

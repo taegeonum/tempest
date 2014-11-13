@@ -45,12 +45,17 @@ public class TotalRankingsBolt extends BaseBasicBolt {
   private SortedSet<WordcountTuple> results;
   private final String name;
   private FileWriter writer;
+  private long avgStartTime;
+  private long totalCnt;
+  private int startTimeCnt;
   
   public TotalRankingsBolt(final int topN, final int numOfInputBolts, String name) {
     this.numOfInputBolts = numOfInputBolts;
     this.topN = topN;
     this.name = name;
     count = 0;
+    avgStartTime = 0;
+    totalCnt = 0;
     results = new TreeSet<>();
   }
   
@@ -68,8 +73,14 @@ public class TotalRankingsBolt extends BaseBasicBolt {
   public void execute(Tuple tuple, BasicOutputCollector collector) {
     count++;
     Map<String, ValueAndTimestamp<Integer>> aggWordCnt = (Map) tuple.getValue(0);
-    long startTimestamp = (long)tuple.getValue(1);
-    long totalCnt = (long)tuple.getValue(2);
+    long avgSt = (long)tuple.getValue(1);
+    avgStartTime += avgSt;
+    
+    if (avgSt != 0) {
+      startTimeCnt++;
+    }
+    
+    totalCnt += (long)tuple.getValue(2);
     
     // sort
     for (Map.Entry<String, ValueAndTimestamp<Integer>> entry : aggWordCnt.entrySet()) {
@@ -92,7 +103,7 @@ public class TotalRankingsBolt extends BaseBasicBolt {
       }
       collector.emit(new Values(list));
       long endTime = System.currentTimeMillis();
-      long latency = endTime - startTimestamp;
+      long latency = endTime - (avgStartTime/startTimeCnt);
       
       try {
         writer.write(latency + "\t" + totalCnt + "\n");
@@ -100,6 +111,8 @@ public class TotalRankingsBolt extends BaseBasicBolt {
         e.printStackTrace();
       }
       results.clear();
+      
+      avgStartTime = totalCnt = startTimeCnt = 0;
     }
   }
 
@@ -112,6 +125,7 @@ public class TotalRankingsBolt extends BaseBasicBolt {
   public void cleanup() {
     try {
       writer.close();
+      // TODO: copy local fail to HDFS 
     } catch (IOException e) {
       e.printStackTrace();
     }
