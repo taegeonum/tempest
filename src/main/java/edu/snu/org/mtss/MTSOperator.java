@@ -16,7 +16,7 @@ import edu.snu.org.mtss.util.ReduceFunc;
 
 /*
  * MTSOperator
- * TimeUnit is millisecond
+ * TimeUnit is sec
  */
 public class MTSOperator<K, V> {
 
@@ -50,7 +50,7 @@ public class MTSOperator<K, V> {
   }
   
   /*
-   * This method add vertices and connect depedencies 
+   * This method add vertices and connect dependencies to the table
    * 
    * For example, we have 2 timescales (w=4, i=2), (w=6, i=4) 
    * Then, this method add vertices to table like this: 
@@ -61,8 +61,8 @@ public class MTSOperator<K, V> {
    * |       6 sec    | range:(4,6), refCnt: 2 | range:(2,6),  refCnt: 0 |                         |
    * |       8 sec    | range:(6,8), refCnt: 3 | range:(4,8),  refCnt: 1 | range:(2,8),  refCnt: 0 |
    * 
-   * period is 8 sec. 
-   * virtual timescale is added (w=2, i=2)
+   * In this table, the virtual timescale (w=2, i=2) is added.
+   * Period is 8 sec. 
    * 
    * [2, 2] is referenced by [2,4], [4,4]   (  [row, col] )
    * [4, 2] is referenced by [4,4], [6,4], [8,6]
@@ -125,7 +125,6 @@ public class MTSOperator<K, V> {
                 }
 
                 if (includedIdx >= 0) {
-                  System.out.println(referer + " references " + referee);
                   Range rg = rangeList.remove(includedIdx);
                   
                   if (rg.include(seekRg)) {
@@ -309,8 +308,18 @@ public class MTSOperator<K, V> {
     
   }
   
-  public long tickTime() {
-    return granularity;
+  public static long tickTime(List<Timescale> timescales) {
+    long gcd = 0;
+    
+    for (Timescale ts : timescales) {
+      if (gcd == 0) { 
+        gcd = ts.getIntervalSize();
+      } else {
+        gcd = gcd(gcd, ts.getIntervalSize());
+      }
+    }
+    
+    return gcd;
   }
 
   /*
@@ -507,7 +516,6 @@ public class MTSOperator<K, V> {
   }
 }
 
-
 class LongComparator implements Comparator<Long> {
 
   @Override
@@ -520,6 +528,7 @@ class LongComparator implements Comparator<Long> {
       return 0;
     }
   }
+  
 }
 
 class LongInvComparator implements Comparator<Long> {
