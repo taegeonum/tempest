@@ -35,20 +35,26 @@ public class TestSpout extends BaseRichSpout {
     String[] sentences = new String[]{ "the cow jumped over the moon", "an apple a day keeps the doctor away",
         "four score and seven years ago", "snow white and the seven dwarfs", "i am at two with nature" };
     String sentence = sentences[_rand.nextInt(sentences.length)];
-    _collector.emit(new Values(sentence));
+    for (String word : sentence.split(" ")) {
+      _collector.emit(new Values(word, System.currentTimeMillis()));
+    }
   }
 
   @Override
   public void ack(Object id) {
+    System.out.println("@Tuple " + id + " is acked");
   }
 
   @Override
   public void fail(Object id) {
+    
+    System.out.println("@Tuple " + id + " is failed");
+
   }
 
   @Override
   public void declareOutputFields(OutputFieldsDeclarer declarer) {
-    declarer.declare(new Fields("word"));
+    declarer.declare(new Fields("word", "count", "timestamp"));
   }
 
 }

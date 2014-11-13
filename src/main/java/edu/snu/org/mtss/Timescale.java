@@ -1,8 +1,13 @@
 package edu.snu.org.mtss;
 
+import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
-public class Timescale implements Comparable {
+public class Timescale implements Comparable, Serializable {
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 439658002747284570L;
   private final long windowSize;
   private final long intervalSize;
   private final TimeUnit windowTimeUnit;
