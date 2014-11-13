@@ -14,6 +14,7 @@ import backtype.storm.tuple.Fields;
 import edu.snu.org.mtss.bolt.MTSWordcountBolt;
 import edu.snu.org.mtss.bolt.TotalRankingsBolt;
 import edu.snu.org.mtss.spout.TestSpout;
+import edu.snu.org.mtss.util.StormRunner;
 
 public class WordcountTopology {
 
@@ -28,6 +29,7 @@ public class WordcountTopology {
   private final String topologyName;
   private final Config topologyConfig;
   private final int runtimeInSeconds;
+  private final List<Timescale> timescales;
 
   public WordcountTopology(String topologyName) throws Exception {
     builder = new TopologyBuilder();
@@ -35,6 +37,11 @@ public class WordcountTopology {
     topologyConfig = createTopologyConfiguration();
     runtimeInSeconds = DEFAULT_RUNTIME_IN_SECONDS;
 
+    timescales = new ArrayList<>();
+    timescales.add(new Timescale(5, 2, TimeUnit.SECONDS, TimeUnit.SECONDS));
+    timescales.add(new Timescale(10, 4, TimeUnit.SECONDS, TimeUnit.SECONDS));
+    timescales.add(new Timescale(20, 6, TimeUnit.SECONDS, TimeUnit.SECONDS));
+    
     wireTopology();
   }
 
@@ -50,20 +57,15 @@ public class WordcountTopology {
     String counterId = "mtsOperator";
     String totalRankerId = "finalRanker";
     
-    List<Timescale> timescales = new ArrayList<>();
-    timescales.add(new Timescale(5, 2, TimeUnit.SECONDS, TimeUnit.SECONDS));
-    timescales.add(new Timescale(10, 4, TimeUnit.SECONDS, TimeUnit.SECONDS));
-    timescales.add(new Timescale(20, 6, TimeUnit.SECONDS, TimeUnit.SECONDS));
     
     builder.setSpout(spoutId, new TestSpout(), NUM_SPOUT);
     builder.setBolt(counterId, new MTSWordcountBolt(timescales), NUM_WC_BOLT).fieldsGrouping(spoutId, new Fields("word"));
-    builder.setBolt(totalRankerId+"1", new TotalRankingsBolt(TOP_N, NUM_WC_BOLT, "TotalRanking_Size5")).globalGrouping(counterId, "size5");
-    builder.setBolt(totalRankerId+"2", new TotalRankingsBolt(TOP_N, NUM_WC_BOLT, "TotalRanking_Size10")).globalGrouping(counterId, "size10");
-    builder.setBolt(totalRankerId+"3", new TotalRankingsBolt(TOP_N, NUM_WC_BOLT, "TotalRanking_Size20")).globalGrouping(counterId, "size20");
-  }
 
-  public void runLocally() throws InterruptedException {
-    runTopologyLocally(builder.createTopology(), topologyName, topologyConfig, runtimeInSeconds);
+    int i = 0;
+    for (Timescale ts : timescales) {
+      builder.setBolt(totalRankerId+"-"+i, new TotalRankingsBolt(TOP_N, NUM_WC_BOLT, "TotalRanking_Size" + ts.getWindowSize())).globalGrouping(counterId, "size" + ts.getWindowSize());
+      i += 1;
+    }
   }
 
 
@@ -77,7 +79,6 @@ public class WordcountTopology {
     if (args.length >= 2 && args[1].equalsIgnoreCase("remote")) {
       runLocally = false;
     }
-    
 
     LOG.info("Topology name: " + topologyName);
     WordcountTopology rtw = new WordcountTopology(topologyName);
@@ -87,17 +88,15 @@ public class WordcountTopology {
     }
     else {
       LOG.info("Running in remote (cluster) mode");
+      rtw.runRemotely();
     }
   }
   
-  
-  public static void runTopologyLocally(StormTopology topology, String topologyName, Config conf, int runtimeInSeconds)
-      throws InterruptedException {
-    LocalCluster cluster = new LocalCluster();
-    cluster.submitTopology(topologyName, conf, topology);
-    Thread.sleep((long) runtimeInSeconds * 1000);
-    cluster.killTopology(topologyName);
-    cluster.shutdown();
+  public void runLocally() throws InterruptedException {
+    StormRunner.runTopologyLocally(builder.createTopology(), topologyName, topologyConfig, runtimeInSeconds);
   }
   
+  public void runRemotely() throws Exception {
+    StormRunner.runTopologyRemotely(builder.createTopology(), topologyName, topologyConfig);
+  }
 }
