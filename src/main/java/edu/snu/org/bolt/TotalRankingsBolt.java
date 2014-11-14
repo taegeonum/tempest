@@ -105,7 +105,7 @@ public class TotalRankingsBolt extends BaseBasicBolt {
       }
       //collector.emit(new Values(list));
       long endTime = System.currentTimeMillis();
-      long latency = endTime - (avgStartTime/startTimeCnt);
+      long latency = endTime - (avgStartTime/Math.max(1, startTimeCnt));
       
       try {
         writer.write(latency + "\t" + totalCnt + "\n");
