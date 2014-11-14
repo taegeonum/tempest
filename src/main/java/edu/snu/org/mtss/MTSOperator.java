@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.reef.wake.EventHandler;
 
-import edu.snu.org.mtss.util.ReduceFunc;
+import edu.snu.org.util.ReduceFunc;
 
 /*
  * MTSOperator

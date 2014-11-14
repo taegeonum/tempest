@@ -1,7 +1,6 @@
 package edu.snu.org.mtss;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -10,10 +9,10 @@ import org.apache.log4j.Logger;
 import backtype.storm.Config;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
+import edu.snu.org.bolt.TotalRankingsBolt;
 import edu.snu.org.mtss.bolt.MTSWordcountBolt;
-import edu.snu.org.mtss.bolt.TotalRankingsBolt;
-import edu.snu.org.mtss.spout.TestSpout;
-import edu.snu.org.mtss.util.StormRunner;
+import edu.snu.org.spout.RandomWordSpout;
+import edu.snu.org.util.StormRunner;
 
 public class WordcountTopology {
 
@@ -58,12 +57,12 @@ public class WordcountTopology {
     String totalRankerId = "finalRanker";
     
     
-    builder.setSpout(spoutId, new TestSpout(), NUM_SPOUT);
+    builder.setSpout(spoutId, new RandomWordSpout(), NUM_SPOUT);
     builder.setBolt(counterId, new MTSWordcountBolt(timescales), NUM_WC_BOLT).fieldsGrouping(spoutId, new Fields("word"));
 
     int i = 0;
     for (Timescale ts : timescales) {
-      builder.setBolt(totalRankerId+"-"+i, new TotalRankingsBolt(TOP_N, NUM_WC_BOLT, "TotalRanking_Size" + ts.getWindowSize())).globalGrouping(counterId, "size" + ts.getWindowSize());
+      builder.setBolt(totalRankerId+"-"+i, new TotalRankingsBolt(TOP_N, NUM_WC_BOLT, "mtss-window-" + ts.getWindowSize())).globalGrouping(counterId, "size" + ts.getWindowSize());
       i += 1;
     }
   }

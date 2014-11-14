@@ -1,17 +1,18 @@
 package edu.snu.org.naive;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.log4j.Logger;
+
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.generated.StormTopology;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
-import edu.snu.org.naive.bolt.SortingBolt;
+import edu.snu.org.bolt.TotalRankingsBolt;
 import edu.snu.org.naive.bolt.WordCountByWindowBolt;
-import edu.snu.org.naive.spout.RandomWordSpout;
-import org.apache.log4j.Logger;
-
-import java.util.ArrayList;
-import java.util.List;
+import edu.snu.org.spout.RandomWordSpout;
 
 /**
  * Topology for naive word count implementation
@@ -70,7 +71,7 @@ public class NaiveWordCountTopology {
       int slideInterval = slideIntervals.get(i);
       builder.setBolt(counterId + i, new WordCountByWindowBolt(windowSize, slideInterval), counterParallelism)
           .fieldsGrouping(spoutId, new Fields("word"));
-      builder.setBolt(sorterId + i, new SortingBolt(sorterId + i, counterParallelism), 1).allGrouping(counterId + i);
+      builder.setBolt(sorterId + i, new TotalRankingsBolt(10, counterParallelism, "naive-window-" + (windowSize/1000)), 1).allGrouping(counterId + i);
     }
 
   }

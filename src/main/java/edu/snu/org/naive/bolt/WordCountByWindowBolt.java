@@ -1,5 +1,10 @@
 package edu.snu.org.naive.bolt;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+
 import backtype.storm.Config;
 import backtype.storm.Constants;
 import backtype.storm.task.OutputCollector;
@@ -9,17 +14,9 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import edu.snu.org.naive.ReduceFunc;
-import edu.snu.org.naive.util.Count;
-import edu.snu.org.naive.util.SlidingWindow;
-import edu.snu.org.naive.util.ValueAndTimestamp;
-import org.apache.log4j.Logger;
-
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import edu.snu.org.naive.Count;
+import edu.snu.org.naive.SlidingWindow;
+import edu.snu.org.util.ValueAndTimestamp;
 
 /**
  * This bolt counts word by window
@@ -86,16 +83,16 @@ public class WordCountByWindowBolt extends BaseRichBolt{
     // Slides the window and get results
     if (bucketCount % slideIntervalByBucket == 0) {
       Map<String, ValueAndTimestamp<Integer>> reduced = slidingWindow.getResultAndSlideBucket();
-      Map<String, Integer> result = new HashMap<>();
+      //Map<String, Integer> result = new HashMap<>();
       long totalTimestamp = 0;
       long totalCount = 0;
       for(String key: reduced.keySet()) {
         int count = reduced.get(key).getValue();
-        result.put(key, count);
+        //result.put(key, count);
         totalTimestamp += reduced.get(key).getTimestamp();
         totalCount += count;
       }
-      collector.emit(new Values(result, totalTimestamp / totalCount, totalCount));
+      collector.emit(new Values(reduced, totalTimestamp / totalCount, totalCount));
     }
     // Just slides the window
     else {
