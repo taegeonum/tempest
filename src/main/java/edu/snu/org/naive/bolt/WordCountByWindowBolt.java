@@ -99,7 +99,7 @@ public class WordCountByWindowBolt extends BaseRichBolt{
         totalTimestamp += reduced.get(key).getTimestamp();
         totalCount += count;
       }
-      collector.emit(new Values(reduced, totalTimestamp / totalCount, totalCount));
+      collector.emit(new Values(reduced, totalTimestamp / Math.max(1, totalCount), totalCount));
     }
     // Just slides the window
     else {
