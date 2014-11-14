@@ -13,7 +13,7 @@ import edu.snu.org.naive.NaiveWordCountRunner;
 public class WordcountApp {
 
   private static final Logger LOG = Logger.getLogger(WordcountApp.class);
-  private static final int DEFAULT_RUNTIME_IN_SECONDS = 60 * 3;
+  private static final int DEFAULT_RUNTIME_IN_SECONDS = 10;
   private static final int TOP_N = 10;
   
   private static final int NUM_SPOUT = 16;
@@ -36,6 +36,7 @@ public class WordcountApp {
     Config conf = new Config();
     conf.put(Config.TOPOLOGY_DEBUG, false);
     conf.setNumWorkers(NUM_WORKERS);
+    conf.setNumAckers(NUM_WORKERS);
     conf.setDebug(false);
     return conf;
   }

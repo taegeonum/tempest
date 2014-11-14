@@ -14,7 +14,13 @@ public class HDFSWriter {
   private FileSystem fs;
   
   public HDFSWriter() {
-    
+    try {
+      Configuration config = new Configuration();
+
+      fs = FileSystem.get(new Configuration());
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
   
   public HDFSWriter(String path) {
@@ -29,7 +35,6 @@ public class HDFSWriter {
     }
   }
   
-  
   public void setPath(String path) {
     this.path = new Path(path);
     try {
@@ -42,6 +47,9 @@ public class HDFSWriter {
   public void write(String str) throws IOException {
     BufferedWriter br;
 
+    if (path == null) {
+      throw new NullPointerException("Path should not be null.");
+    }
     if (fs.exists(path)) {
       br = new BufferedWriter(new OutputStreamWriter(fs.append(path)));
     } else {
@@ -52,6 +60,11 @@ public class HDFSWriter {
     br.write(str);
     br.flush();
     br.close();
+    
+  }
+  
+  public void copyFromLocalFile(Path src, Path dest) throws IOException {
+    fs.copyFromLocalFile(src, dest);
   }
   
   public void close() throws IOException {

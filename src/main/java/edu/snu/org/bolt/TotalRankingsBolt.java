@@ -25,13 +25,15 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.apache.hadoop.fs.Path;
+
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.BasicOutputCollector;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseBasicBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
-import backtype.storm.tuple.Values;
+import edu.snu.org.util.HDFSWriter;
 import edu.snu.org.util.ValueAndTimestamp;
 
 /**
@@ -125,7 +127,10 @@ public class TotalRankingsBolt extends BaseBasicBolt {
   public void cleanup() {
     try {
       writer.close();
-      // TODO: copy local fail to HDFS 
+      // TODO: copy local file to HDFS 
+      HDFSWriter hdfsWriter = new HDFSWriter();
+      hdfsWriter.copyFromLocalFile(new Path(name), new Path("/" + name));
+      hdfsWriter.close();
     } catch (IOException e) {
       e.printStackTrace();
     }
