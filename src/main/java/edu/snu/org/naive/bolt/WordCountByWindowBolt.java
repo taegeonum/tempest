@@ -2,6 +2,7 @@ package edu.snu.org.naive.bolt;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 
@@ -46,7 +47,13 @@ public class WordCountByWindowBolt extends BaseRichBolt{
     return gcd(b, c);
   }
 
+  /*
+   * windowLength, slideInterval is millisecond
+   */
   public WordCountByWindowBolt(int windowLength, int slideInterval) {
+    windowLength = (int)TimeUnit.SECONDS.toMillis(windowLength);
+    slideInterval = (int)TimeUnit.SECONDS.toMillis(slideInterval);
+    
     bucketLength = gcd(windowLength, slideInterval);
     slideIntervalByBucket = slideInterval/bucketLength;
     bucketNum = windowLength/bucketLength;

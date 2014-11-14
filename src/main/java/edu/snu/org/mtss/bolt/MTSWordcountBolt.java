@@ -54,6 +54,7 @@ public class MTSWordcountBolt extends BaseRichBolt {
       int count = (int)tuple.getValue(1);
       long timestamp = (long)tuple.getValue(2);
       mtsOperator.addData(key, new ValueAndTimestamp<Integer>(count, timestamp));
+      collector.ack(tuple);
     }
   }
 

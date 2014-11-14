@@ -16,7 +16,7 @@ import java.util.Random;
  */
 public class RandomWordSpout extends BaseRichSpout {
 
-  private static final int DEFAULT_SENDING_INTERVAL = 100;
+  private static final int DEFAULT_SENDING_INTERVAL = 1;
 
   SpoutOutputCollector _collector;
   Random _rand;
