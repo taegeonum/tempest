@@ -111,6 +111,7 @@ public class TotalRankingsBolt extends BaseBasicBolt {
       
       try {
         writer.write(latency + "\t" + totalCnt + "\n");
+        writer.flush();
       } catch (IOException e) {
         e.printStackTrace();
       }
