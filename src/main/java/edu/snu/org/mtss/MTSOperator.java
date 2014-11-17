@@ -11,6 +11,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.reef.wake.EventHandler;
+import org.apache.reef.wake.Stage;
+import org.apache.reef.wake.impl.ThreadPoolStage;
 
 import edu.snu.org.util.ReduceFunc;
 
@@ -18,7 +20,7 @@ import edu.snu.org.util.ReduceFunc;
  * MTSOperator
  * TimeUnit is sec
  */
-public class MTSOperator<K, V> {
+public class MTSOperator<K, V> implements Stage {
 
   private final List<Timescale> timeScales; 
   private final long granularity;
@@ -28,6 +30,7 @@ public class MTSOperator<K, V> {
   private Map<K, V> innerMap;
   private final EventHandler<MTSOutput<K, V>> outputHandler;
   private final boolean virtualNeeded;
+  private final ThreadPoolStage<MTSOutput<K, V>> executor;
   
   public MTSOperator(List<Timescale> timeScales, 
       ReduceFunc<V> reduceFunc, 
@@ -37,6 +40,7 @@ public class MTSOperator<K, V> {
       throw new Exception("MTSOperator should have multiple timescales");
     }
     
+    this.executor = new ThreadPoolStage<>(outputHandler, timeScales.size());
     this.timeScales = timeScales;
     this.table = new TreeBasedTableImpl<>(new LongComparator(), new LongComparator());
     this.granularity = calculateGranularitySize();
@@ -266,7 +270,7 @@ public class MTSOperator<K, V> {
       if (i == 0) {
         // Don't have to flush the virtual timescale data
         if (!virtualNeeded) {
-          outputHandler.onNext(new MTSOutput<K, V>(time, outputNode.end - outputNode.start, states));
+          executor.onNext(new MTSOutput<K, V>(time, outputNode.end - outputNode.start, states));
         }
       } else {
         // create state from dependencies 
@@ -513,6 +517,12 @@ public class MTSOperator<K, V> {
     public String toString() {
       return "(" + start + ", " + end + ")";
     }
+  }
+
+  @Override
+  public void close() throws Exception {
+    // TODO Auto-generated method stub
+    executor.close();
   }
 }
 
