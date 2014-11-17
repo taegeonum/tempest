@@ -6,6 +6,7 @@ import org.apache.log4j.Logger;
 
 import backtype.storm.Config;
 import backtype.storm.generated.AlreadyAliveException;
+import backtype.storm.generated.AuthorizationException;
 import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
@@ -57,7 +58,7 @@ public class MTSSTopologyRunner implements TopologyRunner {
 
   @Override
   public void runRemotely(Config conf, int numSpout, int numBolt, int topN,
-      List<Timescale> timescales, int runtimeInSeconds, int inputInterval) throws AlreadyAliveException, InvalidTopologyException {
+      List<Timescale> timescales, int runtimeInSeconds, int inputInterval) throws AlreadyAliveException, InvalidTopologyException, AuthorizationException {
     wireTopology(numSpout, numBolt, topN, timescales, inputInterval);
     StormRunner.runTopologyRemotely(builder.createTopology(), topologyName, conf);
   }
