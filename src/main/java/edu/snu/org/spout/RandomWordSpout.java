@@ -40,7 +40,11 @@ public class RandomWordSpout extends BaseRichSpout {
   public void nextTuple() {
     Utils.sleep(sendingInterval);
     String[] sentences = new String[]{ "the cow jumped over the moon", "an apple a day keeps the doctor away",
-        "four score and seven years ago", "snow white and the seven dwarfs", "i am at two with nature" };
+        "four score and seven years ago", "snow white and the seven dwarfs", "i am at two with nature", 
+        "At initialization time, if SLF4J suspects that there may be a api vs. binding version mismatch problem, it will emit a warning about the suspected mismatch.", 
+        "A major portion of this course is a term project",
+        "The goal is to investigate new ideas and solutions", 
+        "The goal of these reviews is to help you synthesize the main ideas and concepts presented in each paper"};
     String sentence = sentences[_rand.nextInt(sentences.length)];
     for(String word: sentence.split(" ")) {
       _collector.emit(new Values(word, 1, System.currentTimeMillis()));
