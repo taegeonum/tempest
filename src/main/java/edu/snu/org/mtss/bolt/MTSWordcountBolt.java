@@ -87,6 +87,16 @@ public class MTSWordcountBolt extends BaseRichBolt {
       e.printStackTrace();
     }
   }
+  
+  @Override
+  public void cleanup() {
+    try {
+      this.mtsOperator.close();
+    } catch (Exception e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+  }
 
   @Override
   public void declareOutputFields(OutputFieldsDeclarer declarer) {
