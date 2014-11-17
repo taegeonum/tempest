@@ -66,9 +66,10 @@ public class TotalRankingsBolt extends BaseBasicBolt {
   public void prepare(Map stormConf, TopologyContext context) {
     try {
       writer = new FileWriter(name);
-      hdfsWriter = new HDFSWriter("hdfs://localhost:9000/" + name);
+      hdfsWriter = new HDFSWriter();
     } catch (IOException e) {
       // TODO Auto-generated catch block
+      System.out.println(e);
       e.printStackTrace();
     }
   }
@@ -131,7 +132,7 @@ public class TotalRankingsBolt extends BaseBasicBolt {
     try {
       writer.close();
       // TODO: copy local file to HDFS
-      //hdfsWriter.copyFromLocalFile(new Path(name), new Path("/" + name));
+      //hdfsWriter.copyFromLocalFile(new Path(name), new Path(hdfsWriter.getDefaultFSName() + "/storm_result/" + name));
       hdfsWriter.close();
     } catch (IOException e) {
       e.printStackTrace();

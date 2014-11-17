@@ -12,27 +12,51 @@ public class HDFSWriter {
   
   private Path path;
   private FileSystem fs;
+  private BufferedWriter br;
+  private final Configuration config;
   
   public HDFSWriter() {
-    try {
-      Configuration config = new Configuration();
+      config = new Configuration();
+      String hadoop_home = System.getenv("HADOOP_HOME");
+      config.addResource(new Path(hadoop_home + "/etc/hadoop/core-site.xml"));
+      config.addResource(new Path(hadoop_home + "/etc/hadoop/hdfs-site.xml"));
 
-      fs = FileSystem.get(new Configuration());
-    } catch (IOException e) {
+      try {
+        fs = FileSystem.get(config);
+      } catch (IOException e) {
       e.printStackTrace();
     }
   }
   
   public HDFSWriter(String path) {
     this.path = new Path(path);
-    try {
-      Configuration config = new Configuration();
+      config = new Configuration();
+      String hadoop_home = System.getenv("HADOOP_HOME");
+      config.addResource(new Path(hadoop_home + "/etc/hadoop/core-site.xml"));
+      config.addResource(new Path(hadoop_home + "/etc/hadoop/hdfs-site.xml"));
 
-      fs = FileSystem.get(new Configuration());
-      System.out.println("@@@@ config: " + config);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+      try {
+
+        fs = FileSystem.get(config);
+        System.out.println("@@@@ config: " + config);
+
+
+        if (this.path == null) {
+          throw new NullPointerException("Path should not be null.");
+        }
+
+        if (fs.exists(this.path)) {
+          System.out.println("HDFS bufferedwriter exist");
+          br = new BufferedWriter(new OutputStreamWriter(fs.append(this.path)));
+        } else {
+          System.out.println("HDFS bufferedwriter");
+          br= new BufferedWriter(new OutputStreamWriter(fs.create(this.path,true)));
+          // TO append data to a file, use fs.append(Path f)
+        }
+      } catch (IOException e) {
+        System.out.println(e);
+        e.printStackTrace();
+      }
   }
   
   public void setPath(String path) {
@@ -45,29 +69,22 @@ public class HDFSWriter {
   }
   
   public void write(String str) throws IOException {
-    BufferedWriter br;
-
-    if (path == null) {
-      throw new NullPointerException("Path should not be null.");
-    }
-    if (fs.exists(path)) {
-      br = new BufferedWriter(new OutputStreamWriter(fs.append(path)));
-    } else {
-      br= new BufferedWriter(new OutputStreamWriter(fs.create(path,true)));
-      // TO append data to a file, use fs.append(Path f)
-    }
-
+    // Fix: it didn't work
+    System.out.println("HDFS write: " + str);
     br.write(str);
     br.flush();
-    br.close();
-    
   }
   
   public void copyFromLocalFile(Path src, Path dest) throws IOException {
     fs.copyFromLocalFile(src, dest);
   }
   
+  public String getDefaultFSName() {
+    return config.get("fs.default.name");
+  }
+  
   public void close() throws IOException {
-    this.fs.close();
+    //this.fs.close();
+    
   }
 }
