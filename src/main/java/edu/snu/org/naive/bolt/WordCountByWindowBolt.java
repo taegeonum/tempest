@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
+import org.apache.reef.wake.EventHandler;
+import org.apache.reef.wake.impl.ThreadPoolStage;
 
 import backtype.storm.Config;
 import backtype.storm.Constants;
@@ -31,6 +33,7 @@ public class WordCountByWindowBolt extends BaseRichBolt{
   private int bucketCount;
   private SlidingWindow<String, ValueAndTimestamp<Integer>> slidingWindow;
   private OutputCollector collector;
+  private ThreadPoolStage<Map<String, ValueAndTimestamp<Integer>>> stage;
 
   /**
    * Calculates the greatest common divider of integer a and b.
@@ -64,6 +67,7 @@ public class WordCountByWindowBolt extends BaseRichBolt{
   @Override
   public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
     this.collector = collector;
+    this.stage = new ThreadPoolStage<>(new Slide(), 1);
   }
 
   @Override
@@ -71,7 +75,9 @@ public class WordCountByWindowBolt extends BaseRichBolt{
     // Bolt receives 'TICK'
     if(tuple.getSourceComponent().equals(Constants.SYSTEM_COMPONENT_ID) && tuple.getSourceStreamId().equals(
         Constants.SYSTEM_TICK_STREAM_ID)) {
-      slide();
+      //slide();
+      Map<String, ValueAndTimestamp<Integer>> reduced = slidingWindow.getResultAndSlideBucket();
+      stage.onNext(reduced);
     }
     // Bolt receives normal tuple
     else {
@@ -84,13 +90,29 @@ public class WordCountByWindowBolt extends BaseRichBolt{
     declarer.declare(new Fields("countMap", "averageTimestamp", "totalCount"));
   }
 
+  private final class Slide implements EventHandler<Map<String, ValueAndTimestamp<Integer>>> {
+
+    @Override
+    public void onNext(Map<String, ValueAndTimestamp<Integer>> reduced) {
+      //Map<String, Integer> result = new HashMap<>();
+      long totalTimestamp = 0;
+      long totalCount = 0;
+      for(String key: reduced.keySet()) {
+        int count = reduced.get(key).getValue();
+        //result.put(key, count);
+        totalTimestamp += reduced.get(key).getTimestamp();
+        totalCount += count;
+      }
+      collector.emit(new Values(reduced, totalTimestamp / Math.max(1, totalCount), totalCount));
+    }
+    
+  }
   private void slide() {
     bucketCount++;
 
     // Slides the window and get results
     if (bucketCount % slideIntervalByBucket == 0) {
       Map<String, ValueAndTimestamp<Integer>> reduced = slidingWindow.getResultAndSlideBucket();
-      //Map<String, Integer> result = new HashMap<>();
       long totalTimestamp = 0;
       long totalCount = 0;
       for(String key: reduced.keySet()) {
@@ -107,6 +129,16 @@ public class WordCountByWindowBolt extends BaseRichBolt{
     }
   }
 
+  @Override
+  public void cleanup() {
+    try {
+      this.stage.close();
+    } catch (Exception e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+  }
+  
   private void countAndAck(Tuple tuple) {
     String key = (String) tuple.getValue(0);
     Integer value = (Integer) tuple.getValue(1);
