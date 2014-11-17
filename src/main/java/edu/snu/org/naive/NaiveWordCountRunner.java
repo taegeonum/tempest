@@ -52,7 +52,7 @@ public class NaiveWordCountRunner implements TopologyRunner {
       int slideInterval = (int)ts.getIntervalSize();
       builder.setBolt(counterId + i, new WordCountByWindowBolt(windowSize, slideInterval), numBolt)
       .fieldsGrouping(spoutId, new Fields("word"));
-      builder.setBolt(sorterId + i, new TotalRankingsBolt(topN, numBolt, "naive-window-" + (windowSize/1000)), 1).allGrouping(counterId + i);
+      builder.setBolt(sorterId + i, new TotalRankingsBolt(topN, numBolt, "naive-window-" + windowSize), 1).allGrouping(counterId + i);
       
       i += 1;
     }

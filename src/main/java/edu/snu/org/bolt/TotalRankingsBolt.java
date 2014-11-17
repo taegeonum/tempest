@@ -50,7 +50,8 @@ public class TotalRankingsBolt extends BaseBasicBolt {
   private long avgStartTime;
   private long totalCnt;
   private int startTimeCnt;
-  
+  private HDFSWriter hdfsWriter;
+
   public TotalRankingsBolt(final int topN, final int numOfInputBolts, String name) {
     this.numOfInputBolts = numOfInputBolts;
     this.topN = topN;
@@ -65,6 +66,7 @@ public class TotalRankingsBolt extends BaseBasicBolt {
   public void prepare(Map stormConf, TopologyContext context) {
     try {
       writer = new FileWriter(name);
+      hdfsWriter = new HDFSWriter("hdfs://localhost:9000/" + name);
     } catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
@@ -127,9 +129,8 @@ public class TotalRankingsBolt extends BaseBasicBolt {
   public void cleanup() {
     try {
       writer.close();
-      // TODO: copy local file to HDFS 
-      HDFSWriter hdfsWriter = new HDFSWriter();
-      hdfsWriter.copyFromLocalFile(new Path(name), new Path("/" + name));
+      // TODO: copy local file to HDFS
+      //hdfsWriter.copyFromLocalFile(new Path(name), new Path("/" + name));
       hdfsWriter.close();
     } catch (IOException e) {
       e.printStackTrace();

@@ -1,33 +1,31 @@
 package edu.snu.org;
 
+import backtype.storm.Config;
+import edu.snu.org.mtss.Timescale;
+import edu.snu.org.naive.NaiveWordCountRunner;
+import org.apache.log4j.Logger;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import edu.snu.org.mtss.MTSSTopologyRunner;
-import org.apache.log4j.Logger;
+public class WordcountAppNaive {
 
-import backtype.storm.Config;
-import edu.snu.org.mtss.Timescale;
-import edu.snu.org.naive.NaiveWordCountRunner;
-
-public class WordcountApp {
-
-  private static final Logger LOG = Logger.getLogger(WordcountApp.class);
-  private static final int DEFAULT_RUNTIME_IN_SECONDS = 12000;
+  private static final Logger LOG = Logger.getLogger(WordcountAppNaive.class);
+  private static final int DEFAULT_RUNTIME_IN_SECONDS = 18000;
   private static final int TOP_N = 10;
-  
+
   private static final int NUM_SPOUT = 16;
   private static final int NUM_WC_BOLT = 4;
-  
+
   private static final int INPUT_INTERVAL = 1;
   private static final int NUM_WORKERS = 1;
-  
+
   private final String topologyName;
 
   private static TopologyRunner runner;
-  
-  public WordcountApp(String topologyName) throws Exception {
+
+  public WordcountAppNaive(String topologyName) throws Exception {
     this.topologyName = topologyName;
 
 
@@ -55,7 +53,7 @@ public class WordcountApp {
     }
 
     LOG.info("Topology name: " + topologyName);
-    runner = new MTSSTopologyRunner();
+    runner = new NaiveWordCountRunner();
     
     List<Timescale> timescales = new ArrayList<>();
     timescales.add(new Timescale(2, 1, TimeUnit.SECONDS, TimeUnit.SECONDS));
