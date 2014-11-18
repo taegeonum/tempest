@@ -51,11 +51,13 @@ public class TotalRankingsBolt extends BaseBasicBolt {
   private long totalCnt;
   private int startTimeCnt;
   private HDFSWriter hdfsWriter;
+  private final String folderName;
 
-  public TotalRankingsBolt(final int topN, final int numOfInputBolts, String name) {
+  public TotalRankingsBolt(final int topN, final int numOfInputBolts, String name, String folderName) {
     this.numOfInputBolts = numOfInputBolts;
     this.topN = topN;
     this.name = name;
+    this.folderName = folderName;
     count = 0;
     avgStartTime = 0;
     totalCnt = 0;
@@ -66,12 +68,13 @@ public class TotalRankingsBolt extends BaseBasicBolt {
   public void prepare(Map stormConf, TopologyContext context) {
     try {
       writer = new FileWriter(name);
-      hdfsWriter = new HDFSWriter();
+      //hdfsWriter = new HDFSWriter(folderName + "/" + name);
     } catch (IOException e) {
       // TODO Auto-generated catch block
       System.out.println(e);
       e.printStackTrace();
     }
+    
   }
 
   @Override
@@ -113,6 +116,8 @@ public class TotalRankingsBolt extends BaseBasicBolt {
       try {
         writer.write(latency + "\t" + totalCnt + "\n");
         writer.flush();
+        //hdfsWriter.write(latency + "\t" + totalCnt + "\n");
+        //writer.flush();
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -130,10 +135,11 @@ public class TotalRankingsBolt extends BaseBasicBolt {
   @Override
   public void cleanup() {
     try {
+      //writer.write("Cleanup\n");
       writer.close();
       // TODO: copy local file to HDFS
-      //hdfsWriter.copyFromLocalFile(new Path(name), new Path(hdfsWriter.getDefaultFSName() + "/storm_result/" + name));
-      hdfsWriter.close();
+      //hdfsWriter.copyFromLocalFile(new Path("/tmp/storm-app/" + name), new Path(hdfsWriter.getDefaultFSName() + "/storm_result/" + name));
+      //hdfsWriter.close();
     } catch (IOException e) {
       e.printStackTrace();
     }

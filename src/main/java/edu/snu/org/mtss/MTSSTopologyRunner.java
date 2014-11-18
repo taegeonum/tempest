@@ -27,7 +27,7 @@ public class MTSSTopologyRunner implements TopologyRunner {
     this.builder = new TopologyBuilder();
   }
   
-  public void wireTopology(int numSpout, int numBolt, int topN, List<Timescale> timescales, int inputInterval) {
+  public void wireTopology(int numSpout, int numBolt, int topN, List<Timescale> timescales, int inputInterval, String folderName) {
     String spoutId = "wordGenerator";
     String counterId = "mtsOperator";
     String totalRankerId = "finalRanker";
@@ -42,24 +42,24 @@ public class MTSSTopologyRunner implements TopologyRunner {
 
     int i = 0;
     for (Timescale ts : timescales) {
-      builder.setBolt(totalRankerId+"-"+i, new TotalRankingsBolt(topN, numBolt, "mtss-window-" + ts.getWindowSize())).globalGrouping(counterId, "size" + ts.getWindowSize());
+      builder.setBolt(totalRankerId+"-"+i, new TotalRankingsBolt(topN, numBolt, "mtss-window-" + ts.getWindowSize(), folderName)).globalGrouping(counterId, "size" + ts.getWindowSize());
       i += 1;
     }
   }
 
   @Override
   public void runLocally(Config conf, int numSpout, int numBolt, int topN,
-      List<Timescale> timescales, int runtimeInSeconds, int inputInterval) throws InterruptedException {
+      List<Timescale> timescales, int runtimeInSeconds, int inputInterval, String folderName) throws InterruptedException {
 
-    wireTopology(numSpout, numBolt, topN, timescales, inputInterval);
+    wireTopology(numSpout, numBolt, topN, timescales, inputInterval, folderName);
     StormRunner.runTopologyLocally(builder.createTopology(), topologyName, conf, runtimeInSeconds);
 
   }
 
   @Override
   public void runRemotely(Config conf, int numSpout, int numBolt, int topN,
-      List<Timescale> timescales, int runtimeInSeconds, int inputInterval) throws AlreadyAliveException, InvalidTopologyException, AuthorizationException {
-    wireTopology(numSpout, numBolt, topN, timescales, inputInterval);
+      List<Timescale> timescales, int runtimeInSeconds, int inputInterval, String folderName) throws AlreadyAliveException, InvalidTopologyException, AuthorizationException {
+    wireTopology(numSpout, numBolt, topN, timescales, inputInterval, folderName);
     StormRunner.runTopologyRemotely(builder.createTopology(), topologyName, conf);
   }
 }

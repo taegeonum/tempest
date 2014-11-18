@@ -36,7 +36,7 @@ public class NaiveWordCountRunner implements TopologyRunner {
     topologyConfig = new Config();
   }
 
-  public void wireTopology(int numSpout, int numBolt, int topN, List<Timescale> timescales, int inputInterval) {
+  public void wireTopology(int numSpout, int numBolt, int topN, List<Timescale> timescales, int inputInterval, String folderName) {
     String spoutId = "wordGenerator";
     String counterId = "counter";
     String sorterId = "sorter";
@@ -50,7 +50,7 @@ public class NaiveWordCountRunner implements TopologyRunner {
       int slideInterval = (int)ts.getIntervalSize();
       builder.setBolt(counterId + i, new WordCountByWindowBolt(windowSize, slideInterval), numBolt)
       .fieldsGrouping(spoutId, new Fields("word"));
-      builder.setBolt(sorterId + i, new TotalRankingsBolt(topN, numBolt, "naive-window-" + windowSize), 1).allGrouping(counterId + i);
+      builder.setBolt(sorterId + i, new TotalRankingsBolt(topN, numBolt, "naive-window-" + windowSize, folderName), 1).allGrouping(counterId + i);
       
       i += 1;
     }
@@ -58,16 +58,16 @@ public class NaiveWordCountRunner implements TopologyRunner {
 
   @Override
   public void runLocally(Config conf, int numSpout, int numBolt, int topN,
-      List<Timescale> timescales, int runtimeInSeconds, int inputInterval) throws InterruptedException {
-    wireTopology(numSpout, numBolt, topN, timescales, inputInterval);
+      List<Timescale> timescales, int runtimeInSeconds, int inputInterval, String folderName) throws InterruptedException {
+    wireTopology(numSpout, numBolt, topN, timescales, inputInterval, folderName);
     StormRunner.runTopologyLocally(builder.createTopology(), topologyName, conf, runtimeInSeconds);
   }
 
   @Override
   public void runRemotely(Config conf, int numSpout, int numBolt, int topN,
-      List<Timescale> timescales, int runtimeInSeconds, int inputInterval)
+      List<Timescale> timescales, int runtimeInSeconds, int inputInterval, String folderName)
       throws AlreadyAliveException, InvalidTopologyException, AuthorizationException {
-    wireTopology(numSpout, numBolt, topN, timescales, inputInterval);
+    wireTopology(numSpout, numBolt, topN, timescales, inputInterval, folderName);
     StormRunner.runTopologyRemotely(builder.createTopology(), topologyName, conf);    
   }
 }

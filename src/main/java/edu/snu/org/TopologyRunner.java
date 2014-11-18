@@ -10,6 +10,6 @@ import edu.snu.org.mtss.Timescale;
 
 public interface TopologyRunner {
 
-  public void runLocally(Config conf, int numSpout, int numBolt, int topN, List<Timescale> timescales, int runtimeInSeconds, int inputInterval) throws InterruptedException ;
-  public void runRemotely(Config conf, int numSpout, int numBolt, int topN, List<Timescale> timescales, int runtimeInSeconds, int inputInterval) throws AlreadyAliveException, InvalidTopologyException, AuthorizationException;
+  public void runLocally(Config conf, int numSpout, int numBolt, int topN, List<Timescale> timescales, int runtimeInSeconds, int inputInterval, String folderName) throws InterruptedException ;
+  public void runRemotely(Config conf, int numSpout, int numBolt, int topN, List<Timescale> timescales, int runtimeInSeconds, int inputInterval, String folderName) throws AlreadyAliveException, InvalidTopologyException, AuthorizationException;
 }
