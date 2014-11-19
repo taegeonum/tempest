@@ -9,12 +9,11 @@ import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import edu.snu.org.bolt.TotalRankingsBolt;
 import edu.snu.org.mtss.Timescale;
-import edu.snu.org.naive.bolt.WordCountByWindowBolt;
+import edu.snu.org.mtss.bolt.MTSWordcountBolt;
 import edu.snu.org.spout.RandomWordSpout;
 import edu.snu.org.util.StormRunner;
 
-public class WordcountAppNaive {
-
+public class WordcountAppMTSS {
 
   private final static TopologyBuilder builder = new TopologyBuilder();
 
@@ -29,7 +28,9 @@ public class WordcountAppNaive {
       runLocally = false;
     }
     
+    
     wireTopology();
+    
     
     if (runLocally) {
       StormRunner.runTopologyLocally(builder.createTopology(), topologyName, WCConf.createTopologyConfiguration(), WCConf.DEFAULT_RUNTIME_IN_SECONDS);
@@ -38,7 +39,6 @@ public class WordcountAppNaive {
       StormRunner.runTopologyRemotely(builder.createTopology(), topologyName, WCConf.createTopologyConfiguration());
     }
     
-    Thread.sleep(1 * 60 * 1000);
   }
   
   public static void wireTopology() {
@@ -49,14 +49,16 @@ public class WordcountAppNaive {
     builder.setSpout(spoutId, new RandomWordSpout(WCConf.INPUT_INTERVAL), WCConf.NUM_SPOUT);
     List<Timescale> timescales = WCConf.timescales();
     
+    try {
+      builder.setBolt(counterId, new MTSWordcountBolt(timescales), WCConf.NUM_WC_BOLT).fieldsGrouping(spoutId, new Fields("word"));
+    } catch (Exception e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+
     int i = 0;
     for (Timescale ts : timescales) {
-      int windowSize = (int)ts.getWindowSize();
-      int slideInterval = (int)ts.getIntervalSize();
-      builder.setBolt(counterId + i, new WordCountByWindowBolt(windowSize, slideInterval), WCConf.NUM_WC_BOLT)
-      .fieldsGrouping(spoutId, new Fields("word"));
-      builder.setBolt(totalRankerId + i, new TotalRankingsBolt(WCConf.TOP_N, WCConf.NUM_WC_BOLT, "naive-window-" + windowSize, "folder"), 1).allGrouping(counterId + i);
-      
+      builder.setBolt(totalRankerId+"-"+i, new TotalRankingsBolt(WCConf.TOP_N, WCConf.NUM_WC_BOLT, "mtss-window-" + ts.getWindowSize(), "folder")).globalGrouping(counterId, "size" + ts.getWindowSize());
       i += 1;
     }
   }
