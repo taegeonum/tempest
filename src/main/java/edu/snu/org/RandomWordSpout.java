@@ -1,4 +1,4 @@
-package edu.snu.org.spout;
+package edu.snu.org;
 
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;

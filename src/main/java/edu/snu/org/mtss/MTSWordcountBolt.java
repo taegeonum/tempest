@@ -1,4 +1,4 @@
-package edu.snu.org.mtss.bolt;
+package edu.snu.org.mtss;
 
 import java.util.HashMap;
 import java.util.List;
@@ -15,11 +15,6 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import edu.snu.org.mtss.Count;
-import edu.snu.org.mtss.CountTimestampFunc;
-import edu.snu.org.mtss.MTSOperator;
-import edu.snu.org.mtss.MTSOutput;
-import edu.snu.org.mtss.Timescale;
 import edu.snu.org.util.ValueAndTimestamp;
 
 /*

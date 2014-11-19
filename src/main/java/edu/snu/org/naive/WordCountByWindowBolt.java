@@ -1,4 +1,4 @@
-package edu.snu.org.naive.bolt;
+package edu.snu.org.naive;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,8 +17,6 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import edu.snu.org.naive.Count;
-import edu.snu.org.naive.SlidingWindow;
 import edu.snu.org.util.ValueAndTimestamp;
 
 /**

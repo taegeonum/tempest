@@ -7,10 +7,8 @@ import backtype.storm.generated.AuthorizationException;
 import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
-import edu.snu.org.bolt.TotalRankingsBolt;
 import edu.snu.org.mtss.Timescale;
-import edu.snu.org.naive.bolt.WordCountByWindowBolt;
-import edu.snu.org.spout.RandomWordSpout;
+import edu.snu.org.naive.WordCountByWindowBolt;
 import edu.snu.org.util.StormRunner;
 
 public class WordcountAppNaive {

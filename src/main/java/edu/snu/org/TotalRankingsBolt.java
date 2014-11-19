@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.org.bolt;
+package edu.snu.org;
 
 import java.io.FileWriter;
 import java.io.IOException;
