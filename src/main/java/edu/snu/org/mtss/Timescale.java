@@ -5,7 +5,8 @@ import java.util.concurrent.TimeUnit;
 
 public class Timescale implements Comparable, Serializable {
   /**
-   * 
+   * Represent timescale
+   * Window size and interval 
    */
   private static final long serialVersionUID = 439658002747284570L;
   private final long windowSize;

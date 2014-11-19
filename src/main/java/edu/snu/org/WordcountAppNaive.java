@@ -55,7 +55,7 @@ public class WordcountAppNaive {
       int slideInterval = (int)ts.getIntervalSize();
       builder.setBolt(counterId + i, new WordCountByWindowBolt(windowSize, slideInterval), WCConf.NUM_WC_BOLT)
       .fieldsGrouping(spoutId, new Fields("word"));
-      builder.setBolt(totalRankerId + i, new TotalRankingsBolt(WCConf.TOP_N, WCConf.NUM_WC_BOLT, "naive-window-" + windowSize, "folder"), 1).allGrouping(counterId + i);
+      builder.setBolt(totalRankerId + i, new TotalRankingsBolt(WCConf.TOP_N, WCConf.NUM_WC_BOLT, "naive-window-" + windowSize + "-" + slideInterval, "folder"), 1).allGrouping(counterId + i);
       
       i += 1;
     }

@@ -58,7 +58,7 @@ public class WordcountAppMTSS {
 
     int i = 0;
     for (Timescale ts : timescales) {
-      builder.setBolt(totalRankerId+"-"+i, new TotalRankingsBolt(WCConf.TOP_N, WCConf.NUM_WC_BOLT, "mtss-window-" + ts.getWindowSize(), "folder")).globalGrouping(counterId, "size" + ts.getWindowSize());
+      builder.setBolt(totalRankerId+"-"+i, new TotalRankingsBolt(WCConf.TOP_N, WCConf.NUM_WC_BOLT, "mtss-window-" + ts.getWindowSize(), "folder")).globalGrouping(counterId, "size" + ts.getWindowSize() + "-" + ts.getIntervalSize());
       i += 1;
     }
   }

@@ -61,7 +61,6 @@ public class MTSWordcountBolt extends BaseRichBolt {
   @Override
   public void prepare(Map paramMap, TopologyContext paramTopologyContext,
       final OutputCollector collector) {
-    // TODO Auto-generated method stub
     this.collector = collector;
     
     try {

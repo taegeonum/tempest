@@ -8,6 +8,9 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+/*
+ * Table implementation
+ */
 public class TreeBasedTableImpl<R, C, V> implements Table<R, C, V> {
 
   private final SortedMap<R, SortedMap<C, V>> rowBasedMap;
@@ -137,7 +140,7 @@ public class TreeBasedTableImpl<R, C, V> implements Table<R, C, V> {
     return rowKeySet.contains(rowKey);
   }
 
-  /*
+  /* Remove 
   @Override
   public boolean containsValue(V value) {
     

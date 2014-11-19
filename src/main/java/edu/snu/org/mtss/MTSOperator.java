@@ -17,8 +17,9 @@ import org.apache.reef.wake.impl.ThreadPoolStage;
 import edu.snu.org.util.ReduceFunc;
 
 /*
- * MTSOperator
- * TimeUnit is sec
+ * Implementation MTS operator 
+ * First, it calculates period and creates dependency table 
+ * 
  */
 public class MTSOperator<K, V> implements Stage {
 
@@ -57,7 +58,7 @@ public class MTSOperator<K, V> implements Stage {
    * This method add vertices and connect dependencies to the table
    * 
    * For example, we have 2 timescales (w=4, i=2), (w=6, i=4) 
-   * Then, this method add vertices to table like this: 
+   * Then, this method add vertices to the table like this: 
    * 
    * |time\window_size|            2           |           4             |           6             |
    * |       2 sec    | range:(0,2), refCnt: 2 | range:(-2,2), refCnt: 0 |                         |
@@ -66,6 +67,8 @@ public class MTSOperator<K, V> implements Stage {
    * |       8 sec    | range:(6,8), refCnt: 3 | range:(4,8),  refCnt: 1 | range:(2,8),  refCnt: 0 |
    * 
    * In this table, the virtual timescale (w=2, i=2) is added.
+   * Virtual timescale is minimum size of timescale in which the window and interval is same. 
+   * 
    * Period is 8 sec. 
    * 
    * [2, 2] is referenced by [2,4], [4,4]   (  [row, col] )
@@ -89,7 +92,6 @@ public class MTSOperator<K, V> implements Stage {
     int colIndex = 0;
     
     /* Fix: improve algorithm
-     * This algorithm add table cells by looping table. 
      */
     for (Timescale ts : timeScales) {
       for(long time = granularity; time <= period; time += granularity) {
@@ -128,6 +130,7 @@ public class MTSOperator<K, V> implements Stage {
                   }
                 }
 
+                // connect edge to the vertex in which index is includedIdx
                 if (includedIdx >= 0) {
                   Range rg = rangeList.remove(includedIdx);
                   
