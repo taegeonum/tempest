@@ -17,22 +17,28 @@ import org.apache.reef.wake.impl.ThreadPoolStage;
 import edu.snu.org.util.ReduceFunc;
 
 /*
- * Implementation MTS operator 
  * First, it calculates period and creates dependency table 
  * 
  */
 public class MTSOperator<K, V> implements Stage {
 
   private final List<Timescale> timeScales; 
-  private final long granularity;
+  private final long bucketSize;
   private final Table<Long, Long, OutputNode> table;
   private final long period;
   private final ReduceFunc<V> reduceFunc; 
   private Map<K, V> innerMap;
   private final EventHandler<MTSOutput<K, V>> outputHandler;
-  private final boolean virtualNeeded;
+  private final boolean bucketNeeded;
   private final ThreadPoolStage<MTSOutput<K, V>> executor;
   
+  /*
+   * Implementation MTS operator 
+   *
+   * @param timeScales list of timescale. 
+   * @param reduceFunc reduce function
+   * @param outputHandler output handler 
+   */
   public MTSOperator(List<Timescale> timeScales, 
       ReduceFunc<V> reduceFunc, 
       EventHandler<MTSOutput<K, V>> outputHandler) throws Exception {
@@ -44,12 +50,12 @@ public class MTSOperator<K, V> implements Stage {
     this.executor = new ThreadPoolStage<>(outputHandler, timeScales.size());
     this.timeScales = timeScales;
     this.table = new TreeBasedTableImpl<>(new LongComparator(), new LongComparator());
-    this.granularity = calculateGranularitySize();
+    this.bucketSize = calculateBucketSize();
     this.period = calculatePeriod();
     this.reduceFunc = reduceFunc;
     this.innerMap = new HashMap<>();
     this.outputHandler = outputHandler;
-    this.virtualNeeded = isVirtualTimescaleNeeded();
+    this.bucketNeeded = idAdditionalBucketTimescaleNeeded();
     
     createDependencyTable();
   }
@@ -66,8 +72,8 @@ public class MTSOperator<K, V> implements Stage {
    * |       6 sec    | range:(4,6), refCnt: 2 | range:(2,6),  refCnt: 0 |                         |
    * |       8 sec    | range:(6,8), refCnt: 3 | range:(4,8),  refCnt: 1 | range:(2,8),  refCnt: 0 |
    * 
-   * In this table, the virtual timescale (w=2, i=2) is added.
-   * Virtual timescale is minimum size of timescale in which the window and interval is same. 
+   * In this table, the additional timescale (w=2, i=2) is added.
+   * Additional timescale is minimum size of timescale in which the window and interval is same. 
    * 
    * Period is 8 sec. 
    * 
@@ -81,9 +87,9 @@ public class MTSOperator<K, V> implements Stage {
    */
   private void createDependencyTable() {
   
-    if (virtualNeeded) {
+    if (bucketNeeded) {
       // add virtual timescale
-      timeScales.add(new Timescale((int)granularity, (int)granularity, TimeUnit.SECONDS, TimeUnit.SECONDS));
+      timeScales.add(new Timescale((int)bucketSize, (int)bucketSize, TimeUnit.SECONDS, TimeUnit.SECONDS));
     }
     
     Collections.sort(timeScales);
@@ -94,7 +100,7 @@ public class MTSOperator<K, V> implements Stage {
     /* Fix: improve algorithm
      */
     for (Timescale ts : timeScales) {
-      for(long time = granularity; time <= period; time += granularity) {
+      for(long time = bucketSize; time <= period; time += bucketSize) {
         
         // We need to create vertex when the time is multiplication of interval
         if (time % ts.getIntervalSize() == 0) {
@@ -112,7 +118,7 @@ public class MTSOperator<K, V> implements Stage {
           // add edges by scanning all the table cells 
           for (int i = colIndex - 1; i >= 0 && rangeList.size() > 0; i--) {
             Timescale seekTs = timeScales.get(i);
-            for (long j = period; j >= granularity && rangeList.size() > 0; j -= granularity) {
+            for (long j = period; j >= bucketSize && rangeList.size() > 0; j -= bucketSize) {
               OutputNode referee = table.get(j, seekTs.getWindowSize());
               if (referee != null) {
                 Range seekRg = referee.range;
@@ -151,23 +157,22 @@ public class MTSOperator<K, V> implements Stage {
   }
   
   /*
-   * Determine whether virtual timescale is needed. 
-   * If the smallest timescale's window and interval size are equal to granularity size, 
-   * then we don't have to create virtual timescale 
-   * else we need to create virtual timescale in which the window and interval size is granularity size. 
+   * Determine whether additional bucket timescale is needed. 
+   * If the smallest timescale's window and interval size are equal to the bucket size, 
+   * then we don't have to create the additional timescale 
+   * else we need to create the additional timescale in which the window and interval size is bucket size. 
    */
-  private boolean isVirtualTimescaleNeeded() {
-    return !(granularity == timeScales.get(0).getWindowSize() && 
-        granularity == timeScales.get(0).getIntervalSize());
+  private boolean idAdditionalBucketTimescaleNeeded() {
+    return !(bucketSize == timeScales.get(0).getWindowSize() && 
+        bucketSize == timeScales.get(0).getIntervalSize());
   }
   
   /*
-   * Calculate granularity size of window
-   * For example, (w=4, i=2), (w=6,i=4), (w=8,i=6) => granularity size is 2. 
-   * We have to add virtual timescale in which window size and interval is equal to the granularity size. 
+   * Calculate bucket size
+   * For example, (w=4, i=2), (w=6,i=4), (w=8,i=6) => bucket size is 2. 
    * 
    */
-  private long calculateGranularitySize() {
+  private long calculateBucketSize() {
     long gcd = 0;
     
     for (Timescale ts : timeScales) {
@@ -272,7 +277,7 @@ public class MTSOperator<K, V> implements Stage {
       // First column could be virtual or not
       if (i == 0) {
         // Don't have to flush the virtual timescale data
-        if (!virtualNeeded) {
+        if (!bucketNeeded) {
           executor.onNext(new MTSOutput<K, V>(time, outputNode.end - outputNode.start, states));
         }
       } else {
