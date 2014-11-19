@@ -1,0 +1,17 @@
+1120 ver experiment 
+
+NUM_SPOUT = 8
+NUM_BOLT = 4
+INPUT_INTERVAL = 5ms
+RUNTIME = 40min 
+
+Timescales
+- (30, 2)
+- (60, 5)
+- (90, 6)
+- (120, 10)
+- (180, 12)
+- (210, 15)
+- (300, 20)
+- (600, 25)
+- (1000, 30)
