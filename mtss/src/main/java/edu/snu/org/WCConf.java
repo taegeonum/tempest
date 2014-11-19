@@ -9,7 +9,7 @@ import backtype.storm.Config;
 
 public class WCConf {
 
-  public static final int DEFAULT_RUNTIME_IN_SECONDS = 30 * 60;
+  public static final int DEFAULT_RUNTIME_IN_SECONDS = 40 * 60;
   public static final int TOP_N = 10;
   
   public static final int NUM_SPOUT = 8;
@@ -30,14 +30,18 @@ public class WCConf {
   public static List<Timescale> timescales() {
     List<Timescale> timescales = new ArrayList<>();
 
+    
     timescales.add(new Timescale(30, 2, TimeUnit.SECONDS, TimeUnit.SECONDS));
     timescales.add(new Timescale(60, 5, TimeUnit.SECONDS, TimeUnit.SECONDS));
     timescales.add(new Timescale(90, 6, TimeUnit.SECONDS, TimeUnit.SECONDS));
     timescales.add(new Timescale(120, 10, TimeUnit.SECONDS, TimeUnit.SECONDS));
     timescales.add(new Timescale(180, 12, TimeUnit.SECONDS, TimeUnit.SECONDS));
     timescales.add(new Timescale(210, 15, TimeUnit.SECONDS, TimeUnit.SECONDS));
+    
     timescales.add(new Timescale(300, 20, TimeUnit.SECONDS, TimeUnit.SECONDS));
     
+    timescales.add(new Timescale(600, 25, TimeUnit.SECONDS, TimeUnit.SECONDS));
+    timescales.add(new Timescale(1000, 30, TimeUnit.SECONDS, TimeUnit.SECONDS));
     
     return timescales;
   }
