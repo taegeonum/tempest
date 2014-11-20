@@ -549,17 +549,3 @@ class LongComparator implements Comparator<Long> {
   }
   
 }
-
-class LongInvComparator implements Comparator<Long> {
-
-  @Override
-  public int compare(Long o1, Long o2) {
-    if (o1 - o2 < 0) {
-      return 1;
-    } else if (o1 - o2 > 0) {
-      return -1;
-    } else {
-      return 0;
-    }
-  }
-}

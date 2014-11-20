@@ -1,6 +1,5 @@
 package edu.snu.org.mtss;
 
-import java.util.Comparator;
 import java.util.Set;
 
 import org.junit.Test;
@@ -27,19 +26,4 @@ public class TreeBasedTableTest {
     assert(v.equals(v1));
     
   }
-}
-
-class LongComparator implements Comparator<Long> {
-
-  @Override
-  public int compare(Long o1, Long o2) {
-    if (o1 - o2 < 0) {
-      return -1;
-    } else if (o1 - o2 > 0) {
-      return 1;
-    } else {
-      return 0;
-    }
-  }
-  
 }
