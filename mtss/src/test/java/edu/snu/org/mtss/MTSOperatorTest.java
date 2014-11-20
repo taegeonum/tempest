@@ -8,6 +8,7 @@ import org.apache.reef.wake.EventHandler;
 import org.junit.Test;
 
 import edu.snu.org.util.ReduceFunc;
+import edu.snu.org.util.Timescale;
 
 public class MTSOperatorTest {
   

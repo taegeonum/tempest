@@ -1,4 +1,4 @@
-package edu.snu.org.mtss;
+package edu.snu.org.util;
 
 import java.io.Serializable;
 import java.util.concurrent.TimeUnit;

@@ -15,6 +15,7 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import edu.snu.org.util.Timescale;
 import edu.snu.org.util.ValueAndTimestamp;
 
 /*

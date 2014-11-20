@@ -7,9 +7,9 @@ import backtype.storm.generated.AuthorizationException;
 import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
-import edu.snu.org.mtss.Timescale;
 import edu.snu.org.naive.WordCountByWindowBolt;
 import edu.snu.org.util.StormRunner;
+import edu.snu.org.util.Timescale;
 
 public class WordcountAppNaive {
 
@@ -36,7 +36,6 @@ public class WordcountAppNaive {
       StormRunner.runTopologyRemotely(builder.createTopology(), topologyName, WCConf.createTopologyConfiguration());
     }
     
-    Thread.sleep(1 * 60 * 1000);
   }
   
   public static void wireTopology() {

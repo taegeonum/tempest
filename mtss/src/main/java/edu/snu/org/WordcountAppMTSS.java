@@ -8,8 +8,8 @@ import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import edu.snu.org.mtss.MTSWordcountBolt;
-import edu.snu.org.mtss.Timescale;
 import edu.snu.org.util.StormRunner;
+import edu.snu.org.util.Timescale;
 
 public class WordcountAppMTSS {
 

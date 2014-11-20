@@ -15,6 +15,7 @@ import org.apache.reef.wake.Stage;
 import org.apache.reef.wake.impl.ThreadPoolStage;
 
 import edu.snu.org.util.ReduceFunc;
+import edu.snu.org.util.Timescale;
 
 /*
  * First, it calculates period and creates dependency table 

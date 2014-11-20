@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import edu.snu.org.mtss.Timescale;
+import edu.snu.org.util.Timescale;
 import backtype.storm.Config;
 
 public class WCConf {
