@@ -1,6 +1,7 @@
 package edu.snu.org.util;
 
 import java.io.Serializable;
+import java.security.InvalidParameterException;
 import java.util.concurrent.TimeUnit;
 
 public class Timescale implements Comparable, Serializable {
@@ -15,6 +16,11 @@ public class Timescale implements Comparable, Serializable {
   private final TimeUnit intervalTimeUnit;
   
   public Timescale(int windowSize, int intervalSize, TimeUnit windowTimeUnit, TimeUnit intervalTimeUnit) {
+    
+    if (windowSize <= 0 || windowSize - intervalSize < 0) {
+      throw new InvalidParameterException("Invalid window or interval size: " + "(" + windowSize + ", " + intervalSize + ")");
+    }
+    
     this.windowSize = windowTimeUnit.toSeconds(windowSize);
     this.intervalSize = intervalTimeUnit.toSeconds(intervalSize);
     this.windowTimeUnit = windowTimeUnit;
