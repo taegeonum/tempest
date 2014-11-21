@@ -64,7 +64,7 @@ public class MTSWordcountBolt extends BaseRichBolt {
         @Override
         public void onNext(MTSOutput<String, ValueAndTimestamp<Integer>> data) {
           
-          Map<String, ValueAndTimestamp<Integer>> map = data.getResult();
+          Map<String, ValueAndTimestamp<Integer>> map = data.result;
           
           long totalCnt = 0;
           long avgStartTime = 0;
@@ -74,7 +74,7 @@ public class MTSWordcountBolt extends BaseRichBolt {
           }
           
           avgStartTime /= Math.max(1, totalCnt);
-          collector.emit("size" + data.getSizeOfWindow(), new Values(data.getResult(), avgStartTime, totalCnt));
+          collector.emit("size" + data.sizeOfWindow, new Values(data.result, avgStartTime, totalCnt));
         }
       });
       
