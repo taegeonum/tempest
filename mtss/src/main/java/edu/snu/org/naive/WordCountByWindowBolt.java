@@ -96,9 +96,9 @@ public class WordCountByWindowBolt extends BaseRichBolt{
       long totalTimestamp = 0;
       long totalCount = 0;
       for(String key: reduced.keySet()) {
-        int count = reduced.get(key).getValue();
+        int count = reduced.get(key).value;
         //result.put(key, count);
-        totalTimestamp += reduced.get(key).getTimestamp();
+        totalTimestamp += reduced.get(key).timestamp;
         totalCount += count;
       }
       collector.emit(new Values(reduced, totalTimestamp / Math.max(1, totalCount), totalCount));
@@ -114,9 +114,9 @@ public class WordCountByWindowBolt extends BaseRichBolt{
       long totalTimestamp = 0;
       long totalCount = 0;
       for(String key: reduced.keySet()) {
-        int count = reduced.get(key).getValue();
+        int count = reduced.get(key).value;
         //result.put(key, count);
-        totalTimestamp += reduced.get(key).getTimestamp();
+        totalTimestamp += reduced.get(key).timestamp;
         totalCount += count;
       }
       collector.emit(new Values(reduced, totalTimestamp / Math.max(1, totalCount), totalCount));

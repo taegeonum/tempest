@@ -14,7 +14,7 @@ public class CountTimestampFunc<V> implements ReduceFunc<ValueAndTimestamp<V>> {
   @Override
   public ValueAndTimestamp<V> compute(ValueAndTimestamp<V> value,
       ValueAndTimestamp<V> sofar) {
-    return new ValueAndTimestamp<>(reduceFunc.compute(value.getValue(), sofar.getValue()), value.getTimestamp() + sofar.getTimestamp());
+    return new ValueAndTimestamp<>(reduceFunc.compute(value.value, sofar.value), value.timestamp + sofar.timestamp);
   }
 
 }
