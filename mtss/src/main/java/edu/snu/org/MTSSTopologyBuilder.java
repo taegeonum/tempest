@@ -40,7 +40,7 @@ public class MTSSTopologyBuilder implements AppTopologyBuilder {
     try {
       builder.setBolt(counterId, new MTSWordcountBolt(timescales), numBolt).fieldsGrouping(spoutId, new Fields("word"));
     } catch (Exception e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
 
     int i = 0;
