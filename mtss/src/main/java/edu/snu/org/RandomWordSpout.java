@@ -57,6 +57,7 @@ public class RandomWordSpout extends BaseRichSpout {
 
   @Override
   public void fail(Object id) {
+    throw new RuntimeException();
   }
 
   @Override
