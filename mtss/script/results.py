@@ -1,10 +1,20 @@
-import os, sys
+"""
+This scripts calculates average latency and counts for MTSS logs in designated location
+The results should be in separate directories per runnings.
+"""
+
+import os, sys, argparse
 import numpy as np
+
+parser = argparse.ArgumentParser(description='Calculates average latency and counts for MTSS logs,')
+parser.add_argument('path', metavar='PATH', type=str, help='Path to the MTSS result folder')
+
+args = parser.parse_args()
 
 avg_latency = {}
 avg_throughput = {}
 
-path = sys.argv[1]
+path = args.path
 
 for dirname in os.listdir(path):
     new_path = os.path.join(path, dirname)
