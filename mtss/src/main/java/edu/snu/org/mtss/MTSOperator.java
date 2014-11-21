@@ -56,7 +56,7 @@ public class MTSOperator<K, V> implements Stage {
     this.reduceFunc = reduceFunc;
     this.innerMap = new HashMap<>();
     this.outputHandler = outputHandler;
-    this.bucketNeeded = idAdditionalBucketTimescaleNeeded();
+    this.bucketNeeded = isAdditionalBucketTimescaleNeeded();
     
     createDependencyTable();
   }
@@ -97,9 +97,7 @@ public class MTSOperator<K, V> implements Stage {
      
     // add vertex by period
     int colIndex = 0;
-    
-    /* Fix: improve algorithm
-     */
+
     for (Timescale ts : timeScales) {
       for(long time = bucketSize; time <= period; time += bucketSize) {
         
@@ -163,7 +161,7 @@ public class MTSOperator<K, V> implements Stage {
    * then we don't have to create the additional timescale 
    * else we need to create the additional timescale in which the window and interval size is bucket size. 
    */
-  private boolean idAdditionalBucketTimescaleNeeded() {
+  private boolean isAdditionalBucketTimescaleNeeded() {
     return !(bucketSize == timeScales.get(0).getWindowSize() && 
         bucketSize == timeScales.get(0).getIntervalSize());
   }
@@ -530,7 +528,6 @@ public class MTSOperator<K, V> implements Stage {
 
   @Override
   public void close() throws Exception {
-    // TODO Auto-generated method stub
     executor.close();
   }
 }
