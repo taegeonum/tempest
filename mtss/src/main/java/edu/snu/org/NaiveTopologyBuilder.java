@@ -41,8 +41,8 @@ public class NaiveTopologyBuilder implements AppTopologyBuilder {
 
     int i = 0;
     for (Timescale ts : timescales) {
-      int windowSize = (int)ts.getWindowSize();
-      int slideInterval = (int)ts.getIntervalSize();
+      int windowSize = (int)ts.windowSize;
+      int slideInterval = (int)ts.intervalSize;
       builder.setBolt(counterId + i, new WordCountByWindowBolt(windowSize, slideInterval), numBolt)
       .fieldsGrouping(spoutId, new Fields("word"));
       builder.setBolt(totalRankerId + i, new TotalRankingsBolt(topN, numBolt, "naive-window-" + windowSize + "-" + slideInterval, "folder"), 1).allGrouping(counterId + i);

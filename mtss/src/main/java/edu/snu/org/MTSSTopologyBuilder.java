@@ -45,7 +45,7 @@ public class MTSSTopologyBuilder implements AppTopologyBuilder {
 
     int i = 0;
     for (Timescale ts : timescales) {
-      builder.setBolt(totalRankerId+"-"+i, new TotalRankingsBolt(topN, numBolt, "mtss-window-" + ts.getWindowSize() + "-" + ts.getIntervalSize(), "folder")).globalGrouping(counterId, "size" + ts.getWindowSize());
+      builder.setBolt(totalRankerId+"-"+i, new TotalRankingsBolt(topN, numBolt, "mtss-window-" + ts.windowSize + "-" + ts.intervalSize, "folder")).globalGrouping(counterId, "size" + ts.windowSize);
       i += 1;
     }
     

@@ -96,7 +96,7 @@ public class MTSWordcountBolt extends BaseRichBolt {
   @Override
   public void declareOutputFields(OutputFieldsDeclarer declarer) {
     for (Timescale ts : timescales) {
-      declarer.declareStream("size" + ts.getWindowSize(), new Fields("result", "avgTimestamp", "totalCnt"));
+      declarer.declareStream("size" + ts.windowSize, new Fields("result", "avgTimestamp", "totalCnt"));
     }
   }
 

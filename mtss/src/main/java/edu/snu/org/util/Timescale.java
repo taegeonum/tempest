@@ -10,12 +10,12 @@ public class Timescale implements Comparable, Serializable {
    * Window size and interval 
    */
   private static final long serialVersionUID = 439658002747284570L;
-  private final long windowSize;
-  private final long intervalSize;
-  private final TimeUnit windowTimeUnit;
-  private final TimeUnit intervalTimeUnit;
+  public final long windowSize;
+  public final long intervalSize;
+  public final TimeUnit windowTimeUnit;
+  public final TimeUnit intervalTimeUnit;
   
-  public Timescale(int windowSize, int intervalSize, TimeUnit windowTimeUnit, TimeUnit intervalTimeUnit) {
+  public Timescale(final int windowSize, final int intervalSize, final TimeUnit windowTimeUnit, final TimeUnit intervalTimeUnit) {
     
     if (windowSize <= 0 || windowSize - intervalSize < 0) {
       throw new InvalidParameterException("Invalid window or interval size: " + "(" + windowSize + ", " + intervalSize + ")");
@@ -25,17 +25,6 @@ public class Timescale implements Comparable, Serializable {
     this.intervalSize = intervalTimeUnit.toSeconds(intervalSize);
     this.windowTimeUnit = windowTimeUnit;
     this.intervalTimeUnit = intervalTimeUnit;
-  }
-  
-  public long getWindowSize() { return windowSize; }
-  public long getIntervalSize() { return intervalSize; }
-  
-  public TimeUnit getWindowSizeTimeUnit() {
-    return windowTimeUnit;
-  }
-  
-  public TimeUnit getIntervalTimeUnit() {
-    return intervalTimeUnit;
   }
 
   @Override
@@ -53,6 +42,6 @@ public class Timescale implements Comparable, Serializable {
   
   @Override
   public String toString() {
-    return "[" + getWindowSize() + ", " + getIntervalSize() + "]";
+    return "[" + windowSize + ", " + intervalSize + "]";
   }
 }
