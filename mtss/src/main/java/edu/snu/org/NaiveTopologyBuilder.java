@@ -8,6 +8,7 @@ import org.apache.reef.tang.annotations.Parameter;
 
 import backtype.storm.generated.StormTopology;
 import backtype.storm.topology.TopologyBuilder;
+import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import edu.snu.org.WordCountApp.InputInterval;
 import edu.snu.org.WordCountApp.NumBolt;
@@ -24,7 +25,7 @@ public class NaiveTopologyBuilder implements AppTopologyBuilder {
   private final StormTopology topology;
   
   @Inject
-  public NaiveTopologyBuilder(@Parameter(InputInterval.class) int inputInterval,
+  public NaiveTopologyBuilder(BaseRichSpout spout,
       @Parameter(NumSpout.class) int numSpout, 
       @Parameter(NumBolt.class) int numBolt, 
       @Parameter(TopN.class) int topN, 
@@ -37,7 +38,7 @@ public class NaiveTopologyBuilder implements AppTopologyBuilder {
 
     TopologyBuilder builder = new TopologyBuilder();
 
-    builder.setSpout(spoutId, new RandomWordSpout(inputInterval), numSpout);
+    builder.setSpout(spoutId, spout, numSpout);
 
     int i = 0;
     for (Timescale ts : timescales) {

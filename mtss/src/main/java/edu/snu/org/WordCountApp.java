@@ -21,6 +21,7 @@ import backtype.storm.Config;
 import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.AuthorizationException;
 import backtype.storm.generated.InvalidTopologyException;
+import backtype.storm.topology.base.BaseRichSpout;
 import edu.snu.org.util.StormRunner;
 import edu.snu.org.util.Timescale;
 
@@ -28,7 +29,7 @@ public class WordCountApp {
   @NamedParameter(short_name = "local", default_value = "true")
   public static final class Local implements Name<Boolean> {}
   
-  @NamedParameter(short_name = "app_name", default_value = "WordcountAppMTSS")
+  @NamedParameter(short_name = "app_name", default_value = "NaiveTopology")
   public static final class AppName implements Name<String> {}
   
   @NamedParameter(short_name = "num_workers", default_value = "1")
@@ -52,6 +53,9 @@ public class WordCountApp {
   @NamedParameter
   public static final class TimescaleList implements Name<TimescaleClass> {}
   
+  @NamedParameter(doc = "Spout name", short_name = "spout", default_value = "RandomWordSpout") 
+  public static final class SpoutName implements Name<String> {}
+  
   private static Config createTopologyConfiguration(Boolean isLocal, Integer numWorker) {
     Config conf = new Config();
     conf.put(Config.TOPOLOGY_DEBUG, false);
@@ -74,10 +78,13 @@ public class WordCountApp {
     .registerShortNameOfClass(Local.class)
     .registerShortNameOfClass(AppName.class)
     .registerShortNameOfClass(NumWorkers.class)
+    .registerShortNameOfClass(InputInterval.class)
     .registerShortNameOfClass(NumSpout.class)
     .registerShortNameOfClass(NumBolt.class)
     .registerShortNameOfClass(TopN.class)
     .registerShortNameOfClass(Runtime.class)
+    .registerShortNameOfClass(SpoutName.class)
+    .registerShortNameOfClass(FileReadWordSpout.InputPath.class)
     .processCommandLine(args);
 
     return cl.getBuilder().build();
@@ -93,12 +100,14 @@ public class WordCountApp {
     final int numWorkers = commandLineInjector.getNamedInstance(NumWorkers.class);
     final int runtime = commandLineInjector.getNamedInstance(Runtime.class);
     String appName = commandLineInjector.getNamedInstance(AppName.class);
+    String spoutName = commandLineInjector.getNamedInstance(SpoutName.class);
     
     Config conf = createTopologyConfiguration(isLocal, numWorkers);
     
     JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder(commandLineConf);
     cb.bindNamedParameter(TimescaleList.class, TimescaleClass.class);
-    cb.bindImplementation(AppTopologyBuilder.class, TopologyBuilderClassFactory.createTopologyBuilderClass(appName));
+    cb.bindImplementation(AppTopologyBuilder.class, ClassFactory.createTopologyBuilderClass(appName));
+    cb.bindImplementation(BaseRichSpout.class, ClassFactory.createSpoutClass(spoutName));
     
     Configuration c = cb.build();
     Injector ij = Tang.Factory.getTang().newInjector(c);

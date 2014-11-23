@@ -8,8 +8,8 @@ import org.apache.reef.tang.annotations.Parameter;
 
 import backtype.storm.generated.StormTopology;
 import backtype.storm.topology.TopologyBuilder;
+import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
-import edu.snu.org.WordCountApp.InputInterval;
 import edu.snu.org.WordCountApp.NumBolt;
 import edu.snu.org.WordCountApp.NumSpout;
 import edu.snu.org.WordCountApp.TimescaleClass;
@@ -23,7 +23,7 @@ public class MTSSTopologyBuilder implements AppTopologyBuilder {
   private final StormTopology topology;
   
   @Inject
-  public MTSSTopologyBuilder(@Parameter(InputInterval.class) int inputInterval,
+  public MTSSTopologyBuilder(BaseRichSpout spout,
       @Parameter(NumSpout.class) int numSpout, 
       @Parameter(NumBolt.class) int numBolt, 
       @Parameter(TopN.class) int topN, 
@@ -36,7 +36,7 @@ public class MTSSTopologyBuilder implements AppTopologyBuilder {
 
     TopologyBuilder builder = new TopologyBuilder();
     
-    builder.setSpout(spoutId, new RandomWordSpout(inputInterval), numSpout);
+    builder.setSpout(spoutId, spout, numSpout);
     try {
       builder.setBolt(counterId, new MTSWordcountBolt(timescales), numBolt).fieldsGrouping(spoutId, new Fields("word"));
     } catch (Exception e) {
