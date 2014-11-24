@@ -12,6 +12,7 @@ import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import edu.snu.org.WordCountApp.NumBolt;
 import edu.snu.org.WordCountApp.NumSpout;
+import edu.snu.org.WordCountApp.OutputDir;
 import edu.snu.org.WordCountApp.TimescaleClass;
 import edu.snu.org.WordCountApp.TimescaleList;
 import edu.snu.org.WordCountApp.TopN;
@@ -27,7 +28,8 @@ public class MTSSTopologyBuilder implements AppTopologyBuilder {
       @Parameter(NumSpout.class) int numSpout, 
       @Parameter(NumBolt.class) int numBolt, 
       @Parameter(TopN.class) int topN, 
-      @Parameter(TimescaleList.class) TimescaleClass tclass) {
+      @Parameter(TimescaleList.class) TimescaleClass tclass, 
+      @Parameter(OutputDir.class) String outputDir) {
     
     String spoutId = "wordGenerator";
     String counterId = "mtsOperator";
@@ -45,7 +47,7 @@ public class MTSSTopologyBuilder implements AppTopologyBuilder {
 
     int i = 0;
     for (Timescale ts : timescales) {
-      builder.setBolt(totalRankerId+"-"+i, new TotalRankingsBolt(topN, numBolt, "mtss-window-" + ts.windowSize + "-" + ts.intervalSize, "folder")).globalGrouping(counterId, "size" + ts.windowSize);
+      builder.setBolt(totalRankerId+"-"+i, new TotalRankingsBolt(topN, numBolt, "mtss-window-" + ts.windowSize + "-" + ts.intervalSize, outputDir)).globalGrouping(counterId, "size" + ts.windowSize);
       i += 1;
     }
     

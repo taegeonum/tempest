@@ -51,7 +51,7 @@ public class TotalRankingsBolt extends BaseBasicBolt {
   @Override
   public void prepare(Map stormConf, TopologyContext context) {
     try {
-      writer = new FileWriter(name);
+      writer = new FileWriter(folderName + name);
       //hdfsWriter = new HDFSWriter(folderName + "/" + name);
     } catch (IOException e) {
       throw new RuntimeException(e);

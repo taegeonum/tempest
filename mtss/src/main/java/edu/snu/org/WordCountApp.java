@@ -61,6 +61,9 @@ public class WordCountApp {
   @NamedParameter(doc = "Spout name", short_name = "spout", default_value = "RandomWordSpout") 
   public static final class SpoutName implements Name<String> {}
   
+  @NamedParameter(doc = "output directory", short_name = "output_dir")
+  public static final class OutputDir implements Name<String> {}
+  
   private static Config createTopologyConfiguration(Boolean isLocal, Integer numWorker) {
     Config conf = new Config();
     conf.put(Config.TOPOLOGY_DEBUG, false);
@@ -91,6 +94,7 @@ public class WordCountApp {
     .registerShortNameOfClass(SpoutName.class)
     .registerShortNameOfClass(FileReadWordSpout.InputPath.class)
     .registerShortNameOfClass(TimescaleParameter.class) 
+    .registerShortNameOfClass(OutputDir.class)
     .processCommandLine(args);
 
     return cl.getBuilder().build();
@@ -107,6 +111,7 @@ public class WordCountApp {
     final int runtime = commandLineInjector.getNamedInstance(Runtime.class);
     String appName = commandLineInjector.getNamedInstance(AppName.class);
     String spoutName = commandLineInjector.getNamedInstance(SpoutName.class);
+    String outputDir = commandLineInjector.getNamedInstance(OutputDir.class);
     
     Config conf = createTopologyConfiguration(isLocal, numWorkers);
     
