@@ -1,6 +1,7 @@
 package edu.snu.org;
 
 import java.io.IOException;
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -13,6 +14,7 @@ import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
+import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.tang.exceptions.BindException;
 import org.apache.reef.tang.exceptions.InjectionException;
 import org.apache.reef.tang.formats.CommandLine;
@@ -53,6 +55,9 @@ public class WordCountApp {
   @NamedParameter
   public static final class TimescaleList implements Name<TimescaleClass> {}
   
+  @NamedParameter(doc = "timescales. format: (\\(\\d+,\\d+\\))*. TimeUnit: sec",short_name = "timescales", default_value = "(30,2)(60,5)(90,6)")
+  public static final class TimescaleParameter implements Name<String> {}
+  
   @NamedParameter(doc = "Spout name", short_name = "spout", default_value = "RandomWordSpout") 
   public static final class SpoutName implements Name<String> {}
   
@@ -85,6 +90,7 @@ public class WordCountApp {
     .registerShortNameOfClass(Runtime.class)
     .registerShortNameOfClass(SpoutName.class)
     .registerShortNameOfClass(FileReadWordSpout.InputPath.class)
+    .registerShortNameOfClass(TimescaleParameter.class) 
     .processCommandLine(args);
 
     return cl.getBuilder().build();
@@ -119,31 +125,42 @@ public class WordCountApp {
     else {
       StormRunner.runTopologyRemotely(topologyBuilder.createTopology(), topologyName, conf);
     }
-    
   }
   
   public static final class TimescaleClass {
     
-    public List<Timescale> timescales;
+    public final List<Timescale> timescales;
+    private static final String regex = "(\\(\\d+,\\d+\\))*";
     
     @Inject
-    public TimescaleClass() {
-      List<Timescale> timescales = new ArrayList<>();
-
+    public TimescaleClass(@Parameter(TimescaleParameter.class) String params) {
       
-      timescales.add(new Timescale(30, 2, TimeUnit.SECONDS, TimeUnit.SECONDS));
-      timescales.add(new Timescale(60, 5, TimeUnit.SECONDS, TimeUnit.SECONDS));
-      timescales.add(new Timescale(90, 6, TimeUnit.SECONDS, TimeUnit.SECONDS));
-      timescales.add(new Timescale(120, 10, TimeUnit.SECONDS, TimeUnit.SECONDS));
-      timescales.add(new Timescale(180, 12, TimeUnit.SECONDS, TimeUnit.SECONDS));
-      timescales.add(new Timescale(210, 15, TimeUnit.SECONDS, TimeUnit.SECONDS));
+      if (!params.matches(regex)) {
+        throw new InvalidParameterException("Invalid timescales: " + params + " The format should be " + regex);
+      }
       
-      timescales.add(new Timescale(300, 20, TimeUnit.SECONDS, TimeUnit.SECONDS));
-      
-      timescales.add(new Timescale(600, 25, TimeUnit.SECONDS, TimeUnit.SECONDS));
-      timescales.add(new Timescale(1000, 30, TimeUnit.SECONDS, TimeUnit.SECONDS));
-      
-      this.timescales = timescales;
+      this.timescales = parseToTimescaleList(params);
     }
+    
+    private List<Timescale> parseToTimescaleList(String params) {
+      List<Timescale> timescales = new ArrayList<>();
+      
+      
+      // (1,2)(3,4) -> 1,2)3,4)
+      String trim = params.replace("(", "");
+      
+      // 1,2)3,4) -> [ "1,2" , "3,4" ] 
+      String[] args = trim.split("\\)");
+      
+      for (String arg : args) {
+        String[] windowAndInterval = arg.split(",");
+        timescales.add(new Timescale(Integer.valueOf(windowAndInterval[0]), Integer.valueOf(windowAndInterval[1]), TimeUnit.SECONDS, TimeUnit.SECONDS));
+      }
+      
+      
+      System.out.println("Timescales: " + timescales);
+      return timescales;
+    }
+    
   }
 }

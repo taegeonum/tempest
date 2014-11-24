@@ -73,7 +73,6 @@ public class FileReadWordSpout extends BaseRichSpout {
 
           if(tempFile.isFile()) {
             sc = new Scanner(tempFile);
-            System.out.println("Read line..");
             while (sc.hasNextLine()) {
               String str = sc.nextLine();
               
