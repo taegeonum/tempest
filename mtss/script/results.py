@@ -39,11 +39,11 @@ for dirname in os.listdir(path):
         throughputs = []
         lines = [line.strip() for line in data_file]
     
-        for i in range(len(lines)/2, len(lines), 1):
-            if(len(lines[i].split()) < 2):
+        for line in lines[len(lines)*0.5:len(lines)*0.9]:
+            if(len(line.split()) < 2):
                 continue
-            latencies += [int(lines[i].split()[0])]
-            throughputs += [int(lines[i].split()[1])]
+            latencies += [int(line.split()[0])]
+            throughputs += [int(line.split()[1])]
 
         avg_latency[category][window_size] += [np.average(latencies)]
         avg_throughput[category][window_size] += [np.average(throughputs)]
