@@ -1,6 +1,7 @@
 package edu.snu.org;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.security.InvalidParameterException;
 import java.util.Map;
 import java.util.Scanner;
@@ -35,6 +36,7 @@ public class FileReadWordSpout extends BaseRichSpout {
   private File []fileList;  
   private Scanner sc;
   private long startTime;
+  private File tempFile;
   
   @Inject
   public FileReadWordSpout(@Parameter(InputInterval.class) int sendingInterval, 
@@ -55,15 +57,32 @@ public class FileReadWordSpout extends BaseRichSpout {
     
     File dirFile=new File(inputPath);
     fileList=dirFile.listFiles();
+    tempFile = fileList[0];
     
+    if (!tempFile.isFile()) {
+      throw new RuntimeException(tempFile + " is not file");
+    }
+    
+    try {
+      sc = new Scanner(tempFile);
+    } catch (FileNotFoundException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
   public void nextTuple() {
 
-    while (true) {
+    if (sc.hasNextLine()) {
+      String str = sc.nextLine();
+      for(String word: str.split(" ")) {
+        _collector.emit(new Values(word, 1, System.currentTimeMillis()));
+      }
+      Utils.sleep(sendingInterval);
+    } else {
+      sc.close();
+      
       try {
-
         for(int i = 0; i < fileList.length; i++) {
           File tempFile = fileList[i];
           String tempPath=tempFile.getParent();
@@ -88,9 +107,20 @@ public class FileReadWordSpout extends BaseRichSpout {
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
+      
+      String str = sc.nextLine();
+      for(String word: str.split(" ")) {
+        _collector.emit(new Values(word, 1, System.currentTimeMillis()));
+      }
+      Utils.sleep(sendingInterval);
     }
   }
 
+  @Override
+  public void close() {
+    sc.close();
+  }
+  
   @Override
   public void ack(Object id) {
   }
