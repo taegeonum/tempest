@@ -18,14 +18,14 @@ public class HDFSWriter {
   private final Configuration config;
   
   public HDFSWriter() {
-      config = new Configuration();
-      String hadoop_home = System.getenv("HADOOP_HOME");
-      config.addResource(new Path(hadoop_home + "/etc/hadoop/core-site.xml"));
-      config.addResource(new Path(hadoop_home + "/etc/hadoop/hdfs-site.xml"));
+    config = new Configuration();
+    String hadoop_home = System.getenv("HADOOP_HOME");
+    config.addResource(new Path(hadoop_home + "/etc/hadoop/core-site.xml"));
+    config.addResource(new Path(hadoop_home + "/etc/hadoop/hdfs-site.xml"));
 
-      try {
-        fs = FileSystem.get(config);
-      } catch (IOException e) {
+    try {
+      fs = FileSystem.get(config);
+    } catch (IOException e) {
       e.printStackTrace();
     }
   }

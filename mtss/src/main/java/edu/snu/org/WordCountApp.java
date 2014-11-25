@@ -23,7 +23,10 @@ import backtype.storm.Config;
 import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.AuthorizationException;
 import backtype.storm.generated.InvalidTopologyException;
-import backtype.storm.topology.base.BaseRichSpout;
+import edu.snu.org.AppTopologyBuilder.SpoutParameter;
+import edu.snu.org.util.ClusterInputReader;
+import edu.snu.org.util.InputReader;
+import edu.snu.org.util.LocalInputReader;
 import edu.snu.org.util.StormRunner;
 import edu.snu.org.util.Timescale;
 
@@ -64,6 +67,9 @@ public class WordCountApp {
   @NamedParameter(doc = "output directory", short_name = "output")
   public static final class OutputDir implements Name<String> {}
 
+  @NamedParameter(doc = "input file path", short_name = "input")
+  public static final class InputFilePath implements Name<String> {}
+  
   private static Config createTopologyConfiguration(Boolean isLocal, Integer numWorker) {
     Config conf = new Config();
     conf.put(Config.TOPOLOGY_DEBUG, false);
@@ -92,7 +98,7 @@ public class WordCountApp {
     .registerShortNameOfClass(TopN.class)
     .registerShortNameOfClass(Runtime.class)
     .registerShortNameOfClass(SpoutName.class)
-    .registerShortNameOfClass(FileReadWordSpout.InputPath.class)
+    .registerShortNameOfClass(InputFilePath.class)
     .registerShortNameOfClass(TimescaleParameter.class) 
     .registerShortNameOfClass(OutputDir.class)
     .processCommandLine(args);
@@ -111,14 +117,19 @@ public class WordCountApp {
     final int runtime = commandLineInjector.getNamedInstance(Runtime.class);
     String appName = commandLineInjector.getNamedInstance(AppName.class);
     String spoutName = commandLineInjector.getNamedInstance(SpoutName.class);
-    String outputDir = commandLineInjector.getNamedInstance(OutputDir.class);
     
     Config conf = createTopologyConfiguration(isLocal, numWorkers);
     
     JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder(commandLineConf);
     cb.bindNamedParameter(TimescaleList.class, TimescaleClass.class);
     cb.bindImplementation(AppTopologyBuilder.class, ClassFactory.createTopologyBuilderClass(appName));
-    cb.bindImplementation(BaseRichSpout.class, ClassFactory.createSpoutClass(spoutName));
+    cb.bindNamedParameter(SpoutParameter.class, ClassFactory.createSpoutClass(spoutName));
+    
+    if (isLocal) {
+      cb.bindImplementation(InputReader.class, LocalInputReader.class);
+    } else {
+      cb.bindImplementation(InputReader.class, ClusterInputReader.class);
+    }
     
     Configuration c = cb.build();
     Injector ij = Tang.Factory.getTang().newInjector(c);

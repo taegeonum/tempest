@@ -4,7 +4,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import javax.inject.Inject;
+
 import org.apache.log4j.Logger;
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
+import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.wake.EventHandler;
 import org.apache.reef.wake.impl.ThreadPoolStage;
 
@@ -33,6 +38,11 @@ public class WordCountByWindowBolt extends BaseRichBolt{
   private OutputCollector collector;
   private ThreadPoolStage<Map<String, ValueAndTimestamp<Integer>>> stage;
 
+  @NamedParameter
+  public static final class WindowLength implements Name<Integer> {}
+  
+  @NamedParameter
+  public static final class SlideInterval implements Name<Integer> {}
   /**
    * Calculates the greatest common divider of integer a and b.
    * Assumes that a >= b
@@ -51,7 +61,10 @@ public class WordCountByWindowBolt extends BaseRichBolt{
   /*
    * windowLength, slideInterval is millisecond
    */
-  public WordCountByWindowBolt(int windowLength, int slideInterval) {
+  @Inject
+  public WordCountByWindowBolt(@Parameter(WindowLength.class) int windowLength, 
+      @Parameter(SlideInterval.class) int slideInterval) {
+    
     windowLength = (int)TimeUnit.SECONDS.toMillis(windowLength);
     slideInterval = (int)TimeUnit.SECONDS.toMillis(slideInterval);
     

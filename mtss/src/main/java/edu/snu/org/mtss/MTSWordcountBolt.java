@@ -4,6 +4,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.inject.Inject;
+
+import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.wake.EventHandler;
 
 import backtype.storm.Config;
@@ -15,6 +18,8 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import edu.snu.org.WordCountApp.TimescaleClass;
+import edu.snu.org.WordCountApp.TimescaleList;
 import edu.snu.org.util.Timescale;
 import edu.snu.org.util.ValueAndTimestamp;
 
@@ -29,8 +34,9 @@ public class MTSWordcountBolt extends BaseRichBolt {
   private long time;
   private OutputCollector collector;
   
-  public MTSWordcountBolt(List<Timescale> timescales) throws Exception {
-    this.timescales = timescales;
+  @Inject
+  public MTSWordcountBolt(@Parameter(TimescaleList.class) TimescaleClass tsClass) throws Exception {
+    this.timescales = tsClass.timescales;
     this.tickTime = MTSOperator.tickTime(timescales);
   }
   
