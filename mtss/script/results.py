@@ -22,8 +22,10 @@ for dirname in os.listdir(path):
         continue  
 
     for filename in os.listdir(new_path):
-        print filename
         category = filename.split("-")[0]
+        if filename.split("-")[1] != "window":
+            continue
+
         if category not in avg_latency:
             avg_latency[category] = {}
             avg_throughput[category] = {}
