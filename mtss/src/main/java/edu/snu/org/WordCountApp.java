@@ -55,7 +55,10 @@ public class WordCountApp {
   
   @NamedParameter(doc = "Spout name", short_name = "spout", default_value = "RandomWordSpout") 
   public static final class SpoutName implements Name<String> {}
-  
+
+  @NamedParameter(doc = "output directory", short_name = "output")
+  public static final class OutputDir implements Name<String> {}
+
   private static Config createTopologyConfiguration(Boolean isLocal, Integer numWorker) {
     Config conf = new Config();
     conf.put(Config.TOPOLOGY_DEBUG, false);

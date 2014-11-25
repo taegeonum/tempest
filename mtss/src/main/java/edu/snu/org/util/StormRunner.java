@@ -21,6 +21,7 @@ public final class StormRunner {
     cluster.submitTopology(topologyName, conf, topology);
     Thread.sleep((long) runtimeInSeconds * MILLIS_IN_SEC);
     cluster.killTopology(topologyName);
+    Thread.sleep(32000);
     cluster.shutdown();
   }
 
