@@ -33,7 +33,7 @@ public class MTSSTopologyBuilder implements AppTopologyBuilder {
   private final StormTopology topology;
   
   @Inject
-  public MTSSTopologyBuilder(@Parameter(SpoutParameter.class) BaseRichSpout spout,
+  public MTSSTopologyBuilder(BaseRichSpout spout,
       MTSWordcountBolt wcBolt,
       @Parameter(NumSpout.class) int numSpout, 
       @Parameter(NumBolt.class) int numBolt, 

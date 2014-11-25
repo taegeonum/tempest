@@ -23,10 +23,8 @@ import backtype.storm.Config;
 import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.AuthorizationException;
 import backtype.storm.generated.InvalidTopologyException;
-import edu.snu.org.AppTopologyBuilder.SpoutParameter;
-import edu.snu.org.util.ClusterInputReader;
+import backtype.storm.topology.base.BaseRichSpout;
 import edu.snu.org.util.InputReader;
-import edu.snu.org.util.LocalInputReader;
 import edu.snu.org.util.StormRunner;
 import edu.snu.org.util.Timescale;
 
@@ -123,7 +121,7 @@ public class WordCountApp {
     JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder(commandLineConf);
     cb.bindNamedParameter(TimescaleList.class, TimescaleClass.class);
     cb.bindImplementation(AppTopologyBuilder.class, ClassFactory.createTopologyBuilderClass(appName));
-    cb.bindNamedParameter(SpoutParameter.class, ClassFactory.createSpoutClass(spoutName));
+    cb.bindImplementation(BaseRichSpout.class, ClassFactory.createSpoutClass(spoutName));
     cb.bindImplementation(InputReader.class, ClassFactory.createInputReaderClass(isLocal));
     
     Configuration c = cb.build();

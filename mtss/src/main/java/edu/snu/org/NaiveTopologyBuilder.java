@@ -36,7 +36,7 @@ public class NaiveTopologyBuilder implements AppTopologyBuilder {
   private final StormTopology topology;
   
   @Inject
-  public NaiveTopologyBuilder(@Parameter(SpoutParameter.class) BaseRichSpout spout,
+  public NaiveTopologyBuilder(BaseRichSpout spout,
       @Parameter(NumSpout.class) int numSpout, 
       @Parameter(NumBolt.class) int numBolt, 
       @Parameter(TopN.class) int topN, 
