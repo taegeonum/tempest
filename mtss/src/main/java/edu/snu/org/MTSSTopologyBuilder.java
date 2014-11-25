@@ -56,12 +56,7 @@ public class MTSSTopologyBuilder implements AppTopologyBuilder {
     JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
     cb.bindNamedParameter(TopN.class, topN+"");
     cb.bindNamedParameter(NumBolt.class, numBolt+"");
-    
-    if (isLocal) {
-      cb.bindImplementation(OutputWriter.class, LocalOutputWriter.class);
-    } else {
-      cb.bindImplementation(OutputWriter.class, ClusterOutputWriter.class);
-    }
+    cb.bindImplementation(OutputWriter.class, ClassFactory.createOutputWriterClass(isLocal));
     
     int i = 0;
     for (Timescale ts : timescales) {

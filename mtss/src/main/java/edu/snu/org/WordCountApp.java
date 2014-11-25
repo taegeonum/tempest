@@ -124,12 +124,7 @@ public class WordCountApp {
     cb.bindNamedParameter(TimescaleList.class, TimescaleClass.class);
     cb.bindImplementation(AppTopologyBuilder.class, ClassFactory.createTopologyBuilderClass(appName));
     cb.bindNamedParameter(SpoutParameter.class, ClassFactory.createSpoutClass(spoutName));
-    
-    if (isLocal) {
-      cb.bindImplementation(InputReader.class, LocalInputReader.class);
-    } else {
-      cb.bindImplementation(InputReader.class, ClusterInputReader.class);
-    }
+    cb.bindImplementation(InputReader.class, ClassFactory.createInputReaderClass(isLocal));
     
     Configuration c = cb.build();
     Injector ij = Tang.Factory.getTang().newInjector(c);
