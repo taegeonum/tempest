@@ -12,7 +12,7 @@ public class Count implements ReduceFunc<ValueAndTimestamp<Integer>>, Serializab
   @Override
   public ValueAndTimestamp<Integer> compute(ValueAndTimestamp<Integer> newRecord,
                                           ValueAndTimestamp<Integer> sofarRecord) {
-    return new ValueAndTimestamp(newRecord.getValue() + sofarRecord.getValue(),
-        newRecord.getTimestamp() + sofarRecord.getTimestamp());
+    return new ValueAndTimestamp(newRecord.value + sofarRecord.value,
+        newRecord.timestamp + sofarRecord.timestamp);
   }
 }

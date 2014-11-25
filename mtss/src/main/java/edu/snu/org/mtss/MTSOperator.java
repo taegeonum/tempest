@@ -102,11 +102,11 @@ public class MTSOperator<K, V> implements Stage {
       for(long time = bucketSize; time <= period; time += bucketSize) {
         
         // We need to create vertex when the time is multiplication of interval
-        if (time % ts.getIntervalSize() == 0) {
+        if (time % ts.intervalSize == 0) {
           
           // create vertex and add it to the table cell of (time, windowsize)
-          OutputNode referer = new OutputNode(time - ts.getWindowSize(), time);
-          table.put(time, ts.getWindowSize(), referer);
+          OutputNode referer = new OutputNode(time - ts.windowSize, time);
+          table.put(time, ts.windowSize, referer);
           
           // rangeList for determining which vertex is included in this vertex. 
           List<Range> rangeList = new LinkedList<>();
@@ -118,7 +118,7 @@ public class MTSOperator<K, V> implements Stage {
           for (int i = colIndex - 1; i >= 0 && rangeList.size() > 0; i--) {
             Timescale seekTs = timeScales.get(i);
             for (long j = period; j >= bucketSize && rangeList.size() > 0; j -= bucketSize) {
-              OutputNode referee = table.get(j, seekTs.getWindowSize());
+              OutputNode referee = table.get(j, seekTs.windowSize);
               if (referee != null) {
                 Range seekRg = referee.range;
                 
@@ -162,8 +162,8 @@ public class MTSOperator<K, V> implements Stage {
    * else we need to create the additional timescale in which the window and interval size is bucket size. 
    */
   private boolean isAdditionalBucketTimescaleNeeded() {
-    return !(bucketSize == timeScales.get(0).getWindowSize() && 
-        bucketSize == timeScales.get(0).getIntervalSize());
+    return !(bucketSize == timeScales.get(0).windowSize && 
+        bucketSize == timeScales.get(0).intervalSize);
   }
   
   /*
@@ -176,9 +176,9 @@ public class MTSOperator<K, V> implements Stage {
     
     for (Timescale ts : timeScales) {
       if (gcd == 0) { 
-        gcd = gcd(ts.getWindowSize(), ts.getIntervalSize());
+        gcd = gcd(ts.windowSize, ts.intervalSize);
       } else {
-        gcd = gcd(gcd, ts.getIntervalSize());
+        gcd = gcd(gcd, ts.intervalSize);
       }
     }
     
@@ -198,14 +198,14 @@ public class MTSOperator<K, V> implements Stage {
     
     for (Timescale ts : timeScales) {
       if (period == 0) {
-        period = ts.getIntervalSize();
+        period = ts.intervalSize;
       } else {
-        period = lcm(period, ts.getIntervalSize());
+        period = lcm(period, ts.intervalSize);
       }
       
       // find largest window size
-      if (largestWindowSize < ts.getWindowSize()) {
-        largestWindowSize = ts.getWindowSize();
+      if (largestWindowSize < ts.windowSize) {
+        largestWindowSize = ts.windowSize;
       }
     }
     
@@ -324,9 +324,9 @@ public class MTSOperator<K, V> implements Stage {
     
     for (Timescale ts : timescales) {
       if (gcd == 0) { 
-        gcd = gcd(ts.getWindowSize(), ts.getIntervalSize());
+        gcd = gcd(ts.windowSize, ts.intervalSize);
       } else {
-        gcd = gcd(gcd, ts.getIntervalSize());
+        gcd = gcd(gcd, ts.intervalSize);
       }
     }
     

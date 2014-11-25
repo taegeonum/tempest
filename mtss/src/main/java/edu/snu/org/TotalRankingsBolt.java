@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import javax.inject.Inject;
+
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.BasicOutputCollector;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -34,6 +36,7 @@ public class TotalRankingsBolt extends BaseBasicBolt {
   private HDFSWriter hdfsWriter;
   private final String folderName;
 
+  @Inject
   public TotalRankingsBolt(final int topN, final int numOfInputBolts, String name, String folderName) {
     this.numOfInputBolts = numOfInputBolts;
     this.topN = topN;
@@ -71,7 +74,7 @@ public class TotalRankingsBolt extends BaseBasicBolt {
     
     // sort
     for (Map.Entry<String, ValueAndTimestamp<Integer>> entry : aggWordCnt.entrySet()) {
-      WordcountTuple wcTuple = new WordcountTuple(entry.getKey(), entry.getValue().getValue());
+      WordcountTuple wcTuple = new WordcountTuple(entry.getKey(), entry.getValue().value);
       results.add(wcTuple);
     }
 

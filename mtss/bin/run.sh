@@ -1,3 +1,5 @@
+#!/bin/sh
+
 #CMD="mvn clean install"
 #echo $CMD
 #$CMD

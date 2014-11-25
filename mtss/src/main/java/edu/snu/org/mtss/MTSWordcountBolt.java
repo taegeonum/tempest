@@ -64,17 +64,17 @@ public class MTSWordcountBolt extends BaseRichBolt {
         @Override
         public void onNext(MTSOutput<String, ValueAndTimestamp<Integer>> data) {
           
-          Map<String, ValueAndTimestamp<Integer>> map = data.getResult();
+          Map<String, ValueAndTimestamp<Integer>> map = data.result;
           
           long totalCnt = 0;
           long avgStartTime = 0;
           for (ValueAndTimestamp<Integer> val : map.values()) {
-            totalCnt += val.getValue();
-            avgStartTime += val.getTimestamp();
+            totalCnt += val.value;
+            avgStartTime += val.timestamp;
           }
           
           avgStartTime /= Math.max(1, totalCnt);
-          collector.emit("size" + data.getSizeOfWindow(), new Values(data.getResult(), avgStartTime, totalCnt));
+          collector.emit("size" + data.sizeOfWindow, new Values(data.result, avgStartTime, totalCnt));
         }
       });
       
@@ -96,7 +96,7 @@ public class MTSWordcountBolt extends BaseRichBolt {
   @Override
   public void declareOutputFields(OutputFieldsDeclarer declarer) {
     for (Timescale ts : timescales) {
-      declarer.declareStream("size" + ts.getWindowSize(), new Fields("result", "avgTimestamp", "totalCnt"));
+      declarer.declareStream("size" + ts.windowSize, new Fields("result", "avgTimestamp", "totalCnt"));
     }
   }
 
