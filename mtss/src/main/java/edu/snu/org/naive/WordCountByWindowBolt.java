@@ -93,15 +93,19 @@ public class WordCountByWindowBolt extends BaseRichBolt{
     @Override
     public void onNext(Map<String, ValueAndTimestamp<Integer>> reduced) {
       //Map<String, Integer> result = new HashMap<>();
-      long totalTimestamp = 0;
-      long totalCount = 0;
+      long avgStartTime = 0;
+      long totalCnt = 0;
       for(String key: reduced.keySet()) {
         int count = reduced.get(key).value;
-        //result.put(key, count);
-        totalTimestamp += reduced.get(key).timestamp;
-        totalCount += count;
+        
+        long temp = totalCnt + count;
+        if (temp > 0) {
+          avgStartTime = (long)((totalCnt * avgStartTime) / (double)temp + reduced.get(key).timestamp / (double)temp);
+        }
+        
+        totalCnt = temp;
       }
-      collector.emit(new Values(reduced, totalTimestamp / Math.max(1, totalCount), totalCount));
+      collector.emit(new Values(reduced, avgStartTime, totalCnt));
     }
     
   }

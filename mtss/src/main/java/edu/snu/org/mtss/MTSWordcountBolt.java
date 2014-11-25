@@ -69,11 +69,15 @@ public class MTSWordcountBolt extends BaseRichBolt {
           long totalCnt = 0;
           long avgStartTime = 0;
           for (ValueAndTimestamp<Integer> val : map.values()) {
-            totalCnt += val.value;
-            avgStartTime += val.timestamp;
+            long temp = totalCnt + val.value;
+
+            if (temp > 0) {
+              avgStartTime = (long)((totalCnt * avgStartTime) / (double)temp + val.timestamp / (double)temp);
+            }
+            
+            totalCnt = temp;
           }
           
-          avgStartTime /= Math.max(1, totalCnt);
           collector.emit("size" + data.sizeOfWindow, new Values(data.result, avgStartTime, totalCnt));
         }
       });
