@@ -3,8 +3,8 @@ package edu.snu.org;
 import java.security.InvalidParameterException;
 
 import backtype.storm.topology.base.BaseRichSpout;
-import edu.snu.org.util.ClusterInputReader;
-import edu.snu.org.util.ClusterOutputWriter;
+import edu.snu.org.util.HDFSInputReader;
+import edu.snu.org.util.HDFSOutputWriter;
 import edu.snu.org.util.InputReader;
 import edu.snu.org.util.LocalInputReader;
 import edu.snu.org.util.LocalOutputWriter;
@@ -36,7 +36,7 @@ public class ClassFactory {
     if (isLocal) {
       return LocalInputReader.class;
     } else {
-      return ClusterInputReader.class;
+      return HDFSInputReader.class;
     }
   }
   
@@ -44,7 +44,7 @@ public class ClassFactory {
     if (isLocal) {
       return LocalOutputWriter.class;
     } else {
-      return ClusterOutputWriter.class;
+      return HDFSOutputWriter.class;
     }
   }
 }
