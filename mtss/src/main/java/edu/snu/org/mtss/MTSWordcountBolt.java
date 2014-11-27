@@ -17,6 +17,8 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import edu.snu.org.util.Timescale;
 import edu.snu.org.util.ValueAndTimestamp;
+import edu.snu.org.util.WordCountUtils;
+import edu.snu.org.util.WordCountUtils.StartTimeAndTotalCount;
 
 /*
  * Multi time-scale operator
@@ -64,26 +66,13 @@ public class MTSWordcountBolt extends BaseRichBolt {
         @Override
         public void onNext(MTSOutput<String, ValueAndTimestamp<Integer>> data) {
           
-          Map<String, ValueAndTimestamp<Integer>> map = data.result;
-          
-          long totalCnt = 0;
-          long avgStartTime = 0;
-          for (ValueAndTimestamp<Integer> val : map.values()) {
-            long temp = totalCnt + val.value;
-
-            if (temp > 0) {
-              avgStartTime = (long)((totalCnt * avgStartTime) / (double)temp + val.timestamp / (double)temp);
-            }
-            
-            totalCnt = temp;
-          }
-          
-          collector.emit("size" + data.sizeOfWindow, new Values(data.result, avgStartTime, totalCnt));
+          StartTimeAndTotalCount stc = WordCountUtils.getAverageStartTimeAndTotalCount(data.result);
+          collector.emit("size" + data.sizeOfWindow, new Values(data.result, stc.avgStartTime, stc.totalCount));
         }
       });
       
     } catch (Exception e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
   }
   

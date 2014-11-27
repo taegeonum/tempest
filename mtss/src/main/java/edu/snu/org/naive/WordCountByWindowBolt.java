@@ -17,6 +17,8 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import edu.snu.org.util.WordCountUtils;
+import edu.snu.org.util.WordCountUtils.StartTimeAndTotalCount;
 import edu.snu.org.util.ValueAndTimestamp;
 
 /**
@@ -92,20 +94,9 @@ public class WordCountByWindowBolt extends BaseRichBolt{
 
     @Override
     public void onNext(Map<String, ValueAndTimestamp<Integer>> reduced) {
-      //Map<String, Integer> result = new HashMap<>();
-      long avgStartTime = 0;
-      long totalCnt = 0;
-      for(String key: reduced.keySet()) {
-        int count = reduced.get(key).value;
-        
-        long temp = totalCnt + count;
-        if (temp > 0) {
-          avgStartTime = (long)((totalCnt * avgStartTime) / (double)temp + reduced.get(key).timestamp / (double)temp);
-        }
-        
-        totalCnt = temp;
-      }
-      collector.emit(new Values(reduced, avgStartTime, totalCnt));
+      
+      StartTimeAndTotalCount stc = WordCountUtils.getAverageStartTimeAndTotalCount(reduced);
+      collector.emit(new Values(reduced, stc.avgStartTime, stc.totalCount));
     }
     
   }
