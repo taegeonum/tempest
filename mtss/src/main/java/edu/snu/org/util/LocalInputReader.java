@@ -14,8 +14,11 @@ import edu.snu.org.WordCountApp.InputFilePath;
 
 public class LocalInputReader implements InputReader {
   
+  /*
+   * It doesn't guarantee concurrent read
+   */
   private final String inputPath;
-  private final AtomicBoolean inputStarted = new AtomicBoolean(false);
+  private boolean inputStarted = false;
   private File inputFile;
   private Scanner sc;
   
@@ -62,7 +65,8 @@ public class LocalInputReader implements InputReader {
   }
   
   private void inputStart() {
-    if (inputStarted.compareAndSet(false, true)) {
+    if (!inputStarted) {
+      inputStarted = true;
       inputFile = new File(inputPath);
       
       if (!inputFile.isFile()) {

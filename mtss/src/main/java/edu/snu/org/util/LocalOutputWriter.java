@@ -11,8 +11,12 @@ import org.apache.reef.tang.annotations.Parameter;
 
 public class LocalOutputWriter implements OutputWriter {
   
+  /*
+   * It doesn't guarantee concurrent write
+   */
+  
   private final String outputPath;
-  private final AtomicBoolean outputStarted = new AtomicBoolean(false);
+  private boolean outputStarted = false;
   private FileWriter outputWriter;
   
   @Inject
@@ -51,7 +55,8 @@ public class LocalOutputWriter implements OutputWriter {
   
   private void outputStart() {
     
-    if (outputStarted.compareAndSet(false, true)) {
+    if (!outputStarted) {
+      outputStarted = true;
       try {
         outputWriter = new FileWriter(outputPath);
       } catch (IOException e) {
