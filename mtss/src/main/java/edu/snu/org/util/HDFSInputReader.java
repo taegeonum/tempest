@@ -26,7 +26,7 @@ public class HDFSInputReader implements InputReader {
   private FileSystem fs;
   private BufferedReader br;
   private Configuration config;
-  private final AtomicBoolean started = new AtomicBoolean(false);
+  private boolean started = false;
   
   @Inject
   public HDFSInputReader(@Parameter(InputFilePath.class) String path) {
@@ -60,7 +60,8 @@ public class HDFSInputReader implements InputReader {
 
   
   private void start() {
-    if (started.compareAndSet(false, true)) {
+    if (!started) {
+      started = true;
       this.path = new Path(inputPath);
       config = new Configuration();
       String hadoop_home = System.getenv("HADOOP_HOME");

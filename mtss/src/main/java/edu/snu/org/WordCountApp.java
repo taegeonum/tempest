@@ -203,17 +203,9 @@ public class WordCountApp {
     // if the directory does not exist, create it
     if (!theDir.exists()) {
       LOG.log(Level.INFO, "creating directory: " + dir);
-      boolean result = false;
+      theDir.mkdir();
+      LOG.log(Level.INFO, dir +" directory is created");
 
-      try{
-          theDir.mkdir();
-          result = true;
-       } catch(SecurityException se){
-          //handle it
-       }        
-       if(result) {    
-         LOG.log(Level.INFO, dir +" directory is created");
-       }
     } else {
       LOG.log(Level.INFO, "Dir " + dir + " is already exist.");
     }

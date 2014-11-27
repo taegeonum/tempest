@@ -24,12 +24,11 @@ public class HDFSOutputWriter implements OutputWriter {
   private BufferedWriter br;
   private Configuration config;
   private final String outputPath;
-  private final AtomicBoolean started;
+  private boolean started = false;
   
   @Inject
   public HDFSOutputWriter(@Parameter(OutputFilePath.class) String outputPath) {
     this.outputPath = outputPath;
-    this.started = new AtomicBoolean(false);
   }
 
   @Override
@@ -53,7 +52,8 @@ public class HDFSOutputWriter implements OutputWriter {
   }
   
   private void start() {
-    if (started.compareAndSet(false, true)) {
+    if (!started) {
+      started = true;
       this.path = new Path(outputPath);
       config = new Configuration();
       String hadoop_home = System.getenv("HADOOP_HOME");
