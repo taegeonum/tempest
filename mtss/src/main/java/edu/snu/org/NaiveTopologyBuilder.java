@@ -60,15 +60,16 @@ public class NaiveTopologyBuilder implements AppTopologyBuilder {
     
     int i = 0;
     for (Timescale ts : timescales) {
-      Injector ij = Tang.Factory.getTang().newInjector(cb.build());
       int windowSize = (int)ts.windowSize;
       int slideInterval = (int)ts.intervalSize;
-      ij.bindVolatileParameter(OutputFilePath.class, outputDir + "naive-window-" + windowSize + "-" + slideInterval);
-      TotalRankingsBolt rankingBolt;
-      rankingBolt = ij.getInstance(TotalRankingsBolt.class);
-
-      ij.bindVolatileParameter(WindowLength.class, windowSize);
-      ij.bindVolatileParameter(SlideInterval.class, slideInterval);
+      
+      JavaConfigurationBuilder childConfig = Tang.Factory.getTang().newConfigurationBuilder();
+      childConfig.bindNamedParameter(OutputFilePath.class, outputDir + "naive-window-" + windowSize + "-" + slideInterval);
+      childConfig.bindNamedParameter(WindowLength.class, windowSize+"");
+      childConfig.bindNamedParameter(SlideInterval.class, slideInterval+"");
+      Injector ij = Tang.Factory.getTang().newInjector(cb.build(), childConfig.build());  // use all these configs together
+      
+      TotalRankingsBolt rankingBolt = ij.getInstance(TotalRankingsBolt.class);
       
       builder.setBolt(counterId + i, ij.getInstance(WordCountByWindowBolt.class), numBolt)
       .fieldsGrouping(spoutId, new Fields("word"));

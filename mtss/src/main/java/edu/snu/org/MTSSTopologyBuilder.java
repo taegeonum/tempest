@@ -60,8 +60,9 @@ public class MTSSTopologyBuilder implements AppTopologyBuilder {
     
     int i = 0;
     for (Timescale ts : timescales) {
-      Injector ij = Tang.Factory.getTang().newInjector(cb.build());
-      ij.bindVolatileParameter(OutputFilePath.class, outputDir + "mtss-window-" + ts.windowSize + "-" + ts.intervalSize);
+      JavaConfigurationBuilder childConfig = Tang.Factory.getTang().newConfigurationBuilder();
+      childConfig.bindNamedParameter(OutputFilePath.class, outputDir + "mtss-window-" + ts.windowSize + "-" + ts.intervalSize);
+      Injector ij = Tang.Factory.getTang().newInjector(cb.build(), childConfig.build());  // use all these configs together
       TotalRankingsBolt bolt = ij.getInstance(TotalRankingsBolt.class);
       builder.setBolt(totalRankerId+"-"+i, bolt).globalGrouping(counterId, "size" + ts.windowSize);
       i += 1;
