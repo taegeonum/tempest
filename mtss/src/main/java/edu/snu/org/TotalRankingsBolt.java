@@ -1,7 +1,5 @@
 package edu.snu.org;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -10,38 +8,41 @@ import java.util.TreeSet;
 
 import javax.inject.Inject;
 
+import org.apache.reef.tang.annotations.Parameter;
+
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.BasicOutputCollector;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseBasicBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
-import edu.snu.org.util.HDFSWriter;
+import edu.snu.org.WordCountApp.NumBolt;
+import edu.snu.org.WordCountApp.TopN;
+import edu.snu.org.util.OutputWriter;
 import edu.snu.org.util.ValueAndTimestamp;
 
 /**
  * Aggregates all counts and sorts by values
  */
 public class TotalRankingsBolt extends BaseBasicBolt {
-
+  
   private final int numOfInputBolts;
   private int count;
   private final int topN;
   private SortedSet<WordcountTuple> results;
-  private final String name;
-  private FileWriter writer;
   private long avgStartTime;
   private long totalCnt;
   private int startTimeCnt;
-  private HDFSWriter hdfsWriter;
-  private final String folderName;
-
+  private final OutputWriter writer;
+  
   @Inject
-  public TotalRankingsBolt(final int topN, final int numOfInputBolts, String name, String folderName) {
+  public TotalRankingsBolt(@Parameter(TopN.class) final int topN, 
+      @Parameter(NumBolt.class) final int numOfInputBolts, 
+      OutputWriter writer) {
     this.numOfInputBolts = numOfInputBolts;
     this.topN = topN;
-    this.name = name;
-    this.folderName = folderName;
+    this.writer = writer;
+    
     count = 0;
     avgStartTime = 0;
     totalCnt = 0;
@@ -50,13 +51,7 @@ public class TotalRankingsBolt extends BaseBasicBolt {
   
   @Override
   public void prepare(Map stormConf, TopologyContext context) {
-    try {
-      writer = new FileWriter(folderName + name);
-      //hdfsWriter = new HDFSWriter(folderName + "/" + name);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    
+
   }
 
   @Override
@@ -91,20 +86,14 @@ public class TotalRankingsBolt extends BaseBasicBolt {
         
         list.add(tup);
       }
+      
+      System.out.println(list);
       //collector.emit(new Values(list));
       long endTime = System.currentTimeMillis();
       long latency = endTime - (avgStartTime/Math.max(1, startTimeCnt));
       
-      try {
-        writer.write(latency + "\t" + totalCnt + "\n");
-        writer.flush();
-        //hdfsWriter.write(latency + "\t" + totalCnt + "\n");
-        //writer.flush();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+      writer.writeLine(latency + "\t" + totalCnt);
       results.clear();
-      
       avgStartTime = totalCnt = startTimeCnt = 0;
     }
   }
@@ -117,12 +106,8 @@ public class TotalRankingsBolt extends BaseBasicBolt {
   @Override
   public void cleanup() {
     try {
-      //writer.write("Cleanup\n");
       writer.close();
-      // TODO: copy local file to HDFS
-      //hdfsWriter.copyFromLocalFile(new Path("/tmp/storm-app/" + name), new Path(hdfsWriter.getDefaultFSName() + "/storm_result/" + name));
-      //hdfsWriter.close();
-    } catch (IOException e) {
+    } catch (Exception e) {
       e.printStackTrace();
     }
   }
