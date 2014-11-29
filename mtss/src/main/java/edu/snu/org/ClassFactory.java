@@ -3,6 +3,12 @@ package edu.snu.org;
 import java.security.InvalidParameterException;
 
 import backtype.storm.topology.base.BaseRichSpout;
+import edu.snu.org.util.HDFSInputReader;
+import edu.snu.org.util.HDFSOutputWriter;
+import edu.snu.org.util.InputReader;
+import edu.snu.org.util.LocalInputReader;
+import edu.snu.org.util.LocalOutputWriter;
+import edu.snu.org.util.OutputWriter;
 
 public class ClassFactory {
 
@@ -23,6 +29,22 @@ public class ClassFactory {
       return RandomWordSpout.class;
     } else {
       throw new InvalidParameterException("There is no spout matched with: " + spout);
+    }
+  }
+  
+  public static final Class<? extends InputReader> createInputReaderClass(boolean isLocal) {
+    if (isLocal) {
+      return LocalInputReader.class;
+    } else {
+      return HDFSInputReader.class;
+    }
+  }
+  
+  public static final Class<? extends OutputWriter> createOutputWriterClass(boolean isLocal) {
+    if (isLocal) {
+      return LocalOutputWriter.class;
+    } else {
+      return HDFSOutputWriter.class;
     }
   }
 }

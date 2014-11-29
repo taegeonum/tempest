@@ -4,6 +4,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.inject.Inject;
+
+import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.wake.EventHandler;
 
 import backtype.storm.Config;
@@ -15,8 +18,12 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import edu.snu.org.WordCountApp.TimescaleClass;
+import edu.snu.org.WordCountApp.TimescaleList;
 import edu.snu.org.util.Timescale;
 import edu.snu.org.util.ValueAndTimestamp;
+import edu.snu.org.util.WordCountUtils;
+import edu.snu.org.util.WordCountUtils.StartTimeAndTotalCount;
 
 /*
  * Multi time-scale operator
@@ -29,8 +36,9 @@ public class MTSWordcountBolt extends BaseRichBolt {
   private long time;
   private OutputCollector collector;
   
-  public MTSWordcountBolt(List<Timescale> timescales) throws Exception {
-    this.timescales = timescales;
+  @Inject
+  public MTSWordcountBolt(@Parameter(TimescaleList.class) TimescaleClass tsClass) throws Exception {
+    this.timescales = tsClass.timescales;
     this.tickTime = MTSOperator.tickTime(timescales);
   }
   
@@ -64,22 +72,13 @@ public class MTSWordcountBolt extends BaseRichBolt {
         @Override
         public void onNext(MTSOutput<String, ValueAndTimestamp<Integer>> data) {
           
-          Map<String, ValueAndTimestamp<Integer>> map = data.result;
-          
-          long totalCnt = 0;
-          long avgStartTime = 0;
-          for (ValueAndTimestamp<Integer> val : map.values()) {
-            totalCnt += val.value;
-            avgStartTime += val.timestamp;
-          }
-          
-          avgStartTime /= Math.max(1, totalCnt);
-          collector.emit("size" + data.sizeOfWindow, new Values(data.result, avgStartTime, totalCnt));
+          StartTimeAndTotalCount stc = WordCountUtils.getAverageStartTimeAndTotalCount(data.result);
+          collector.emit("size" + data.sizeOfWindow, new Values(data.result, stc.avgStartTime, stc.totalCount));
         }
       });
       
     } catch (Exception e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
   }
   
