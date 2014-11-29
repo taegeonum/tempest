@@ -23,7 +23,7 @@ for dirname in os.listdir(path):
 
     for filename in os.listdir(new_path):
         category = filename.split("-")[0]
-        if filename.split("-")[1] != "window":
+        if len(filename.split("-")) < 3 or filename.split("-")[1] != "window":
             continue
 
         if category not in avg_latency:
@@ -41,7 +41,7 @@ for dirname in os.listdir(path):
         throughputs = []
         lines = [line.strip() for line in data_file]
     
-        for line in lines[len(lines)*0.5:len(lines)*0.9]:
+        for line in lines[int(len(lines)*0.5):int(len(lines)*0.9)]:
             if(len(line.split()) < 2):
                 continue
             latencies += [int(line.split()[0])]

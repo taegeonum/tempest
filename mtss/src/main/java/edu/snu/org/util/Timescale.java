@@ -8,12 +8,11 @@ public class Timescale implements Comparable, Serializable {
   /**
    * Represent timescale
    * Window size and interval 
+   * Unit: sec
    */
   private static final long serialVersionUID = 439658002747284570L;
   public final long windowSize;
   public final long intervalSize;
-  public final TimeUnit windowTimeUnit;
-  public final TimeUnit intervalTimeUnit;
   
   public Timescale(final int windowSize, final int intervalSize, final TimeUnit windowTimeUnit, final TimeUnit intervalTimeUnit) {
     
@@ -23,8 +22,6 @@ public class Timescale implements Comparable, Serializable {
     
     this.windowSize = windowTimeUnit.toSeconds(windowSize);
     this.intervalSize = intervalTimeUnit.toSeconds(intervalSize);
-    this.windowTimeUnit = windowTimeUnit;
-    this.intervalTimeUnit = intervalTimeUnit;
   }
 
   @Override
@@ -40,6 +37,31 @@ public class Timescale implements Comparable, Serializable {
     }
   }
   
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + (int) (intervalSize ^ (intervalSize >>> 32));
+    result = prime * result + (int) (windowSize ^ (windowSize >>> 32));
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    Timescale other = (Timescale) obj;
+    if (intervalSize != other.intervalSize)
+      return false;
+    if (windowSize != other.windowSize)
+      return false;
+    return true;
+  }
+
   @Override
   public String toString() {
     return "[" + windowSize + ", " + intervalSize + "]";
