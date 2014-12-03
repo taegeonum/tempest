@@ -40,7 +40,7 @@ public class MTSSTopologyBuilder implements AppTopologyBuilder {
       @Parameter(Local.class) boolean isLocal) throws InjectionException {
     
     String spoutId = "wordGenerator";
-    String counterId = "mtsOperator";
+    String counterId = "MTSSOperator";
     String totalRankerId = "finalRanker";
     List<Timescale> timescales = tclass.timescales;
 

@@ -24,11 +24,11 @@ public class FileReadWordSpout extends BaseRichSpout {
 
 
   SpoutOutputCollector _collector;
-  private final int sendingInterval;
+  private final double sendingInterval;
   private final InputReader reader;
   
   @Inject
-  public FileReadWordSpout(@Parameter(InputInterval.class) int sendingInterval, 
+  public FileReadWordSpout(@Parameter(InputInterval.class) double sendingInterval, 
       InputReader reader) {
     this.sendingInterval = sendingInterval;
     this.reader = reader;
@@ -41,12 +41,24 @@ public class FileReadWordSpout extends BaseRichSpout {
 
   @Override
   public void nextTuple() {
-    String input = reader.nextLine();
-    for(String word: input.split(" ")) {
-      _collector.emit(new Values(word, 1, System.currentTimeMillis()));
+    
+    double point = sendingInterval - ((int)sendingInterval);
+    long num = (int)sendingInterval;
+    
+    int repeated = 1;
+    if (point > 0) {
+      num += 1;
+      repeated = (int)(1.0 / point);
     }
     
-    Utils.sleep(sendingInterval);
+    for (int i = 0; i < repeated; i++) {
+      String input = reader.nextLine();
+      for(String word: input.split(" ")) {
+        _collector.emit(new Values(word, 1, System.currentTimeMillis()));
+      }
+    }
+    
+    Utils.sleep(num);
   }
 
   @Override
