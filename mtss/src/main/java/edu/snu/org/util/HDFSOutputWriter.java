@@ -1,16 +1,13 @@
 package edu.snu.org.util;
 
-import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.reef.tang.annotations.Parameter;
@@ -21,7 +18,7 @@ public class HDFSOutputWriter implements OutputWriter {
   
   private Path path;
   private FileSystem fs;
-  private BufferedWriter br;
+  private FSDataOutputStream br;
   private Configuration config;
   private final String outputPath;
   private boolean started = false;
@@ -29,6 +26,7 @@ public class HDFSOutputWriter implements OutputWriter {
   @Inject
   public HDFSOutputWriter(@Parameter(OutputFilePath.class) String outputPath) {
     this.outputPath = outputPath;
+    
   }
 
   @Override
@@ -38,8 +36,9 @@ public class HDFSOutputWriter implements OutputWriter {
     LOG.log(Level.INFO, "HDFS Write: " + str);
     
     try {
-      br.write(str);
+      br.write(str.getBytes("UTF-8"));
       br.flush();
+      br.sync();
     } catch (IOException e) {
       LOG.log(Level.SEVERE, e.toString());
       throw new RuntimeException(e);
@@ -74,8 +73,8 @@ public class HDFSOutputWriter implements OutputWriter {
           throw new NullPointerException("Path should not be null.");
         }
 
-        br= new BufferedWriter(new OutputStreamWriter(fs.create(this.path,true)));
-
+        
+        br = (fs.create(this.path,true));
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -84,6 +83,6 @@ public class HDFSOutputWriter implements OutputWriter {
   
   @Override
   public void close() throws IOException {
-    br.close();
   }
+
 }
