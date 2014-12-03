@@ -46,7 +46,7 @@ public class WordCountApp {
   public static final class NumWorkers implements Name<Integer> {}
   
   @NamedParameter(doc = "input interval (ms)", short_name = "input_interval", default_value = "10")
-  public static final class InputInterval implements Name<Integer> {}
+  public static final class InputInterval implements Name<Double> {}
   
   @NamedParameter(doc = "The number of parallel spout", short_name = "num_spout", default_value = "4")
   public static final class NumSpout implements Name<Integer> {}

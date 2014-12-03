@@ -42,7 +42,7 @@ public class NaiveTopologyBuilder implements AppTopologyBuilder {
       @Parameter(Local.class) boolean isLocal) throws InjectionException {
     
     String spoutId = "wordGenerator";
-    String counterId = "mtsOperator";
+    String counterId = "NaiveWindowOperator";
     String totalRankerId = "finalRanker";
     List<Timescale> timescales = tclass.timescales;
 
