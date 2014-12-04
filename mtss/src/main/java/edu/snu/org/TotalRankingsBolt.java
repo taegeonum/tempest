@@ -9,6 +9,8 @@ import java.util.TreeSet;
 import javax.inject.Inject;
 
 import org.apache.reef.tang.annotations.Parameter;
+import org.apache.reef.wake.EventHandler;
+import org.apache.reef.wake.impl.ThreadPoolStage;
 
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.BasicOutputCollector;
@@ -34,6 +36,7 @@ public class TotalRankingsBolt extends BaseBasicBolt {
   private long totalCnt;
   private int startTimeCnt;
   private final OutputWriter writer;
+  private ThreadPoolStage<String> outStage;
   
   @Inject
   public TotalRankingsBolt(@Parameter(TopN.class) final int topN, 
@@ -51,7 +54,15 @@ public class TotalRankingsBolt extends BaseBasicBolt {
   
   @Override
   public void prepare(Map stormConf, TopologyContext context) {
+    
+    outStage = new ThreadPoolStage<>("outThread", new EventHandler<String>() {
 
+      @Override
+      public void onNext(String paramT) {
+        writer.writeLine(paramT);
+      }
+
+    }, 2);
   }
 
   @Override
@@ -92,7 +103,7 @@ public class TotalRankingsBolt extends BaseBasicBolt {
       long endTime = System.currentTimeMillis();
       long latency = endTime - (avgStartTime/Math.max(1, startTimeCnt));
       
-      writer.writeLine(latency + "\t" + totalCnt);
+      outStage.onNext(latency + "\t" + totalCnt);
       results.clear();
       avgStartTime = totalCnt = startTimeCnt = 0;
     }
