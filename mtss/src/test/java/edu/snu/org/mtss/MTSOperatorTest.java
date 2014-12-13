@@ -51,59 +51,59 @@ public class MTSOperatorTest {
     
     System.out.println(operator);
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(1,3));
-    executor.onNext(operator.flush(2L));
+    executor.onNext(operator.flush());
     System.out.println(operator);
 
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(1,4));
-    executor.onNext(operator.flush(4L));
+    executor.onNext(operator.flush());
     System.out.println(operator);
 
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(1,5));
-    executor.onNext(operator.flush(6L));
+    executor.onNext(operator.flush());
     System.out.println(operator);
     
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(1,6));
-    executor.onNext(operator.flush(8L));
+    executor.onNext(operator.flush());
     System.out.println(operator);
     
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(1,7));
-    executor.onNext(operator.flush(10L));
+    executor.onNext(operator.flush());
     System.out.println(operator);
 
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(1,8));
-    executor.onNext(operator.flush(12L));
+    executor.onNext(operator.flush());
     System.out.println(operator);
 
     
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(1,9));
-    executor.onNext(operator.flush(14L));
+    executor.onNext(operator.flush());
     System.out.println(operator);
     
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(1,10));
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(2,2));
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(3,3));
-    executor.onNext(operator.flush(16L));
+    executor.onNext(operator.flush());
     
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(1,10));
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(2,2));
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(3,3));
-    executor.onNext(operator.flush(18L));
+    executor.onNext(operator.flush());
     
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(1,10));
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(2,2));
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(3,3));
-    executor.onNext(operator.flush(20L));
+    executor.onNext(operator.flush());
     
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(1,10));
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(2,2));
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(3,3));
-    executor.onNext(operator.flush(22L));
+    executor.onNext(operator.flush());
     
     
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(1,10));
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(2,2));
     operator.receiveInput(new ReduceByKeyTuple<Integer, Integer>(3,3));
-    executor.onNext(operator.flush(24L));
+    executor.onNext(operator.flush());
     System.out.println(operator);
   }
 }

@@ -5,7 +5,7 @@ import java.util.Collection;
 public interface MTSOperator<I, O> {
   
   public void receiveInput(I input);
-  public Collection<MTSOutput<O>> flush(long time);
+  public Collection<MTSOutput<O>> flush();
   
   public interface ComputationLogic<I, S> {
     public S computeInitialInput(I input);

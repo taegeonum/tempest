@@ -18,6 +18,7 @@ public class DefaultMTSOperator<I, S> implements MTSOperator<I, S> {
   private S interState;
   private final DependencyTable table;
   private final ComputationLogic<I, S> computationLogic;
+  private long time;
   
   /*
    * Implementation MTS operator 
@@ -35,6 +36,7 @@ public class DefaultMTSOperator<I, S> implements MTSOperator<I, S> {
     
     this.computationLogic = computationLogic;
     this.table = new DefaultDependencyTableImpl(timeScales);
+    this.time = table.getBucketSize();
   }
 
   
@@ -54,10 +56,11 @@ public class DefaultMTSOperator<I, S> implements MTSOperator<I, S> {
    * Flush data
    */
   @Override
-  public Collection<MTSOutput<S>> flush(long time) {
+  public Collection<MTSOutput<S>> flush() {
     
     // calculate row
     long row = (time % table.getPeriod()) == 0 ? table.getPeriod() : (time % table.getPeriod());
+    time += table.getBucketSize();
     Map<Timescale, DTCell> cells = table.row(row); 
     S output = interState;
     interState = null;

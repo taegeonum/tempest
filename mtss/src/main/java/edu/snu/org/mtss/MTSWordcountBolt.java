@@ -53,7 +53,7 @@ public class MTSWordcountBolt extends BaseRichBolt {
     if (isTickTuple(tuple)) {
       time += tickTime; 
       // output 
-      executor.onNext(mtsOperator.flush(time));
+      executor.onNext(mtsOperator.flush());
 
     } else {
       String key = (String) tuple.getValue(0);

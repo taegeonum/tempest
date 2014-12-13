@@ -31,8 +31,8 @@ public class ReduceByKeyMTSOperator<K, V> implements MTSOperator<ReduceByKeyTupl
   }
 
   @Override
-  public Collection<MTSOutput<Map<K, V>>> flush(long time) {
-    return this.defaultMTSOperator.flush(time);
+  public Collection<MTSOutput<Map<K, V>>> flush() {
+    return this.defaultMTSOperator.flush();
   }
   
   @Override
