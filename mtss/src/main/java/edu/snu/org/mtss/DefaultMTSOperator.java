@@ -1,26 +1,23 @@
 package edu.snu.org.mtss;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.apache.reef.wake.EventHandler;
-import org.apache.reef.wake.Stage;
 import org.apache.reef.wake.impl.ThreadPoolStage;
 
 import edu.snu.org.mtss.DefaultDependencyTableImpl.Range;
 import edu.snu.org.mtss.DependencyTable.DTCell;
-import edu.snu.org.util.ReduceFunc;
 import edu.snu.org.util.Timescale;
 
-public class DefaultMTSOperator<K, V> implements MTSOperator<K, V> {
+public class DefaultMTSOperator<I, S> implements MTSOperator<I, S> {
 
-  private final ReduceFunc<V> reduceFunc; 
-  private Map<K, V> innerMap;
-  private final EventHandler<MTSOutput<K, V>> outputHandler;
-  private final ThreadPoolStage<MTSOutput<K, V>> executor;
+  private S interState;
   private final DependencyTable table;
+  private final ComputationLogic<I, S> computationLogic;
   
   /*
    * Implementation MTS operator 
@@ -30,19 +27,13 @@ public class DefaultMTSOperator<K, V> implements MTSOperator<K, V> {
    * @param outputHandler output handler 
    */
   public DefaultMTSOperator(List<Timescale> timeScales, 
-      ReduceFunc<V> reduceFunc, 
-      EventHandler<MTSOutput<K, V>> outputHandler) throws Exception {
+      ComputationLogic<I, S> computationLogic) throws Exception {
     
     if (timeScales.size() == 0) {
       throw new Exception("MTSOperator should have multiple timescales");
     }
     
-    
-    this.executor = new ThreadPoolStage<>(outputHandler, timeScales.size());
-    this.reduceFunc = reduceFunc;
-    this.innerMap = new HashMap<>();
-    this.outputHandler = outputHandler;
-    
+    this.computationLogic = computationLogic;
     this.table = new DefaultDependencyTableImpl(timeScales);
   }
 
@@ -51,13 +42,11 @@ public class DefaultMTSOperator<K, V> implements MTSOperator<K, V> {
    * compute data 
    */
   @Override
-  public void addData(K key, V value) {
-    V oldVal = innerMap.get(key);
-    
-    if (oldVal == null) {
-      innerMap.put(key, value);
+  public void receiveInput(I input) {
+    if (interState == null) {
+      interState = computationLogic.computeInitialInput(input);
     } else {
-      innerMap.put(key, reduceFunc.compute(oldVal, value));
+      interState = computationLogic.computeIntermediate(input, interState);
     }
   }
   
@@ -65,63 +54,56 @@ public class DefaultMTSOperator<K, V> implements MTSOperator<K, V> {
    * Flush data
    */
   @Override
-  public void flush(long time) throws Exception {
+  public Collection<MTSOutput<S>> flush(long time) {
     
     // calculate row
     long row = (time % table.getPeriod()) == 0 ? table.getPeriod() : (time % table.getPeriod());
     Map<Timescale, DTCell> cells = table.row(row); 
-    Map<K, V> states = innerMap;
-    innerMap = new HashMap<>();
+    S output = interState;
+    interState = null;
+    
+    List<MTSOutput<S>> outputList = new LinkedList<>();
     
     // Each outputNode presents 
     int i = 0;
     for (DTCell cell : cells.values()) {
-      
       if (cell.getState() != null) {
-        throw new Exception("DTCell state should be null");
+        throw new RuntimeException("DTCell state should be null");
       }
       
-      // Virtual timescale output node
-      if (cell.isVirtualTimescaleCell()) {
-        Range r = cell.getRange();
-        executor.onNext(new MTSOutput<K, V>(time, r.end - r.start, states));
-      } else {
-        // create state from dependencies 
-        states = null;
-        for (DTCell referee : cell.getDependencies()) {
-          // When first iteration, the referee of pointed by redline could have null state. We can skip this when first iteration. 
-          if (referee.getState() != null) {
-            if (states == null) {
-              states = new HashMap<>((HashMap<K,V>)referee.getState());
-            } else {
-              for (Entry<K, V> entry : ((HashMap<K,V>)referee.getState()).entrySet()) {
-                V oldVal = states.get(entry.getKey());
-                V newVal = null;
-                if (oldVal == null) {
-                  newVal = entry.getValue();
-                } else {
-                  newVal = reduceFunc.compute(oldVal, entry.getValue());
-                }
-                states.put(entry.getKey(), newVal);
-              }
-            }
-          }
+      List<S> states = new ArrayList<>();
+      // create state from dependencies 
+      for (DTCell referee : cell.getDependencies()) {
+        // When first iteration, the referee of pointed by redline could have null state. We can skip this when first iteration. 
+        if (referee.getState() != null) {
+          states.add((S)referee.getState());
         }
-        
-        // Flush data to output handler
-        Range r = cell.getRange();
-        outputHandler.onNext(new MTSOutput<K, V>(time, r.end - r.start, states));
+      }
+
+      // compute output
+      if (i != 0) {
+        output = computationLogic.computeOutput(states);
+      }
+
+      // Flush data to output handler
+      Range r = cell.getRange();
+      if (!cell.isVirtualTimescaleCell()) {
+        //outputHandler.onNext(new MTSOutput<S>(time, r.end - r.start, output));
+        outputList.add(new MTSOutput<S>(time, r.end - r.start, output));
       }
 
       // save the state if other outputNodes reference it
       if (cell.getRefCnt() > 0) {
-        cell.setState(states); 
+        cell.setState(output); 
       }
-      
+      output = null;
+
       // decrease the dependencies refCnt
       decreaseDependenciesRefCnt(cell);
       i++;
+
     }
+    return outputList;
   }
 
 
@@ -132,11 +114,6 @@ public class DefaultMTSOperator<K, V> implements MTSOperator<K, V> {
         referee.decreaseRefCnt();
       }
     }
-  }
-
-  @Override
-  public long tickTime() {
-    return table.getBucketSize();
   }
   
   @Override

@@ -1,14 +1,13 @@
 package edu.snu.org.mtss;
 
-import java.util.Map;
 
-public class MTSOutput<K, V> {
+public class MTSOutput<O> {
 
   public final long time;
   public final long sizeOfWindow;
-  public final Map<K, V> result;
+  public final O result;
   
-  public MTSOutput(final long time, final long sizeOfWindow, final Map<K, V> result) {
+  public MTSOutput(final long time, final long sizeOfWindow, final O result) {
     this.time = time;
     this.sizeOfWindow = sizeOfWindow;
     this.result = result;

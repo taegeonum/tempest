@@ -98,11 +98,11 @@ public class TotalRankingsBolt extends BaseBasicBolt {
         list.add(tup);
       }
       
-      System.out.println(list);
       //collector.emit(new Values(list));
       long endTime = System.currentTimeMillis();
       long latency = endTime - (avgStartTime/Math.max(1, startTimeCnt));
       
+      System.out.println(results);
       outStage.onNext(latency + "\t" + totalCnt);
       results.clear();
       avgStartTime = totalCnt = startTimeCnt = 0;

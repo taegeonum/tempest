@@ -1,8 +1,15 @@
 package edu.snu.org.mtss;
 
-public interface MTSOperator<K, V> {
+import java.util.Collection;
+
+public interface MTSOperator<I, O> {
   
-  public void addData(K key, V value);
-  public void flush(long time) throws Exception;
-  public long tickTime();
+  public void receiveInput(I input);
+  public Collection<MTSOutput<O>> flush(long time);
+  
+  public interface ComputationLogic<I, S> {
+    public S computeInitialInput(I input);
+    public S computeIntermediate(I input, S state);
+    public S computeOutput(Collection<S> states);
+  }
 }
