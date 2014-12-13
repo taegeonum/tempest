@@ -24,7 +24,7 @@ public class MTSOperatorTest {
     timescales.add(new Timescale(4, 2, TimeUnit.SECONDS, TimeUnit.SECONDS));
     timescales.add(new Timescale(6, 4, TimeUnit.SECONDS, TimeUnit.SECONDS));
 
-    MTSOperator<Integer, Integer> operator = new MTSOperator<Integer, Integer>(timescales, new ReduceFunc<Integer>() {
+    MTSOperator<Integer, Integer> operator = new DefaultMTSOperator<Integer, Integer>(timescales, new ReduceFunc<Integer>() {
       @Override
       public Integer compute(Integer value, Integer sofar) {
         return value + sofar;

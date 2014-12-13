@@ -39,7 +39,6 @@ public class MTSWordcountBolt extends BaseRichBolt {
   @Inject
   public MTSWordcountBolt(@Parameter(TimescaleList.class) TimescaleClass tsClass) throws Exception {
     this.timescales = tsClass.timescales;
-    this.tickTime = MTSOperator.tickTime(timescales);
   }
   
   @Override
@@ -68,7 +67,7 @@ public class MTSWordcountBolt extends BaseRichBolt {
     this.collector = collector;
     
     try {
-      this.mtsOperator = new MTSOperator<String, ValueAndTimestamp<Integer>>(timescales, new CountTimestampFunc<Integer>(new Count()), new EventHandler<MTSOutput<String, ValueAndTimestamp<Integer>>>() {
+      this.mtsOperator = new DefaultMTSOperator<String, ValueAndTimestamp<Integer>>(timescales, new CountTimestampFunc<Integer>(new Count()), new EventHandler<MTSOutput<String, ValueAndTimestamp<Integer>>>() {
         @Override
         public void onNext(MTSOutput<String, ValueAndTimestamp<Integer>> data) {
           
@@ -77,6 +76,7 @@ public class MTSWordcountBolt extends BaseRichBolt {
         }
       });
       
+      this.tickTime = mtsOperator.tickTime();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -85,7 +85,7 @@ public class MTSWordcountBolt extends BaseRichBolt {
   @Override
   public void cleanup() {
     try {
-      this.mtsOperator.close();
+
     } catch (Exception e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
