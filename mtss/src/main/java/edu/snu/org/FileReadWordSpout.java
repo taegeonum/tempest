@@ -13,7 +13,7 @@ import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
-import edu.snu.org.WordCountApp.InputInterval;
+import edu.snu.org.TestApp.InputInterval;
 import edu.snu.org.util.InputReader;
 
 
@@ -43,7 +43,7 @@ public class FileReadWordSpout extends BaseRichSpout {
   public void nextTuple() {
     
     double point = sendingInterval - ((int)sendingInterval);
-    long num = (int)sendingInterval;
+    long num = (long)sendingInterval;
     
     int repeated = 1;
     if (point > 0) {

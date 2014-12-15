@@ -14,7 +14,7 @@ import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
-import edu.snu.org.WordCountApp.InputInterval;
+import edu.snu.org.TestApp.InputInterval;
 
 /**
  * Sends randomly selected words continuously

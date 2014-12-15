@@ -5,12 +5,12 @@ import java.util.Map;
 
 public class WordCountUtils {
   
-  public static StartTimeAndTotalCount getAverageStartTimeAndTotalCount(Map<String, ValueAndTimestamp<Integer>> map) {
+  public static <K, V> StartTimeAndTotalCount getAverageStartTimeAndTotalCount(Map<K, ValueAndTimestampWithCount<V>> map) {
     
     long totalCnt = 0;
     long avgStartTime = 0;
-    for (ValueAndTimestamp<Integer> val : map.values()) {
-      long temp = totalCnt + val.value;
+    for (ValueAndTimestampWithCount<V> val : map.values()) {
+      long temp = totalCnt + val.count;
 
       if (temp > 0) {
         avgStartTime = (long)((totalCnt * avgStartTime) / (double)temp + val.timestamp / (double)temp);

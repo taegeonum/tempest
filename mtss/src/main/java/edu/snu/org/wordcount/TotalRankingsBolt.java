@@ -1,4 +1,4 @@
-package edu.snu.org;
+package edu.snu.org.wordcount;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -18,10 +18,10 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseBasicBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
-import edu.snu.org.WordCountApp.NumBolt;
-import edu.snu.org.WordCountApp.TopN;
+import edu.snu.org.TestApp.NumBolt;
+import edu.snu.org.TestApp.TopN;
 import edu.snu.org.util.OutputWriter;
-import edu.snu.org.util.ValueAndTimestamp;
+import edu.snu.org.util.ValueAndTimestampWithCount;
 
 /**
  * Aggregates all counts and sorts by values
@@ -62,13 +62,13 @@ public class TotalRankingsBolt extends BaseBasicBolt {
         writer.writeLine(paramT);
       }
 
-    }, 2);
+    }, 1);
   }
 
   @Override
   public void execute(Tuple tuple, BasicOutputCollector collector) {
     count++;
-    Map<String, ValueAndTimestamp<Integer>> aggWordCnt = (Map) tuple.getValue(0);
+    Map<String, ValueAndTimestampWithCount<Integer>> aggWordCnt = (Map) tuple.getValue(0);
     long avgSt = (long)tuple.getLong(1);
     avgStartTime += avgSt;
     
@@ -79,7 +79,7 @@ public class TotalRankingsBolt extends BaseBasicBolt {
     totalCnt += (long)tuple.getLong(2);
     
     // sort
-    for (Map.Entry<String, ValueAndTimestamp<Integer>> entry : aggWordCnt.entrySet()) {
+    for (Map.Entry<String, ValueAndTimestampWithCount<Integer>> entry : aggWordCnt.entrySet()) {
       WordcountTuple wcTuple = new WordcountTuple(entry.getKey(), entry.getValue().value);
       results.add(wcTuple);
     }

@@ -1,4 +1,4 @@
-package edu.snu.org.naive;
+package edu.snu.org.wordcount;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -7,8 +7,6 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
 import org.apache.log4j.Logger;
-import org.apache.reef.tang.annotations.Name;
-import org.apache.reef.tang.annotations.NamedParameter;
 import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.wake.EventHandler;
 import org.apache.reef.wake.impl.ThreadPoolStage;
@@ -22,9 +20,12 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import edu.snu.org.naive.SlidingWindow;
+import edu.snu.org.util.ValueAndTimestampWithCount;
 import edu.snu.org.util.WordCountUtils;
 import edu.snu.org.util.WordCountUtils.StartTimeAndTotalCount;
-import edu.snu.org.util.ValueAndTimestamp;
+import edu.snu.org.wordcount.WindowBoltParameter.SlideInterval;
+import edu.snu.org.wordcount.WindowBoltParameter.WindowLength;
 
 /**
  * This bolt counts word by window
@@ -36,15 +37,11 @@ public class WordCountByWindowBolt extends BaseRichBolt{
   private int bucketLength;
   private int bucketNum;
   private int bucketCount;
-  private SlidingWindow<String, ValueAndTimestamp<Integer>> slidingWindow;
+  private SlidingWindow<String, ValueAndTimestampWithCount<Integer>> slidingWindow;
   private OutputCollector collector;
-  private ThreadPoolStage<Map<String, ValueAndTimestamp<Integer>>> stage;
+  private ThreadPoolStage<Map<String, ValueAndTimestampWithCount<Integer>>> stage;
 
-  @NamedParameter
-  public static final class WindowLength implements Name<Integer> {}
-  
-  @NamedParameter
-  public static final class SlideInterval implements Name<Integer> {}
+
   /**
    * Calculates the greatest common divider of integer a and b.
    * Assumes that a >= b
@@ -89,7 +86,7 @@ public class WordCountByWindowBolt extends BaseRichBolt{
     if(tuple.getSourceComponent().equals(Constants.SYSTEM_COMPONENT_ID) && tuple.getSourceStreamId().equals(
         Constants.SYSTEM_TICK_STREAM_ID)) {
       //slide();
-      Map<String, ValueAndTimestamp<Integer>> reduced = slidingWindow.getResultAndSlideBucket();
+      Map<String, ValueAndTimestampWithCount<Integer>> reduced = slidingWindow.getResultAndSlideBucket();
       stage.onNext(reduced);
     }
     // Bolt receives normal tuple
@@ -103,10 +100,10 @@ public class WordCountByWindowBolt extends BaseRichBolt{
     declarer.declare(new Fields("countMap", "averageTimestamp", "totalCount"));
   }
 
-  private final class Slide implements EventHandler<Map<String, ValueAndTimestamp<Integer>>> {
+  private final class Slide implements EventHandler<Map<String, ValueAndTimestampWithCount<Integer>>> {
 
     @Override
-    public void onNext(Map<String, ValueAndTimestamp<Integer>> reduced) {
+    public void onNext(Map<String, ValueAndTimestampWithCount<Integer>> reduced) {
       
       StartTimeAndTotalCount stc = WordCountUtils.getAverageStartTimeAndTotalCount(reduced);
       collector.emit(new Values(reduced, stc.avgStartTime, stc.totalCount));
@@ -118,7 +115,7 @@ public class WordCountByWindowBolt extends BaseRichBolt{
 
     // Slides the window and get results
     if (bucketCount % slideIntervalByBucket == 0) {
-      Map<String, ValueAndTimestamp<Integer>> reduced = slidingWindow.getResultAndSlideBucket();
+      Map<String, ValueAndTimestampWithCount<Integer>> reduced = slidingWindow.getResultAndSlideBucket();
       long totalTimestamp = 0;
       long totalCount = 0;
       for(String key: reduced.keySet()) {
@@ -149,7 +146,7 @@ public class WordCountByWindowBolt extends BaseRichBolt{
     String key = (String) tuple.getValue(0);
     Integer value = (Integer) tuple.getValue(1);
     Long timestamp = (Long) tuple.getValue(2);
-    slidingWindow.reduce(key, new ValueAndTimestamp(value, timestamp));
+    slidingWindow.reduce(key, new ValueAndTimestampWithCount(value, timestamp, 1));
     collector.ack(tuple);
   }
 

@@ -1,4 +1,4 @@
-package edu.snu.org.mtss;
+package edu.snu.org.grouping;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -20,31 +20,37 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import edu.snu.org.WordCountApp.TimescaleClass;
-import edu.snu.org.WordCountApp.TimescaleList;
+import edu.snu.org.TestApp.TimescaleClass;
+import edu.snu.org.TestApp.TimescaleList;
+import edu.snu.org.mtss.MTSOutput;
+import edu.snu.org.mtss.ReduceByKeyComputation;
+import edu.snu.org.mtss.ReduceByKeyMTSOperator;
 import edu.snu.org.util.ReduceByKeyTuple;
 import edu.snu.org.util.Timescale;
-import edu.snu.org.util.ValueAndTimestamp;
+import edu.snu.org.util.ValueAndTimestampWithCount;
 import edu.snu.org.util.WordCountUtils;
 import edu.snu.org.util.WordCountUtils.StartTimeAndTotalCount;
+import edu.snu.org.wordcount.ValueAndTimestampWithCountFunc;
+
 
 /*
- * Multi time-scale operator
+ * Calculate word length histogram
+ * 
  */
-public class MTSWordcountBolt extends BaseRichBolt {
+
+public class WordGroupingMTSSWindowBolt extends BaseRichBolt {
 
   private final List<Timescale> timescales;
-  private ReduceByKeyMTSOperator<String, ValueAndTimestamp<Integer>> mtsOperator;
+  private ReduceByKeyMTSOperator<Character, ValueAndTimestampWithCount<Long>> mtsOperator;
   private long tickTime;
   private long time;
   private OutputCollector collector;
-  private ThreadPoolStage<Collection<MTSOutput<Map<String, ValueAndTimestamp<Integer>>>>> executor;
-  
+  private ThreadPoolStage<Collection<MTSOutput<Map<Character, ValueAndTimestampWithCount<Long>>>>> executor;
+
   @Inject
-  public MTSWordcountBolt(@Parameter(TimescaleList.class) TimescaleClass tsClass) throws Exception {
+  public WordGroupingMTSSWindowBolt(@Parameter(TimescaleList.class) TimescaleClass tsClass) throws Exception {
     this.timescales = tsClass.timescales;
     this.tickTime = WordCountUtils.tickTime(timescales);
-
   }
   
   @Override
@@ -53,14 +59,21 @@ public class MTSWordcountBolt extends BaseRichBolt {
     if (isTickTuple(tuple)) {
       time += tickTime; 
       // output 
-      executor.onNext(mtsOperator.flush());
-
+      try {
+        executor.onNext(mtsOperator.flush());
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
     } else {
-      String key = (String) tuple.getValue(0);
-      int count = (int)tuple.getValue(1);
-      long timestamp = (long)tuple.getValue(2);
-      mtsOperator.receiveInput(new ReduceByKeyTuple<>(key, new ValueAndTimestamp<Integer>(count, timestamp)));
-      collector.ack(tuple);
+      String val = (String) tuple.getValue(0);
+      val.trim();
+      if (val.length() > 0) {
+        Character key = val.charAt(0);
+        long timestamp = (long)tuple.getValue(2);
+        mtsOperator.receiveInput(new ReduceByKeyTuple<>(key, new ValueAndTimestampWithCount<Long>(1L, timestamp, 1)));
+        collector.ack(tuple);
+      }
+
     }
   }
 
@@ -69,20 +82,23 @@ public class MTSWordcountBolt extends BaseRichBolt {
       final OutputCollector collector) {
     this.collector = collector;
     
-    this.executor = new ThreadPoolStage<>("stage",new EventHandler<Collection<MTSOutput<Map<String, ValueAndTimestamp<Integer>>>>>() {
-      @Override
-      public void onNext(Collection<MTSOutput<Map<String, ValueAndTimestamp<Integer>>>> outputList) {
+    this.executor = new ThreadPoolStage<>("stage", new EventHandler<Collection<MTSOutput<Map<Character, ValueAndTimestampWithCount<Long>>>>>() {
 
-        for (MTSOutput<Map<String, ValueAndTimestamp<Integer>>> data : outputList) {
-          StartTimeAndTotalCount stc = WordCountUtils.getAverageStartTimeAndTotalCount(data.result);
-          collector.emit("size" + data.sizeOfWindow, new Values(data.result, stc.avgStartTime, stc.totalCount));
+      @Override
+      public void onNext(
+          Collection<MTSOutput<Map<Character, ValueAndTimestampWithCount<Long>>>> paramT) {
+        
+        for (MTSOutput<Map<Character, ValueAndTimestampWithCount<Long>>> output : paramT) {
+          StartTimeAndTotalCount stc = WordCountUtils.getAverageStartTimeAndTotalCount(output.result);
+          collector.emit("size" + output.sizeOfWindow, new Values(output.result, stc.avgStartTime, stc.totalCount));        
         }
       }
+      
     }, timescales.size());
     
     try {
       this.mtsOperator = new ReduceByKeyMTSOperator<>(
-              timescales, new ReduceByKeyComputation<String, ValueAndTimestamp<Integer>>(new CountTimestampFunc<Integer>(new Count())));
+              timescales, new ReduceByKeyComputation<Character, ValueAndTimestampWithCount<Long>>(new ValueAndTimestampWithCountFunc<Long>(new CountLong())));
       
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -91,12 +107,6 @@ public class MTSWordcountBolt extends BaseRichBolt {
   
   @Override
   public void cleanup() {
-    try {
-
-    } catch (Exception e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
   }
 
   @Override

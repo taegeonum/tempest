@@ -3,12 +3,18 @@ package edu.snu.org;
 import java.security.InvalidParameterException;
 
 import backtype.storm.topology.base.BaseRichSpout;
+import edu.snu.org.UniqWordCount.UniqWordCountMTSSBuilder;
+import edu.snu.org.UniqWordCount.UniqWordCountNaiveBuilder;
+import edu.snu.org.grouping.WordGroupingMTSSBuilder;
+import edu.snu.org.grouping.WordGroupingNaiveBuilder;
 import edu.snu.org.util.HDFSInputReader;
 import edu.snu.org.util.HDFSOutputWriter;
 import edu.snu.org.util.InputReader;
 import edu.snu.org.util.LocalInputReader;
 import edu.snu.org.util.LocalOutputWriter;
 import edu.snu.org.util.OutputWriter;
+import edu.snu.org.wordcount.MTSSTopologyBuilder;
+import edu.snu.org.wordcount.NaiveTopologyBuilder;
 
 public class ClassFactory {
 
@@ -17,6 +23,14 @@ public class ClassFactory {
       return MTSSTopologyBuilder.class;
     } else if (appName.compareTo("NaiveTopology") == 0) {
       return NaiveTopologyBuilder.class;
+    } else if (appName.compareTo("WordGroupingMTSSTopology") == 0) {
+      return WordGroupingMTSSBuilder.class;
+    } else if (appName.compareTo("WordGroupingNaiveTopology") == 0) {
+      return WordGroupingNaiveBuilder.class;
+    } else if (appName.compareTo("UniqWordCountMTSSTopology") == 0) {
+      return UniqWordCountMTSSBuilder.class;
+    } else if (appName.compareTo("UniqWordCountNaiveTopology") == 0) {
+      return UniqWordCountNaiveBuilder.class;
     } else {
       throw new InvalidParameterException("There is no topology builder matched with: " + appName);
     }

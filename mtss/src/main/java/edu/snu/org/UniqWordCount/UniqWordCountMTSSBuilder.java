@@ -1,4 +1,4 @@
-package edu.snu.org;
+package edu.snu.org.UniqWordCount;
 
 import java.util.List;
 
@@ -14,42 +14,45 @@ import backtype.storm.generated.StormTopology;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
-import edu.snu.org.WordCountApp.Local;
-import edu.snu.org.WordCountApp.NumBolt;
-import edu.snu.org.WordCountApp.NumSpout;
-import edu.snu.org.WordCountApp.TimescaleClass;
-import edu.snu.org.WordCountApp.TimescaleList;
-import edu.snu.org.WordCountApp.TopN;
-import edu.snu.org.naive.WordCountByWindowBolt;
-import edu.snu.org.naive.WordCountByWindowBolt.SlideInterval;
-import edu.snu.org.naive.WordCountByWindowBolt.WindowLength;
+import edu.snu.org.AppTopologyBuilder;
+import edu.snu.org.ClassFactory;
+import edu.snu.org.TestApp.Local;
+import edu.snu.org.TestApp.NumBolt;
+import edu.snu.org.TestApp.NumSpout;
+import edu.snu.org.TestApp.TimescaleClass;
+import edu.snu.org.TestApp.TimescaleList;
+import edu.snu.org.TestApp.TopN;
+import edu.snu.org.grouping.WordGroupingMergeBolt;
 import edu.snu.org.util.OutputWriter;
 import edu.snu.org.util.OutputWriter.OutputFilePath;
 import edu.snu.org.util.Timescale;
 
-public class NaiveTopologyBuilder implements AppTopologyBuilder {
 
+public class UniqWordCountMTSSBuilder implements AppTopologyBuilder {
 
   private final StormTopology topology;
   
   @Inject
-  public NaiveTopologyBuilder(BaseRichSpout spout,
+  public UniqWordCountMTSSBuilder(BaseRichSpout spout,
+      UniqWordCountMTSSWindowBolt wcBolt,
       @Parameter(NumSpout.class) int numSpout, 
       @Parameter(NumBolt.class) int numBolt, 
       @Parameter(TopN.class) int topN, 
       @Parameter(TimescaleList.class) TimescaleClass tclass, 
-      @Parameter(OutputDir.class) String outputDir, 
+      @Parameter(OutputDir.class) String outputDir,
       @Parameter(Local.class) boolean isLocal) throws InjectionException {
     
     String spoutId = "wordGenerator";
-    String counterId = "NaiveWindowOperator";
+    String counterId = "UniqWordCountMTSSOperator";
     String totalRankerId = "finalRanker";
     List<Timescale> timescales = tclass.timescales;
 
     TopologyBuilder builder = new TopologyBuilder();
-
+    
     builder.setSpout(spoutId, spout, numSpout);
-
+    builder.setBolt(counterId, wcBolt, numBolt).fieldsGrouping(spoutId, new Fields("word"));
+    
+    // set HistogramMergeBolt
     JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
     cb.bindNamedParameter(TopN.class, topN+"");
     cb.bindNamedParameter(NumBolt.class, numBolt+"");
@@ -57,25 +60,17 @@ public class NaiveTopologyBuilder implements AppTopologyBuilder {
     
     int i = 0;
     for (Timescale ts : timescales) {
-      int windowSize = (int)ts.windowSize;
-      int slideInterval = (int)ts.intervalSize;
-      
       JavaConfigurationBuilder childConfig = Tang.Factory.getTang().newConfigurationBuilder();
-      childConfig.bindNamedParameter(OutputFilePath.class, outputDir + "naive-window-" + windowSize + "-" + slideInterval);
-      childConfig.bindNamedParameter(WindowLength.class, windowSize+"");
-      childConfig.bindNamedParameter(SlideInterval.class, slideInterval+"");
+      childConfig.bindNamedParameter(OutputFilePath.class, outputDir + "mtss-window-" + ts.windowSize + "-" + ts.intervalSize);
       Injector ij = Tang.Factory.getTang().newInjector(cb.build(), childConfig.build());  // use all these configs together
-      
-      TotalRankingsBolt rankingBolt = ij.getInstance(TotalRankingsBolt.class);
-      
-      builder.setBolt(counterId + i, ij.getInstance(WordCountByWindowBolt.class), numBolt)
-      .fieldsGrouping(spoutId, new Fields("word"));
-      builder.setBolt(totalRankerId + i, rankingBolt, 1).allGrouping(counterId + i);
+      UniqWordCountMergeBolt bolt = ij.getInstance(UniqWordCountMergeBolt.class);
+      builder.setBolt(totalRankerId+"-"+i, bolt).globalGrouping(counterId, "size" + ts.windowSize);
       i += 1;
     }
     
     topology = builder.createTopology();
   }
+
 
   @Override
   public StormTopology createTopology() {

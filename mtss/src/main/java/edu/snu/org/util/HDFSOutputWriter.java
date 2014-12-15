@@ -38,7 +38,7 @@ public class HDFSOutputWriter implements OutputWriter {
     try {
       br.write(str.getBytes("UTF-8"));
       br.flush();
-      br.sync();
+      br.hsync();
     } catch (IOException e) {
       LOG.log(Level.SEVERE, e.toString());
       throw new RuntimeException(e);

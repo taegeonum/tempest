@@ -33,8 +33,8 @@ import edu.snu.org.util.LocalOutputWriter;
 import edu.snu.org.util.StormRunner;
 import edu.snu.org.util.Timescale;
 
-public class WordCountApp {
-  private static final Logger LOG = Logger.getLogger(WordCountApp.class.getName());
+public class TestApp {
+  private static final Logger LOG = Logger.getLogger(TestApp.class.getName());
 
   @NamedParameter(short_name = "local", default_value = "true")
   public static final class Local implements Name<Boolean> {}

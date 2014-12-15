@@ -11,8 +11,8 @@ import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.exceptions.InjectionException;
 import org.junit.Test;
 
-import edu.snu.org.WordCountApp.TimescaleClass;
-import edu.snu.org.WordCountApp.TimescaleParameter;
+import edu.snu.org.TestApp.TimescaleClass;
+import edu.snu.org.TestApp.TimescaleParameter;
 import edu.snu.org.util.Timescale;
 
 public class TimescaleParserTest {

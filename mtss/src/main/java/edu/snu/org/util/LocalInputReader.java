@@ -10,7 +10,7 @@ import javax.inject.Inject;
 
 import org.apache.reef.tang.annotations.Parameter;
 
-import edu.snu.org.WordCountApp.InputFilePath;
+import edu.snu.org.TestApp.InputFilePath;
 
 public class LocalInputReader implements InputReader {
   

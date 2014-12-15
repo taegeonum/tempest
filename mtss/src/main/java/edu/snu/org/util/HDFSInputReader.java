@@ -15,7 +15,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.reef.tang.annotations.Parameter;
 
-import edu.snu.org.WordCountApp.InputFilePath;
+import edu.snu.org.TestApp.InputFilePath;
 
 public class HDFSInputReader implements InputReader {
   
