@@ -21,6 +21,7 @@ Ex) bin/run.sh params. Example parameter file is in bin/params
 
 1. local : true / false
   - Is this local mode or cluster mode. default is true
+  - To run in cluster mode, you need to setup the Storm cluster. 
 
 2. app_name: MTSSTopology / NaiveTopology / WordGroupingMTSSTopology / WordGroupingNaiveTopology 
   - MTSSTopology: Top-k wordcount in mtss topology
