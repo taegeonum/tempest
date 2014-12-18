@@ -36,7 +36,7 @@ import edu.snu.org.util.Timescale;
 public class TestApp {
   private static final Logger LOG = Logger.getLogger(TestApp.class.getName());
 
-  @NamedParameter(short_name = "local", default_value = "true")
+  @NamedParameter(doc = "Is this local mode or cluster mode. default is true", short_name = "local", default_value = "true")
   public static final class Local implements Name<Boolean> {}
   
   @NamedParameter(short_name = "app_name", default_value = "NaiveTopology")
@@ -69,10 +69,10 @@ public class TestApp {
   @NamedParameter(doc = "Spout name", short_name = "spout", default_value = "RandomWordSpout") 
   public static final class SpoutName implements Name<String> {}
 
-  @NamedParameter(doc = "output directory", short_name = "output")
+  @NamedParameter(doc = "output directory", short_name = "output", default_value="output")
   public static final class OutputDirFromArg implements Name<String> {}
 
-  @NamedParameter(doc = "input file path", short_name = "input")
+  @NamedParameter(doc = "input file path", short_name = "input", default_value="input/test_input")
   public static final class InputFilePath implements Name<String> {}
   
   private static Config createTopologyConfiguration(Boolean isLocal, Integer numWorker) {
