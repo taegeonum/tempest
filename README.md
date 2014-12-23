@@ -9,10 +9,11 @@ http://mirror.apache-kr.org/storm/apache-storm-0.9.2-incubating/apache-storm-0.9
 2. Add $STORM_DIR$/bin to $PATH$ 
 
 3. Download MTSS code 
-https://github.com/swsnu/MTSS/tree/refactoring-mtss
+  - https://github.com/swsnu/MTSS/tree/refactoring-mtss
 
-git clone https://github.com/swsnu/MTSS.git
-git checkout remotes/origin/refactoring-mtss
+  - git clone https://github.com/swsnu/MTSS.git
+
+  - git checkout remotes/origin/refactoring-mtss
 
 4. Configure parameter
 
