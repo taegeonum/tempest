@@ -28,8 +28,8 @@ public class RandomWordSpout extends BaseRichSpout {
   private final int sendingInterval;
 
   @Inject
-  public RandomWordSpout(@Parameter(InputInterval.class) int sendingInterval) {
-    this.sendingInterval = sendingInterval;
+  public RandomWordSpout(@Parameter(InputInterval.class) double sendingInterval) {
+    this.sendingInterval = (int) sendingInterval;
   }
 
   @Override
