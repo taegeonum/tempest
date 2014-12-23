@@ -63,3 +63,4 @@ Ex) bin/run.sh params. Example parameter file is in bin/params
 
 12. output: output path
   - It logs latency and throughput. 
+  - You should create the output directory 
