@@ -4,7 +4,7 @@ MTSS project
 #How to run 
 
 1. Download storm and install 
-http://mirror.apache-kr.org/storm/apache-storm-0.9.3/apache-storm-0.9.3.tar.gz
+http://mirror.apache-kr.org/storm/apache-storm-0.9.2-incubating/apache-storm-0.9.2-incubating.tar.gz
 
 2. Add $STORM_DIR$/bin to $PATH$ 
 
