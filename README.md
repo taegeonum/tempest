@@ -13,10 +13,10 @@ http://mirror.apache-kr.org/storm/apache-storm-0.9.2-incubating/apache-storm-0.9
 
   - git clone https://github.com/swsnu/MTSS.git
 
-  - git checkout remotes/origin/refactoring-mtss
+  - cd MTSS && git checkout remotes/origin/refactoring-mtss
 
 4. Install 
-  - mvn clean install 
+  - cd mtss && mvn clean install 
 
 5. Configure parameter
 
