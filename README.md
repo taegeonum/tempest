@@ -15,9 +15,12 @@ http://mirror.apache-kr.org/storm/apache-storm-0.9.2-incubating/apache-storm-0.9
 
   - git checkout remotes/origin/refactoring-mtss
 
-4. Configure parameter
+4. Install 
+  - mvn clean install 
 
-5. start bin/run.sh with params 
+5. Configure parameter
+
+6. start bin/run.sh with params 
 Ex) bin/run.sh params. Example parameter file is in bin/params 
 
 
