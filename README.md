@@ -1,5 +1,12 @@
 MTSS project
 
+# Pre-requisite
+
+1. Install YCSB 0.2.0 
+  - download ycsb.0.2.0 source code from https://github.com/brianfrankcooper/YCSB/releases/tag/0.2.0 
+  - direct link: https://github.com/brianfrankcooper/YCSB/archive/0.2.0.tar.gz
+  - In ycsb.0.2.0 directory, enter `mvn clean install -Dmaven.test.skip=true`
+
 # How to run WordCount example
 
 1. mvn clean package 

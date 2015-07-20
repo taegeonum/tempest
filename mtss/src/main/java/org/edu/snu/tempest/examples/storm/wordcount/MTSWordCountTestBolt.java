@@ -11,6 +11,7 @@ import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.exceptions.InjectionException;
 import org.edu.snu.naive.operator.impl.NaiveWindowOperator;
 import org.edu.snu.tempest.Timescale;
+import org.edu.snu.tempest.examples.storm.parameters.SavingRate;
 import org.edu.snu.tempest.examples.utils.Profiler;
 import org.edu.snu.tempest.examples.utils.writer.OutputWriter;
 import org.edu.snu.tempest.operator.MTSOperator;
@@ -169,7 +170,7 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
     cb.bindNamedParameter(ZkMTSParameters.ZkServerAddress.class, address);
     cb.bindImplementation(MTSSignalReceiver.class, ZkSignalReceiver.class);
     cb.bindImplementation(Aggregator.class, CountByKeyAggregator.class);
-    cb.bindNamedParameter(WordCountTest.SavingRate.class, savingRate+"");
+    cb.bindNamedParameter(SavingRate.class, savingRate+"");
 
     Injector ij = Tang.Factory.getTang().newInjector(cb.build());
 

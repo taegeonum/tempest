@@ -13,6 +13,7 @@ import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.exceptions.BindException;
 import org.apache.reef.tang.formats.CommandLine;
 import org.edu.snu.naive.operator.impl.NaiveWindowOperator;
+import org.edu.snu.tempest.examples.storm.parameters.*;
 import org.edu.snu.tempest.examples.utils.StormRunner;
 import org.edu.snu.tempest.examples.utils.TimescaleParser.TimescaleParameter;
 import org.edu.snu.tempest.examples.utils.writer.LocalOutputWriter;
@@ -37,15 +38,14 @@ public final class MTSWordCountTestTopology {
     final JavaConfigurationBuilder cb = tang.newConfigurationBuilder();
 
     CommandLine cl = new CommandLine(cb)
-        .registerShortNameOfClass(WordCountTest.TestName.class)
-        .registerShortNameOfClass(WordCountTest.LogDir.class)
-        .registerShortNameOfClass(WordCountTest.SavingRate.class)
+        .registerShortNameOfClass(TestName.class)
+        .registerShortNameOfClass(LogDir.class)
+        .registerShortNameOfClass(SavingRate.class)
         .registerShortNameOfClass(TimescaleParameter.class)
-        .registerShortNameOfClass(WordCountTest.NumSpouts.class)
-        .registerShortNameOfClass(WordCountTest.TotalTime.class)
-        .registerShortNameOfClass(WordCountTest.TsInterval.class)
-        .registerShortNameOfClass(WordCountTest.Operator.class)
-        .registerShortNameOfClass(WordCountTest.InputType.class)
+        .registerShortNameOfClass(NumSpouts.class)
+        .registerShortNameOfClass(TotalTime.class)
+        .registerShortNameOfClass(Operator.class)
+        .registerShortNameOfClass(InputType.class)
         .processCommandLine(args);
 
     return cl.getBuilder().build();
@@ -60,12 +60,12 @@ public final class MTSWordCountTestTopology {
     Configuration commandLineConf = getCommandLineConf(args);
     Injector injector = Tang.Factory.getTang().newInjector(commandLineConf);
     WordCountTest test = injector.getInstance(WordCountTest.class);
-    final String testName = injector.getNamedInstance(WordCountTest.TestName.class);
-    final String logDir = injector.getNamedInstance(WordCountTest.LogDir.class);
-    final double savingRate = injector.getNamedInstance(WordCountTest.SavingRate.class);
-    final String operator = injector.getNamedInstance(WordCountTest.Operator.class);
+    final String testName = injector.getNamedInstance(TestName.class);
+    final String logDir = injector.getNamedInstance(LogDir.class);
+    final double savingRate = injector.getNamedInstance(SavingRate.class);
+    final String operator = injector.getNamedInstance(Operator.class);
     final String topologyName = operator + "_WC_TOPOLOGY";
-    final String inputType = injector.getNamedInstance(WordCountTest.InputType.class);
+    final String inputType = injector.getNamedInstance(InputType.class);
     
     TopologyBuilder builder = new TopologyBuilder();
     BaseRichSpout spout = null;
