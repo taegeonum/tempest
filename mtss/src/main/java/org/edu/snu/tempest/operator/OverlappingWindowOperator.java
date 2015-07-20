@@ -14,5 +14,5 @@ import org.edu.snu.tempest.Timescale;
  * then OWO produces an output with 10 seconds window size every 3 seconds.
  */
 public interface OverlappingWindowOperator<V> extends EventHandler<LogicalTime> {
-  public Timescale getTimescale();
+  Timescale getTimescale();
 }

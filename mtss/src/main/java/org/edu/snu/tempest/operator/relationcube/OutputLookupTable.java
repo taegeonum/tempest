@@ -17,32 +17,32 @@ public interface OutputLookupTable<V> {
    * @param endTime end time of the output 
    * @param output an output
    */
-  public void saveOutput(long startTime, long endTime, final V output);
+  void saveOutput(long startTime, long endTime, final V output);
   
   /**
    * Lookup an output ranging from startTime to endTime.
    * @param startTime row of the table
    * @param endTime col of the table
    */
-  public V lookup(long startTime, long endTime) throws NotFoundException;
+  V lookup(long startTime, long endTime) throws NotFoundException;
   
   /**
    * Lookup multiple outputs which start with the startTime. 
    * @param startTime row of the table
    */
-  public TreeMap<Long, V> lookup(long startTime);
+  TreeMap<Long, V> lookup(long startTime);
   
   /**
-   * Lookup largest endTime output which starts at startTime until endTime
+   * Lookup largest endTime output which starts at startTime until endTime.
    * e.g) if this table has [s=3, e=4] [s=3, e=5], [s=3, e=7] outputs and startTime=3, endTime=8, 
    *      then it returns [s=3, e=7] which is biggest endTime at startTime=3
    */
-  public TimeAndValue<V> lookupLargestSizeOutput(long startTime, long endTime) throws NotFoundException;
+  TimeAndValue<V> lookupLargestSizeOutput(long startTime, long endTime) throws NotFoundException;
   
   /**
-   * Delete outputs which start with startTime
+   * Delete outputs which start with startTime.
    * @param startTime row of the table
    */
-  public void deleteRow(long startTime);
+  void deleteRow(long startTime);
   
 }

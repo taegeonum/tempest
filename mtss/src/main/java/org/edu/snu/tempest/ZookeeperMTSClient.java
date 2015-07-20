@@ -17,7 +17,7 @@ import java.io.IOException;
 /**
  * Zookeeper client for sending timescale to MTSWindowOperator.
  */
-public class ZookeeperMTSClient {
+public final class ZookeeperMTSClient {
   
   @NamedParameter(doc = "timescale window size(sec)", short_name = "w")
   public static final class WindowSize implements Name<Integer> {}
@@ -27,20 +27,24 @@ public class ZookeeperMTSClient {
   
   @NamedParameter(doc = "type of signal", short_name = "type")
   public static final class TypeOfSignal implements Name<String> {}
-  
+
+  private ZookeeperMTSClient() {
+
+  }
+
   private static Configuration getCommandLineConf(String[] args) throws BindException, IOException {
 
     final Tang tang = Tang.Factory.getTang();
     final JavaConfigurationBuilder cb = tang.newConfigurationBuilder();
 
     CommandLine cl = new CommandLine(cb)
-    .registerShortNameOfClass(ZkMTSParameters.OperatorIdentifier.class)
-    .registerShortNameOfClass(ZkMTSParameters.ZkMTSNamespace.class)
-    .registerShortNameOfClass(ZkMTSParameters.ZkServerAddress.class)
-    .registerShortNameOfClass(WindowSize.class)
-    .registerShortNameOfClass(Interval.class)
-    .registerShortNameOfClass(TypeOfSignal.class)
-    .processCommandLine(args);
+        .registerShortNameOfClass(ZkMTSParameters.OperatorIdentifier.class)
+        .registerShortNameOfClass(ZkMTSParameters.ZkMTSNamespace.class)
+        .registerShortNameOfClass(ZkMTSParameters.ZkServerAddress.class)
+        .registerShortNameOfClass(WindowSize.class)
+        .registerShortNameOfClass(Interval.class)
+        .registerShortNameOfClass(TypeOfSignal.class)
+        .processCommandLine(args);
 
     return cl.getBuilder().build();
   }
@@ -59,7 +63,6 @@ public class ZookeeperMTSClient {
     
     if (type.equalsIgnoreCase("addition")) {
       sender.addTimescale(new Timescale(ij.getNamedInstance(WindowSize.class), ij.getNamedInstance(Interval.class)));
-
     } else if (type.equalsIgnoreCase("deletion")) {
       sender.removeTimescale(new Timescale(ij.getNamedInstance(WindowSize.class), ij.getNamedInstance(Interval.class)));
     } else {

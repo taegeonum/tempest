@@ -44,7 +44,8 @@ public final class StaticMTSOperatorImpl<I, V> implements MTSOperator<I, V> {
     Collections.sort(timescales);
 
     for (Timescale ts : timescales) {
-      DefaultOverlappingWindowOperatorImpl<V> owo = new DefaultOverlappingWindowOperatorImpl<>(ts, relationCube, outputHandler, new LogicalTime(0));
+      DefaultOverlappingWindowOperatorImpl<V> owo = new DefaultOverlappingWindowOperatorImpl<>(
+          ts, relationCube, outputHandler, new LogicalTime(0));
       this.overlappingWindowOperators.add(owo);
       Subscription<Timescale> ss = clock.subscribe(owo);
       subscriptions.put(ss.getToken(), ss);

@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentMap;
  * TODO: consider concurrency
  */
 public final class DefaultOutputLookupTableImpl<V> implements OutputLookupTable<V> {
-  private final static Logger LOG = Logger.getLogger(DefaultOutputLookupTableImpl.class.getName());
+  private static final Logger LOG = Logger.getLogger(DefaultOutputLookupTableImpl.class.getName());
   
   public final ConcurrentMap<Long, TreeMap<Long, V>> table;
   
@@ -61,7 +61,8 @@ public final class DefaultOutputLookupTableImpl<V> implements OutputLookupTable<
     
     Long largestKey = row.floorKey(endTime);
     if (largestKey == null) {
-      throw new NotFoundException("Cannot lookup endTime " + endTime  + "from " + startTime + " in lookupLargestSizeOutput");
+      throw new NotFoundException(
+          "Cannot lookup endTime " + endTime  + "from " + startTime + " in lookupLargestSizeOutput");
     } else {
       return new TimeAndValue<V>(startTime, largestKey, row.get(largestKey));
     }

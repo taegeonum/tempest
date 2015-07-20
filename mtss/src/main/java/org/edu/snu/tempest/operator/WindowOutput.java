@@ -17,7 +17,11 @@ public final class WindowOutput<V> implements Serializable {
   public final long endTime;
   public final long elapsedTime;
   
-  public WindowOutput(final Timescale ts, final V output, final long startTime, final long endTime, final long elapsedTime) {
+  public WindowOutput(final Timescale ts,
+                      final V output,
+                      final long startTime,
+                      final long endTime,
+                      final long elapsedTime) {
     this.timescale = ts;
     this.output = output;
     this.startTime = startTime;
@@ -27,7 +31,9 @@ public final class WindowOutput<V> implements Serializable {
   
   @Override
   public String toString() {
-    return "[w=" + timescale.windowSize + ", i=" + timescale.intervalSize + ", " + startTime + "~" + endTime + "]: " + output;
+    return "[w=" + timescale.windowSize + ", i="
+        + timescale.intervalSize + ", "
+        + startTime + "~" + endTime + "]: " + output;
   }
 
   @Override
@@ -43,27 +49,36 @@ public final class WindowOutput<V> implements Serializable {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
+    if (this == obj) {
       return true;
-    if (obj == null)
+    }
+    if (obj == null) {
       return false;
-    if (getClass() != obj.getClass())
+    }
+    if (getClass() != obj.getClass()) {
       return false;
+    }
     WindowOutput other = (WindowOutput) obj;
-    if (endTime != other.endTime)
+    if (endTime != other.endTime) {
       return false;
+    }
     if (output == null) {
-      if (other.output != null)
+      if (other.output != null) {
         return false;
-    } else if (!output.equals(other.output))
+      }
+    } else if (!output.equals(other.output)) {
       return false;
-    if (startTime != other.startTime)
+    }
+    if (startTime != other.startTime) {
       return false;
+    }
     if (timescale == null) {
-      if (other.timescale != null)
+      if (other.timescale != null) {
         return false;
-    } else if (!timescale.equals(other.timescale))
+      }
+    } else if (!timescale.equals(other.timescale)) {
       return false;
+    }
     return true;
   }
 

@@ -17,7 +17,7 @@ import java.util.logging.Logger;
 
 public final class OTFSlicedWindowOperatorImpl<I, V> implements SlicedWindowOperator<I> {
 
-  private final static Logger LOG = Logger.getLogger(OTFSlicedWindowOperatorImpl.class.getName());
+  private static final Logger LOG = Logger.getLogger(OTFSlicedWindowOperatorImpl.class.getName());
   
   private final Aggregator<I, V> aggregator;
   private final PriorityQueue<SliceInfo> sliceQueue;

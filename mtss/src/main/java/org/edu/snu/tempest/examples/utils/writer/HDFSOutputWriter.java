@@ -16,9 +16,7 @@ public class HDFSOutputWriter implements OutputWriter {
   
   private static final Logger LOG = Logger.getLogger(HDFSOutputWriter.class.getName());
   
-  private Path path;
   private FileSystem fs;
-  private FSDataOutputStream br;
   private Configuration config;
   private boolean started = false;
   
@@ -38,7 +36,7 @@ public class HDFSOutputWriter implements OutputWriter {
     Path p = null;
     if (br == null) {
       p = new Path(path);
-      br = (fs.create(p,true));
+      br = (fs.create(p, true));
       brMap.put(path, br);
     }
     
@@ -55,14 +53,14 @@ public class HDFSOutputWriter implements OutputWriter {
     if (!started) {
       started = true;
       config = new Configuration();
-      String hadoop_home = System.getenv("HADOOP_HOME");
+      final String hadoopHome = System.getenv("HADOOP_HOME");
       
-      if (hadoop_home.length() == 0 || hadoop_home == null) {
+      if (hadoopHome.length() == 0 || hadoopHome == null) {
         throw new RuntimeException("The env variable HADOOP_HOME is not set");
       }
       
-      config.addResource(new Path(hadoop_home + "/etc/hadoop/core-site.xml"));
-      config.addResource(new Path(hadoop_home + "/etc/hadoop/hdfs-site.xml"));
+      config.addResource(new Path(hadoopHome + "/etc/hadoop/core-site.xml"));
+      config.addResource(new Path(hadoopHome + "/etc/hadoop/hdfs-site.xml"));
       
       try {
 

@@ -20,7 +20,7 @@ import java.util.logging.Logger;
  */
 public final class DefaultSlicedWindowOperatorImpl<I, V> implements SlicedWindowOperator<I> {
 
-  private final static Logger LOG = Logger.getLogger(DefaultSlicedWindowOperatorImpl.class.getName());
+  private static final Logger LOG = Logger.getLogger(DefaultSlicedWindowOperatorImpl.class.getName());
   
   private final Aggregator<I, V> aggregator;
   private final RelationCube<V> relationCube;
@@ -49,17 +49,17 @@ public final class DefaultSlicedWindowOperatorImpl<I, V> implements SlicedWindow
   @Override
   public synchronized void onNext(final LogicalTime time) {
     LOG.log(Level.FINE, "SlicedWindow tickTime " + time + ", nextSlice: " + nextSliceTime);
-      if (nextSliceTime == time.logicalTime) {
-        LOG.log(Level.FINE, "Sliced : [" + prevSliceTime + "-" + time.logicalTime + "]");
-        synchronized(sync) {
-          V output = innerMap;
-          innerMap = aggregator.init();
-          // saves output to RelationCube
-          relationCube.savePartialOutput(prevSliceTime, nextSliceTime, output);
-        }
-        prevSliceTime = nextSliceTime;
-        nextSliceTime = nextSliceTime();
+    if (nextSliceTime == time.logicalTime) {
+      LOG.log(Level.FINE, "Sliced : [" + prevSliceTime + "-" + time.logicalTime + "]");
+      synchronized (sync) {
+        V output = innerMap;
+        innerMap = aggregator.init();
+        // saves output to RelationCube
+        relationCube.savePartialOutput(prevSliceTime, nextSliceTime, output);
       }
+      prevSliceTime = nextSliceTime;
+      nextSliceTime = nextSliceTime();
+    }
   }
 
   @Override
@@ -79,11 +79,11 @@ public final class DefaultSlicedWindowOperatorImpl<I, V> implements SlicedWindow
     LOG.log(Level.INFO, "SlicedWindow addTimescale " + ts);
     // Add slices
     synchronized (sliceQueue) {
-      long nextSliceTime = sliceQueue.peek().sliceTime;
+      long nst = sliceQueue.peek().sliceTime;
       addSlices(time.logicalTime, ts);
 
       long sliceTime = sliceQueue.peek().sliceTime;
-      while (sliceTime < nextSliceTime) {
+      while (sliceTime < nst) {
         sliceTime = advanceWindowGetNextSlice();
       }
     }

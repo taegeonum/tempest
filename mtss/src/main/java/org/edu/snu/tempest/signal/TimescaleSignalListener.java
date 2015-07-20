@@ -4,6 +4,6 @@ import org.edu.snu.tempest.Timescale;
 
 public interface TimescaleSignalListener {
 
-  public void onTimescaleAddition(Timescale ts);
-  public void onTimescaleDeletion(Timescale ts);
+  void onTimescaleAddition(Timescale ts);
+  void onTimescaleDeletion(Timescale ts);
 }

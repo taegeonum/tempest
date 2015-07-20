@@ -38,8 +38,9 @@ public final class DefaultMTSClockImpl implements Clock {
       int schedulerThread,
       int fixThread) {
     this.handlers = new ConcurrentLinkedQueue<OverlappingWindowOperator<?>>();
-    this.scheduler = Executors.newScheduledThreadPool(schedulerThread, new DefaultThreadFactory("MTSClock")); // FIXME: parameterize the number of threads. 
-    this.executor = Executors.newFixedThreadPool(fixThread); // FIXME: parameterize the number of threads. 
+    this.scheduler = Executors.newScheduledThreadPool(schedulerThread,
+        new DefaultThreadFactory("MTSClock"));
+    this.executor = Executors.newFixedThreadPool(fixThread);
     this.slicedWindowOperator = swo;
     this.tickTime = tickTimeUnit.toMillis(tickTime);
   }
@@ -49,8 +50,11 @@ public final class DefaultMTSClockImpl implements Clock {
       @Parameter(TickTime.class) final long tickTime,
       final TimeUnit tickTimeUnit) {
     this.handlers = new ConcurrentLinkedQueue<OverlappingWindowOperator<?>>();
-    this.scheduler = Executors.newScheduledThreadPool(10, new DefaultThreadFactory("MTSClock")); // FIXME: parameterize the number of threads. 
-    this.executor = Executors.newFixedThreadPool(40); // FIXME: parameterize the number of threads. 
+    // FIXME: parameterize the number of threads.
+    this.scheduler = Executors.newScheduledThreadPool(10,
+        new DefaultThreadFactory("MTSClock"));
+    // FIXME: parameterize the number of threads.
+    this.executor = Executors.newFixedThreadPool(40);
     this.slicedWindowOperator = swo;
     this.tickTime = tickTimeUnit.toMillis(tickTime);
   }

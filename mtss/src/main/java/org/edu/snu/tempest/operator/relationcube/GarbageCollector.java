@@ -5,7 +5,7 @@ import org.edu.snu.tempest.operator.impl.LogicalTime;
 import org.edu.snu.tempest.signal.TimescaleSignalListener;
 
 /**
- * GarbageCollector interface 
+ * GarbageCollector interface.
  * 
  * It periodically removes OutputLookupTable rows in which startTime < currentTime - largestWindowSize
  * It receives LogicalTime tick from Clock

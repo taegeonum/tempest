@@ -24,27 +24,29 @@ import java.util.logging.Logger;
 /**
  * WordCountTest topology.
  */
-public class MTSWordCountTestTopology {
+public final class MTSWordCountTestTopology {
   private static final Logger LOG = Logger.getLogger(MTSWordCountTestTopology.class.getName());
-  
 
-  
+  private MTSWordCountTestTopology() {
+
+  }
+
   private static Configuration getCommandLineConf(String[] args) throws BindException, IOException {
 
     final Tang tang = Tang.Factory.getTang();
     final JavaConfigurationBuilder cb = tang.newConfigurationBuilder();
 
     CommandLine cl = new CommandLine(cb)
-    .registerShortNameOfClass(WordCountTest.TestName.class)
-    .registerShortNameOfClass(WordCountTest.LogDir.class)
-    .registerShortNameOfClass(WordCountTest.SavingRate.class)
-    .registerShortNameOfClass(TimescaleParameter.class)
-    .registerShortNameOfClass(WordCountTest.NumSpouts.class)
-    .registerShortNameOfClass(WordCountTest.TotalTime.class)
-    .registerShortNameOfClass(WordCountTest.TsInterval.class)
-    .registerShortNameOfClass(WordCountTest.Operator.class)
-    .registerShortNameOfClass(WordCountTest.InputType.class)
-    .processCommandLine(args);
+        .registerShortNameOfClass(WordCountTest.TestName.class)
+        .registerShortNameOfClass(WordCountTest.LogDir.class)
+        .registerShortNameOfClass(WordCountTest.SavingRate.class)
+        .registerShortNameOfClass(TimescaleParameter.class)
+        .registerShortNameOfClass(WordCountTest.NumSpouts.class)
+        .registerShortNameOfClass(WordCountTest.TotalTime.class)
+        .registerShortNameOfClass(WordCountTest.TsInterval.class)
+        .registerShortNameOfClass(WordCountTest.Operator.class)
+        .registerShortNameOfClass(WordCountTest.InputType.class)
+        .processCommandLine(args);
 
     return cl.getBuilder().build();
   }

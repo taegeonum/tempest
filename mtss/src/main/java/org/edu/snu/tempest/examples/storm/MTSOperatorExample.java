@@ -16,16 +16,21 @@ import java.util.Random;
  * Creates a DefaultMTSOperatorImpl 
  * and aggregates Input
  */
-public class MTSOperatorExample {
-  
+public final class MTSOperatorExample {
+
+  private MTSOperatorExample() {
+
+  }
+
   public static void main(String[] args) throws Exception {
     Timescale ts = new Timescale(5, 3);
     Aggregator<Integer, Integer> testAggregator = new TestAggregator();
     List<Timescale> list = new LinkedList<>();
     list.add(ts);
-    MTSOperator<Integer, Integer> operator = new DynamicMTSOperatorImpl<Integer, Integer>(testAggregator, list, new TestHandler());
+    MTSOperator<Integer, Integer> operator =
+        new DynamicMTSOperatorImpl<Integer, Integer>(testAggregator, list, new TestHandler());
+
     operator.start();
-    
     Random rand = new Random();
     for (int i = 0; i < 1500; i++) {
       operator.execute(Math.abs(rand.nextInt() % 5));
@@ -39,13 +44,11 @@ public class MTSOperatorExample {
       }
       Thread.sleep(10);
     }
-    
     operator.close();
   }
   
-  static class TestAggregator implements Aggregator<Integer, Integer> {
-
-    public TestAggregator() {
+  private static final class TestAggregator implements Aggregator<Integer, Integer> {
+    private TestAggregator() {
       
     }
     
@@ -69,7 +72,10 @@ public class MTSOperatorExample {
     }
   }
   
-  static class TestHandler implements OutputHandler<Integer> {
+  private static final class TestHandler implements OutputHandler<Integer> {
+    private TestHandler() {
+
+    }
 
     @Override
     public void onNext(WindowOutput<Integer> arg0) {

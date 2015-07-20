@@ -1,7 +1,5 @@
 package org.edu.snu.tempest.operator.impl;
 
-import java.util.Map;
-
 public final class TimeAndValue<V> {
 
   public final long startTime;

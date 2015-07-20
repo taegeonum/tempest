@@ -19,17 +19,17 @@ public interface Clock extends Stage {
   /*
    * Start clock
    */
-  public void start();
+  void start();
   
   /*
    * Subscribe OverlappingWindowOperator and returns Subscription
    * 
    * @param overlappingWindowoperator a new OverlappingWindowOperator
    */
-  public Subscription<Timescale> subscribe(final OverlappingWindowOperator<?> overlappingWindowoperator);
+  Subscription<Timescale> subscribe(final OverlappingWindowOperator<?> overlappingWindowoperator);
   
   /*
    * Get current logical time
    */
-  public LogicalTime getCurrentTime();
+  LogicalTime getCurrentTime();
 }

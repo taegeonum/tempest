@@ -1,23 +1,21 @@
 package org.edu.snu.tempest.signal.impl;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.inject.Inject;
-
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.wake.remote.Encoder;
 import org.apache.zookeeper.data.Stat;
+import org.edu.snu.tempest.Timescale;
 import org.edu.snu.tempest.signal.MTSSignalSender;
 import org.edu.snu.tempest.signal.impl.ZkMTSParameters.OperatorIdentifier;
 import org.edu.snu.tempest.signal.impl.ZkMTSParameters.ZkMTSNamespace;
 import org.edu.snu.tempest.signal.impl.ZkMTSParameters.ZkServerAddress;
 import org.edu.snu.tempest.signal.impl.ZkMTSParameters.ZkTSEncoder;
 
-import org.edu.snu.tempest.Timescale;
+import javax.inject.Inject;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /*
  * Zookeeper MTSSignalSender implementation 
@@ -56,8 +54,8 @@ public class ZkSignalSender implements MTSSignalSender {
   private void sendTimescaleInfo(Timescale ts, String type) throws Exception {
     Stat stat = this.client.checkExists().forPath(this.identifier + "-" + type);
     if (stat == null) {
-        String path = this.client.create().creatingParentsIfNeeded().forPath(this.identifier + "-" + type);
-        LOG.log(Level.INFO, "Zookeeper path Created: " + path);
+      String path = this.client.create().creatingParentsIfNeeded().forPath(this.identifier + "-" + type);
+      LOG.log(Level.INFO, "Zookeeper path Created: " + path);
     }
     this.client.setData().forPath(this.identifier + "-" + type, encoder.encode(ts));
   }

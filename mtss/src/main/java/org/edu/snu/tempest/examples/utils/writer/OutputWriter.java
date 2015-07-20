@@ -12,6 +12,6 @@ public interface OutputWriter extends Serializable, Stage{
   @NamedParameter(doc = "output file path", default_value = "")
   public static final class OutputFilePath implements Name<String> {}
   
-  public void write(String path, String str) throws IOException;
-  public void writeLine(String path, String str) throws IOException;
+  void write(String path, String str) throws IOException;
+  void writeLine(String path, String str) throws IOException;
 }

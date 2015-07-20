@@ -43,7 +43,8 @@ public final class DynamicMTSOperatorImpl<I, V> implements MTSOperator<I, V> {
     this.clock = new DefaultMTSClockImpl(slicedWindow, 1L, TimeUnit.SECONDS);
 
     for (Timescale timescale : timescales) {
-      OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperatorImpl<V>(timescale, relationCube, outputHandler, new LogicalTime(0));
+      OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperatorImpl<V>(
+          timescale, relationCube, outputHandler, new LogicalTime(0));
       this.overlappingWindowOperators.add(owo);
       Subscription<Timescale> ss = clock.subscribe(owo);
       subscriptions.put(ss.getToken(), ss);
@@ -69,7 +70,8 @@ public final class DynamicMTSOperatorImpl<I, V> implements MTSOperator<I, V> {
     LOG.log(Level.INFO, "MTSOperator addTimescale: " + ts);
 
     LogicalTime currentTime = clock.getCurrentTime();
-    OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperatorImpl<>(ts, relationCube, outputHandler, currentTime);
+    OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperatorImpl<>(
+        ts, relationCube, outputHandler, currentTime);
     this.overlappingWindowOperators.add(owo);
 
     //1. add timescale to SlicedWindowOperator

@@ -9,12 +9,12 @@ import org.edu.snu.tempest.Timescale;
  */
 public interface RelationCube<T> {
   /**
-   * Save partial output to RelationCube
+   * Save partial output to RelationCube.
    * @param startTime start time of the output
    * @param endTime end time of the output
    * @param output output
    */
-  public void savePartialOutput(long startTime, long endTime, T output);
+  void savePartialOutput(long startTime, long endTime, T output);
 
   /**
    * Produce final aggregation of [startTime, endTime] window output.
@@ -23,19 +23,19 @@ public interface RelationCube<T> {
    * @param endTime end time of the output
    * @param ts timescale
    */
-  public T finalAggregate(long startTime, long endTime, Timescale ts);
+  T finalAggregate(long startTime, long endTime, Timescale ts);
 
   /**
    * Add timescales to RelationCube.
    * @param ts timescale
    * @param time time to addition.
    */
-  public void addTimescale(Timescale ts, long time);
+  void addTimescale(Timescale ts, long time);
 
   /**
    * Remove timescales from RelationCube.
    * @param ts timescale
    * @param time time to deletion
    */
-  public void removeTimescale(final Timescale ts, long time);
+  void removeTimescale(final Timescale ts, long time);
 }

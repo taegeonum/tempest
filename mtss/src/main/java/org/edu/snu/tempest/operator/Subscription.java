@@ -1,11 +1,11 @@
 package org.edu.snu.tempest.operator;
 
 
-/*
- * Subscription interface
+/**
+ * Subscription interface.
  */
 public interface Subscription<Token> {
 
-  public Token getToken();
-  public void unsubscribe();
+  Token getToken();
+  void unsubscribe();
 }

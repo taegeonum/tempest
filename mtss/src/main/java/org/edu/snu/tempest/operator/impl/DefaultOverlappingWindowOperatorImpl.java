@@ -11,7 +11,7 @@ import java.util.logging.Logger;
 import java.util.logging.Level;
 
 public final class DefaultOverlappingWindowOperatorImpl<V> implements OverlappingWindowOperator<V> {
-  private final static Logger LOG = Logger.getLogger(DefaultOverlappingWindowOperatorImpl.class.getName());
+  private static final Logger LOG = Logger.getLogger(DefaultOverlappingWindowOperatorImpl.class.getName());
 
   private final Timescale timescale;
   private final RelationCube<V> relationCube;

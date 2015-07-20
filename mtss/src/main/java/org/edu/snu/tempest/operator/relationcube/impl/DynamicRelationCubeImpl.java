@@ -63,7 +63,7 @@ public class DynamicRelationCubeImpl<T> implements RelationCube<T> {
       TimeAndValue<T> elem;
       try {
         elem = table.lookupLargestSizeOutput(start, endTime);
-        //LOG.log(Level.FINE, "OWO " + timescale + " Lookup : (" + start + ", " + time.logicalTime + "). elem: " + elem.endTime);
+        LOG.log(Level.FINE, ts + " Lookup : (" + start + ", " + endTime + ")");
         if (start == elem.endTime) {
           isFullyProcessed = false;
           break;
@@ -83,15 +83,17 @@ public class DynamicRelationCubeImpl<T> implements RelationCube<T> {
     }
 
     T finalResult = finalAggregator.finalAggregate(dependentOutputs);
-    LOG.log(Level.INFO, "AGG TIME OF " + ts + ": " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - aggStartTime) + " at " + endTime + ", dependent size: " + dependentOutputs.size());
+    LOG.log(Level.FINE, "AGG TIME OF " + ts + ": " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - aggStartTime)
+        + " at " + endTime + ", dependent size: " + dependentOutputs.size());
     Long latestSaveTime = timescaleToSavingTimeMap.get(ts);
     if (latestSaveTime == null) {
       latestSaveTime = new Long(0);
     }
 
-    if ( (endTime - latestSaveTime) >= ts.windowSize * savingRate ) {
+    if ((endTime - latestSaveTime) >= ts.windowSize * savingRate) {
       // save result to OLT
-      LOG.log(Level.FINE, "SavingRate: " + savingRate + ", OWO of " + ts + " saves output of [" + startTime + "-" + endTime + "]");
+      LOG.log(Level.FINE, "SavingRate: " + savingRate + ", OWO of " + ts +
+          " saves output of [" + startTime + "-" + endTime + "]");
       table.saveOutput(startTime, endTime, finalResult);
       timescaleToSavingTimeMap.put(ts, endTime);
     }

@@ -229,7 +229,8 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
       }
       
       try {
-        writer.writeLine(pathPrefix + "/" + output.timescale.windowSize + "-" + output.timescale.intervalSize, (System.currentTimeMillis()) + "\t" 
+        writer.writeLine(pathPrefix + "/" + output.timescale.windowSize
+            + "-" + output.timescale.intervalSize, (System.currentTimeMillis()) + "\t"
             + count + "\t" + output.elapsedTime);
       } catch (IOException e) {
         e.printStackTrace();

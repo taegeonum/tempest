@@ -23,7 +23,8 @@ public class WordCountTest {
   @NamedParameter(doc = "test name", short_name = "test_name", default_value="default-test")
   public static final class TestName implements Name<String> {}
   
-  @NamedParameter(doc = "logging directory", short_name = "log_dir", default_value="/Users/taegeonum/Projects/CMS_SNU/BDCS/MSS/mtss/log/")
+  @NamedParameter(doc = "logging directory", short_name = "log_dir",
+      default_value="/Users/taegeonum/Projects/CMS_SNU/BDCS/MSS/mtss/log/")
   public static final class LogDir implements Name<String> {}
   
   @NamedParameter(doc = "save percentage", short_name = "saving_rate", default_value="0.0")

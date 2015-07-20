@@ -15,15 +15,15 @@ import java.util.Random;
 import java.util.logging.Logger;
 
 /**
- * Sends randomly selected words continuously
+ * Sends randomly selected words continuously.
  */
 public class RandomWordSpout extends BaseRichSpout {
 
   private static final int DEFAULT_SENDING_INTERVAL = 1;
   private static final Logger LOG = Logger.getLogger(RandomWordSpout.class.getName());
   
-  SpoutOutputCollector _collector;
-  Random _rand;
+  private SpoutOutputCollector collector;
+  private Random rand;
   private final int sendingInterval;
   private final Random random = new Random();
   
@@ -33,16 +33,16 @@ public class RandomWordSpout extends BaseRichSpout {
   }
 
   @Override
-  public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
-    _collector = collector;
-    _rand = new Random();
+  public void open(Map conf, TopologyContext context, SpoutOutputCollector col) {
+    this.collector = col;
+    rand = new Random();
   }
 
   @Override
   public void nextTuple() {
     Utils.sleep(sendingInterval);
     for (int i = 0; i < 5; i++) {
-      _collector.emit(new Values(getRandomWord(), 1, System.currentTimeMillis()));
+      this.collector.emit(new Values(getRandomWord(), 1, System.currentTimeMillis()));
     }
   }
 
@@ -62,9 +62,8 @@ public class RandomWordSpout extends BaseRichSpout {
   
   private String getRandomWord() {
     char[] word = new char[4]; // words of length 3 through 10. (1 and 2 letter words are boring.)
-    for(int j = 0; j < word.length; j++)
-    {
-        word[j] = (char)('a' + random.nextInt(20));
+    for(int j = 0; j < word.length; j++) {
+      word[j] = (char)('a' + random.nextInt(20));
     }
     
     return new String(word);

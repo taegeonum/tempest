@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Timescale implements Comparable, Serializable {
   /**
-   * Represent timescale
+   * Represent timescale.
    * Window size and interval 
    * Unit: sec
    */
@@ -14,10 +14,14 @@ public class Timescale implements Comparable, Serializable {
   public final long windowSize;
   public final long intervalSize;
   
-  public Timescale(final int windowSize, final int intervalSize, final TimeUnit windowTimeUnit, final TimeUnit intervalTimeUnit) {
+  public Timescale(final int windowSize,
+                   final int intervalSize,
+                   final TimeUnit windowTimeUnit,
+                   final TimeUnit intervalTimeUnit) {
     
     if (windowSize <= 0 || windowSize - intervalSize < 0) {
-      throw new InvalidParameterException("Invalid window or interval size: " + "(" + windowSize + ", " + intervalSize + ")");
+      throw new InvalidParameterException("Invalid window or interval size: "
+          + "(" + windowSize + ", " + intervalSize + ")");
     }
     
     this.windowSize = windowTimeUnit.toSeconds(windowSize);
@@ -52,17 +56,22 @@ public class Timescale implements Comparable, Serializable {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
+    if (this == obj) {
       return true;
-    if (obj == null)
+    }
+    if (obj == null) {
       return false;
-    if (getClass() != obj.getClass())
+    }
+    if (getClass() != obj.getClass()) {
       return false;
+    }
     Timescale other = (Timescale) obj;
-    if (intervalSize != other.intervalSize)
+    if (intervalSize != other.intervalSize) {
       return false;
-    if (windowSize != other.windowSize)
+    }
+    if (windowSize != other.windowSize) {
       return false;
+    }
     return true;
   }
 

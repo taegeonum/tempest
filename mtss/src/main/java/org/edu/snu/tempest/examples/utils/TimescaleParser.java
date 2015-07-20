@@ -16,7 +16,8 @@ public class TimescaleParser {
   public final List<Timescale> timescales;
   private static final String regex = "(\\(\\d+,\\d+\\))*";
   
-  @NamedParameter(doc = "timescales. format: (\\(\\d+,\\d+\\))*. TimeUnit: sec",short_name = "timescales", default_value = "(30,2)(60,5)(90,6)")
+  @NamedParameter(doc = "timescales. format: (\\(\\d+,\\d+\\))*. TimeUnit: sec",
+      short_name = "timescales", default_value = "(30,2)(60,5)(90,6)")
   public static final class TimescaleParameter implements Name<String> {}
 
   @Inject
@@ -30,11 +31,11 @@ public class TimescaleParser {
   }
   
   public long largestWindowSize() {
-    return timescales.get(timescales.size() - 1).windowSize;
+    return this.timescales.get(this.timescales.size() - 1).windowSize;
   }
 
   private List<Timescale> parseToTimescaleList(String params) {
-    List<Timescale> timescales = new ArrayList<>();
+    List<Timescale> ts = new ArrayList<>();
 
 
     // (1,2)(3,4) -> 1,2)3,4)
@@ -45,10 +46,11 @@ public class TimescaleParser {
 
     for (String arg : args) {
       String[] windowAndInterval = arg.split(",");
-      timescales.add(new Timescale(Integer.valueOf(windowAndInterval[0]), Integer.valueOf(windowAndInterval[1]), TimeUnit.SECONDS, TimeUnit.SECONDS));
+      ts.add(new Timescale(Integer.valueOf(windowAndInterval[0]),
+          Integer.valueOf(windowAndInterval[1]), TimeUnit.SECONDS, TimeUnit.SECONDS));
     }
 
-    return timescales;
+    return ts;
   }
     
   

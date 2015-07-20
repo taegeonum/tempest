@@ -50,7 +50,7 @@ public class StaticRelationCubeImpl<T> implements RelationCube<T> {
     if (start >= end) {
       start -= period;
     }
-    LOG.log(Level.INFO, "savePartialOutput: " + startTime + " - " + endTime +", " + start  + " - " + end );
+    LOG.log(Level.INFO, "savePartialOutput: " + startTime + " - " + endTime +", " + start  + " - " + end);
 
     Node node = null;
     try {
@@ -101,14 +101,15 @@ public class StaticRelationCubeImpl<T> implements RelationCube<T> {
             // skip
           } else {
             // wait until dependent output are generated.
-            LOG.log(Level.INFO, "finalAggregate sleep: " + currentNodeStartTime + " - " + currentNodeEndTime + ", " + startTime + " - " + endTime);
-              try {
-                n.wait();
-              } catch (InterruptedException e) {
-                e.printStackTrace();
-              }
+            LOG.log(Level.INFO, "finalAggregate sleep: " + currentNodeStartTime + " - "
+                + currentNodeEndTime + ", " + startTime + " - " + endTime);
+            try {
+              n.wait();
+            } catch (InterruptedException e) {
+              e.printStackTrace();
             }
           }
+        }
 
         if (n.getState() != null) {
           list.add(n.getState());
@@ -120,15 +121,16 @@ public class StaticRelationCubeImpl<T> implements RelationCube<T> {
     T output = finalAggregator.finalAggregate(list);
     synchronized (node) {
       if (node.getRefCnt() != 0) {
-          node.setState(output);
-          // set current end time
-          node.setCurrentStartTime(startTime);
-          node.setCurrentEndTime(endTime);
-          node.notifyAll();
+        node.setState(output);
+        // set current end time
+        node.setCurrentStartTime(startTime);
+        node.setCurrentEndTime(endTime);
+        node.notifyAll();
       }
     }
 
-    LOG.log(Level.FINE, "finalAggregate: " + startTime + " - " + endTime + ", " + start + " - " + end + ", period: " + period + ", dep: " + node.getDependencies().size() + ", listLen: " + list.size());
+    LOG.log(Level.FINE, "finalAggregate: " + startTime + " - " + endTime + ", " + start + " - " + end
+        + ", period: " + period + ", dep: " + node.getDependencies().size() + ", listLen: " + list.size());
     return output;
   }
 
@@ -206,32 +208,30 @@ public class StaticRelationCubeImpl<T> implements RelationCube<T> {
         List<Node> dependencies = new LinkedList<>();
 
         // lookup dependencies
-        {
-          long st = start;
-          while (st < time) {
-            TimeAndValue<Node> elem;
+        long st = start;
+        while (st < time) {
+          TimeAndValue<Node> elem;
+          try {
+            elem = table.lookupLargestSizeOutput(st, time);
+            if (st == elem.endTime) {
+              break;
+            } else {
+              dependencies.add(elem.value);
+              //referer.addDependency(elem.value);
+              st = elem.endTime;
+            }
+          } catch (NotFoundException e) {
             try {
-              elem = table.lookupLargestSizeOutput(st, time);
-              if (st == elem.endTime) {
-                break;
-              } else {
-                dependencies.add(elem.value);
-                //referer.addDependency(elem.value);
-                st = elem.endTime;
-              }
-            } catch (NotFoundException e) {
-              try {
-                elem = table.lookupLargestSizeOutput(st + period, period);
-                dependencies.add(elem.value);
-                st = elem.endTime - period;
-              } catch (NotFoundException e1) {
-                e1.printStackTrace();
-                throw new RuntimeException(e1);
-              }
-
+              elem = table.lookupLargestSizeOutput(st + period, period);
+              dependencies.add(elem.value);
+              st = elem.endTime - period;
+            } catch (NotFoundException e1) {
+              e1.printStackTrace();
+              throw new RuntimeException(e1);
             }
           }
         }
+
         LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies1: " + dependencies);
 
         for (Node elem : dependencies) {
@@ -289,8 +289,7 @@ public class StaticRelationCubeImpl<T> implements RelationCube<T> {
     return a;
   }
 
-  private static long lcm(long a, long b)
-  {
+  private static long lcm(long a, long b) {
     return a * (b / gcd(a, b));
   }
 

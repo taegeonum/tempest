@@ -14,11 +14,11 @@ import org.edu.snu.tempest.Timescale;
  */
 public interface SlicedWindowOperator<I> extends EventHandler<LogicalTime> {
 
-  /*
-   * Aggregate input
+  /**
+   * Aggregate input.
    */
-  public void execute(final I val);
+  void execute(final I val);
 
-  public void onTimescaleAddition(Timescale ts, LogicalTime time);
-  public void onTimescaleDeletion(Timescale ts, LogicalTime time);
+  void onTimescaleAddition(Timescale ts, LogicalTime time);
+  void onTimescaleDeletion(Timescale ts, LogicalTime time);
 }

@@ -1,10 +1,5 @@
 package org.edu.snu.tempest.signal.impl;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.inject.Inject;
-
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
@@ -13,19 +8,17 @@ import org.apache.reef.wake.remote.Decoder;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
+import org.edu.snu.tempest.Timescale;
 import org.edu.snu.tempest.signal.MTSSignalReceiver;
 import org.edu.snu.tempest.signal.TimescaleSignalListener;
-import org.edu.snu.tempest.signal.impl.ZkMTSParameters.OperatorIdentifier;
-import org.edu.snu.tempest.signal.impl.ZkMTSParameters.ZkMTSNamespace;
-import org.edu.snu.tempest.signal.impl.ZkMTSParameters.ZkRetryPeriod;
-import org.edu.snu.tempest.signal.impl.ZkMTSParameters.ZkRetryTimes;
-import org.edu.snu.tempest.signal.impl.ZkMTSParameters.ZkServerAddress;
-import org.edu.snu.tempest.signal.impl.ZkMTSParameters.ZkTSDecoder;
+import org.edu.snu.tempest.signal.impl.ZkMTSParameters.*;
 
-import org.edu.snu.tempest.Timescale;
+import javax.inject.Inject;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-/*
- * Zookeeper MTSSignalReceiver implementation 
+/**
+ * Zookeeper MTSSignalReceiver implementation.
  */
 public class ZkSignalReceiver implements MTSSignalReceiver, Watcher {
   private static final Logger LOG = Logger.getLogger(ZkSignalReceiver.class.getName());
@@ -88,7 +81,7 @@ public class ZkSignalReceiver implements MTSSignalReceiver, Watcher {
     }
   }
 
-  /*
+  /**
    * Notice: Zookeeper cannot process multiple concurrent events. 
    * Need to use another receiver if you want to address multiple concurrent events.
    */
@@ -123,13 +116,15 @@ public class ZkSignalReceiver implements MTSSignalReceiver, Watcher {
       }
       break;
     case NodeDeleted:
-      LOG.log(Level.FINE,"NodeDeleted");
+      LOG.log(Level.FINE, "NodeDeleted");
       break;
+    default:
+      throw new RuntimeException("Unknown type: " + event);
     }
   }
  
   @Override
   public void close() {
     this.client.close();
-}
+  }
 }

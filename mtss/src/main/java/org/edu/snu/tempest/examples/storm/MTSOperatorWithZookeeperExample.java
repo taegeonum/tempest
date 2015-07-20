@@ -23,13 +23,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-/*
- * Example:
- * Creates DefaultMTSOperatorImpl and adds timescales
+/**
+ * Creates DefaultMTSOperatorImpl and adds timescales.
  * 
  */
-public class MTSOperatorWithZookeeperExample {
-  
+public final class MTSOperatorWithZookeeperExample {
+
+  private MTSOperatorWithZookeeperExample() {
+
+  }
   
   public static void main(String[] args) throws Exception {
     ExecutorService executor = Executors.newFixedThreadPool(1);
@@ -37,7 +39,8 @@ public class MTSOperatorWithZookeeperExample {
     List<Timescale> list = new LinkedList<>();
     list.add(ts);
     Aggregator<Integer, Integer> testAggregator = new TestAggregator();
-    final MTSOperator<Integer, Integer> operator = new DynamicMTSOperatorImpl<Integer, Integer>(testAggregator, list, new TestHandler());
+    final MTSOperator<Integer, Integer> operator =
+        new DynamicMTSOperatorImpl<Integer, Integer>(testAggregator, list, new TestHandler());
     operator.start();
     
     executor.submit(new Runnable() {
@@ -87,9 +90,9 @@ public class MTSOperatorWithZookeeperExample {
   }
 
 
-  static class TestAggregator implements Aggregator<Integer, Integer> {
+  private static final class TestAggregator implements Aggregator<Integer, Integer> {
 
-    public TestAggregator() {
+    private TestAggregator() {
 
     }
 
@@ -113,7 +116,11 @@ public class MTSOperatorWithZookeeperExample {
     }
   }
 
-  static class TestHandler implements OutputHandler<Integer> {
+  private static final class TestHandler implements OutputHandler<Integer> {
+
+    private TestHandler() {
+
+    }
 
     @Override
     public void onNext(WindowOutput<Integer> arg0) {
