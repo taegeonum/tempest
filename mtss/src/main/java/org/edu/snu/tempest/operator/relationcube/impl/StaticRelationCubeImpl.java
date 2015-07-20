@@ -15,16 +15,20 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * StaticRelationCubeImplementation.
+ *
+ * It constructs RelationGraph at start time.
+ */
 public class StaticRelationCubeImpl<T> implements RelationCube<T> {
   private static final Logger LOG = Logger.getLogger(StaticRelationCubeImpl.class.getName());
 
-  private final OutputLookupTable<Node> table;
+  private final OutputLookupTable<RelationGraphNode> table;
   private final List<Timescale> timescales;
   private final MTSOperator.Aggregator<?, T> finalAggregator;
   private final List<Long> sliceQueue;
   private final long period;
   private int index = 0;
-
 
   @Inject
   public StaticRelationCubeImpl(final List<Timescale> timescales,
@@ -43,16 +47,16 @@ public class StaticRelationCubeImpl<T> implements RelationCube<T> {
 
   @Override
   public void savePartialOutput(long startTime, long endTime, T output) {
-
     long start = adjStartTime(startTime);
     long end = adjEndTime(endTime);
 
     if (start >= end) {
       start -= period;
     }
-    LOG.log(Level.INFO, "savePartialOutput: " + startTime + " - " + endTime +", " + start  + " - " + end);
+    LOG.log(Level.FINE,
+        "savePartialOutput: " + startTime + " - " + endTime +", " + start  + " - " + end);
 
-    Node node = null;
+    RelationGraphNode node = null;
     try {
       node = table.lookup(start, end);
     } catch (NotFoundException e) {
@@ -82,7 +86,7 @@ public class StaticRelationCubeImpl<T> implements RelationCube<T> {
       start -= period;
     }
 
-    Node node = null;
+    RelationGraphNode node = null;
     try {
       node = table.lookup(start, end);
     } catch (NotFoundException e) {
@@ -91,29 +95,29 @@ public class StaticRelationCubeImpl<T> implements RelationCube<T> {
     }
 
     List<T> list = new LinkedList<>();
-    for (Node n : node.getDependencies()) {
-      synchronized (n) {
-        long currentNodeStartTime = n.getCurrentStartTime();
-        long currentNodeEndTime = n.getCurrentEndTime();
+    for (RelationGraphNode child : node.getDependencies()) {
+      synchronized (child) {
+        long currentNodeStartTime = child.getCurrentStartTime();
+        long currentNodeEndTime = child.getCurrentEndTime();
 
         if (!(currentNodeStartTime >= startTime && currentNodeEndTime <= endTime)) {
-          if (startTime < 0 && n.start > endTime) {
+          if (startTime < 0 && child.start > endTime) {
             // skip
           } else {
             // wait until dependent output are generated.
             LOG.log(Level.INFO, "finalAggregate sleep: " + currentNodeStartTime + " - "
                 + currentNodeEndTime + ", " + startTime + " - " + endTime);
             try {
-              n.wait();
+              child.wait();
             } catch (InterruptedException e) {
               e.printStackTrace();
             }
           }
         }
 
-        if (n.getState() != null) {
-          list.add(n.getState());
-          n.decreaseRefCnt();
+        if (child.getState() != null) {
+          list.add(child.getState());
+          child.decreaseRefCnt();
         }
       }
     }
@@ -190,7 +194,7 @@ public class StaticRelationCubeImpl<T> implements RelationCube<T> {
     long startTime = 0;
     for (long endTime : sliceQueue) {
       if (startTime != endTime) {
-        table.saveOutput(startTime, endTime, new Node(startTime, endTime));
+        table.saveOutput(startTime, endTime, new RelationGraphNode(startTime, endTime));
         startTime = endTime;
       }
     }
@@ -204,13 +208,13 @@ public class StaticRelationCubeImpl<T> implements RelationCube<T> {
 
         // create vertex and add it to the table cell of (time, windowsize)
         final long start = time - timescale.windowSize;
-        Node referer = new Node(start, time);
-        List<Node> dependencies = new LinkedList<>();
+        RelationGraphNode referer = new RelationGraphNode(start, time);
+        List<RelationGraphNode> dependencies = new LinkedList<>();
 
         // lookup dependencies
         long st = start;
         while (st < time) {
-          TimeAndValue<Node> elem;
+          TimeAndValue<RelationGraphNode> elem;
           try {
             elem = table.lookupLargestSizeOutput(st, time);
             if (st == elem.endTime) {
@@ -234,7 +238,7 @@ public class StaticRelationCubeImpl<T> implements RelationCube<T> {
 
         LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies1: " + dependencies);
 
-        for (Node elem : dependencies) {
+        for (RelationGraphNode elem : dependencies) {
           referer.addDependency(elem);
         }
 
@@ -293,9 +297,9 @@ public class StaticRelationCubeImpl<T> implements RelationCube<T> {
     return a * (b / gcd(a, b));
   }
 
-  public class Node {
+  public class RelationGraphNode {
 
-    private final List<Node> dependencies;
+    private final List<RelationGraphNode> dependencies;
     private int refCnt;
     private int initialRefCnt;
     private T state;
@@ -304,7 +308,7 @@ public class StaticRelationCubeImpl<T> implements RelationCube<T> {
     private AtomicLong currentEndTime;
     private AtomicLong currentStartTime;
 
-    public Node(long start, long end) {
+    public RelationGraphNode(long start, long end) {
       this.dependencies = new LinkedList<>();
       refCnt = 0;
       this.start = start;
@@ -342,7 +346,7 @@ public class StaticRelationCubeImpl<T> implements RelationCube<T> {
       this.currentEndTime.set(endTime);
     }
 
-    public void addDependency(Node n) {
+    public void addDependency(RelationGraphNode n) {
       if (n == null) {
         throw new NullPointerException();
       }
@@ -359,7 +363,7 @@ public class StaticRelationCubeImpl<T> implements RelationCube<T> {
       return refCnt;
     }
 
-    public List<Node> getDependencies() {
+    public List<RelationGraphNode> getDependencies() {
       return dependencies;
     }
 

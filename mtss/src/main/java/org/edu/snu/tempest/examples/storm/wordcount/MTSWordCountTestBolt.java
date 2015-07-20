@@ -34,8 +34,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/*
- * MTSWordCountTestBolt
+/**
+ * MTSWordCountTestBolt.
  * It aggregateds word and calculates counts. 
  */
 public class MTSWordCountTestBolt extends BaseRichBolt {

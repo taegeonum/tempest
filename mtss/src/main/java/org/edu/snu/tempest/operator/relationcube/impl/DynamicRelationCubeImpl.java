@@ -19,6 +19,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * DynamicRelationCubeImpl.
+ *
+ * It saves outputs and reuses when doing final aggregation.
+ */
 public class DynamicRelationCubeImpl<T> implements RelationCube<T> {
   private static final Logger LOG = Logger.getLogger(DynamicRelationCubeImpl.class.getName());
 
@@ -31,7 +36,7 @@ public class DynamicRelationCubeImpl<T> implements RelationCube<T> {
   private final double savingRate;
   private final OutputLookupTable<T> table;
   private final GarbageCollector gc;
-
+  private long largestWindowSize;
   private final ConcurrentHashMap<Timescale, Long> timescaleToSavingTimeMap;
 
   @Inject
@@ -44,6 +49,7 @@ public class DynamicRelationCubeImpl<T> implements RelationCube<T> {
     this.table = new DefaultOutputLookupTableImpl<>();
     this.gc = new DefaultGarbageCollectorImpl(timescales, table);
     this.timescaleToSavingTimeMap = new ConcurrentHashMap<>();
+    this.largestWindowSize = findLargestWindowSize();
   }
 
   @Override
@@ -59,6 +65,7 @@ public class DynamicRelationCubeImpl<T> implements RelationCube<T> {
     long start = startTime;
     boolean isFullyProcessed = true;
 
+    // fetch dependent outputs
     while(start < endTime) {
       TimeAndValue<T> elem;
       try {
@@ -78,19 +85,24 @@ public class DynamicRelationCubeImpl<T> implements RelationCube<T> {
     }
 
     if (!isFullyProcessed) {
-      LOG.log(Level.WARNING, "The output of " + ts + " at " + endTime + " is not fully produced. "
+      LOG.log(Level.WARNING, "The output of " + ts
+          + " at " + endTime + " is not fully produced. "
           + "It only happens when the timescale is recently added");
     }
 
+    // aggregates dependent outputs
     T finalResult = finalAggregator.finalAggregate(dependentOutputs);
-    LOG.log(Level.FINE, "AGG TIME OF " + ts + ": " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - aggStartTime)
+    LOG.log(Level.FINE, "AGG TIME OF " + ts + ": "
+        + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - aggStartTime)
         + " at " + endTime + ", dependent size: " + dependentOutputs.size());
     Long latestSaveTime = timescaleToSavingTimeMap.get(ts);
+
     if (latestSaveTime == null) {
       latestSaveTime = new Long(0);
     }
 
-    if ((endTime - latestSaveTime) >= ts.windowSize * savingRate) {
+    if ((endTime - latestSaveTime) >= ts.windowSize * savingRate
+        && ts.windowSize < this.largestWindowSize) {
       // save result to OLT
       LOG.log(Level.FINE, "SavingRate: " + savingRate + ", OWO of " + ts +
           " saves output of [" + startTime + "-" + endTime + "]");
@@ -108,12 +120,34 @@ public class DynamicRelationCubeImpl<T> implements RelationCube<T> {
   @Override
   public void addTimescale(final Timescale ts, final long time) {
     LOG.log(Level.INFO, "addTimescale " + ts);
-    gc.onTimescaleAddition(ts);
+    synchronized (this.timescales) {
+      gc.onTimescaleAddition(ts);
+      this.timescales.add(ts);
+      if (ts.windowSize > this.largestWindowSize) {
+        this.largestWindowSize = ts.windowSize;
+      }
+    }
   }
 
   @Override
   public void removeTimescale(final Timescale ts, final long time) {
     LOG.log(Level.INFO, "removeTimescale " + ts);
-    gc.onTimescaleDeletion(ts);
+    synchronized (this.timescales) {
+      gc.onTimescaleDeletion(ts);
+      this.timescales.remove(ts);
+      if (ts.windowSize == this.largestWindowSize) {
+        this.largestWindowSize = findLargestWindowSize();
+      }
+    }
+  }
+
+  private long findLargestWindowSize() {
+    long result = 0;
+    for (Timescale ts : timescales) {
+      if (result < ts.windowSize) {
+        result = ts.windowSize;
+      }
+    }
+    return result;
   }
 }
