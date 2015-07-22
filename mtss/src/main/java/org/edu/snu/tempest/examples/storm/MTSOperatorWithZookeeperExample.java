@@ -1,20 +1,17 @@
 package org.edu.snu.tempest.examples.storm;
 
-import org.edu.snu.tempest.Timescale;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
-import org.edu.snu.tempest.operator.MTSOperator;
-import org.edu.snu.tempest.operator.MTSOperator.Aggregator;
-import org.edu.snu.tempest.operator.MTSOperator.OutputHandler;
-import org.edu.snu.tempest.operator.WindowOutput;
-import org.edu.snu.tempest.operator.impl.DynamicMTSOperatorImpl;
-import org.edu.snu.tempest.signal.MTSSignalReceiver;
-import org.edu.snu.tempest.signal.MTSSignalSender;
-import org.edu.snu.tempest.signal.TimescaleSignalListener;
-import org.edu.snu.tempest.signal.impl.ZkMTSParameters;
-import org.edu.snu.tempest.signal.impl.ZkSignalReceiver;
-import org.edu.snu.tempest.signal.impl.ZkSignalSender;
+import org.edu.snu.tempest.operators.Timescale;
+import org.edu.snu.tempest.operators.common.Aggregator;
+import org.edu.snu.tempest.operators.common.WindowOutput;
+import org.edu.snu.tempest.operators.dynamicmts.DynamicMTSOperator;
+import org.edu.snu.tempest.operators.dynamicmts.impl.DynamicMTSOperatorImpl;
+import org.edu.snu.tempest.operators.dynamicmts.signal.MTSSignalSender;
+import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkMTSParameters;
+import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkSignalSender;
+import org.edu.snu.tempest.operators.staticmts.MTSOperator;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -24,7 +21,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Creates DefaultMTSOperatorImpl and adds timescales.
+ * Creates DynamicMTSOperatorImpl and adds timescales by using ZkSignalSender.
  * 
  */
 public final class MTSOperatorWithZookeeperExample {
@@ -40,11 +37,26 @@ public final class MTSOperatorWithZookeeperExample {
     list.add(ts);
     final long startTime = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
     Aggregator<Integer, Integer> testAggregator = new TestAggregator();
-    final MTSOperator<Integer, Integer> operator =
-        new DynamicMTSOperatorImpl<Integer, Integer>(testAggregator, list, new TestHandler(),
-            startTime);
-    operator.start();
+
+    // configure zookeeper setting.
+    String identifier = "mts-test";
+    String namespace = "mts";
+    String address = "localhost:2181";
     
+    JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
+    cb.bindNamedParameter(ZkMTSParameters.OperatorIdentifier.class, identifier);
+    cb.bindNamedParameter(ZkMTSParameters.ZkMTSNamespace.class, namespace);
+    cb.bindNamedParameter(ZkMTSParameters.ZkServerAddress.class, address);
+    
+    Injector ij = Tang.Factory.getTang().newInjector(cb.build());
+    ij.bindVolatileInstance(Aggregator.class, testAggregator);
+    ij.bindVolatileInstance(List.class, list);
+    ij.bindVolatileInstance(MTSOperator.OutputHandler.class, new TestHandler());
+    ij.bindVolatileInstance(Long.class, startTime);
+    final DynamicMTSOperator<Integer> operator = ij.getInstance(DynamicMTSOperatorImpl.class);
+    MTSSignalSender sender = ij.getInstance(ZkSignalSender.class);
+
+    operator.start();
     executor.submit(new Runnable() {
       @Override
       public void run() {
@@ -60,23 +72,7 @@ public final class MTSOperatorWithZookeeperExample {
       }
     });
 
-    
-    String identifier = "mts-test";
-    String namespace = "mts";
-    String address = "localhost:2181";
-    
-    JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
-    cb.bindNamedParameter(ZkMTSParameters.OperatorIdentifier.class, identifier);
-    cb.bindNamedParameter(ZkMTSParameters.ZkMTSNamespace.class, namespace);
-    cb.bindNamedParameter(ZkMTSParameters.ZkServerAddress.class, address);
-    
-    Injector ij = Tang.Factory.getTang().newInjector(cb.build());
-    ij.bindVolatileInstance(TimescaleSignalListener.class, operator);
-    MTSSignalReceiver receiver = ij.getInstance(ZkSignalReceiver.class);
-    MTSSignalSender sender = ij.getInstance(ZkSignalSender.class);
-    
-    receiver.start();
-    
+    // add timescales to the MTS operator
     Thread.sleep(1500);
     sender.addTimescale(new Timescale(10, 5));
     Thread.sleep(1000);
@@ -87,7 +83,6 @@ public final class MTSOperatorWithZookeeperExample {
     executor.shutdown();
     executor.awaitTermination(30, TimeUnit.SECONDS);
     operator.close();
-    receiver.close();
     sender.close();
   }
 
@@ -118,7 +113,7 @@ public final class MTSOperatorWithZookeeperExample {
     }
   }
 
-  private static final class TestHandler implements OutputHandler<Integer> {
+  private static final class TestHandler implements MTSOperator.OutputHandler<Integer> {
 
     private TestHandler() {
 

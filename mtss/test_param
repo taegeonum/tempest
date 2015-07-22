@@ -1,6 +1,6 @@
 --log_dir=./log/
---test_name=test_wordcount/otf
+--test_name=test_wordcount/mts
 --spouts=1
---total_time=120
---operator=otf
+--total_time=90
+--operator=mts
 --timescales=(5,1)(10,2)(15,3)(20,4)

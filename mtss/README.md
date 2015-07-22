@@ -2,6 +2,11 @@ MTSS project
 
 # Pre-requisite
 
+0. Install and start zookeeper
+  - download from https://zookeeper.apache.org/
+  - tar
+  - ./bin/zkServer.sh start
+
 1. Install YCSB 0.2.0 
   - download ycsb.0.2.0 source code from https://github.com/brianfrankcooper/YCSB/releases/tag/0.2.0 
   - direct link: https://github.com/brianfrankcooper/YCSB/archive/0.2.0.tar.gz
@@ -23,7 +28,7 @@ MTSS project
   * rg: Static RelationCube impl
   * naive: Naive impl
   * otf: On-the-fly sharing (input sharing) impl
---timescales: timescales
+6. --timescales: timescales
   * format: (window_size,interval),(window_size2,interval2)...
   * unit: second
   * ex) (5,1)(10,2) -> two timescales: window size is 5seconds, interval is 1 second. window size is 10 seconds, interval is 2 seconds.

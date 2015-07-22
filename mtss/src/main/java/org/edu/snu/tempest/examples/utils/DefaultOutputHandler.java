@@ -1,7 +1,7 @@
 package org.edu.snu.tempest.examples.utils;
 
-import org.edu.snu.tempest.operator.MTSOperator.OutputHandler;
-import org.edu.snu.tempest.operator.WindowOutput;
+import org.edu.snu.tempest.operators.common.WindowOutput;
+import org.edu.snu.tempest.operators.staticmts.MTSOperator;
 
 import javax.inject.Inject;
 import java.util.logging.Level;
@@ -10,7 +10,7 @@ import java.util.logging.Logger;
 /*
  * Default OutputHandler 
  */
-public class DefaultOutputHandler<V> implements OutputHandler<V> {
+public class DefaultOutputHandler<V> implements MTSOperator.OutputHandler<V> {
   
   private static final Logger LOG = Logger.getLogger(DefaultOutputHandler.class.getName());
   

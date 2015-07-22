@@ -1,14 +1,23 @@
 package org.edu.snu.onthefly.operator.impl;
 
-import org.edu.snu.tempest.Timescale;
-import org.edu.snu.tempest.operator.Clock;
-import org.edu.snu.tempest.operator.MTSOperator;
-import org.edu.snu.tempest.operator.impl.DefaultMTSClockImpl;
-import org.edu.snu.tempest.operator.impl.DynamicMTSOperatorImpl;
-import org.edu.snu.tempest.operator.relationcube.GarbageCollector;
+import org.edu.snu.tempest.operators.Timescale;
+import org.edu.snu.tempest.operators.common.Aggregator;
+import org.edu.snu.tempest.operators.common.Clock;
+import org.edu.snu.tempest.operators.common.OverlappingWindowOperator;
+import org.edu.snu.tempest.operators.common.Subscription;
+import org.edu.snu.tempest.operators.common.impl.DefaultMTSClockImpl;
+import org.edu.snu.tempest.operators.common.impl.DefaultOverlappingWindowOperatorImpl;
+import org.edu.snu.tempest.operators.dynamicmts.DynamicMTSOperator;
+import org.edu.snu.tempest.operators.dynamicmts.DynamicSlicedWindowOperator;
+import org.edu.snu.tempest.operators.dynamicmts.impl.DynamicMTSOperatorImpl;
+import org.edu.snu.tempest.operators.dynamicmts.impl.DynamicSlicedWindowOperatorImpl;
+import org.edu.snu.tempest.operators.dynamicmts.signal.MTSSignalReceiver;
 
 import javax.inject.Inject;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -17,23 +26,44 @@ import java.util.logging.Logger;
  * "On-the-fly sharing for streamed aggregation"'s operator
  * for multi-time scale sliding window operator.
  */
-public final class OTFMTSOperatorImpl<I, V> implements MTSOperator<I, V> {
+public final class OTFMTSOperatorImpl<I, V> implements DynamicMTSOperator<I> {
   private static final Logger LOG = Logger.getLogger(DynamicMTSOperatorImpl.class.getName());
 
   private final AtomicBoolean started = new AtomicBoolean(false);
   private final Aggregator<I, V> aggregator;
+  private final OutputHandler<V> outputHandler;
   private final Clock clock;
-  private final OTFSlicedWindowOperatorImpl<I, V> slicedWindow;
-  
+  private final OTFRelationCubeImpl<V> relationCube;
+  private final DynamicSlicedWindowOperator<I> slicedWindow;
+  private final List<OverlappingWindowOperator<V>> overlappingWindowOperators;
+  private final Map<Timescale, Subscription<Timescale>> subscriptions;
+  private final MTSSignalReceiver receiver;
+
   @Inject
   public OTFMTSOperatorImpl(final Aggregator<I, V> aggregator,
-                            final List<Timescale> timescales,
-                            final OutputHandler<V> handler,
-                            final Long startTime) {
+                                final List<Timescale> timescales,
+                                final OutputHandler<V> handler,
+                                final MTSSignalReceiver receiver,
+                                final Long startTime) throws Exception {
     this.aggregator = aggregator;
+    this.outputHandler = handler;
+    this.relationCube = new OTFRelationCubeImpl<>(timescales, aggregator, startTime);
+    this.subscriptions = new HashMap<>();
+    this.overlappingWindowOperators = new LinkedList<>();
+    this.receiver = receiver;
+    this.receiver.addTimescaleSignalListener(this);
 
-    this.slicedWindow = new OTFSlicedWindowOperatorImpl<>(aggregator, handler, timescales, startTime);
+    this.slicedWindow = new DynamicSlicedWindowOperatorImpl<>(aggregator, timescales,
+        relationCube, startTime);
     this.clock = new DefaultMTSClockImpl(slicedWindow);
+
+    for (Timescale timescale : timescales) {
+      OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperatorImpl<V>(
+          timescale, relationCube, outputHandler, startTime);
+      this.overlappingWindowOperators.add(owo);
+      Subscription<Timescale> ss = clock.subscribe(owo);
+      subscriptions.put(ss.getToken(), ss);
+    }
   }
 
   @Override
@@ -41,9 +71,15 @@ public final class OTFMTSOperatorImpl<I, V> implements MTSOperator<I, V> {
     if (started.compareAndSet(false, true)) {
       LOG.log(Level.INFO, "MTSOperator start");
       this.clock.start();
+      try {
+        this.receiver.start();
+      } catch (Exception e) {
+        e.printStackTrace();
+        throw new RuntimeException(e);
+      }
     }
   }
-  
+
   @Override
   public void execute(final I val) {
     LOG.log(Level.FINEST, "MTSOperator execute : ( " + val + ")");
@@ -51,40 +87,40 @@ public final class OTFMTSOperatorImpl<I, V> implements MTSOperator<I, V> {
   }
 
   @Override
-  public void onTimescaleAddition(final Timescale ts, final long startTime) {
+  public synchronized void onTimescaleAddition(final Timescale ts, final long startTime) {
+    // 1. add overlapping window operator
     LOG.log(Level.INFO, "MTSOperator addTimescale: " + ts);
+    OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperatorImpl<>(
+        ts, relationCube, outputHandler, startTime);
+    this.overlappingWindowOperators.add(owo);
+    Subscription<Timescale> ss = this.clock.subscribe(owo);
+    subscriptions.put(ss.getToken(), ss);
 
-    //1. change scliedWindow
+    //2. add timescale to SlicedWindowOperator
     this.slicedWindow.onTimescaleAddition(ts, startTime);
+
+    //3. add timescale to RelationCube.
+    this.relationCube.onTimescaleAddition(ts, startTime);
   }
 
   @Override
-  public void onTimescaleDeletion(final Timescale ts) {
-    // TODO
+  public synchronized void onTimescaleDeletion(final Timescale ts) {
+    // TODO: implement timescale deletion.
     LOG.log(Level.INFO, "MTSOperator removeTimescale: " + ts);
+    long currentTime = clock.getCurrentTime();
+
+    Subscription<Timescale> ss = subscriptions.get(ts);
+    if (ss == null) {
+      LOG.log(Level.WARNING, "Deletion error: Timescale " + ts + " not exists. ");
+    } else {
+      this.slicedWindow.onTimescaleDeletion(ts);
+      this.relationCube.onTimescaleDeletion(ts);
+      ss.unsubscribe();
+    }
   }
 
   @Override
   public void close() throws Exception {
     clock.close();
-    slicedWindow.close();
-  }
-  
-  class GarbageCollectorImpl implements GarbageCollector {
-
-    @Override
-    public void onTimescaleAddition(Timescale ts, long startTime) {
-
-    }
-
-    @Override
-    public void onTimescaleDeletion(Timescale ts) {
-      
-    }
-
-    @Override
-    public void onNext(Long aLong) {
-
-    }
   }
 }

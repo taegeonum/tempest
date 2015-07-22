@@ -12,7 +12,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class LocalOutputWriter implements OutputWriter {
+/**
+ * Writes log into a local file.
+ */
+public final class LocalOutputWriter implements OutputWriter {
   
   /*
    * It doesn't guarantee concurrent write

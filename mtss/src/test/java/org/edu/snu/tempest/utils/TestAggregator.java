@@ -1,13 +1,14 @@
 package org.edu.snu.tempest.utils;
 
-import org.edu.snu.tempest.operator.MTSOperator;
+
+import org.edu.snu.tempest.operators.common.Aggregator;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 
-public final class TestAggregator implements MTSOperator.Aggregator<Integer, Map<Integer, Integer>> {
+public final class TestAggregator implements Aggregator<Integer, Map<Integer, Integer>> {
 
   @Override
   public Map<Integer, Integer> init() {

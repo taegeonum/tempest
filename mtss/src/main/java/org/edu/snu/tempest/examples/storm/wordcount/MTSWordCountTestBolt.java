@@ -10,18 +10,21 @@ import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.exceptions.InjectionException;
 import org.edu.snu.naive.operator.impl.NaiveWindowOperator;
-import org.edu.snu.tempest.Timescale;
+import org.edu.snu.onthefly.operator.impl.OTFMTSOperatorImpl;
 import org.edu.snu.tempest.examples.storm.parameters.SavingRate;
 import org.edu.snu.tempest.examples.utils.Profiler;
 import org.edu.snu.tempest.examples.utils.writer.OutputWriter;
-import org.edu.snu.tempest.operator.MTSOperator;
-import org.edu.snu.tempest.operator.MTSOperator.Aggregator;
-import org.edu.snu.tempest.operator.MTSOperator.OutputHandler;
-import org.edu.snu.tempest.operator.WindowOutput;
-import org.edu.snu.tempest.signal.MTSSignalReceiver;
-import org.edu.snu.tempest.signal.TimescaleSignalListener;
-import org.edu.snu.tempest.signal.impl.ZkMTSParameters;
-import org.edu.snu.tempest.signal.impl.ZkSignalReceiver;
+import org.edu.snu.tempest.operators.Timescale;
+import org.edu.snu.tempest.operators.common.aggregators.CountByKeyAggregator;
+import org.edu.snu.tempest.operators.common.Aggregator;
+import org.edu.snu.tempest.operators.common.WindowOutput;
+import org.edu.snu.tempest.operators.dynamicmts.impl.DynamicMTSOperatorImpl;
+import org.edu.snu.tempest.operators.dynamicmts.signal.MTSSignalReceiver;
+import org.edu.snu.tempest.operators.dynamicmts.signal.TimescaleSignalListener;
+import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkMTSParameters;
+import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkSignalReceiver;
+import org.edu.snu.tempest.operators.staticmts.MTSOperator;
+import org.edu.snu.tempest.operators.staticmts.impl.StaticMTSOperatorImpl;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -64,10 +67,10 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
   private final List<Timescale> timescales;
 
   /**
-   * Operator class.
-   * [DynamicMTSOperatorImpl, StaticMTSOperatorImpl, NaiveMTSOperatorImpl, OTFMTSOperatorImpl]
+   * Operators class.
+   * [mts, naive, rg, otf]
    */
-  private final Class<? extends MTSOperator> operatorClass;
+  private final String operatorName;
 
   private final double savingRate;
 
@@ -79,12 +82,7 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
   /**
    * MTS Operator.
    */
-  private MTSOperator<Tuple, Map<String, Long>> operator;
-
-  /**
-   * Signal Receiver for adding/removing timescales.
-   */
-  private MTSSignalReceiver receiver;
+  private MTSOperator<Tuple> operator;
 
   /**
    * Scheduled executor for logging.
@@ -105,14 +103,14 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
   public MTSWordCountTestBolt(final OutputWriter writer,
                               final String pathPrefix,
                               final List<Timescale> timescales,
-                              final Class<? extends MTSOperator> operatorClass,
+                              final String operatorName,
                               final String address,
                               final double savingRate,
                               final long startTime) {
     this.writer = writer;
     this.pathPrefix = pathPrefix;
     this.timescales = timescales;
-    this.operatorClass = operatorClass;
+    this.operatorName = operatorName;
     this.address = address;
     this.savingRate = savingRate;
     this.startTime = startTime;
@@ -129,8 +127,7 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
     operator.execute(tuple);
     numOfExecution.incrementAndGet();
   }
-  
-  
+
   @Override
   public void prepare(Map conf, TopologyContext paramTopologyContext,
       OutputCollector paramOutputCollector) {
@@ -166,42 +163,46 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
 
     // create MTS operator
     JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
-    cb.bindImplementation(MTSOperator.class, operatorClass);
-    cb.bindImplementation(TimescaleSignalListener.class, operatorClass);
-    
-    cb.bindNamedParameter(ZkMTSParameters.OperatorIdentifier.class, "mts-wcbolt");
-    cb.bindNamedParameter(ZkMTSParameters.ZkServerAddress.class, address);
-    cb.bindImplementation(MTSSignalReceiver.class, ZkSignalReceiver.class);
     cb.bindImplementation(Aggregator.class, CountByKeyAggregator.class);
     cb.bindNamedParameter(SavingRate.class, savingRate+"");
 
+    if (operatorName.equals("mts")) {
+      cb.bindImplementation(MTSOperator.class, DynamicMTSOperatorImpl.class);
+      cb.bindImplementation(TimescaleSignalListener.class, DynamicMTSOperatorImpl.class);
+      cb.bindNamedParameter(ZkMTSParameters.OperatorIdentifier.class, "mts-wcbolt");
+      cb.bindNamedParameter(ZkMTSParameters.ZkServerAddress.class, address);
+      cb.bindImplementation(MTSSignalReceiver.class, ZkSignalReceiver.class);
+    } else if (operatorName.equals("naive")) {
+      cb.bindImplementation(MTSOperator.class, NaiveWindowOperator.class);
+    } else if (operatorName.equals("rg")) {
+      cb.bindImplementation(MTSOperator.class, StaticMTSOperatorImpl.class);
+    } else if (operatorName.equals("otf")) {
+      cb.bindImplementation(MTSOperator.class, OTFMTSOperatorImpl.class);
+    } else {
+      throw new RuntimeException("Operator exception: " + operator);
+    }
+
     Injector ij = Tang.Factory.getTang().newInjector(cb.build());
     ij.bindVolatileInstance(Long.class, this.startTime);
-    if (operatorClass.equals(NaiveWindowOperator.class)) {
+    if (operatorName.equals("naive")) {
       // bind one timescale to each executors.
       int index = paramTopologyContext.getThisTaskIndex();
       ij.bindVolatileInstance(Timescale.class, timescales.get(index));
     } else {
       ij.bindVolatileInstance(List.class, timescales);
     }
-    ij.bindVolatileInstance(OutputHandler.class, new WCOutputHandler());
-    ij.bindVolatileInstance(CountByKeyAggregator.TupleToKey.class, new CountByKeyAggregator.TupleToKey<String>() {
-      @Override
-      public String getKey(Tuple tuple) {
-        return tuple.getString(0);
-      }
-    });
+    ij.bindVolatileInstance(MTSOperator.OutputHandler.class, new WCOutputHandler());
+    ij.bindVolatileInstance(CountByKeyAggregator.KeyFromValue.class,
+        new CountByKeyAggregator.KeyFromValue<Tuple, String>() {
+          @Override
+          public String getKey(Tuple tuple) {
+            return tuple.getString(0);
+          }
+        });
 
     try {
       operator = ij.getInstance(MTSOperator.class);
-      receiver = ij.getInstance(MTSSignalReceiver.class);
     } catch (InjectionException e) {
-      throw new RuntimeException(e);
-    }
-    
-    try {
-      receiver.start();
-    } catch (Exception e) {
       throw new RuntimeException(e);
     }
     operator.start();
@@ -213,13 +214,12 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
       this.operator.close();
       this.executor.shutdown();
       //this.writer.close();
-      this.receiver.close();
     } catch (Exception e) {
       e.printStackTrace();
     }
   }
   
-  public final class WCOutputHandler implements OutputHandler<Map<String, Long>> {
+  public final class WCOutputHandler implements MTSOperator.OutputHandler<Map<String, Long>> {
     @Inject
     public WCOutputHandler() {
       

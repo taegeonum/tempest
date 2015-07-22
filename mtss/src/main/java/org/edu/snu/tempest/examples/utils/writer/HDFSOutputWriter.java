@@ -12,7 +12,10 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class HDFSOutputWriter implements OutputWriter {
+/**
+ * Writes log into a HDFS file.
+ */
+public final class HDFSOutputWriter implements OutputWriter {
   
   private static final Logger LOG = Logger.getLogger(HDFSOutputWriter.class.getName());
   

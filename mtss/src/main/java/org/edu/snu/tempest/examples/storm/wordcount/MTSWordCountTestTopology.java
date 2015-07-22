@@ -12,10 +12,9 @@ import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.exceptions.BindException;
 import org.apache.reef.tang.formats.CommandLine;
-import org.edu.snu.naive.operator.impl.NaiveWindowOperator;
 import org.edu.snu.tempest.examples.storm.parameters.*;
 import org.edu.snu.tempest.examples.utils.StormRunner;
-import org.edu.snu.tempest.signal.TimescaleParser.TimescaleParameter;
+import org.edu.snu.tempest.examples.utils.TimescaleParser.TimescaleParameter;
 import org.edu.snu.tempest.examples.utils.writer.LocalOutputWriter;
 import org.edu.snu.tempest.examples.utils.writer.OutputWriter;
 
@@ -90,13 +89,13 @@ public final class MTSWordCountTestTopology {
     BaseRichBolt bolt = new MTSWordCountTestBolt(new LocalOutputWriter(),
         logDir + testName,
         test.tsParser.timescales,
-        test.operatorClass,
+        test.operatorName,
         "localhost:2181",
         savingRate,
         TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()));
 
     // set bolt
-    if (test.operatorClass.equals(NaiveWindowOperator.class)) {
+    if (test.operatorName.equals("naive")) {
       // naive creates a bolt with multiple executors.
       // Each executors runs one timescale window operator.
       builder.setBolt("wcbolt", bolt, test.tsParser.timescales.size()).allGrouping("wcspout");

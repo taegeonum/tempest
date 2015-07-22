@@ -1,21 +1,21 @@
 package org.edu.snu.tempest.examples.storm;
 
-import org.edu.snu.tempest.Timescale;
-import org.edu.snu.tempest.operator.MTSOperator;
-import org.edu.snu.tempest.operator.MTSOperator.Aggregator;
-import org.edu.snu.tempest.operator.MTSOperator.OutputHandler;
-import org.edu.snu.tempest.operator.WindowOutput;
-import org.edu.snu.tempest.operator.impl.DynamicMTSOperatorImpl;
+import org.edu.snu.tempest.operators.Timescale;
+import org.edu.snu.tempest.operators.common.Aggregator;
+import org.edu.snu.tempest.operators.common.WindowOutput;
+import org.edu.snu.tempest.operators.dynamicmts.DynamicMTSOperator;
+import org.edu.snu.tempest.operators.dynamicmts.impl.DynamicMTSOperatorImpl;
+import org.edu.snu.tempest.operators.dynamicmts.signal.MTSSignalReceiver;
+import org.edu.snu.tempest.operators.dynamicmts.signal.TimescaleSignalListener;
+import org.edu.snu.tempest.operators.staticmts.MTSOperator;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-/*
- * Example
- * Creates a DefaultMTSOperatorImpl 
- * and aggregates Input
+/**
+ * Dynamic MTSOperator Example.
  */
 public final class MTSOperatorExample {
 
@@ -29,9 +29,9 @@ public final class MTSOperatorExample {
     List<Timescale> list = new LinkedList<>();
     list.add(ts);
     final long startTime = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
-    MTSOperator<Integer, Integer> operator =
-        new DynamicMTSOperatorImpl<Integer, Integer>(testAggregator, list, new TestHandler()
-        , startTime);
+    DynamicMTSOperator<Integer> operator =
+        new DynamicMTSOperatorImpl<>(testAggregator, list,
+           new TestHandler(), new Receiver(), startTime);
 
     operator.start();
     Random rand = new Random();
@@ -75,7 +75,7 @@ public final class MTSOperatorExample {
     }
   }
   
-  private static final class TestHandler implements OutputHandler<Integer> {
+  private static final class TestHandler implements MTSOperator.OutputHandler<Integer> {
     private TestHandler() {
 
     }
@@ -83,6 +83,27 @@ public final class MTSOperatorExample {
     @Override
     public void onNext(WindowOutput<Integer> arg0) {
       System.out.println(arg0);
+    }
+  }
+
+  private static final class Receiver implements MTSSignalReceiver {
+    private Receiver() {
+
+    }
+
+    @Override
+    public void start() throws Exception {
+
+    }
+
+    @Override
+    public void addTimescaleSignalListener(TimescaleSignalListener listener) {
+
+    }
+
+    @Override
+    public void close() throws Exception {
+
     }
   }
 }
