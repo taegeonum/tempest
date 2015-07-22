@@ -8,8 +8,8 @@ import org.apache.reef.wake.remote.Decoder;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
-import org.edu.snu.tempest.Timescale;
 import org.edu.snu.tempest.signal.MTSSignalReceiver;
+import org.edu.snu.tempest.signal.TimescaleSignal;
 import org.edu.snu.tempest.signal.TimescaleSignalListener;
 import org.edu.snu.tempest.signal.impl.ZkMTSParameters.*;
 
@@ -24,7 +24,7 @@ public class ZkSignalReceiver implements MTSSignalReceiver, Watcher {
   private static final Logger LOG = Logger.getLogger(ZkSignalReceiver.class.getName());
   private final String identifier;
   private final String namespace;
-  private final Decoder<Timescale> decoder;
+  private final Decoder<TimescaleSignal> decoder;
   private final String address;
   private final int retryTimes;
   private final int retryPeriod;
@@ -37,7 +37,7 @@ public class ZkSignalReceiver implements MTSSignalReceiver, Watcher {
   public ZkSignalReceiver(
       @Parameter(OperatorIdentifier.class) final String identifier, 
       @Parameter(ZkMTSNamespace.class) final String namespace, 
-      @Parameter(ZkTSDecoder.class) Decoder<Timescale> decoder,
+      @Parameter(ZkTSDecoder.class) Decoder<TimescaleSignal> decoder,
       @Parameter(ZkServerAddress.class) final String address,
       @Parameter(ZkRetryTimes.class) final int retryTimes,
       @Parameter(ZkRetryPeriod.class) final int retryPeriod, 
@@ -101,15 +101,15 @@ public class ZkSignalReceiver implements MTSSignalReceiver, Watcher {
       break;
     case NodeDataChanged:
       LOG.log(Level.INFO, "Received signal. Path: " + event.getPath());
-      Timescale ts = null;
+      TimescaleSignal signal = null;
       try {
-        ts = decoder.decode(this.client.getData().forPath(event.getPath()));
+        signal = decoder.decode(this.client.getData().forPath(event.getPath()));
         if (event.getPath().matches("(.*)-addition")) {
-          LOG.log(Level.INFO, "call onTimescaleAddition: " + ts);
-          this.listener.onTimescaleAddition(ts);
+          LOG.log(Level.INFO, "call onTimescaleAddition: " + signal);
+          this.listener.onTimescaleAddition(signal.ts, signal.startTime);
         } else if (event.getPath().matches("(.*)-deletion")) {
-          LOG.log(Level.INFO, "call onTimescaleDeletion: " + ts);
-          this.listener.onTimescaleDeletion(ts);
+          LOG.log(Level.INFO, "call onTimescaleDeletion: " + signal);
+          this.listener.onTimescaleDeletion(signal.ts);
         }
       } catch (Exception e) {
         e.printStackTrace();

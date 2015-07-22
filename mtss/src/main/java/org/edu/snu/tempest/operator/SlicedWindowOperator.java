@@ -1,9 +1,7 @@
 package org.edu.snu.tempest.operator;
 
 import org.apache.reef.wake.EventHandler;
-import org.edu.snu.tempest.operator.impl.LogicalTime;
-
-import org.edu.snu.tempest.Timescale;
+import org.edu.snu.tempest.signal.TimescaleSignalListener;
 
 /**
  * Sliced window operator [ reference: On-the-fly sharing for streamed aggregation ].
@@ -12,13 +10,10 @@ import org.edu.snu.tempest.Timescale;
  *
  * The method how to chop input stream is introduced by "on-the-fly sharing for streamed aggregation".
  */
-public interface SlicedWindowOperator<I> extends EventHandler<LogicalTime> {
+public interface SlicedWindowOperator<I> extends EventHandler<Long>, TimescaleSignalListener {
 
   /**
    * Aggregate input.
    */
   void execute(final I val);
-
-  void onTimescaleAddition(Timescale ts, LogicalTime time);
-  void onTimescaleDeletion(Timescale ts, LogicalTime time);
 }

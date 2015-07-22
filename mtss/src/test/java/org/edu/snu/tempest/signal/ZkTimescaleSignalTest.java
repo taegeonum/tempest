@@ -120,7 +120,7 @@ public class ZkTimescaleSignalTest {
       this.counter = new AtomicInteger(numOfTimescales);
     }
     @Override
-    public void onTimescaleAddition(Timescale ts) {
+    public void onTimescaleAddition(Timescale ts, final long startTime) {
       this.list.add(ts);
       if (this.counter.decrementAndGet() == 0) {
         monitor.mnotify();

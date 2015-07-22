@@ -1,16 +1,14 @@
 package org.edu.snu.onthefly.operator.impl;
 
 import org.edu.snu.tempest.Timescale;
-import org.edu.snu.tempest.operator.MTSOperator;
 import org.edu.snu.tempest.operator.Clock;
-import org.edu.snu.tempest.operator.relationcube.GarbageCollector;
+import org.edu.snu.tempest.operator.MTSOperator;
 import org.edu.snu.tempest.operator.impl.DefaultMTSClockImpl;
 import org.edu.snu.tempest.operator.impl.DynamicMTSOperatorImpl;
-import org.edu.snu.tempest.operator.impl.LogicalTime;
+import org.edu.snu.tempest.operator.relationcube.GarbageCollector;
 
 import javax.inject.Inject;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,11 +28,12 @@ public final class OTFMTSOperatorImpl<I, V> implements MTSOperator<I, V> {
   @Inject
   public OTFMTSOperatorImpl(final Aggregator<I, V> aggregator,
                             final List<Timescale> timescales,
-                            final OutputHandler<V> handler) {
+                            final OutputHandler<V> handler,
+                            final Long startTime) {
     this.aggregator = aggregator;
 
-    this.slicedWindow = new OTFSlicedWindowOperatorImpl<>(aggregator, handler, timescales);
-    this.clock = new DefaultMTSClockImpl(slicedWindow, 1L, TimeUnit.SECONDS);
+    this.slicedWindow = new OTFSlicedWindowOperatorImpl<>(aggregator, handler, timescales, startTime);
+    this.clock = new DefaultMTSClockImpl(slicedWindow);
   }
 
   @Override
@@ -52,19 +51,17 @@ public final class OTFMTSOperatorImpl<I, V> implements MTSOperator<I, V> {
   }
 
   @Override
-  public void onTimescaleAddition(final Timescale ts) {
+  public void onTimescaleAddition(final Timescale ts, final long startTime) {
     LOG.log(Level.INFO, "MTSOperator addTimescale: " + ts);
 
-    LogicalTime currentTime = clock.getCurrentTime();
     //1. change scliedWindow
-    this.slicedWindow.onTimescaleAddition(ts, currentTime);
+    this.slicedWindow.onTimescaleAddition(ts, startTime);
   }
 
   @Override
   public void onTimescaleDeletion(final Timescale ts) {
     // TODO
     LOG.log(Level.INFO, "MTSOperator removeTimescale: " + ts);
-    LogicalTime currentTime = clock.getCurrentTime();
   }
 
   @Override
@@ -76,8 +73,8 @@ public final class OTFMTSOperatorImpl<I, V> implements MTSOperator<I, V> {
   class GarbageCollectorImpl implements GarbageCollector {
 
     @Override
-    public void onTimescaleAddition(Timescale ts) {
-      
+    public void onTimescaleAddition(Timescale ts, long startTime) {
+
     }
 
     @Override
@@ -86,9 +83,8 @@ public final class OTFMTSOperatorImpl<I, V> implements MTSOperator<I, V> {
     }
 
     @Override
-    public void onNext(LogicalTime arg0) {
-      
+    public void onNext(Long aLong) {
+
     }
-    
   }
 }

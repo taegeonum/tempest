@@ -13,6 +13,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.Mockito.mock;
@@ -22,22 +23,22 @@ public class MTSClockTest {
   @Test
   public void incrementTimeTest() throws Exception {
     Monitor monitor = new Monitor();
-    Queue<LogicalTime> queue = new LinkedList<>();
-    SlicedWindowOperator<Integer> operator = new TestSlicedWindowOperator(monitor, queue);
+    Queue<Long> queue = new LinkedList<>();
+    long startTime = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
+    SlicedWindowOperator<Integer> operator = new TestSlicedWindowOperator(monitor, queue, startTime);
 
     Clock clock = new DefaultMTSClockImpl(operator);
     clock.start();
     monitor.mwait();
     
     Assert.assertEquals(3, queue.size());
-    LogicalTime time1 = queue.poll();
-    LogicalTime time2 = queue.poll();
-    LogicalTime time3 = queue.poll();
+    Long time1 = queue.poll();
+    Long time2 = queue.poll();
+    Long time3 = queue.poll();
     
-    Assert.assertEquals(1L, time1.logicalTime);
-    Assert.assertEquals(2L, time2.logicalTime);
-    Assert.assertEquals(3L, time3.logicalTime);
-    
+    Assert.assertEquals(1L, time2 - time1);
+    Assert.assertEquals(1L, time3 - time2);
+
     clock.close();
   }
   
@@ -95,17 +96,20 @@ public class MTSClockTest {
   class TestSlicedWindowOperator implements SlicedWindowOperator<Integer> {
     private int count = 0;
     private final Monitor monitor;
-    private final Queue<LogicalTime> queue;
-    
-    public TestSlicedWindowOperator(final Monitor monitor, final Queue<LogicalTime> queue) {
+    private final Queue<Long> queue;
+    private final Long startTime;
+
+    public TestSlicedWindowOperator(final Monitor monitor, final Queue<Long> queue,
+                                    final Long startTime) {
       this.monitor = monitor;
       this.queue = queue;
+      this.startTime = startTime;
     }
     
     @Override
-    public void onNext(LogicalTime time) {
+    public void onNext(Long time) {
       queue.add(time);
-      System.out.println("Time: " + time.logicalTime);
+      System.out.println("Time: " + time);
       if (count == 2) {
         monitor.mnotify();
       }
@@ -117,10 +121,10 @@ public class MTSClockTest {
     public void execute(Integer val) {}
 
     @Override
-    public void onTimescaleAddition(Timescale ts, LogicalTime t) {}
+    public void onTimescaleAddition(Timescale ts, final long t) {}
 
     @Override
-    public void onTimescaleDeletion(Timescale ts, LogicalTime t) {}
+    public void onTimescaleDeletion(Timescale ts) {}
     
   }
   
@@ -133,7 +137,7 @@ public class MTSClockTest {
     }
     
     @Override
-    public void onNext(LogicalTime paramT) {
+    public void onNext(Long paramT) {
       counter.incrementAndGet();
       System.out.println("Time: " + paramT);
     }
@@ -156,9 +160,9 @@ public class MTSClockTest {
     }
     
     @Override
-    public void onNext(LogicalTime time) {
+    public void onNext(Long time) {
       queue.add("SlicedWindow");
-      System.out.println("Time: " + time.logicalTime);
+      System.out.println("Time: " + time);
       if (count == 3) {
         monitor.mnotify();
       }
@@ -170,10 +174,10 @@ public class MTSClockTest {
     public void execute(Integer val) {}
 
     @Override
-    public void onTimescaleAddition(Timescale ts, LogicalTime t) {}
+    public void onTimescaleAddition(Timescale ts, long t) {}
     
     @Override
-    public void onTimescaleDeletion(Timescale ts, LogicalTime t) {}
+    public void onTimescaleDeletion(Timescale ts) {}
     
   }
   
@@ -186,7 +190,7 @@ public class MTSClockTest {
     }
     
     @Override
-    public void onNext(LogicalTime paramT) {
+    public void onNext(Long paramT) {
       queue.add("OverlappingWindow");
     }
 

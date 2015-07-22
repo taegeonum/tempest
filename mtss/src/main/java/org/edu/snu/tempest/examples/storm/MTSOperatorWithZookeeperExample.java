@@ -38,9 +38,11 @@ public final class MTSOperatorWithZookeeperExample {
     Timescale ts = new Timescale(5, 3);
     List<Timescale> list = new LinkedList<>();
     list.add(ts);
+    final long startTime = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
     Aggregator<Integer, Integer> testAggregator = new TestAggregator();
     final MTSOperator<Integer, Integer> operator =
-        new DynamicMTSOperatorImpl<Integer, Integer>(testAggregator, list, new TestHandler());
+        new DynamicMTSOperatorImpl<Integer, Integer>(testAggregator, list, new TestHandler(),
+            startTime);
     operator.start();
     
     executor.submit(new Runnable() {

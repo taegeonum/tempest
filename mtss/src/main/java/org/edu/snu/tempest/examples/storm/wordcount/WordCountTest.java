@@ -4,7 +4,7 @@ import org.apache.reef.tang.annotations.Parameter;
 import org.edu.snu.naive.operator.impl.NaiveWindowOperator;
 import org.edu.snu.onthefly.operator.impl.OTFMTSOperatorImpl;
 import org.edu.snu.tempest.examples.storm.parameters.*;
-import org.edu.snu.tempest.examples.utils.TimescaleParser;
+import org.edu.snu.tempest.signal.TimescaleParser;
 import org.edu.snu.tempest.operator.MTSOperator;
 import org.edu.snu.tempest.operator.impl.DynamicMTSOperatorImpl;
 import org.edu.snu.tempest.operator.impl.StaticMTSOperatorImpl;
@@ -55,7 +55,7 @@ public final class WordCountTest {
     }
   }
   
-  public final String print() {
+  public String print() {
     StringBuilder sb = new StringBuilder();
     sb.append("TOTAL_TIME: " + totalTime +"\n"
         + "NUM_SPOUT: " + numSpouts + "\n" 

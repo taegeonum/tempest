@@ -5,6 +5,7 @@ import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.exceptions.InjectionException;
 import org.edu.snu.tempest.Timescale;
+import org.edu.snu.tempest.signal.TimescaleParser;
 import org.junit.Test;
 
 import java.security.InvalidParameterException;

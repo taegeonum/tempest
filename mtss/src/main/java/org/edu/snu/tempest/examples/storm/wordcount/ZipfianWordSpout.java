@@ -9,6 +9,7 @@ import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 import com.yahoo.ycsb.generator.ZipfianGenerator;
 import org.apache.reef.tang.annotations.Parameter;
+import org.edu.snu.tempest.examples.storm.parameters.InputInterval;
 
 import javax.inject.Inject;
 import java.util.Map;
@@ -28,7 +29,7 @@ public class ZipfianWordSpout extends BaseRichSpout {
   private final int sendingInterval;
   
   @Inject
-  public ZipfianWordSpout(@Parameter(WordCountTest.InputInterval.class) double sendingInterval) {
+  public ZipfianWordSpout(@Parameter(InputInterval.class) double sendingInterval) {
     this.sendingInterval = (int) sendingInterval;
   }
 

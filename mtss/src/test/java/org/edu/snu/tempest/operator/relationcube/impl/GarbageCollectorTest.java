@@ -1,7 +1,6 @@
 package org.edu.snu.tempest.operator.relationcube.impl;
 
 import org.edu.snu.tempest.Timescale;
-import org.edu.snu.tempest.operator.impl.LogicalTime;
 import org.edu.snu.tempest.operator.relationcube.GarbageCollector;
 import org.edu.snu.tempest.operator.relationcube.OutputLookupTable;
 import org.junit.Test;
@@ -20,22 +19,22 @@ public class GarbageCollectorTest {
     
     OutputLookupTable<?> table = mock(OutputLookupTable.class);
     
-    GarbageCollector gc = new DefaultGarbageCollectorImpl(timescales, table);
-    gc.onNext(new LogicalTime(3));
+    GarbageCollector gc = new DefaultGarbageCollectorImpl(timescales, table, 0);
+    gc.onNext(3L);
     verify(table, never()).deleteRow(0);
-    gc.onNext(new LogicalTime(4));
+    gc.onNext(4L);
     verify(table, times(1)).deleteRow(0);
-    gc.onNext(new LogicalTime(5));
+    gc.onNext(5L);
     verify(table, times(1)).deleteRow(1);
     
-    gc.onTimescaleAddition(new Timescale(5,1));
-    gc.onNext(new LogicalTime(6));
+    gc.onTimescaleAddition(new Timescale(5,1), 5L);
+    gc.onNext(6L);
     verify(table, never()).deleteRow(2);
     
-    gc.onNext(new LogicalTime(7));
+    gc.onNext(7L);
     verify(table, never()).deleteRow(2);
     
-    gc.onNext(new LogicalTime(8));
+    gc.onNext(8L);
     verify(table, times(1)).deleteRow(2);
   }
   
@@ -50,17 +49,17 @@ public class GarbageCollectorTest {
     
     OutputLookupTable<?> table = mock(OutputLookupTable.class);
     
-    GarbageCollector gc = new DefaultGarbageCollectorImpl(timescales, table);
-    gc.onNext(new LogicalTime(10));
+    GarbageCollector gc = new DefaultGarbageCollectorImpl(timescales, table, 0);
+    gc.onNext(10L);
     verify(table, never()).deleteRow(0);
-    gc.onNext(new LogicalTime(11));
+    gc.onNext(11L);
     verify(table, times(1)).deleteRow(0);
-    gc.onNext(new LogicalTime(12));
+    gc.onNext(12L);
     verify(table, times(1)).deleteRow(1);
 
     // delete timescale
     gc.onTimescaleDeletion(t2);
-    gc.onNext(new LogicalTime(13));
+    gc.onNext(13L);
     verify(table, times(1)).deleteRow(2);
     verify(table, times(1)).deleteRow(3);
     verify(table, times(1)).deleteRow(4);
@@ -71,7 +70,7 @@ public class GarbageCollectorTest {
     verify(table, times(1)).deleteRow(9);
     verify(table, never()).deleteRow(10);
 
-    gc.onNext(new LogicalTime(14));
+    gc.onNext(14L);
     verify(table, times(1)).deleteRow(10);
   }
 }

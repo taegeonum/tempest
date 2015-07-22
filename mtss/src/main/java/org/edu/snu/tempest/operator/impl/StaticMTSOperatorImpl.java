@@ -10,7 +10,6 @@ import org.edu.snu.tempest.operator.relationcube.impl.StaticRelationCubeImpl;
 
 import javax.inject.Inject;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,7 +29,8 @@ public final class StaticMTSOperatorImpl<I, V> implements MTSOperator<I, V> {
   @Inject
   public StaticMTSOperatorImpl(final Aggregator<I, V> aggregator,
                                final List<Timescale> timescales,
-                               final OutputHandler<V> handler) {
+                               final OutputHandler<V> handler,
+                               final Long startTime) {
     this.outputHandler = handler;
     this.relationCube = new StaticRelationCubeImpl<V>(timescales, aggregator);
     this.subscriptions = new HashMap<>();
@@ -38,14 +38,15 @@ public final class StaticMTSOperatorImpl<I, V> implements MTSOperator<I, V> {
     
     this.timescales = timescales;
 
-    this.slicedWindow = new DefaultSlicedWindowOperatorImpl<>(aggregator, timescales, relationCube);
-    this.clock = new DefaultMTSClockImpl(slicedWindow, 1L, TimeUnit.SECONDS);
+    this.slicedWindow = new DefaultSlicedWindowOperatorImpl<>(aggregator, timescales,
+        relationCube, startTime);
+    this.clock = new DefaultMTSClockImpl(slicedWindow);
 
     Collections.sort(timescales);
 
     for (Timescale ts : timescales) {
       DefaultOverlappingWindowOperatorImpl<V> owo = new DefaultOverlappingWindowOperatorImpl<>(
-          ts, relationCube, outputHandler, new LogicalTime(0));
+          ts, relationCube, outputHandler, startTime);
       this.overlappingWindowOperators.add(owo);
       Subscription<Timescale> ss = clock.subscribe(owo);
       subscriptions.put(ss.getToken(), ss);
@@ -67,7 +68,7 @@ public final class StaticMTSOperatorImpl<I, V> implements MTSOperator<I, V> {
   }
 
   @Override
-  public void onTimescaleAddition(final Timescale ts) {
+  public void onTimescaleAddition(final Timescale ts, final long currTime) {
     // do nothing
     throw new RuntimeException("Not support onTimescaleAddition");
   }

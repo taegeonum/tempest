@@ -11,7 +11,6 @@ import org.edu.snu.tempest.operator.impl.DynamicMTSOperatorImpl;
 import javax.inject.Inject;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -29,11 +28,13 @@ public final class NaiveWindowOperator<I, V> implements MTSOperator<I, V> {
   @Inject
   public NaiveWindowOperator(final Aggregator<I, V> aggregator,
                              final Timescale timescale,
-                             final OutputHandler<V> handler) {
+                             final OutputHandler<V> handler,
+                             final long startTime) {
     this.timescales = new LinkedList<>();
     timescales.add(timescale);
-    this.slicedWindow = new OTFSlicedWindowOperatorImpl<>(aggregator, handler, timescales);
-    this.clock = new DefaultMTSClockImpl(slicedWindow, 1L, TimeUnit.SECONDS, 2, 2);
+    this.slicedWindow = new OTFSlicedWindowOperatorImpl<>(aggregator, handler,
+        timescales, startTime);
+    this.clock = new DefaultMTSClockImpl(slicedWindow);
   }
 
   @Override
@@ -51,7 +52,7 @@ public final class NaiveWindowOperator<I, V> implements MTSOperator<I, V> {
   }
 
   @Override
-  public void onTimescaleAddition(final Timescale ts) {
+  public void onTimescaleAddition(final Timescale ts, final long startTime) {
     // do nothing
   }
 

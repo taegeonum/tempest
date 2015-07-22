@@ -23,10 +23,10 @@ public class OverlappingWindowOperatorTest {
     RelationCube<Map<Integer, Integer>> cube = mock(RelationCube.class);
     MTSOperator.OutputHandler<Map<Integer, Integer>> outputHandler = mock(MTSOperator.OutputHandler.class);
     OverlappingWindowOperator<Map<Integer, Integer>> operator = new DefaultOverlappingWindowOperatorImpl<>(
-        ts, cube, outputHandler, new LogicalTime(0));
-    operator.onNext(new LogicalTime(3));
+        ts, cube, outputHandler, 0L);
+    operator.onNext(3L);
     verify(cube).finalAggregate(-2, 3, ts);
-    operator.onNext(new LogicalTime(6));
+    operator.onNext(6L);
     verify(cube).finalAggregate(1, 6, ts);
   }
 }

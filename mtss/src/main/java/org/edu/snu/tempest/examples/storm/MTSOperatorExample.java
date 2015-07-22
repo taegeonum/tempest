@@ -10,6 +10,7 @@ import org.edu.snu.tempest.operator.impl.DynamicMTSOperatorImpl;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 /*
  * Example
@@ -27,8 +28,10 @@ public final class MTSOperatorExample {
     Aggregator<Integer, Integer> testAggregator = new TestAggregator();
     List<Timescale> list = new LinkedList<>();
     list.add(ts);
+    final long startTime = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
     MTSOperator<Integer, Integer> operator =
-        new DynamicMTSOperatorImpl<Integer, Integer>(testAggregator, list, new TestHandler());
+        new DynamicMTSOperatorImpl<Integer, Integer>(testAggregator, list, new TestHandler()
+        , startTime);
 
     operator.start();
     Random rand = new Random();
@@ -36,11 +39,11 @@ public final class MTSOperatorExample {
       operator.execute(Math.abs(rand.nextInt() % 5));
       
       if (i == 200) {
-        operator.onTimescaleAddition(new Timescale(10, 2));
+        operator.onTimescaleAddition(new Timescale(10, 2), startTime);
       }
       
       if (i == 500) {
-        operator.onTimescaleAddition(new Timescale(7, 4));
+        operator.onTimescaleAddition(new Timescale(7, 4), startTime);
       }
       Thread.sleep(10);
     }

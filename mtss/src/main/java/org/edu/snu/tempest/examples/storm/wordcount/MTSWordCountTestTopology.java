@@ -15,11 +15,12 @@ import org.apache.reef.tang.formats.CommandLine;
 import org.edu.snu.naive.operator.impl.NaiveWindowOperator;
 import org.edu.snu.tempest.examples.storm.parameters.*;
 import org.edu.snu.tempest.examples.utils.StormRunner;
-import org.edu.snu.tempest.examples.utils.TimescaleParser.TimescaleParameter;
+import org.edu.snu.tempest.signal.TimescaleParser.TimescaleParameter;
 import org.edu.snu.tempest.examples.utils.writer.LocalOutputWriter;
 import org.edu.snu.tempest.examples.utils.writer.OutputWriter;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -46,6 +47,7 @@ public final class MTSWordCountTestTopology {
         .registerShortNameOfClass(TotalTime.class)
         .registerShortNameOfClass(Operator.class)
         .registerShortNameOfClass(InputType.class)
+        .registerShortNameOfClass(NumBolts.class)
         .processCommandLine(args);
 
     return cl.getBuilder().build();
@@ -66,6 +68,7 @@ public final class MTSWordCountTestTopology {
     final String operator = injector.getNamedInstance(Operator.class);
     final String topologyName = operator + "_WC_TOPOLOGY";
     final String inputType = injector.getNamedInstance(InputType.class);
+    final int numBolts = injector.getNamedInstance(NumBolts.class);
     
     TopologyBuilder builder = new TopologyBuilder();
     BaseRichSpout spout = null;
@@ -89,7 +92,8 @@ public final class MTSWordCountTestTopology {
         test.tsParser.timescales,
         test.operatorClass,
         "localhost:2181",
-        savingRate);
+        savingRate,
+        TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()));
 
     // set bolt
     if (test.operatorClass.equals(NaiveWindowOperator.class)) {
@@ -97,7 +101,7 @@ public final class MTSWordCountTestTopology {
       // Each executors runs one timescale window operator.
       builder.setBolt("wcbolt", bolt, test.tsParser.timescales.size()).allGrouping("wcspout");
     } else {
-      builder.setBolt("wcbolt", bolt, 1).fieldsGrouping("wcspout", new Fields("word"));
+      builder.setBolt("wcbolt", bolt, numBolts).fieldsGrouping("wcspout", new Fields("word"));
     }
 
     final StormTopology topology = builder.createTopology();

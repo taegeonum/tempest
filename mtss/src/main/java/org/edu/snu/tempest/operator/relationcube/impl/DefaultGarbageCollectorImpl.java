@@ -1,7 +1,6 @@
 package org.edu.snu.tempest.operator.relationcube.impl;
 
 import org.edu.snu.tempest.Timescale;
-import org.edu.snu.tempest.operator.impl.LogicalTime;
 import org.edu.snu.tempest.operator.relationcube.GarbageCollector;
 import org.edu.snu.tempest.operator.relationcube.OutputLookupTable;
 
@@ -29,20 +28,22 @@ public final class DefaultGarbageCollectorImpl implements GarbageCollector {
   private long prevDeletedRow;
   
   public DefaultGarbageCollectorImpl(final Collection<Timescale> timescales,
-      final OutputLookupTable<?> table) {
+      final OutputLookupTable<?> table,
+      final long startTime) {
     this.table = table;
     this.timescales = timescales;
     largestWindowSize = new AtomicLong(findLargestWindowSize());
-    prevDeletedRow = 0;
+    prevDeletedRow = startTime;
   }
   
-  public DefaultGarbageCollectorImpl(final OutputLookupTable<Map<?, ?>> table) {
-    this(new ConcurrentLinkedQueue<Timescale>(), table);
+  public DefaultGarbageCollectorImpl(final OutputLookupTable<Map<?, ?>> table,
+                                     final long startTime) {
+    this(new ConcurrentLinkedQueue<Timescale>(), table, startTime);
   }
   
   @Override
-  public void onNext(final LogicalTime time) {
-    long deleteRow = time.logicalTime - largestWindowSize.get() - 1;
+  public void onNext(final Long time) {
+    long deleteRow = time - largestWindowSize.get() - 1;
     if (deleteRow >= 0) {
       for (; prevDeletedRow <= deleteRow; prevDeletedRow++) {
         LOG.log(Level.FINE, "GC remove " + prevDeletedRow + " startTime row at currentTime " + time);
@@ -52,7 +53,7 @@ public final class DefaultGarbageCollectorImpl implements GarbageCollector {
   }
 
   @Override
-  public void onTimescaleAddition(final Timescale ts) {
+  public void onTimescaleAddition(final Timescale ts, final long currTime) {
     LOG.log(Level.FINE, "GC add timescale " + ts);
     if (largestWindowSize.get() < ts.windowSize) {
       largestWindowSize.set(ts.windowSize);

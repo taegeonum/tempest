@@ -1,4 +1,4 @@
-package org.edu.snu.tempest.examples.utils;
+package org.edu.snu.tempest.signal;
 
 import org.edu.snu.tempest.Timescale;
 import org.apache.reef.tang.annotations.Name;

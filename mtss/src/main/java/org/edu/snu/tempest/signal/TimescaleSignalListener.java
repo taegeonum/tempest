@@ -4,6 +4,7 @@ import org.edu.snu.tempest.Timescale;
 
 public interface TimescaleSignalListener {
 
-  void onTimescaleAddition(Timescale ts);
+  // time unit is second.
+  void onTimescaleAddition(Timescale ts, final long startTime);
   void onTimescaleDeletion(Timescale ts);
 }

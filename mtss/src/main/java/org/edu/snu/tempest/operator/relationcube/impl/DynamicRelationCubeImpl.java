@@ -1,11 +1,10 @@
 package org.edu.snu.tempest.operator.relationcube.impl;
 
-import org.edu.snu.tempest.Timescale;
 import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 import org.apache.reef.tang.annotations.Parameter;
+import org.edu.snu.tempest.Timescale;
 import org.edu.snu.tempest.operator.MTSOperator;
-import org.edu.snu.tempest.operator.impl.LogicalTime;
 import org.edu.snu.tempest.operator.impl.NotFoundException;
 import org.edu.snu.tempest.operator.impl.TimeAndValue;
 import org.edu.snu.tempest.operator.relationcube.GarbageCollector;
@@ -13,7 +12,8 @@ import org.edu.snu.tempest.operator.relationcube.OutputLookupTable;
 import org.edu.snu.tempest.operator.relationcube.RelationCube;
 
 import javax.inject.Inject;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -42,12 +42,13 @@ public class DynamicRelationCubeImpl<T> implements RelationCube<T> {
   @Inject
   public DynamicRelationCubeImpl(final List<Timescale> timescales,
                                  final MTSOperator.Aggregator<?, T> finalAggregator,
-                                 @Parameter(SavingRate.class) final double savingRate) {
+                                 @Parameter(SavingRate.class) final double savingRate,
+                                 final long startTime) {
     this.timescales = timescales;
     this.finalAggregator = finalAggregator;
     this.savingRate = savingRate;
     this.table = new DefaultOutputLookupTableImpl<>();
-    this.gc = new DefaultGarbageCollectorImpl(timescales, table);
+    this.gc = new DefaultGarbageCollectorImpl(timescales, table, startTime);
     this.timescaleToSavingTimeMap = new ConcurrentHashMap<>();
     this.largestWindowSize = findLargestWindowSize();
   }
@@ -111,7 +112,7 @@ public class DynamicRelationCubeImpl<T> implements RelationCube<T> {
     }
 
     // remove
-    gc.onNext(new LogicalTime(endTime));
+    gc.onNext(endTime);
     return finalResult;
   }
 
@@ -121,7 +122,7 @@ public class DynamicRelationCubeImpl<T> implements RelationCube<T> {
   public void addTimescale(final Timescale ts, final long time) {
     LOG.log(Level.INFO, "addTimescale " + ts);
     synchronized (this.timescales) {
-      gc.onTimescaleAddition(ts);
+      gc.onTimescaleAddition(ts, time);
       this.timescales.add(ts);
       if (ts.windowSize > this.largestWindowSize) {
         this.largestWindowSize = ts.windowSize;

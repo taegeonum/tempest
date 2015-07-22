@@ -2,10 +2,8 @@ package org.edu.snu.tempest.operator;
 
 import org.apache.reef.tang.annotations.DefaultImplementation;
 import org.apache.reef.wake.Stage;
-import org.edu.snu.tempest.operator.impl.DefaultMTSClockImpl;
-import org.edu.snu.tempest.operator.impl.LogicalTime;
-
 import org.edu.snu.tempest.Timescale;
+import org.edu.snu.tempest.operator.impl.DefaultMTSClockImpl;
 
 /**
  * Clock for window operators 
@@ -31,5 +29,5 @@ public interface Clock extends Stage {
   /*
    * Get current logical time
    */
-  LogicalTime getCurrentTime();
+  long getCurrentTime();
 }

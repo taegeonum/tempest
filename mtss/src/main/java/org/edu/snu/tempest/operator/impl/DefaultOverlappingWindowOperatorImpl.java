@@ -16,12 +16,12 @@ public final class DefaultOverlappingWindowOperatorImpl<V> implements Overlappin
   private final Timescale timescale;
   private final RelationCube<V> relationCube;
   private final OutputHandler<V> outputHandler;
-  private final LogicalTime startTime;
+  private final long startTime;
 
   public DefaultOverlappingWindowOperatorImpl(final Timescale timescale,
                                               final RelationCube<V> relationCube,
                                               final OutputHandler<V> outputHandler,
-                                              final LogicalTime startTime) {
+                                              final long startTime) {
     this.timescale = timescale;
     this.relationCube = relationCube;
     this.outputHandler = outputHandler;
@@ -29,17 +29,22 @@ public final class DefaultOverlappingWindowOperatorImpl<V> implements Overlappin
   }
   
   @Override
-  public synchronized void onNext(LogicalTime time) {
-    LOG.log(Level.FINE, "OverlappingWindowOperator triggered: " + time + ", timescale: " + timescale);
-    if (((time.logicalTime - startTime.logicalTime) % timescale.intervalSize) == 0) {
-      LOG.log(Level.FINE, "OverlappingWindowOperator final aggregation: " + time + ", timescale: " + timescale);
+  public synchronized void onNext(final Long currTime) {
+    LOG.log(Level.FINE, "OverlappingWindowOperator triggered: " + currTime + ", timescale: " + timescale
+        + ", " + (currTime - startTime) % timescale.intervalSize);
+    if (((currTime - startTime) % timescale.intervalSize) == 0) {
+      LOG.log(Level.FINE, "OverlappingWindowOperator final aggregation: " + currTime + ", timescale: " + timescale);
       long aggStartTime = System.nanoTime();
-      final long endTime = time.logicalTime;
+      final long endTime = currTime;
       final long start = endTime - timescale.windowSize;
-      final V finalResult = relationCube.finalAggregate(start, time.logicalTime, timescale);
-      // send the result
-      long etime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - aggStartTime);
-      outputHandler.onNext(new WindowOutput<>(timescale, finalResult, start, time.logicalTime, etime));
+      try {
+        final V finalResult = relationCube.finalAggregate(start, currTime, timescale);
+        // send the result
+        long etime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - aggStartTime);
+        outputHandler.onNext(new WindowOutput<>(timescale, finalResult, start, currTime, etime));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 

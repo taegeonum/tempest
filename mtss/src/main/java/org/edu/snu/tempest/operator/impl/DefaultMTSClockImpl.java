@@ -25,11 +25,11 @@ public final class DefaultMTSClockImpl implements Clock {
   private final SlicedWindowOperator<?> slicedWindowOperator;
   private final ScheduledExecutorService scheduler;
   private final ExecutorService executor;
-  private long logicalTime = 0;
   private final long tickTime;
   private final AtomicBoolean started = new AtomicBoolean(false);
+  private long prevTime;
 
-  @NamedParameter(doc = "clock tick time (ms)", default_value = "1000")
+  @NamedParameter(doc = "clock tick time (ms)", default_value = "200")
   public static final class TickTime implements Name<Long> {}
   
   public DefaultMTSClockImpl(final SlicedWindowOperator<?> swo,
@@ -43,6 +43,7 @@ public final class DefaultMTSClockImpl implements Clock {
     this.executor = Executors.newFixedThreadPool(fixThread);
     this.slicedWindowOperator = swo;
     this.tickTime = tickTimeUnit.toMillis(tickTime);
+    this.prevTime = 0;
   }
   
   @Inject
@@ -51,47 +52,44 @@ public final class DefaultMTSClockImpl implements Clock {
       final TimeUnit tickTimeUnit) {
     this.handlers = new ConcurrentLinkedQueue<OverlappingWindowOperator<?>>();
     // FIXME: parameterize the number of threads.
-    this.scheduler = Executors.newScheduledThreadPool(10,
+    this.scheduler = Executors.newScheduledThreadPool(1,
         new DefaultThreadFactory("MTSClock"));
     // FIXME: parameterize the number of threads.
-    this.executor = Executors.newFixedThreadPool(40);
+    this.executor = Executors.newFixedThreadPool(1);
     this.slicedWindowOperator = swo;
     this.tickTime = tickTimeUnit.toMillis(tickTime);
   }
   
   @Inject
   public DefaultMTSClockImpl(final SlicedWindowOperator<?> swo) {
-    this(swo, 1L, TimeUnit.SECONDS);
+    this(swo, 200L, TimeUnit.MILLISECONDS);
   }
 
   @Override
   public void start() {
-
     if (started.compareAndSet(false, true)) {
       LOG.log(Level.INFO, "Clock start");
-      
       scheduler.scheduleAtFixedRate(new Runnable() {
         @Override
         public void run() {
-          logicalTime += 1;
-          final LogicalTime time = new LogicalTime(logicalTime);
+          final long time = getCurrentTime();
+          if (prevTime < time) {
+            LOG.log(Level.FINE, "Clock tickTime: " + time);
+            prevTime = time;
+            if (slicedWindowOperator != null) {
+              slicedWindowOperator.onNext(time);
+            }
 
-          LOG.log(Level.FINE, "Clock tickTime: " + logicalTime);
-
-          if (slicedWindowOperator != null) {
-            slicedWindowOperator.onNext(time);
-          }
-
-          for (final OverlappingWindowOperator<?> handler : handlers) {
-            executor.submit(new Runnable() {
-              @Override
-              public void run() {
-                handler.onNext(time);
-              }
-            });
+            for (final OverlappingWindowOperator<?> handler : handlers) {
+              executor.submit(new Runnable() {
+                @Override
+                public void run() {
+                  handler.onNext(time);
+                }
+              });
+            }
           }
         }
-
       }, tickTime, tickTime, TimeUnit.MILLISECONDS);
     }
   }
@@ -104,10 +102,10 @@ public final class DefaultMTSClockImpl implements Clock {
   }
 
   @Override
-  public LogicalTime getCurrentTime() {
-    return new LogicalTime(logicalTime);
+  public long getCurrentTime() {
+    return TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
   }
-  
+
 
   @Override
   public void close() {

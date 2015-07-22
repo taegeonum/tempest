@@ -4,10 +4,9 @@ import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 import org.apache.reef.wake.remote.Decoder;
 import org.apache.reef.wake.remote.Encoder;
-import org.edu.snu.tempest.examples.utils.TimescaleEncoder;
-import org.edu.snu.tempest.examples.utils.TimescaleDecoder;
-
-import org.edu.snu.tempest.Timescale;
+import org.edu.snu.tempest.signal.TimescaleSignal;
+import org.edu.snu.tempest.signal.TimescaleSignalDecoder;
+import org.edu.snu.tempest.signal.TimescaleSignalEncoder;
 
 public class ZkMTSParameters {
   
@@ -17,11 +16,11 @@ public class ZkMTSParameters {
   @NamedParameter(doc = "identifier", short_name = "zkIdentifier", default_value="default")
   public static final class OperatorIdentifier implements Name<String> {}
   
-  @NamedParameter(doc = "Timescale encoder", default_class=TimescaleEncoder.class)
-  public static final class ZkTSEncoder implements Name<Encoder<Timescale>> {}
+  @NamedParameter(doc = "Timescale encoder", default_class=TimescaleSignalEncoder.class)
+  public static final class ZkTSEncoder implements Name<Encoder<TimescaleSignal>> {}
   
-  @NamedParameter(doc = "Timescale decoder", default_class=TimescaleDecoder.class)
-  public static final class ZkTSDecoder implements Name<Decoder<Timescale>> {}
+  @NamedParameter(doc = "Timescale decoder", default_class=TimescaleSignalDecoder.class)
+  public static final class ZkTSDecoder implements Name<Decoder<TimescaleSignal>> {}
   
   @NamedParameter(doc = "Zookeeper namespace", short_name = "zkNamespace", default_value="mtss-signal") 
   public static final class ZkMTSNamespace implements Name<String> {}

@@ -96,6 +96,8 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
    */
   private final AtomicLong numOfExecution = new AtomicLong();
 
+  private final long startTime;
+
   private long totalBytes = 0;
   private long sizeOfInt = 4;
   private long sizeOfLong = 8;
@@ -105,14 +107,15 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
                               final List<Timescale> timescales,
                               final Class<? extends MTSOperator> operatorClass,
                               final String address,
-                              final double savingRate) {
+                              final double savingRate,
+                              final long startTime) {
     this.writer = writer;
     this.pathPrefix = pathPrefix;
     this.timescales = timescales;
     this.operatorClass = operatorClass;
     this.address = address;
     this.savingRate = savingRate;
-    
+    this.startTime = startTime;
   }
   
   @Override
@@ -173,7 +176,7 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
     cb.bindNamedParameter(SavingRate.class, savingRate+"");
 
     Injector ij = Tang.Factory.getTang().newInjector(cb.build());
-
+    ij.bindVolatileInstance(Long.class, this.startTime);
     if (operatorClass.equals(NaiveWindowOperator.class)) {
       // bind one timescale to each executors.
       int index = paramTopologyContext.getThisTaskIndex();
@@ -191,13 +194,13 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
 
     try {
       operator = ij.getInstance(MTSOperator.class);
-      //receiver = ij.getInstance(MTSSignalReceiver.class);
+      receiver = ij.getInstance(MTSSignalReceiver.class);
     } catch (InjectionException e) {
       throw new RuntimeException(e);
     }
     
     try {
-      //receiver.start();
+      receiver.start();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -210,7 +213,7 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
       this.operator.close();
       this.executor.shutdown();
       //this.writer.close();
-      //this.receiver.close();
+      this.receiver.close();
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -237,7 +240,8 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
         e.printStackTrace();
         throw new RuntimeException(e);
       }
-      LOG.log(Level.INFO, "output " + output.startTime + "-" + output.endTime + ", count: " + count);
+      LOG.log(Level.INFO, "output of ts" + output.timescale + ": "
+          + output.startTime + "-" + output.endTime + ", count: " + count);
     }
   }
 }

@@ -5,7 +5,6 @@ import org.edu.snu.tempest.operator.MTSOperator.Aggregator;
 import org.edu.snu.tempest.operator.MTSOperator.OutputHandler;
 import org.edu.snu.tempest.operator.SlicedWindowOperator;
 import org.edu.snu.tempest.operator.WindowOutput;
-import org.edu.snu.tempest.operator.impl.LogicalTime;
 
 import javax.inject.Inject;
 import java.util.*;
@@ -34,7 +33,8 @@ public final class OTFSlicedWindowOperatorImpl<I, V> implements SlicedWindowOper
   public OTFSlicedWindowOperatorImpl(
       final Aggregator<I, V> aggregator,
       final OutputHandler<V> outputHandler,
-      final List<Timescale> timescales) {
+      final List<Timescale> timescales,
+      final Long startTime) {
     this.aggregator = aggregator;
     this.sliceQueue = new PriorityQueue<SliceInfo>(10, new SliceInfoComparator());
     this.outputHandler = outputHandler;
@@ -42,7 +42,7 @@ public final class OTFSlicedWindowOperatorImpl<I, V> implements SlicedWindowOper
     this.overlappingWindowOperators = new LinkedList<>();
     this.executor = Executors.newFixedThreadPool(40);
 
-    initializeWindowState(timescales);
+    initializeWindowState(timescales, startTime);
     for (Timescale ts : timescales) {
       this.overlappingWindowOperators.add(new OverlappingWindowOperator(ts));
     }
@@ -50,16 +50,16 @@ public final class OTFSlicedWindowOperatorImpl<I, V> implements SlicedWindowOper
   }
   
   @Override
-  public void onNext(final LogicalTime time) {
+  public void onNext(final Long time) {
     LOG.log(Level.FINE, "SlicedWindow tickTime " + time + ", nextSlice: " + nextSliceTime);
 
     synchronized (sliceQueue) {
-      if (nextSliceTime == time.logicalTime) {
+      if (nextSliceTime == time) {
         LOG.log(Level.FINE, "SlicedQueue: " + sliceQueue);
-        LOG.log(Level.FINE, "Sliced : [" + prevSliceTime + "-" + time.logicalTime + "]");
+        LOG.log(Level.FINE, "Sliced : [" + prevSliceTime + "-" + time + "]");
         // saves output to OLT
         final V output = innerMap;
-        final long elapsed = time.logicalTime - prevSliceTime;
+        final long elapsed = time - prevSliceTime;
         // send to overlappingwindows
         for (final OverlappingWindowOperator operator : overlappingWindowOperators) {
           executor.submit(new Runnable() {
@@ -84,11 +84,11 @@ public final class OTFSlicedWindowOperatorImpl<I, V> implements SlicedWindowOper
   }
 
   @Override
-  public void onTimescaleAddition(final Timescale ts, final LogicalTime startTime) {
+  public void onTimescaleAddition(final Timescale ts, final long startTime) {
     LOG.log(Level.INFO, "SlicedWindow addTimescale " + ts);
     // Add slices 
     synchronized (sliceQueue) {
-      addSlices(startTime.logicalTime, ts);
+      addSlices(startTime, ts);
 
       long sliceTime = sliceQueue.peek().sliceTime;
       if (sliceTime <= nextSliceTime) {
@@ -100,7 +100,7 @@ public final class OTFSlicedWindowOperatorImpl<I, V> implements SlicedWindowOper
   }
 
   @Override
-  public void onTimescaleDeletion(final Timescale ts, final LogicalTime startTime) {
+  public void onTimescaleDeletion(final Timescale ts) {
     LOG.log(Level.INFO, "SlicedWindow removeTimescale " + ts);
     
     synchronized (sliceQueue) {
@@ -117,11 +117,11 @@ public final class OTFSlicedWindowOperatorImpl<I, V> implements SlicedWindowOper
    * This method is based on "On-the-Fly Sharing " paper.
    * Similar to initializeWindowState function 
    */
-  private void initializeWindowState(final List<Timescale> timescales) {
+  private void initializeWindowState(final List<Timescale> timescales,
+                                     final long startTime) {
     LOG.log(Level.INFO, "SlicedWindow initialization");
-
     for (Timescale ts : timescales) {
-      addSlices(0, ts);
+      addSlices(startTime, ts);
     }
   }
   
@@ -205,7 +205,7 @@ public final class OTFSlicedWindowOperatorImpl<I, V> implements SlicedWindowOper
       this.buffer = new LinkedList<>();
     }
 
-    public synchronized void aggregate(LogicalTime currentTime, long sliceTime, V output) {
+    public synchronized void aggregate(final long currentTime, final long sliceTime, V output) {
       currentSize += sliceTime;
       currentInterval += sliceTime;
       
@@ -230,7 +230,7 @@ public final class OTFSlicedWindowOperatorImpl<I, V> implements SlicedWindowOper
         final V finalResult = aggregator.finalAggregate(partials);
         long etime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - aggStartTime);
         outputHandler.onNext(new WindowOutput<V>(this.timescale, finalResult,
-            currentTime.logicalTime - timescale.windowSize, currentTime.logicalTime, etime));
+            currentTime - timescale.windowSize, currentTime, etime));
       }
     }
     class TimeAndOutput {

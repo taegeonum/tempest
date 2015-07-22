@@ -7,8 +7,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.security.InvalidParameterException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -20,11 +20,11 @@ public class LocalOutputWriter implements OutputWriter {
   
   private static final Logger LOG = Logger.getLogger(LocalOutputWriter.class.getName());
   
-  private final Map<String, FileWriter> writerMap;
+  private final ConcurrentMap<String, FileWriter> writerMap;
   
   @Inject
   public LocalOutputWriter() {
-    this.writerMap = new HashMap<>();
+    this.writerMap = new ConcurrentHashMap<>();
     
   }
 
@@ -48,11 +48,13 @@ public class LocalOutputWriter implements OutputWriter {
     if (writer == null) {
       createDirectory(path);
       writer = new FileWriter(path);
-      writerMap.put(path, writer);
+      writerMap.putIfAbsent(path, writer);
     }
-    
-    writer.write(str);
-    writer.flush();
+
+    synchronized (writer) {
+      writer.write(str);
+      writer.flush();
+    }
   }
 
   @Override

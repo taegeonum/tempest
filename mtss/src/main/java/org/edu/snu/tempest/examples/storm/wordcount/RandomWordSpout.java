@@ -8,6 +8,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 import org.apache.reef.tang.annotations.Parameter;
+import org.edu.snu.tempest.examples.storm.parameters.InputInterval;
 
 import javax.inject.Inject;
 import java.util.Map;
@@ -28,7 +29,7 @@ public class RandomWordSpout extends BaseRichSpout {
   private final Random random = new Random();
   
   @Inject
-  public RandomWordSpout(@Parameter(WordCountTest.InputInterval.class) double sendingInterval) {
+  public RandomWordSpout(@Parameter(InputInterval.class) double sendingInterval) {
     this.sendingInterval = (int) sendingInterval;
   }
 

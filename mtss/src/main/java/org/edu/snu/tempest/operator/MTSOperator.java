@@ -1,11 +1,10 @@
 package org.edu.snu.tempest.operator;
 
-import org.edu.snu.tempest.Timescale;
 import org.apache.reef.tang.annotations.DefaultImplementation;
 import org.apache.reef.wake.EventHandler;
 import org.apache.reef.wake.Stage;
-import org.edu.snu.tempest.signal.TimescaleSignalListener;
 import org.edu.snu.tempest.examples.utils.DefaultOutputHandler;
+import org.edu.snu.tempest.signal.TimescaleSignalListener;
 
 import java.util.List;
 
@@ -62,16 +61,4 @@ public interface MTSOperator<I, V> extends TimescaleSignalListener, Stage {
    * @param val input value
    */
   void execute(final I val);
-  
-  /**
-   * Add a new timescale. MTS have to produce new outputs which are related to this timescale. 
-   */
-  @Override
-  void onTimescaleAddition(final Timescale ts);
-  
-  /**
-   * Remove an existing timescale. MTS have not to produce outputs which are related to this timescale.
-   */
-  @Override
-  void onTimescaleDeletion(final Timescale ts);
 }

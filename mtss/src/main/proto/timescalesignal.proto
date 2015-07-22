@@ -3,7 +3,8 @@ option java_outer_classname = "TimescaleProtoMessage";
 option java_generic_services = true;
 option java_generate_equals_and_hash = true;
 
-message Timescale {
+message TimescaleSignal {
   required sint64 windowSize = 1;
   required sint64 interval = 2;
+  required sint64 startTime = 3;
 }

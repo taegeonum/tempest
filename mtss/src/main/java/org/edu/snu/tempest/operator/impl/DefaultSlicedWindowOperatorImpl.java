@@ -35,22 +35,28 @@ public final class DefaultSlicedWindowOperatorImpl<I, V> implements SlicedWindow
   public DefaultSlicedWindowOperatorImpl(
       final Aggregator<I, V> aggregator,
       final List<Timescale> timescales,
-      final RelationCube<V> relationCube) {
+      final RelationCube<V> relationCube,
+      final Long startTime) {
     this.aggregator = aggregator;
     this.relationCube = relationCube;
     this.innerMap = aggregator.init();
     this.sliceQueue = new PriorityQueue<SliceInfo>(10, new SliceInfoComparator());
     this.timescales = timescales;
 
-    initializeWindowState();
+    initializeWindowState(startTime);
     nextSliceTime = nextSliceTime();
   }
   
   @Override
-  public synchronized void onNext(final LogicalTime time) {
-    LOG.log(Level.FINE, "SlicedWindow tickTime " + time + ", nextSlice: " + nextSliceTime);
-    if (nextSliceTime == time.logicalTime) {
-      LOG.log(Level.FINE, "Sliced : [" + prevSliceTime + "-" + time.logicalTime + "]");
+  public synchronized void onNext(final Long currTime) {
+    LOG.log(Level.FINE, "SlicedWindow tickTime " + currTime + ", nextSlice: " + nextSliceTime);
+    while (nextSliceTime < currTime) {
+      prevSliceTime = nextSliceTime;
+      nextSliceTime = nextSliceTime();
+    }
+
+    if (nextSliceTime == currTime) {
+      LOG.log(Level.FINE, "Sliced : [" + prevSliceTime + "-" + currTime + "]");
       synchronized (sync) {
         V output = innerMap;
         innerMap = aggregator.init();
@@ -70,30 +76,23 @@ public final class DefaultSlicedWindowOperatorImpl<I, V> implements SlicedWindow
     }
   }
 
-  private long nextSliceTime() {
-    return advanceWindowGetNextSlice();
-  }
-
   @Override
-  public void onTimescaleAddition(final Timescale ts, final LogicalTime time) {
+  public void onTimescaleAddition(Timescale ts, long startTime) {
     LOG.log(Level.INFO, "SlicedWindow addTimescale " + ts);
     // Add slices
     synchronized (sliceQueue) {
       long nst = sliceQueue.peek().sliceTime;
-      addSlices(time.logicalTime, ts);
-
+      addSlices(startTime, ts);
       long sliceTime = sliceQueue.peek().sliceTime;
       while (sliceTime < nst) {
         sliceTime = advanceWindowGetNextSlice();
       }
     }
-
   }
 
   @Override
-  public void onTimescaleDeletion(final Timescale ts, final LogicalTime time) {
+  public void onTimescaleDeletion(Timescale ts) {
     LOG.log(Level.INFO, "SlicedWindow removeTimescale " + ts);
-
     synchronized (sliceQueue) {
       for (Iterator<SliceInfo> iterator = sliceQueue.iterator(); iterator.hasNext();) {
         SliceInfo slice = iterator.next();
@@ -104,15 +103,19 @@ public final class DefaultSlicedWindowOperatorImpl<I, V> implements SlicedWindow
     }
   }
 
+  private long nextSliceTime() {
+    return advanceWindowGetNextSlice();
+  }
+
   /*
    * This method is based on "On-the-Fly Sharing " paper.
    * Similar to initializeWindowState function
    */
-  private void initializeWindowState() {
+  private void initializeWindowState(final long startTime) {
     LOG.log(Level.INFO, "SlicedWindow initialization");
 
     for (Timescale ts : timescales) {
-      addSlices(0, ts);
+      addSlices(startTime, ts);
     }
   }
 
