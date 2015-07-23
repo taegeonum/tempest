@@ -19,8 +19,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/*
- * Zookeeper MTSSignalSender implementation 
+/**
+ * Zookeeper MTSSignalSender implementation.
  * 
  */
 public class ZkSignalSender implements MTSSignalSender {
@@ -53,7 +53,7 @@ public class ZkSignalSender implements MTSSignalSender {
   }
 
   
-  private void sendTimescaleInfo(TimescaleSignal ts, String type) throws Exception {
+  private void sendTimescaleInfo(final TimescaleSignal ts, final String type) throws Exception {
     Stat stat = this.client.checkExists().forPath(this.identifier + "-" + type);
     if (stat == null) {
       String path = this.client.create().creatingParentsIfNeeded().forPath(this.identifier + "-" + type);
@@ -63,14 +63,14 @@ public class ZkSignalSender implements MTSSignalSender {
   }
   
   @Override
-  public void addTimescale(Timescale ts) throws Exception {
+  public void addTimescale(final Timescale ts) throws Exception {
     sendTimescaleInfo(new TimescaleSignal(ts,
         TimeUnit.NANOSECONDS.toSeconds(System.nanoTime())), "addition");
     LOG.log(Level.INFO, "Add timescale: " + ts);
   }
 
   @Override
-  public void removeTimescale(Timescale ts) throws Exception {
+  public void removeTimescale(final Timescale ts) throws Exception {
     sendTimescaleInfo(new TimescaleSignal(ts,
         TimeUnit.NANOSECONDS.toSeconds(System.nanoTime())), "deletion");
     LOG.log(Level.INFO, "Remove timescale: " + ts);

@@ -27,8 +27,8 @@ public final class DefaultGarbageCollectorImpl implements DynamicRelationCube.Ga
   private long prevDeletedRow;
   
   public DefaultGarbageCollectorImpl(final Collection<Timescale> timescales,
-      final OutputLookupTable<?> table,
-      final long startTime) {
+                                     final OutputLookupTable<?> table,
+                                     final long startTime) {
     this.table = table;
     this.timescales = timescales;
     largestWindowSize = new AtomicLong(findLargestWindowSize());

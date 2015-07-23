@@ -31,36 +31,36 @@ public final class MTSOperatorWithZookeeperExample {
   }
   
   public static void main(String[] args) throws Exception {
-    ExecutorService executor = Executors.newFixedThreadPool(1);
-    Timescale ts = new Timescale(5, 3);
-    List<Timescale> list = new LinkedList<>();
+    final ExecutorService executor = Executors.newFixedThreadPool(1);
+    final Timescale ts = new Timescale(5, 3);
+    final List<Timescale> list = new LinkedList<>();
     list.add(ts);
     final long startTime = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
-    Aggregator<Integer, Integer> testAggregator = new TestAggregator();
+    final Aggregator<Integer, Integer> testAggregator = new TestAggregator();
 
     // configure zookeeper setting.
-    String identifier = "mts-test";
-    String namespace = "mts";
-    String address = "localhost:2181";
-    
-    JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
+    final String identifier = "mts-test";
+    final String namespace = "mts";
+    final String address = "localhost:2181";
+
+    final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
     cb.bindNamedParameter(ZkMTSParameters.OperatorIdentifier.class, identifier);
     cb.bindNamedParameter(ZkMTSParameters.ZkMTSNamespace.class, namespace);
     cb.bindNamedParameter(ZkMTSParameters.ZkServerAddress.class, address);
-    
-    Injector ij = Tang.Factory.getTang().newInjector(cb.build());
+
+    final Injector ij = Tang.Factory.getTang().newInjector(cb.build());
     ij.bindVolatileInstance(Aggregator.class, testAggregator);
     ij.bindVolatileInstance(List.class, list);
     ij.bindVolatileInstance(MTSOperator.OutputHandler.class, new TestHandler());
     ij.bindVolatileInstance(Long.class, startTime);
     final DynamicMTSOperator<Integer> operator = ij.getInstance(DynamicMTSOperatorImpl.class);
-    MTSSignalSender sender = ij.getInstance(ZkSignalSender.class);
+    final MTSSignalSender sender = ij.getInstance(ZkSignalSender.class);
 
     operator.start();
     executor.submit(new Runnable() {
       @Override
       public void run() {
-        Random rand = new Random();
+        final Random rand = new Random();
         for (int i = 0; i < 3000; i++) {
           operator.execute(Math.abs(rand.nextInt() % 5));
           try {
@@ -99,12 +99,12 @@ public final class MTSOperatorWithZookeeperExample {
     }
 
     @Override
-    public Integer partialAggregate(Integer oldVal, Integer newVal) {
+    public Integer partialAggregate(final Integer oldVal, final Integer newVal) {
       return oldVal + newVal;
     }
 
     @Override
-    public Integer finalAggregate(List<Integer> partials) {
+    public Integer finalAggregate(final List<Integer> partials) {
       int sum = 0;
       for (Integer partial : partials) {
         sum += partial;
@@ -120,8 +120,8 @@ public final class MTSOperatorWithZookeeperExample {
     }
 
     @Override
-    public void onNext(WindowOutput<Integer> arg0) {
-      System.out.println(arg0);
+    public void onNext(final WindowOutput<Integer> output) {
+      System.out.println(output);
     }
   }
 }

@@ -7,7 +7,7 @@ import org.edu.snu.tempest.operators.Timescale;
 
 import javax.inject.Inject;
 
-public class TimescaleSignalDecoder implements Decoder<TimescaleSignal> {
+public final class TimescaleSignalDecoder implements Decoder<TimescaleSignal> {
 
   @Inject
   public TimescaleSignalDecoder() {
@@ -15,7 +15,7 @@ public class TimescaleSignalDecoder implements Decoder<TimescaleSignal> {
   }
   
   @Override
-  public TimescaleSignal decode(byte[] data) {
+  public TimescaleSignal decode(final byte[] data) {
     try {
       TimescaleProtoMessage.TimescaleSignal signal =
           TimescaleProtoMessage.TimescaleSignal.parseFrom(data);

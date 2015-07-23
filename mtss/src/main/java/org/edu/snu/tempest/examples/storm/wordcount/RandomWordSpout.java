@@ -18,7 +18,7 @@ import java.util.logging.Logger;
 /**
  * Sends randomly selected words continuously.
  */
-public class RandomWordSpout extends BaseRichSpout {
+public final class RandomWordSpout extends BaseRichSpout {
 
   private static final int DEFAULT_SENDING_INTERVAL = 1;
   private static final Logger LOG = Logger.getLogger(RandomWordSpout.class.getName());
@@ -29,12 +29,14 @@ public class RandomWordSpout extends BaseRichSpout {
   private final Random random = new Random();
   
   @Inject
-  public RandomWordSpout(@Parameter(InputInterval.class) double sendingInterval) {
+  public RandomWordSpout(@Parameter(InputInterval.class) final double sendingInterval) {
     this.sendingInterval = (int) sendingInterval;
   }
 
   @Override
-  public void open(Map conf, TopologyContext context, SpoutOutputCollector col) {
+  public void open(final Map conf,
+                   final TopologyContext context,
+                   final SpoutOutputCollector col) {
     this.collector = col;
     rand = new Random();
   }
@@ -57,7 +59,7 @@ public class RandomWordSpout extends BaseRichSpout {
   }
 
   @Override
-  public void declareOutputFields(OutputFieldsDeclarer declarer) {
+  public void declareOutputFields(final OutputFieldsDeclarer declarer) {
     declarer.declare(new Fields("word", "count", "timestamp"));
   }
   

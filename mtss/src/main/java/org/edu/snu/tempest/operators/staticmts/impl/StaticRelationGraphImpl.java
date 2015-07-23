@@ -20,7 +20,7 @@ import java.util.logging.Logger;
  *
  * It constructs RelationGraph at start time.
  */
-public class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> {
+public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> {
   private static final Logger LOG = Logger.getLogger(StaticRelationGraphImpl.class.getName());
 
   private final OutputLookupTable<RelationGraphNode> table;
@@ -49,7 +49,9 @@ public class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> {
   }
 
   @Override
-  public void savePartialOutput(long startTime, long endTime, T output) {
+  public void savePartialOutput(final long startTime,
+                                final long endTime,
+                                final T output) {
     long start = adjStartTime(startTime);
     long end = adjEndTime(endTime);
 
@@ -78,7 +80,7 @@ public class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> {
   }
 
   @Override
-  public T finalAggregate(long startTime, long endTime, Timescale ts) {
+  public T finalAggregate(long startTime, long endTime, final Timescale ts) {
     LOG.log(Level.FINE, "Lookup " + startTime + ", " + endTime);
 
     long start = adjStartTime(startTime);
@@ -132,7 +134,7 @@ public class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> {
     return adj;
   }
 
-  /*
+  /**
    * This method is based on "On-the-Fly Sharing " paper.
    * Similar to initializeWindowState function
    */
@@ -218,12 +220,12 @@ public class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> {
     }
   }
 
-  /*
-  * Find period of repeated pattern
-  * period = c * lcm ( i_{1}, i_{2}, ..., i_{k} ) ( i_{k} is interval of k-th timescale)
-  * c is natural number which satisfies period >= largest_window_size
-  */
-  public static final long calculatePeriod(List<Timescale> timescales) {
+  /**
+   * Find period of repeated pattern.
+   * period = c * lcm ( i_{1}, i_{2}, ..., i_{k} ) ( i_{k} is interval of k-th timescale)
+   * c is natural number which satisfies period >= largest_window_size
+   */
+  public static long calculatePeriod(final List<Timescale> timescales) {
     long period = 0;
     long largestWindowSize = 0;
 

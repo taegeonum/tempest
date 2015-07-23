@@ -24,7 +24,7 @@ public final class TimescaleParser {
   public static final class TimescaleParameter implements Name<String> {}
 
   @Inject
-  public TimescaleParser(@Parameter(TimescaleParameter.class) String params) {
+  public TimescaleParser(@Parameter(TimescaleParameter.class) final String params) {
 
     if (!params.matches(regex)) {
       throw new InvalidParameterException("Invalid timescales: " + params + " The format should be " + regex);
@@ -37,7 +37,7 @@ public final class TimescaleParser {
     return this.timescales.get(this.timescales.size() - 1).windowSize;
   }
 
-  private List<Timescale> parseToTimescaleList(String params) {
+  private List<Timescale> parseToTimescaleList(final String params) {
     List<Timescale> ts = new ArrayList<>();
 
 

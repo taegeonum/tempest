@@ -77,7 +77,7 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
   }
 
   @Override
-  public void onTimescaleAddition(Timescale ts, long startTime) {
+  public void onTimescaleAddition(final Timescale ts, final long startTime) {
     LOG.log(Level.INFO, "SlicedWindow addTimescale " + ts);
     // Add slices
     synchronized (sliceQueue) {
@@ -91,7 +91,7 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
   }
 
   @Override
-  public void onTimescaleDeletion(Timescale ts) {
+  public void onTimescaleDeletion(final Timescale ts) {
     LOG.log(Level.INFO, "SlicedWindow removeTimescale " + ts);
     synchronized (sliceQueue) {
       for (Iterator<SliceInfo> iterator = sliceQueue.iterator(); iterator.hasNext();) {

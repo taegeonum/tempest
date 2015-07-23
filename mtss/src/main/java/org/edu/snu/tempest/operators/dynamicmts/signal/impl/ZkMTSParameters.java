@@ -8,7 +8,7 @@ import org.edu.snu.tempest.operators.dynamicmts.signal.TimescaleSignal;
 import org.edu.snu.tempest.operators.dynamicmts.signal.TimescaleSignalDecoder;
 import org.edu.snu.tempest.operators.dynamicmts.signal.TimescaleSignalEncoder;
 
-public class ZkMTSParameters {
+public final class ZkMTSParameters {
   
   @NamedParameter(doc = "zookeeper server address", short_name = "zkAddress", default_value="localhost:2000")
   public static final class ZkServerAddress implements Name<String> {}

@@ -41,7 +41,7 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSOperator<I>
                                 final List<Timescale> timescales,
                                 final OutputHandler<V> handler,
                                 final MTSSignalReceiver receiver,
-                                @Parameter(CachingRate.class) double cachingRate,
+                                @Parameter(CachingRate.class) final double cachingRate,
                                 @Parameter(InitialStartTime.class) final long startTime) {
     this.aggregator = aggregator;
     this.outputHandler = handler;

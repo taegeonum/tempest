@@ -14,7 +14,10 @@ public final class StormRunner {
   private StormRunner() {
   }
 
-  public static void runTopologyLocally(StormTopology topology, String topologyName, Config conf, int runtimeInSeconds)
+  public static void runTopologyLocally(final StormTopology topology,
+                                        final String topologyName,
+                                        final Config conf,
+                                        final int runtimeInSeconds)
       throws InterruptedException {
     LocalCluster cluster = new LocalCluster();
     cluster.submitTopology(topologyName, conf, topology);
@@ -24,7 +27,9 @@ public final class StormRunner {
     cluster.shutdown();
   }
 
-  public static void runTopologyRemotely(StormTopology topology, String topologyName, Config conf)
+  public static void runTopologyRemotely(final StormTopology topology,
+                                         final String topologyName,
+                                         final Config conf)
       throws AlreadyAliveException, InvalidTopologyException {
     StormSubmitter.submitTopology(topologyName, conf, topology);
   }

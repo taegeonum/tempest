@@ -49,7 +49,7 @@ public final class DynamicRelationCubeImpl<T> implements DynamicRelationCube<T> 
   }
 
   @Override
-  public void savePartialOutput(long startTime, long endTime, T output) {
+  public void savePartialOutput(final long startTime, final long endTime, final T output) {
     table.saveOutput(startTime, endTime, output);
   }
 
@@ -63,9 +63,9 @@ public final class DynamicRelationCubeImpl<T> implements DynamicRelationCube<T> 
    * @param ts timescale
    */
   @Override
-  public T finalAggregate(long startTime, long endTime, Timescale ts) {
-    long aggStartTime = System.nanoTime();
-    List<T> dependentOutputs = new LinkedList<>();
+  public T finalAggregate(final long startTime, final long endTime, final Timescale ts) {
+    final long aggStartTime = System.nanoTime();
+    final List<T> dependentOutputs = new LinkedList<>();
     // lookup dependencies
     long start = startTime;
     boolean isFullyProcessed = true;
@@ -121,7 +121,7 @@ public final class DynamicRelationCubeImpl<T> implements DynamicRelationCube<T> 
   }
 
   @Override
-  public void onTimescaleAddition(Timescale ts, long startTime) {
+  public void onTimescaleAddition(final Timescale ts, final long startTime) {
     LOG.log(Level.INFO, "addTimescale " + ts);
     synchronized (this.timescales) {
       gc.onTimescaleAddition(ts, startTime);
@@ -133,7 +133,7 @@ public final class DynamicRelationCubeImpl<T> implements DynamicRelationCube<T> 
   }
 
   @Override
-  public void onTimescaleDeletion(Timescale ts) {
+  public void onTimescaleDeletion(final Timescale ts) {
     LOG.log(Level.INFO, "removeTimescale " + ts);
     synchronized (this.timescales) {
       gc.onTimescaleDeletion(ts);

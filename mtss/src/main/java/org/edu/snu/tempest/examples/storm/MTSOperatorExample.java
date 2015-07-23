@@ -24,17 +24,17 @@ public final class MTSOperatorExample {
   }
 
   public static void main(String[] args) throws Exception {
-    Timescale ts = new Timescale(5, 3);
-    Aggregator<Integer, Integer> testAggregator = new TestAggregator();
-    List<Timescale> list = new LinkedList<>();
+    final Timescale ts = new Timescale(5, 3);
+    final Aggregator<Integer, Integer> testAggregator = new TestAggregator();
+    final List<Timescale> list = new LinkedList<>();
     list.add(ts);
     final long startTime = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
-    DynamicMTSOperator<Integer> operator =
+    final DynamicMTSOperator<Integer> operator =
         new DynamicMTSOperatorImpl<>(testAggregator, list,
            new TestHandler(), new Receiver(), 0, startTime);
 
     operator.start();
-    Random rand = new Random();
+    final Random rand = new Random();
     for (int i = 0; i < 1500; i++) {
       operator.execute(Math.abs(rand.nextInt() % 5));
       
@@ -61,14 +61,14 @@ public final class MTSOperatorExample {
     }
 
     @Override
-    public Integer partialAggregate(Integer oldVal, Integer newVal) {
+    public Integer partialAggregate(final Integer oldVal, final Integer newVal) {
       return oldVal + newVal;
     }
 
     @Override
-    public Integer finalAggregate(List<Integer> partials) {
+    public Integer finalAggregate(final List<Integer> partials) {
       int sum = 0;
-      for (Integer partial : partials) {
+      for (final Integer partial : partials) {
         sum += partial;
       }
       return sum;
@@ -81,8 +81,8 @@ public final class MTSOperatorExample {
     }
 
     @Override
-    public void onNext(WindowOutput<Integer> arg0) {
-      System.out.println(arg0);
+    public void onNext(final WindowOutput<Integer> output) {
+      System.out.println(output);
     }
   }
 
@@ -97,7 +97,7 @@ public final class MTSOperatorExample {
     }
 
     @Override
-    public void addTimescaleSignalListener(TimescaleSignalListener listener) {
+    public void addTimescaleSignalListener(final TimescaleSignalListener listener) {
 
     }
 

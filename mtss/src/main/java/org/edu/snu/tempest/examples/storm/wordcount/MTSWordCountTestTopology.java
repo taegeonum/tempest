@@ -38,7 +38,7 @@ public final class MTSWordCountTestTopology {
     final Tang tang = Tang.Factory.getTang();
     final JavaConfigurationBuilder cb = tang.newConfigurationBuilder();
 
-    CommandLine cl = new CommandLine(cb)
+    final CommandLine cl = new CommandLine(cb)
         .registerShortNameOfClass(TestName.class)
         .registerShortNameOfClass(LogDir.class)
         .registerShortNameOfClass(CachingRate.class)
@@ -59,9 +59,9 @@ public final class MTSWordCountTestTopology {
     conf.put(Config.STORM_ZOOKEEPER_CONNECTION_TIMEOUT, 500000);
     conf.put(Config.STORM_ZOOKEEPER_SESSION_TIMEOUT, 500000);
     
-    Configuration commandLineConf = getCommandLineConf(args);
-    Injector injector = Tang.Factory.getTang().newInjector(commandLineConf);
-    WordCountTest test = injector.getInstance(WordCountTest.class);
+    final Configuration commandLineConf = getCommandLineConf(args);
+    final Injector injector = Tang.Factory.getTang().newInjector(commandLineConf);
+    final WordCountTest test = injector.getInstance(WordCountTest.class);
     final String testName = injector.getNamedInstance(TestName.class);
     final String logDir = injector.getNamedInstance(LogDir.class);
     final double cachingRate = injector.getNamedInstance(CachingRate.class);
@@ -70,7 +70,7 @@ public final class MTSWordCountTestTopology {
     final String inputType = injector.getNamedInstance(InputType.class);
     final int numBolts = injector.getNamedInstance(NumBolts.class);
     
-    TopologyBuilder builder = new TopologyBuilder();
+    final TopologyBuilder builder = new TopologyBuilder();
     BaseRichSpout spout = null;
     if (inputType.compareTo("random") == 0) {
       spout = new RandomWordSpout(1);
@@ -78,7 +78,7 @@ public final class MTSWordCountTestTopology {
       spout = new ZipfianWordSpout(1);
     }
     
-    OutputWriter writer = new LocalOutputWriter();
+    final OutputWriter writer = new LocalOutputWriter();
     // For logging initial configuration.
     writer.write(logDir + testName + "/conf", test.print() + "\n" + "saving: " + cachingRate);
     writer.write(logDir + testName + "/initialTime", System.currentTimeMillis()+"");
@@ -87,7 +87,7 @@ public final class MTSWordCountTestTopology {
 
     // set spout
     builder.setSpout("wcspout", spout, test.numSpouts);
-    BaseRichBolt bolt = new MTSWordCountTestBolt(new LocalOutputWriter(),
+    final BaseRichBolt bolt = new MTSWordCountTestBolt(new LocalOutputWriter(),
         logDir + testName,
         test.tsParser.timescales,
         test.operatorName,

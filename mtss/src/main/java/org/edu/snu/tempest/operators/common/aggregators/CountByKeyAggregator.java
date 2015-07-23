@@ -7,13 +7,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class CountByKeyAggregator<I, K> implements Aggregator<I, Map<K, Long>> {
+public final class CountByKeyAggregator<I, K> implements Aggregator<I, Map<K, Long>> {
 
-  private final KeyFromValue<I, K> keyVal;
+  private final KeyExtractor<I, K> extractor;
 
   @Inject
-  public CountByKeyAggregator(KeyFromValue<I, K> keyVal) {
-    this.keyVal = keyVal;
+  public CountByKeyAggregator(final KeyExtractor<I, K> extractor) {
+    this.extractor = extractor;
   }
 
   @Override
@@ -22,8 +22,8 @@ public class CountByKeyAggregator<I, K> implements Aggregator<I, Map<K, Long>> {
   }
 
   @Override
-  public Map<K, Long> partialAggregate(Map<K, Long> oldVal, I newVal) {
-    K key = keyVal.getKey(newVal);
+  public Map<K, Long> partialAggregate(final Map<K, Long> oldVal, final I newVal) {
+    final K key = extractor.getKey(newVal);
     Long old = oldVal.get(key);
 
     if (old == null) {
@@ -34,10 +34,10 @@ public class CountByKeyAggregator<I, K> implements Aggregator<I, Map<K, Long>> {
   }
 
   @Override
-  public Map<K, Long> finalAggregate(List<Map<K, Long>> partials) {
-    Map<K, Long> result = new HashMap<>();
-    for (Map<K, Long> partial : partials) {
-      for (Map.Entry<K, Long> entry : partial.entrySet()) {
+  public Map<K, Long> finalAggregate(final List<Map<K, Long>> partials) {
+    final Map<K, Long> result = new HashMap<>();
+    for (final Map<K, Long> partial : partials) {
+      for (final Map.Entry<K, Long> entry : partial.entrySet()) {
         Long oldVal = result.get(entry.getKey());
         if (oldVal == null) {
           oldVal = 0L;
@@ -48,7 +48,7 @@ public class CountByKeyAggregator<I, K> implements Aggregator<I, Map<K, Long>> {
     return result;
   }
 
-  public interface KeyFromValue<I, K> {
+  public interface KeyExtractor<I, K> {
     K getKey(I value);
   }
 }

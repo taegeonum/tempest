@@ -4,7 +4,7 @@ import org.apache.reef.wake.remote.Codec;
 
 import javax.inject.Inject;
 
-public class TimescaleSignalCodec implements Codec<TimescaleSignal> {
+public final class TimescaleSignalCodec implements Codec<TimescaleSignal> {
 
   private final TimescaleSignalEncoder encoder;
   private final TimescaleSignalDecoder decoder;
@@ -16,12 +16,12 @@ public class TimescaleSignalCodec implements Codec<TimescaleSignal> {
   }
   
   @Override
-  public byte[] encode(TimescaleSignal ts) {
+  public byte[] encode(final TimescaleSignal ts) {
     return encoder.encode(ts);
   }
 
   @Override
-  public TimescaleSignal decode(byte[] data) {
+  public TimescaleSignal decode(final byte[] data) {
     return decoder.decode(data);
   }
 

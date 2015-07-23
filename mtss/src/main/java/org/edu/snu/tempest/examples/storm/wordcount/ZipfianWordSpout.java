@@ -19,7 +19,7 @@ import java.util.logging.Logger;
 /**
  * Sends randomly selected words which have zipfian distribution continuously.
  */
-public class ZipfianWordSpout extends BaseRichSpout {
+public final class ZipfianWordSpout extends BaseRichSpout {
 
   private static final int DEFAULT_SENDING_INTERVAL = 1;
   private static final Logger LOG = Logger.getLogger(ZipfianWordSpout.class.getName());
@@ -29,12 +29,14 @@ public class ZipfianWordSpout extends BaseRichSpout {
   private final int sendingInterval;
   
   @Inject
-  public ZipfianWordSpout(@Parameter(InputInterval.class) double sendingInterval) {
+  public ZipfianWordSpout(@Parameter(InputInterval.class) final double sendingInterval) {
     this.sendingInterval = (int) sendingInterval;
   }
 
   @Override
-  public void open(Map conf, TopologyContext context, SpoutOutputCollector col) {
+  public void open(final Map conf,
+                   final TopologyContext context,
+                   final SpoutOutputCollector col) {
     LOG.log(Level.INFO, ZipfianWordSpout.class.getName() + " started");
     this.collector = col;
     rand = new ZipfianGenerator(15 * 15 * 15 * 15, 1.4);
@@ -58,7 +60,7 @@ public class ZipfianWordSpout extends BaseRichSpout {
   }
 
   @Override
-  public void declareOutputFields(OutputFieldsDeclarer declarer) {
+  public void declareOutputFields(final OutputFieldsDeclarer declarer) {
     declarer.declare(new Fields("word", "count", "timestamp"));
   }
 }

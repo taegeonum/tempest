@@ -40,7 +40,7 @@ public final class LocalOutputWriter implements OutputWriter {
 
 
   @Override
-  public void write(String path, String str) throws IOException {
+  public void write(final String path, final String str) throws IOException {
     
     if (path.length() == 0 || path == null) {
       throw new InvalidParameterException("The output path should not be null");
@@ -61,22 +61,22 @@ public final class LocalOutputWriter implements OutputWriter {
   }
 
   @Override
-  public void writeLine(String path, String str) throws IOException {
+  public void writeLine(final String path, final String str) throws IOException {
     write(path, str + "\n");
   }
   
   
-  private void createDirectory(String dir) {
+  private void createDirectory(final String dir) {
     
-    String[] splits = dir.split("/");
-    String[] dirSplits = new String[splits.length - 1];
+    final String[] splits = dir.split("/");
+    final String[] dirSplits = new String[splits.length - 1];
     
     for (int i = 0; i < splits.length - 1; i++) {
       dirSplits[i] = splits[i];
     }
     
-    String d = StringUtils.join(dirSplits, "/");
-    File theDir = new File(d);
+    final String d = StringUtils.join(dirSplits, "/");
+    final File theDir = new File(d);
 
     // if the directory does not exist, create it
     if (!theDir.exists()) {

@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.security.InvalidParameterException;
 import java.util.concurrent.TimeUnit;
 
-public class Timescale implements Comparable, Serializable {
+public final class Timescale implements Comparable, Serializable {
   /**
    * Represent timescale.
    * Window size and interval 

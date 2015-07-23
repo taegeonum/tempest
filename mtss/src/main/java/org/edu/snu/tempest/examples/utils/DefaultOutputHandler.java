@@ -10,7 +10,7 @@ import java.util.logging.Logger;
 /*
  * Default OutputHandler 
  */
-public class DefaultOutputHandler<V> implements MTSOperator.OutputHandler<V> {
+public final class DefaultOutputHandler<V> implements MTSOperator.OutputHandler<V> {
   
   private static final Logger LOG = Logger.getLogger(DefaultOutputHandler.class.getName());
   
@@ -20,7 +20,7 @@ public class DefaultOutputHandler<V> implements MTSOperator.OutputHandler<V> {
   }
   
   @Override
-  public void onNext(WindowOutput<V> output) {
+  public void onNext(final WindowOutput<V> output) {
     LOG.log(Level.INFO, output.toString());
   }
 

@@ -43,14 +43,13 @@ import java.util.logging.Logger;
  * MTSWordCountTestBolt.
  * It aggregateds word and calculates counts. 
  */
-public class MTSWordCountTestBolt extends BaseRichBolt {
+public final class MTSWordCountTestBolt extends BaseRichBolt {
 
   /**
    * WordCount bolt using MTSOperator.
    */
   private static final long serialVersionUID = 1298716785871980572L;
   private static final Logger LOG = Logger.getLogger(MTSWordCountTestBolt.class.getName());
-
 
   /**
    * OutputWriter for logging.
@@ -94,9 +93,7 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
    * Number of execution.
    */
   private final AtomicLong numOfExecution = new AtomicLong();
-
   private final long startTime;
-
   private long totalBytes = 0;
   private long sizeOfInt = 4;
   private long sizeOfLong = 8;
@@ -118,11 +115,12 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
   }
   
   @Override
-  public void declareOutputFields(OutputFieldsDeclarer paramOutputFieldsDeclarer) {
+  public void declareOutputFields(final OutputFieldsDeclarer paramOutputFieldsDeclarer) {
+
   }
 
   @Override
-  public void execute(Tuple tuple) {
+  public void execute(final Tuple tuple) {
     totalBytes += (tuple.getString(0).length() + sizeOfInt + sizeOfLong);
     // send data to MTS operator.
     operator.execute(tuple);
@@ -159,7 +157,6 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
           LOG.log(Level.INFO, (System.currentTimeMillis()) + "\t" 
               + totalBytes);
       }
-      
     }, 0, 1, TimeUnit.SECONDS);
 
     // create MTS operator
@@ -193,8 +190,8 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
       ij.bindVolatileInstance(List.class, timescales);
     }
     ij.bindVolatileInstance(MTSOperator.OutputHandler.class, new WCOutputHandler());
-    ij.bindVolatileInstance(CountByKeyAggregator.KeyFromValue.class,
-        new CountByKeyAggregator.KeyFromValue<Tuple, String>() {
+    ij.bindVolatileInstance(CountByKeyAggregator.KeyExtractor.class,
+        new CountByKeyAggregator.KeyExtractor<Tuple, String>() {
           @Override
           public String getKey(Tuple tuple) {
             return tuple.getString(0);
@@ -214,7 +211,6 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
     try {
       this.operator.close();
       this.executor.shutdown();
-      //this.writer.close();
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -227,9 +223,9 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
     }
     
     @Override
-    public void onNext(WindowOutput<Map<String, Long>> output) {
+    public void onNext(final WindowOutput<Map<String, Long>> output) {
       long count = 0;
-      for (Entry<String, Long> entry : output.output.entrySet()) {
+      for (final Entry<String, Long> entry : output.output.entrySet()) {
         count += entry.getValue();
       }
       

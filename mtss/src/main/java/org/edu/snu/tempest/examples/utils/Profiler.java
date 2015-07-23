@@ -16,16 +16,16 @@ public final class Profiler {
    */
   public static double getProcessCpuLoad()
       throws MalformedObjectNameException, ReflectionException, InstanceNotFoundException {
-    MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-    ObjectName name = ObjectName.getInstance("java.lang:type=OperatingSystem");
-    AttributeList list = mbs.getAttributes(name, new String[]{"ProcessCpuLoad"});
+    final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+    final ObjectName name = ObjectName.getInstance("java.lang:type=OperatingSystem");
+    final AttributeList list = mbs.getAttributes(name, new String[]{"ProcessCpuLoad"});
 
     if (list.isEmpty()) {
       return Double.NaN;
     }
 
-    Attribute att = (Attribute)list.get(0);
-    Double value  = (Double)att.getValue();
+    final Attribute att = (Attribute)list.get(0);
+    final Double value  = (Double)att.getValue();
 
     if (value == -1.0) {
       // usually takes a couple of seconds before we get real values
@@ -41,7 +41,7 @@ public final class Profiler {
   }
   
   public static double getCpuLoad() {
-    OperatingSystemMXBean osBean = ManagementFactory.getPlatformMXBean(
+    final OperatingSystemMXBean osBean = ManagementFactory.getPlatformMXBean(
         OperatingSystemMXBean.class);
 
     // What % load the overall system is at, from 0.0-1.0

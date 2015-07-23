@@ -20,7 +20,7 @@ import java.util.logging.Logger;
 /**
  * Zookeeper MTSSignalReceiver implementation.
  */
-public class ZkSignalReceiver implements MTSSignalReceiver, Watcher {
+public final class ZkSignalReceiver implements MTSSignalReceiver, Watcher {
   private static final Logger LOG = Logger.getLogger(ZkSignalReceiver.class.getName());
   private final String identifier;
   private final String namespace;
@@ -92,7 +92,7 @@ public class ZkSignalReceiver implements MTSSignalReceiver, Watcher {
    * Need to use another receiver if you want to address multiple concurrent events.
    */
   @Override
-  public void process(WatchedEvent event) {
+  public void process(final WatchedEvent event) {
     try {
       this.client.checkExists().usingWatcher(this).forPath(this.identifier + "-addition");
       this.client.checkExists().usingWatcher(this).forPath(this.identifier + "-deletion");

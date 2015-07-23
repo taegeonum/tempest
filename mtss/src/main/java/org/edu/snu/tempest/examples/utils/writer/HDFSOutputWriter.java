@@ -31,7 +31,7 @@ public final class HDFSOutputWriter implements OutputWriter {
   }
 
   @Override
-  public void write(String path, String str) throws IOException {
+  public void write(final String path, final String str) throws IOException {
     
     start();
     
@@ -48,7 +48,7 @@ public final class HDFSOutputWriter implements OutputWriter {
   }
   
   @Override
-  public void writeLine(String path, String str) throws IOException {
+  public void writeLine(final String path, final String str) throws IOException {
     this.write(path, str + "\n");
   }
   
