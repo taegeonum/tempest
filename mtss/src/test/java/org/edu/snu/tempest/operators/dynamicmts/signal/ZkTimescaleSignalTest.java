@@ -9,6 +9,7 @@ import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkSignalReceiver;
 import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkSignalSender;
 import org.edu.snu.tempest.utils.Monitor;
 import org.junit.Assert;
+import org.junit.Test;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -25,7 +26,7 @@ public class ZkTimescaleSignalTest {
    * ZkSignalSender sends three timescales to Zookeeper 
    * ZKSignalReceiver receives the timescales. 
    */
-  //@Test
+  @Test
   public void addTimescaleSignalTest() throws Exception {
 
     Monitor monitor = new Monitor();
@@ -63,14 +64,13 @@ public class ZkTimescaleSignalTest {
 
     client.close();
     connector.close();
-
   }
   
   /*
    * Add two timescales and remove one timescale. 
    */
   
-  //@Test
+  @Test
   public void removeTimescaleSignalTest() throws Exception {
 
     Monitor monitor = new Monitor();

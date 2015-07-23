@@ -1,9 +1,8 @@
-package org.edu.snu.tempest.operators.impl;
+package org.edu.snu.tempest.operators.common.impl;
 
 import org.edu.snu.tempest.operators.Timescale;
 import org.edu.snu.tempest.operators.common.NotFoundException;
 import org.edu.snu.tempest.operators.common.OverlappingWindowOperator;
-import org.edu.snu.tempest.operators.common.impl.DefaultOverlappingWindowOperatorImpl;
 import org.edu.snu.tempest.operators.staticmts.MTSOperator;
 import org.edu.snu.tempest.operators.staticmts.StaticRelationGraph;
 import org.junit.Test;

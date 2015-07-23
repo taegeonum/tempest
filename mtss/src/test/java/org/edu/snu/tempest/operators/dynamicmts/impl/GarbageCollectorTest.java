@@ -1,9 +1,8 @@
-package org.edu.snu.tempest.operators.relationcube.impl;
+package org.edu.snu.tempest.operators.dynamicmts.impl;
 
 import org.edu.snu.tempest.operators.Timescale;
 import org.edu.snu.tempest.operators.common.OutputLookupTable;
 import org.edu.snu.tempest.operators.dynamicmts.DynamicRelationCube;
-import org.edu.snu.tempest.operators.dynamicmts.impl.DefaultGarbageCollectorImpl;
 import org.junit.Test;
 
 import java.util.LinkedList;

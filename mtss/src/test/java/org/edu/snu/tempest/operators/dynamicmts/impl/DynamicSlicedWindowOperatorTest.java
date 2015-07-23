@@ -1,8 +1,7 @@
-package org.edu.snu.tempest.operators.impl;
+package org.edu.snu.tempest.operators.dynamicmts.impl;
 
 import org.edu.snu.tempest.operators.Timescale;
 import org.edu.snu.tempest.operators.dynamicmts.DynamicRelationCube;
-import org.edu.snu.tempest.operators.dynamicmts.impl.DynamicSlicedWindowOperatorImpl;
 import org.edu.snu.tempest.utils.TestAggregator;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,7 +14,7 @@ import java.util.Map;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class SlicedWindowOperatorTest {
+public class DynamicSlicedWindowOperatorTest {
   DynamicRelationCube<Map<Integer, Integer>> cube;
   List<Timescale> timescales;
   IntegerRef counter;

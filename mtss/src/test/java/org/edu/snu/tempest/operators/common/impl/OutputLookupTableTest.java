@@ -1,6 +1,5 @@
-package org.edu.snu.tempest.operators.relationcube.impl;
+package org.edu.snu.tempest.operators.common.impl;
 
-import org.edu.snu.tempest.operators.common.impl.DefaultOutputLookupTableImpl;
 import org.edu.snu.tempest.operators.common.NotFoundException;
 import org.edu.snu.tempest.operators.common.OutputLookupTable;
 import org.junit.Assert;

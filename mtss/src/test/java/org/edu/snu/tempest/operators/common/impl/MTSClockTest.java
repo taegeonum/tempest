@@ -1,11 +1,10 @@
-package org.edu.snu.tempest.operators.impl;
+package org.edu.snu.tempest.operators.common.impl;
 
 import org.edu.snu.tempest.operators.Timescale;
 import org.edu.snu.tempest.operators.common.Clock;
 import org.edu.snu.tempest.operators.common.OverlappingWindowOperator;
-import org.edu.snu.tempest.operators.staticmts.SlicedWindowOperator;
 import org.edu.snu.tempest.operators.common.Subscription;
-import org.edu.snu.tempest.operators.common.impl.DefaultMTSClockImpl;
+import org.edu.snu.tempest.operators.staticmts.SlicedWindowOperator;
 import org.edu.snu.tempest.utils.Monitor;
 import org.junit.Assert;
 import org.junit.Test;
@@ -58,12 +57,7 @@ public class MTSClockTest {
     Assert.assertEquals(prevCounter, counter.get());
     clock.close();
   }
-  
-  @Test
-  public void multipleOverlappingWindowSubscriptionTest() throws Exception {
-    //TODO 
-  }
-  
+
   /*
    * It should call SlicedWindowOperator.onNext first
    * and call a overlapping window operator which has small size of window.
