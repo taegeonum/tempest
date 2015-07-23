@@ -1,13 +1,18 @@
 package org.edu.snu.tempest.operators.dynamicmts.impl;
 
+import org.apache.reef.tang.annotations.Parameter;
 import org.edu.snu.tempest.operators.Timescale;
 import org.edu.snu.tempest.operators.common.Aggregator;
-import org.edu.snu.tempest.operators.common.*;
+import org.edu.snu.tempest.operators.common.Clock;
+import org.edu.snu.tempest.operators.common.OverlappingWindowOperator;
+import org.edu.snu.tempest.operators.common.Subscription;
 import org.edu.snu.tempest.operators.common.impl.DefaultMTSClockImpl;
 import org.edu.snu.tempest.operators.common.impl.DefaultOverlappingWindowOperatorImpl;
 import org.edu.snu.tempest.operators.dynamicmts.DynamicMTSOperator;
 import org.edu.snu.tempest.operators.dynamicmts.DynamicSlicedWindowOperator;
 import org.edu.snu.tempest.operators.dynamicmts.signal.MTSSignalReceiver;
+import org.edu.snu.tempest.operators.parameters.CachingRate;
+import org.edu.snu.tempest.operators.parameters.InitialStartTime;
 
 import javax.inject.Inject;
 import java.util.HashMap;
@@ -36,11 +41,11 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSOperator<I>
                                 final List<Timescale> timescales,
                                 final OutputHandler<V> handler,
                                 final MTSSignalReceiver receiver,
-                                final Long startTime) throws Exception {
-    // TODO configure cachingRate
+                                @Parameter(CachingRate.class) double cachingRate,
+                                @Parameter(InitialStartTime.class) final long startTime) throws Exception {
     this.aggregator = aggregator;
     this.outputHandler = handler;
-    this.relationCube = new DynamicRelationCubeImpl<>(timescales, aggregator, 0, startTime);
+    this.relationCube = new DynamicRelationCubeImpl<>(timescales, aggregator, cachingRate, startTime);
     this.subscriptions = new HashMap<>();
     this.overlappingWindowOperators = new LinkedList<>();
     this.receiver = receiver;

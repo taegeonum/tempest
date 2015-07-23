@@ -28,7 +28,6 @@ public class ZkTimescaleSignalTest {
    */
   @Test
   public void addTimescaleSignalTest() throws Exception {
-
     Monitor monitor = new Monitor();
     ConcurrentLinkedQueue<Timescale> timescales = new ConcurrentLinkedQueue<>();
     JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
@@ -38,9 +37,8 @@ public class ZkTimescaleSignalTest {
     cb.bindImplementation(MTSSignalReceiver.class, ZkSignalReceiver.class);
     
     Injector injector = Tang.Factory.getTang().newInjector(cb.build());
-    injector.bindVolatileInstance(TimescaleSignalListener.class, new TestTimescaleListener(timescales, monitor, 3));
     MTSSignalReceiver connector = injector.getInstance(MTSSignalReceiver.class);
-    
+    connector.addTimescaleSignalListener(new TestTimescaleListener(timescales, monitor, 3));
     connector.start();
     
     cb.bindImplementation(MTSSignalSender.class, ZkSignalSender.class);
@@ -72,7 +70,6 @@ public class ZkTimescaleSignalTest {
   
   @Test
   public void removeTimescaleSignalTest() throws Exception {
-
     Monitor monitor = new Monitor();
     ConcurrentLinkedQueue<Timescale> timescales = new ConcurrentLinkedQueue<>();
     JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
@@ -82,8 +79,8 @@ public class ZkTimescaleSignalTest {
     cb.bindImplementation(MTSSignalReceiver.class, ZkSignalReceiver.class);
     
     Injector injector = Tang.Factory.getTang().newInjector(cb.build());
-    injector.bindVolatileInstance(TimescaleSignalListener.class, new TestTimescaleListener(timescales, monitor, 3));
     MTSSignalReceiver connector = injector.getInstance(MTSSignalReceiver.class);
+    connector.addTimescaleSignalListener(new TestTimescaleListener(timescales, monitor, 3));
     
     connector.start();
     

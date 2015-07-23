@@ -11,18 +11,19 @@ import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.exceptions.InjectionException;
 import org.edu.snu.naive.operator.impl.NaiveWindowOperator;
 import org.edu.snu.onthefly.operator.impl.OTFMTSOperatorImpl;
-import org.edu.snu.tempest.examples.storm.parameters.SavingRate;
 import org.edu.snu.tempest.examples.utils.Profiler;
 import org.edu.snu.tempest.examples.utils.writer.OutputWriter;
 import org.edu.snu.tempest.operators.Timescale;
-import org.edu.snu.tempest.operators.common.aggregators.CountByKeyAggregator;
 import org.edu.snu.tempest.operators.common.Aggregator;
 import org.edu.snu.tempest.operators.common.WindowOutput;
+import org.edu.snu.tempest.operators.common.aggregators.CountByKeyAggregator;
 import org.edu.snu.tempest.operators.dynamicmts.impl.DynamicMTSOperatorImpl;
 import org.edu.snu.tempest.operators.dynamicmts.signal.MTSSignalReceiver;
 import org.edu.snu.tempest.operators.dynamicmts.signal.TimescaleSignalListener;
 import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkMTSParameters;
 import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkSignalReceiver;
+import org.edu.snu.tempest.operators.parameters.CachingRate;
+import org.edu.snu.tempest.operators.parameters.InitialStartTime;
 import org.edu.snu.tempest.operators.staticmts.MTSOperator;
 import org.edu.snu.tempest.operators.staticmts.impl.StaticMTSOperatorImpl;
 
@@ -72,7 +73,7 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
    */
   private final String operatorName;
 
-  private final double savingRate;
+  private final double cachingRate;
 
   /**
    * Zookeeper address.
@@ -105,14 +106,14 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
                               final List<Timescale> timescales,
                               final String operatorName,
                               final String address,
-                              final double savingRate,
+                              final double cachingRate,
                               final long startTime) {
     this.writer = writer;
     this.pathPrefix = pathPrefix;
     this.timescales = timescales;
     this.operatorName = operatorName;
     this.address = address;
-    this.savingRate = savingRate;
+    this.cachingRate = cachingRate;
     this.startTime = startTime;
   }
   
@@ -164,7 +165,8 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
     // create MTS operator
     JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
     cb.bindImplementation(Aggregator.class, CountByKeyAggregator.class);
-    cb.bindNamedParameter(SavingRate.class, savingRate+"");
+    cb.bindNamedParameter(CachingRate.class, cachingRate + "");
+    cb.bindNamedParameter(InitialStartTime.class, this.startTime + "");
 
     if (operatorName.equals("mts")) {
       cb.bindImplementation(MTSOperator.class, DynamicMTSOperatorImpl.class);
@@ -183,7 +185,6 @@ public class MTSWordCountTestBolt extends BaseRichBolt {
     }
 
     Injector ij = Tang.Factory.getTang().newInjector(cb.build());
-    ij.bindVolatileInstance(Long.class, this.startTime);
     if (operatorName.equals("naive")) {
       // bind one timescale to each executors.
       int index = paramTopologyContext.getThisTaskIndex();

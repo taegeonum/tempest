@@ -17,6 +17,7 @@ import org.edu.snu.tempest.examples.utils.StormRunner;
 import org.edu.snu.tempest.examples.utils.TimescaleParser.TimescaleParameter;
 import org.edu.snu.tempest.examples.utils.writer.LocalOutputWriter;
 import org.edu.snu.tempest.examples.utils.writer.OutputWriter;
+import org.edu.snu.tempest.operators.parameters.CachingRate;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +41,7 @@ public final class MTSWordCountTestTopology {
     CommandLine cl = new CommandLine(cb)
         .registerShortNameOfClass(TestName.class)
         .registerShortNameOfClass(LogDir.class)
-        .registerShortNameOfClass(SavingRate.class)
+        .registerShortNameOfClass(CachingRate.class)
         .registerShortNameOfClass(TimescaleParameter.class)
         .registerShortNameOfClass(NumSpouts.class)
         .registerShortNameOfClass(TotalTime.class)
@@ -63,7 +64,7 @@ public final class MTSWordCountTestTopology {
     WordCountTest test = injector.getInstance(WordCountTest.class);
     final String testName = injector.getNamedInstance(TestName.class);
     final String logDir = injector.getNamedInstance(LogDir.class);
-    final double savingRate = injector.getNamedInstance(SavingRate.class);
+    final double cachingRate = injector.getNamedInstance(CachingRate.class);
     final String operator = injector.getNamedInstance(Operator.class);
     final String topologyName = operator + "_WC_TOPOLOGY";
     final String inputType = injector.getNamedInstance(InputType.class);
@@ -79,7 +80,7 @@ public final class MTSWordCountTestTopology {
     
     OutputWriter writer = new LocalOutputWriter();
     // For logging initial configuration.
-    writer.write(logDir + testName + "/conf", test.print() + "\n" + "saving: " + savingRate);
+    writer.write(logDir + testName + "/conf", test.print() + "\n" + "saving: " + cachingRate);
     writer.write(logDir + testName + "/initialTime", System.currentTimeMillis()+"");
     writer.write(logDir + testName + "/largestTimescale", test.tsParser.largestWindowSize()+"");
     writer.close();
@@ -91,7 +92,7 @@ public final class MTSWordCountTestTopology {
         test.tsParser.timescales,
         test.operatorName,
         "localhost:2181",
-        savingRate,
+        cachingRate,
         TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()));
 
     // set bolt

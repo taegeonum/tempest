@@ -1,15 +1,14 @@
 package org.edu.snu.tempest.operators.dynamicmts.impl;
 
-import org.apache.reef.tang.annotations.Name;
-import org.apache.reef.tang.annotations.NamedParameter;
 import org.apache.reef.tang.annotations.Parameter;
 import org.edu.snu.tempest.operators.Timescale;
 import org.edu.snu.tempest.operators.common.Aggregator;
 import org.edu.snu.tempest.operators.common.NotFoundException;
 import org.edu.snu.tempest.operators.common.OutputLookupTable;
-import org.edu.snu.tempest.operators.common.impl.TimeAndValue;
 import org.edu.snu.tempest.operators.common.impl.DefaultOutputLookupTableImpl;
+import org.edu.snu.tempest.operators.common.impl.TimeAndValue;
 import org.edu.snu.tempest.operators.dynamicmts.DynamicRelationCube;
+import org.edu.snu.tempest.operators.parameters.CachingRate;
 
 import javax.inject.Inject;
 import java.util.LinkedList;
@@ -27,12 +26,9 @@ import java.util.logging.Logger;
 public final class DynamicRelationCubeImpl<T> implements DynamicRelationCube<T> {
   private static final Logger LOG = Logger.getLogger(DynamicRelationCubeImpl.class.getName());
 
-  @NamedParameter
-  public static final class SavingRate implements Name<Double> {}
-
   private final List<Timescale> timescales;
   private final Aggregator<?, T> finalAggregator;
-  private final double savingRate;
+  private final double cachingRate;
   private final OutputLookupTable<T> table;
   private final GarbageCollector gc;
   private long largestWindowSize;
@@ -41,11 +37,11 @@ public final class DynamicRelationCubeImpl<T> implements DynamicRelationCube<T> 
   @Inject
   public DynamicRelationCubeImpl(final List<Timescale> timescales,
                                  final Aggregator<?, T> finalAggregator,
-                                 @Parameter(SavingRate.class) final double savingRate,
+                                 @Parameter(CachingRate.class) final double cachingRate,
                                  final long startTime) {
     this.timescales = timescales;
     this.finalAggregator = finalAggregator;
-    this.savingRate = savingRate;
+    this.cachingRate = cachingRate;
     this.table = new DefaultOutputLookupTableImpl<>();
     this.gc = new DefaultGarbageCollectorImpl(timescales, table, startTime);
     this.timescaleToSavingTimeMap = new ConcurrentHashMap<>();
@@ -111,9 +107,9 @@ public final class DynamicRelationCubeImpl<T> implements DynamicRelationCube<T> 
     }
 
     // save final result if the condition is satisfied.
-    if ((endTime - latestSaveTime) >= ts.windowSize * savingRate
+    if ((endTime - latestSaveTime) >= ts.windowSize * cachingRate
         && ts.windowSize < this.largestWindowSize) {
-      LOG.log(Level.FINE, "SavingRate: " + savingRate + ", OWO of " + ts +
+      LOG.log(Level.FINE, "SavingRate: " + cachingRate + ", OWO of " + ts +
           " saves output of [" + startTime + "-" + endTime + "]");
       table.saveOutput(startTime, endTime, finalResult);
       timescaleToSavingTimeMap.put(ts, endTime);

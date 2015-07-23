@@ -31,7 +31,7 @@ public final class MTSOperatorExample {
     final long startTime = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
     DynamicMTSOperator<Integer> operator =
         new DynamicMTSOperatorImpl<>(testAggregator, list,
-           new TestHandler(), new Receiver(), startTime);
+           new TestHandler(), new Receiver(), 0, startTime);
 
     operator.start();
     Random rand = new Random();
