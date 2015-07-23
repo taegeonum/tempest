@@ -88,34 +88,31 @@ public final class OTFMTSOperatorImpl<I, V> implements DynamicMTSOperator<I> {
 
   @Override
   public synchronized void onTimescaleAddition(final Timescale ts, final long startTime) {
-    // 1. add overlapping window operator
+    //1. add timescale to SlicedWindowOperator
+    this.slicedWindow.onTimescaleAddition(ts, startTime);
+
+    //2. add timescale to RelationCube.
+    this.relationCube.onTimescaleAddition(ts, startTime);
+
+    //3. add overlapping window operator
     LOG.log(Level.INFO, "MTSOperator addTimescale: " + ts);
-    OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperatorImpl<>(
+    final OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperatorImpl<>(
         ts, relationCube, outputHandler, startTime);
     this.overlappingWindowOperators.add(owo);
     Subscription<Timescale> ss = this.clock.subscribe(owo);
     subscriptions.put(ss.getToken(), ss);
-
-    //2. add timescale to SlicedWindowOperator
-    this.slicedWindow.onTimescaleAddition(ts, startTime);
-
-    //3. add timescale to RelationCube.
-    this.relationCube.onTimescaleAddition(ts, startTime);
   }
 
   @Override
   public synchronized void onTimescaleDeletion(final Timescale ts) {
-    // TODO: implement timescale deletion.
     LOG.log(Level.INFO, "MTSOperator removeTimescale: " + ts);
-    long currentTime = clock.getCurrentTime();
-
-    Subscription<Timescale> ss = subscriptions.get(ts);
+    final Subscription<Timescale> ss = subscriptions.get(ts);
     if (ss == null) {
       LOG.log(Level.WARNING, "Deletion error: Timescale " + ts + " not exists. ");
     } else {
-      this.slicedWindow.onTimescaleDeletion(ts);
-      this.relationCube.onTimescaleDeletion(ts);
       ss.unsubscribe();
+      this.relationCube.onTimescaleDeletion(ts);
+      this.slicedWindow.onTimescaleDeletion(ts);
     }
   }
 

@@ -22,9 +22,6 @@ public final class ZkMTSParameters {
   @NamedParameter(doc = "Timescale decoder", default_class=TimescaleSignalDecoder.class)
   public static final class ZkTSDecoder implements Name<Decoder<TimescaleSignal>> {}
   
-  @NamedParameter(doc = "Zookeeper namespace", short_name = "zkNamespace", default_value="mtss-signal") 
-  public static final class ZkMTSNamespace implements Name<String> {}
-  
   @NamedParameter(doc = "Zookeeper Client data sending period (ms)", default_value = "500") 
   public static final class ZkDataSendingPeriod implements Name<Long> {}
   

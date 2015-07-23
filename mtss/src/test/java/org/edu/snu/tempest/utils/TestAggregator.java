@@ -16,7 +16,8 @@ public final class TestAggregator implements Aggregator<Integer, Map<Integer, In
   }
 
   @Override
-  public Map<Integer, Integer> partialAggregate(Map<Integer, Integer> oldVal, Integer newVal) {
+  public Map<Integer, Integer> partialAggregate(final Map<Integer, Integer> oldVal,
+                                                final Integer newVal) {
     Integer val = oldVal.get(newVal);
     if (val == null) {
       val = 0;
@@ -27,19 +28,18 @@ public final class TestAggregator implements Aggregator<Integer, Map<Integer, In
   }
 
   @Override
-  public Map<Integer, Integer> finalAggregate(List<Map<Integer, Integer>> partials) {
-    Map<Integer, Integer> result = new HashMap<>();
+  public Map<Integer, Integer> finalAggregate(final List<Map<Integer, Integer>> partials) {
+    final Map<Integer, Integer> result = new HashMap<>();
 
-    for (Map<Integer, Integer> partial : partials) {
+    for (final Map<Integer, Integer> partial : partials) {
       if (result.size() == 0) {
         result.putAll(partial);
       } else {
-        for (Map.Entry<Integer, Integer> entry : partial.entrySet()) {
+        for (final Map.Entry<Integer, Integer> entry : partial.entrySet()) {
           Integer oldVal = result.get(entry.getKey());
           if (oldVal == null) {
             oldVal = 0;
           }
-
           result.put(entry.getKey(), oldVal + entry.getValue());
         }
       }

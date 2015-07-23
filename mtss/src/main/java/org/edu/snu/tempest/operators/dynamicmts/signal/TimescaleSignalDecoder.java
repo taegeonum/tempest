@@ -17,7 +17,7 @@ public final class TimescaleSignalDecoder implements Decoder<TimescaleSignal> {
   @Override
   public TimescaleSignal decode(final byte[] data) {
     try {
-      TimescaleProtoMessage.TimescaleSignal signal =
+      final TimescaleProtoMessage.TimescaleSignal signal =
           TimescaleProtoMessage.TimescaleSignal.parseFrom(data);
       return new TimescaleSignal(
           new Timescale((int)signal.getWindowSize(), (int)signal.getInterval()),

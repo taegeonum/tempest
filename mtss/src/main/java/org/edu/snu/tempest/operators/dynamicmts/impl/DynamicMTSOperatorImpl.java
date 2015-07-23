@@ -55,11 +55,11 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSOperator<I>
         relationCube, startTime);
     this.clock = new DefaultMTSClockImpl(slicedWindow);
 
-    for (Timescale timescale : timescales) {
-      OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperatorImpl<V>(
+    for (final Timescale timescale : timescales) {
+      final OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperatorImpl<V>(
           timescale, relationCube, outputHandler, startTime);
       this.overlappingWindowOperators.add(owo);
-      Subscription<Timescale> ss = clock.subscribe(owo);
+      final Subscription<Timescale> ss = clock.subscribe(owo);
       subscriptions.put(ss.getToken(), ss);
     }
   }
@@ -67,7 +67,7 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSOperator<I>
   @Override
   public void start() {
     if (started.compareAndSet(false, true)) {
-      LOG.log(Level.INFO, "MTSOperator start");
+      LOG.log(Level.INFO, "DynamicMTSOperatorImpl start");
       this.clock.start();
       try {
         this.receiver.start();
@@ -86,28 +86,25 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSOperator<I>
 
   @Override
   public synchronized void onTimescaleAddition(final Timescale ts, final long startTime) {
-    // 1. add overlapping window operator
     LOG.log(Level.INFO, "MTSOperator addTimescale: " + ts);
-    OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperatorImpl<>(
-        ts, relationCube, outputHandler, startTime);
-    this.overlappingWindowOperators.add(owo);
-    Subscription<Timescale> ss = this.clock.subscribe(owo);
-    subscriptions.put(ss.getToken(), ss);
-
-    //2. add timescale to SlicedWindowOperator
+    //1. add timescale to SlicedWindowOperator
     this.slicedWindow.onTimescaleAddition(ts, startTime);
 
-    //3. add timescale to RelationCube.
+    //2. add timescale to RelationCube.
     this.relationCube.onTimescaleAddition(ts, startTime);
+
+    //3. add overlapping window operator
+    final OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperatorImpl<>(
+        ts, relationCube, outputHandler, startTime);
+    this.overlappingWindowOperators.add(owo);
+    final Subscription<Timescale> ss = this.clock.subscribe(owo);
+    subscriptions.put(ss.getToken(), ss);
   }
 
   @Override
   public synchronized void onTimescaleDeletion(final Timescale ts) {
-    // TODO: implement timescale deletion.
     LOG.log(Level.INFO, "MTSOperator removeTimescale: " + ts);
-    long currentTime = clock.getCurrentTime();
-
-    Subscription<Timescale> ss = subscriptions.get(ts);
+    final Subscription<Timescale> ss = subscriptions.get(ts);
     if (ss == null) {
       LOG.log(Level.WARNING, "Deletion error: Timescale " + ts + " not exists. ");
     } else {

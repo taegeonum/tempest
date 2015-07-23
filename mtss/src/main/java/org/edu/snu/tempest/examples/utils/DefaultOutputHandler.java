@@ -7,8 +7,8 @@ import javax.inject.Inject;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/*
- * Default OutputHandler 
+/**
+ * Default OutputHandler.
  */
 public final class DefaultOutputHandler<V> implements MTSOperator.OutputHandler<V> {
   

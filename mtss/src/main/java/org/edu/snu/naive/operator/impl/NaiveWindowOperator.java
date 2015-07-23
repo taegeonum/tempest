@@ -35,21 +35,18 @@ public final class NaiveWindowOperator<I, V> implements MTSOperator<I> {
 
   @Inject
   public NaiveWindowOperator(final Aggregator<I, V> aggregator,
-                            final Timescale timescale,
-                            final OutputHandler<V> handler,
-                            final Long startTime) throws Exception {
+                             final Timescale timescale,
+                             final OutputHandler<V> handler,
+                             final Long startTime) throws Exception {
     List<Timescale> timescales = new LinkedList<>();
     timescales.add(timescale);
-
     this.aggregator = aggregator;
     this.outputHandler = handler;
     this.relationCube = new OTFRelationCubeImpl<>(timescales, aggregator, startTime);
-
     this.slicedWindow = new DynamicSlicedWindowOperatorImpl<>(aggregator, timescales,
         relationCube, startTime);
     this.clock = new DefaultMTSClockImpl(slicedWindow);
-
-    OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperatorImpl<V>(
+    final OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperatorImpl<V>(
         timescale, relationCube, outputHandler, startTime);
     clock.subscribe(owo);
   }

@@ -37,7 +37,7 @@ public final class StaticSlicedWindowOperatorImpl<I, V> implements SlicedWindowO
 
   @Override
   public synchronized void onNext(final Long currTime) {
-    LOG.log(Level.INFO, "SlicedWindow tickTime " + currTime + ", nextSlice: " + nextSliceTime);
+    LOG.log(Level.FINE, "SlicedWindow tickTime " + currTime + ", nextSlice: " + nextSliceTime);
     while (nextSliceTime < currTime) {
       prevSliceTime = nextSliceTime;
       nextSliceTime = relationGraph.nextSliceTime();

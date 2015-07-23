@@ -1,11 +1,13 @@
 package org.edu.snu.tempest.operators.staticmts.impl;
 
+import org.apache.reef.tang.annotations.Parameter;
 import org.edu.snu.tempest.operators.Timescale;
 import org.edu.snu.tempest.operators.common.Aggregator;
 import org.edu.snu.tempest.operators.common.Clock;
 import org.edu.snu.tempest.operators.common.Subscription;
 import org.edu.snu.tempest.operators.common.impl.DefaultMTSClockImpl;
 import org.edu.snu.tempest.operators.common.impl.DefaultOverlappingWindowOperatorImpl;
+import org.edu.snu.tempest.operators.parameters.InitialStartTime;
 import org.edu.snu.tempest.operators.staticmts.MTSOperator;
 import org.edu.snu.tempest.operators.staticmts.SlicedWindowOperator;
 import org.edu.snu.tempest.operators.staticmts.StaticRelationGraph;
@@ -32,23 +34,20 @@ public final class StaticMTSOperatorImpl<I, V> implements MTSOperator<I> {
   public StaticMTSOperatorImpl(final Aggregator<I, V> aggregator,
                                final List<Timescale> timescales,
                                final OutputHandler<V> handler,
-                               final Long startTime) {
+                               @Parameter(InitialStartTime.class) final long startTime) {
     this.outputHandler = handler;
     this.relationCube = new StaticRelationGraphImpl<V>(timescales, aggregator, startTime);
     this.subscriptions = new HashMap<>();
     this.overlappingWindowOperators = new LinkedList<>();
-    
     this.timescales = timescales;
-
     this.slicedWindow = new StaticSlicedWindowOperatorImpl<>(aggregator,
         relationCube, startTime);
     this.clock = new DefaultMTSClockImpl(slicedWindow);
-
     for (Timescale ts : timescales) {
-      DefaultOverlappingWindowOperatorImpl<V> owo = new DefaultOverlappingWindowOperatorImpl<>(
+      final DefaultOverlappingWindowOperatorImpl<V> owo = new DefaultOverlappingWindowOperatorImpl<>(
           ts, relationCube, outputHandler, startTime);
       this.overlappingWindowOperators.add(owo);
-      Subscription<Timescale> ss = clock.subscribe(owo);
+      final Subscription<Timescale> ss = clock.subscribe(owo);
       subscriptions.put(ss.getToken(), ss);
     }
   }

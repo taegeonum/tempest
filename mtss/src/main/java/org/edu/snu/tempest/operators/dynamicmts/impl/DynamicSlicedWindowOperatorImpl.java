@@ -13,13 +13,12 @@ import java.util.PriorityQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/*
- * This implementation is based on "On-the-fly Sharing for Streamed Aggregation" paper
+/**
+ * This implementation is based on "On-the-fly Sharing for Streamed Aggregation" paper.
  * It chops input stream into paired sliced window. 
  * 
  */
 public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlicedWindowOperator<I> {
-
   private static final Logger LOG = Logger.getLogger(DynamicSlicedWindowOperatorImpl.class.getName());
   
   private final Aggregator<I, V> aggregator;
@@ -42,19 +41,18 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
     this.innerMap = aggregator.init();
     this.sliceQueue = new PriorityQueue<SliceInfo>(10, new SliceInfoComparator());
     this.timescales = timescales;
-
     initializeWindowState(startTime);
     nextSliceTime = nextSliceTime();
   }
   
   @Override
   public synchronized void onNext(final Long currTime) {
-    LOG.log(Level.FINE, "SlicedWindow tickTime " + currTime + ", nextSlice: " + nextSliceTime);
     while (nextSliceTime < currTime) {
       prevSliceTime = nextSliceTime;
       nextSliceTime = nextSliceTime();
     }
 
+    LOG.log(Level.FINE, "SlicedWindow tickTime " + currTime + ", nextSlice: " + nextSliceTime);
     if (nextSliceTime == currTime) {
       LOG.log(Level.FINE, "Sliced : [" + prevSliceTime + "-" + currTime + "]");
       synchronized (sync) {
@@ -113,8 +111,7 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
    */
   private void initializeWindowState(final long startTime) {
     LOG.log(Level.INFO, "SlicedWindow initialization");
-
-    for (Timescale ts : timescales) {
+    for (final Timescale ts : timescales) {
       addSlices(startTime, ts);
     }
   }
@@ -123,9 +120,8 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
    * Similar to addEdges function in the "On-the-Fly ... " paper
    */
   private void addSlices(final long startTime, final Timescale ts) {
-    long pairedB = ts.windowSize % ts.intervalSize;
-    long pairedA = ts.intervalSize - pairedB;
-
+    final long pairedB = ts.windowSize % ts.intervalSize;
+    final long pairedA = ts.intervalSize - pairedB;
     synchronized (sliceQueue) {
       sliceQueue.add(new SliceInfo(startTime + pairedA, ts, false));
       sliceQueue.add(new SliceInfo(startTime + pairedA + pairedB, ts, true));
@@ -137,14 +133,12 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
    */
   private long advanceWindowGetNextSlice() {
     SliceInfo info = null;
-
     synchronized (sliceQueue) {
       if (sliceQueue.size() == 0) {
         return 0;
       }
 
       long time = sliceQueue.peek().sliceTime;
-
       while (time == sliceQueue.peek().sliceTime) {
         info = sliceQueue.poll();
         if (info.last) {
@@ -152,17 +146,17 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
         }
       }
     }
-
     return info.sliceTime;
   }
 
   private final class SliceInfo {
-
     public final long sliceTime;
     public final Timescale timescale;
     public final boolean last;
 
-    SliceInfo(long sliceTime, Timescale timescale, boolean last) {
+    SliceInfo(final long sliceTime,
+              final Timescale timescale,
+              final boolean last) {
       this.sliceTime = sliceTime;
       this.timescale = timescale;
       this.last = last;
@@ -170,7 +164,6 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
   }
 
   private final class SliceInfoComparator implements Comparator<SliceInfo> {
-
     @Override
     public int compare(SliceInfo o1, SliceInfo o2) {
       if (o1.sliceTime < o2.sliceTime) {
@@ -182,6 +175,4 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
       }
     }
   }
-
-
 }

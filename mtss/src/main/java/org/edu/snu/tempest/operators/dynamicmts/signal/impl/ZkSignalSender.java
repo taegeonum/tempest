@@ -10,7 +10,6 @@ import org.edu.snu.tempest.operators.Timescale;
 import org.edu.snu.tempest.operators.dynamicmts.signal.MTSSignalSender;
 import org.edu.snu.tempest.operators.dynamicmts.signal.TimescaleSignal;
 import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkMTSParameters.OperatorIdentifier;
-import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkMTSParameters.ZkMTSNamespace;
 import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkMTSParameters.ZkServerAddress;
 import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkMTSParameters.ZkTSEncoder;
 
@@ -35,23 +34,19 @@ public class ZkSignalSender implements MTSSignalSender {
   public ZkSignalSender(
       @Parameter(ZkServerAddress.class) final String address, 
       @Parameter(OperatorIdentifier.class) final String identifier, 
-      @Parameter(ZkMTSNamespace.class) final String namespace,
       @Parameter(ZkTSEncoder.class) final Encoder<TimescaleSignal> encoder) {
-
     LOG.log(Level.INFO, "Creates ZookeeperMTSClient");
-    this.client = CuratorFrameworkFactory.builder().namespace(namespace).connectString(address)
+    this.client = CuratorFrameworkFactory.builder().namespace(ZkSignalReceiver.NAMESPACE).connectString(address)
         .retryPolicy(new RetryOneTime(500)).build();
     this.encoder = encoder;
     this.identifier = identifier;
     this.client.start();
   }
-
   
   @Override
   public void close() throws Exception {
     this.client.close();
   }
-
   
   private void sendTimescaleInfo(final TimescaleSignal ts, final String type) throws Exception {
     Stat stat = this.client.checkExists().forPath(this.identifier + "-" + type);

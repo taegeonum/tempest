@@ -40,12 +40,10 @@ public final class MTSOperatorWithZookeeperExample {
 
     // configure zookeeper setting.
     final String identifier = "mts-test";
-    final String namespace = "mts";
     final String address = "localhost:2181";
 
     final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
     cb.bindNamedParameter(ZkMTSParameters.OperatorIdentifier.class, identifier);
-    cb.bindNamedParameter(ZkMTSParameters.ZkMTSNamespace.class, namespace);
     cb.bindNamedParameter(ZkMTSParameters.ZkServerAddress.class, address);
 
     final Injector ij = Tang.Factory.getTang().newInjector(cb.build());

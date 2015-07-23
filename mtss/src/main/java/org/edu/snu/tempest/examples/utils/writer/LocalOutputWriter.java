@@ -16,11 +16,6 @@ import java.util.logging.Logger;
  * Writes log into a local file.
  */
 public final class LocalOutputWriter implements OutputWriter {
-  
-  /*
-   * It doesn't guarantee concurrent write
-   */
-  
   private static final Logger LOG = Logger.getLogger(LocalOutputWriter.class.getName());
   
   private final ConcurrentMap<String, FileWriter> writerMap;
@@ -38,10 +33,8 @@ public final class LocalOutputWriter implements OutputWriter {
     }
   }
 
-
   @Override
   public void write(final String path, final String str) throws IOException {
-    
     if (path.length() == 0 || path == null) {
       throw new InvalidParameterException("The output path should not be null");
     }
@@ -50,8 +43,8 @@ public final class LocalOutputWriter implements OutputWriter {
 
     if (writer == null) {
       createDirectory(path);
-      writer = new FileWriter(path);
-      writerMap.putIfAbsent(path, writer);
+      writerMap.putIfAbsent(path, new FileWriter(path));
+      writer = writerMap.get(path);
     }
 
     synchronized (writer) {

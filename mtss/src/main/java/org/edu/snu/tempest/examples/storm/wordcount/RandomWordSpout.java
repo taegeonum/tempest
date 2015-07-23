@@ -19,7 +19,6 @@ import java.util.logging.Logger;
  * Sends randomly selected words continuously.
  */
 public final class RandomWordSpout extends BaseRichSpout {
-
   private static final int DEFAULT_SENDING_INTERVAL = 1;
   private static final Logger LOG = Logger.getLogger(RandomWordSpout.class.getName());
   

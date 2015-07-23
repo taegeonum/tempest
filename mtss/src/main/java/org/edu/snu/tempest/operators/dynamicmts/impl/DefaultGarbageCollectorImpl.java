@@ -57,21 +57,23 @@ public final class DefaultGarbageCollectorImpl implements DynamicRelationCube.Ga
     if (largestWindowSize.get() < ts.windowSize) {
       largestWindowSize.set(ts.windowSize);
     }
-    
-    timescales.add(ts);
+    synchronized (timescales) {
+      timescales.add(ts);
+    }
   }
 
   @Override
   public void onTimescaleDeletion(final Timescale ts) {
     LOG.log(Level.FINE, "GC remove timescale " + ts);
-    timescales.remove(ts);
+    synchronized (timescales) {
+      timescales.remove(ts);
+    }
     largestWindowSize.set(findLargestWindowSize());
   }
 
   private long findLargestWindowSize() {
     long window = 0;
-    
-    for (Timescale ts : timescales) {
+    for (final Timescale ts : timescales) {
       if (window < ts.windowSize) {
         window = ts.windowSize;
       }

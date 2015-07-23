@@ -11,7 +11,6 @@ import javax.inject.Inject;
  * Class for parsing parameters for test.
  */
 public final class WordCountTest {
-
   public final int numSpouts;
   public final String testName;
   public final String logDir;

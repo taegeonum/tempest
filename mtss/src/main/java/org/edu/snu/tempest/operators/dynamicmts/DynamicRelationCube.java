@@ -8,12 +8,11 @@ import org.edu.snu.tempest.operators.dynamicmts.signal.TimescaleSignalListener;
 
 /**
  * Dynamic RelationCube.
- * It saves final aggregation results according to savingRate.
+ * It saves final aggregation results according to caching rate.
  *
  */
 @DefaultImplementation(DynamicRelationCubeImpl.class)
 public interface DynamicRelationCube<T> extends RelationCube<T>, TimescaleSignalListener {
-
   /**
    * GarbageCollector interface.
    *
@@ -23,5 +22,4 @@ public interface DynamicRelationCube<T> extends RelationCube<T>, TimescaleSignal
   public interface GarbageCollector extends TimescaleSignalListener, EventHandler<Long> {
 
   }
-
 }

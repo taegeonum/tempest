@@ -22,27 +22,24 @@ import java.util.logging.Logger;
  */
 public final class ZkSignalReceiver implements MTSSignalReceiver, Watcher {
   private static final Logger LOG = Logger.getLogger(ZkSignalReceiver.class.getName());
+  public static final String NAMESPACE = "tempest-signal";
+
   private final String identifier;
-  private final String namespace;
   private final Decoder<TimescaleSignal> decoder;
   private final String address;
   private final int retryTimes;
   private final int retryPeriod;
-  
   private CuratorFramework client;
   private TimescaleSignalListener listener;
-  
   
   @Inject
   public ZkSignalReceiver(
       @Parameter(OperatorIdentifier.class) final String identifier, 
-      @Parameter(ZkMTSNamespace.class) final String namespace, 
       @Parameter(ZkTSDecoder.class) Decoder<TimescaleSignal> decoder,
       @Parameter(ZkServerAddress.class) final String address,
       @Parameter(ZkRetryTimes.class) final int retryTimes,
       @Parameter(ZkRetryPeriod.class) final int retryPeriod) {
     this.identifier = identifier;
-    this.namespace = namespace; 
     this.decoder = decoder;
     this.address = address;
     this.retryTimes = retryTimes;
@@ -61,9 +58,8 @@ public final class ZkSignalReceiver implements MTSSignalReceiver, Watcher {
     }
 
     LOG.log(Level.INFO, "Zookeeper connection from ZkSignalReceiver: " + address);
-    this.client = CuratorFrameworkFactory.builder().namespace(namespace).connectString(address)
+    this.client = CuratorFrameworkFactory.builder().namespace(NAMESPACE).connectString(address)
             .retryPolicy(new RetryNTimes(retryTimes, retryPeriod)).build();
-    
     this.client.start();
     
     // addition watcher 

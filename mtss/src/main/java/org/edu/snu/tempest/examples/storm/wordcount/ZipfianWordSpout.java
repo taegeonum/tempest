@@ -20,7 +20,6 @@ import java.util.logging.Logger;
  * Sends randomly selected words which have zipfian distribution continuously.
  */
 public final class ZipfianWordSpout extends BaseRichSpout {
-
   private static final int DEFAULT_SENDING_INTERVAL = 1;
   private static final Logger LOG = Logger.getLogger(ZipfianWordSpout.class.getName());
   

@@ -13,17 +13,16 @@ import java.util.Map;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class OverlappingWindowOperatorTest {
+public final class OverlappingWindowOperatorTest {
 
   @Test
   public void overlappingWindowOperatorTest() throws NotFoundException {
-
-    Map<Integer, Integer> map = new HashMap<>();
+    final Map<Integer, Integer> map = new HashMap<>();
     map.put(1, 1);
-    Timescale ts = new Timescale(5, 3);
-    StaticRelationGraph<Map<Integer, Integer>> cube = mock(StaticRelationGraph.class);
-    MTSOperator.OutputHandler<Map<Integer, Integer>> outputHandler = mock(MTSOperator.OutputHandler.class);
-    OverlappingWindowOperator<Map<Integer, Integer>> operator = new DefaultOverlappingWindowOperatorImpl<>(
+    final Timescale ts = new Timescale(5, 3);
+    final StaticRelationGraph<Map<Integer, Integer>> cube = mock(StaticRelationGraph.class);
+    final MTSOperator.OutputHandler<Map<Integer, Integer>> outputHandler = mock(MTSOperator.OutputHandler.class);
+    final OverlappingWindowOperator<Map<Integer, Integer>> operator = new DefaultOverlappingWindowOperatorImpl<>(
         ts, cube, outputHandler, 0L);
     operator.onNext(3L);
     verify(cube).finalAggregate(-2, 3, ts);

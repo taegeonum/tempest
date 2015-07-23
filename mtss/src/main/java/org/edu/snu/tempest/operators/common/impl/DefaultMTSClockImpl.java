@@ -69,30 +69,17 @@ public final class DefaultMTSClockImpl implements Clock {
   @NamedParameter(doc = "clock tick time (ms)", default_value = "200")
   public static final class TickTime implements Name<Long> {}
   
-  public DefaultMTSClockImpl(final SlicedWindowOperator<?> swo,
-      final long tickTime,
-      final TimeUnit tickTimeUnit, 
-      int schedulerThread,
-      int fixThread) {
-    this.handlers = new PriorityQueue<>(10, new OWOComparator());
-    this.scheduler = Executors.newScheduledThreadPool(schedulerThread,
-        new DefaultThreadFactory("MTSClock"));
-    this.executor = Executors.newFixedThreadPool(fixThread);
-    this.slicedWindowOperator = swo;
-    this.tickTime = tickTimeUnit.toMillis(tickTime);
-    this.prevTime = 0;
-  }
-  
   @Inject
   public DefaultMTSClockImpl(final SlicedWindowOperator<?> swo,
-      @Parameter(TickTime.class) final long tickTime,
-      final TimeUnit tickTimeUnit) {
+                             @Parameter(TickTime.class) final long tickTime,
+                             final TimeUnit tickTimeUnit) {
     this.handlers = new PriorityQueue<>(10, new OWOComparator());
     this.scheduler = Executors.newScheduledThreadPool(1,
         new DefaultThreadFactory("MTSClock"));
     this.executor = Executors.newFixedThreadPool(1);
     this.slicedWindowOperator = swo;
     this.tickTime = tickTimeUnit.toMillis(tickTime);
+    this.prevTime = 0;
   }
   
   @Inject

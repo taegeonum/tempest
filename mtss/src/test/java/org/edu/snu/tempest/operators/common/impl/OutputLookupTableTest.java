@@ -12,7 +12,7 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 
 public class OutputLookupTableTest {
-  
+
   Map<Integer, Integer> output;
   OutputLookupTable<Map<Integer, Integer>> table;
 
@@ -27,27 +27,27 @@ public class OutputLookupTableTest {
   
   @Test
   public void lookupTest() throws NotFoundException {
-    Map<Integer, Integer> luo = table.lookup(0, 10);
+    final Map<Integer, Integer> luo = table.lookup(0, 10);
     Assert.assertEquals(luo, output);
   }
   
   @Test
   public void lookupRowTest() {
-    Map<Integer, Integer> output2 = new HashMap<>();
+    final Map<Integer, Integer> output2 = new HashMap<>();
     output2.put(1, 20);
     
     table.saveOutput(0, 5, output2);
 
-    Map<Integer, Integer> output3 = new HashMap<>();
+    final Map<Integer, Integer> output3 = new HashMap<>();
     output3.put(1, 20);
     
     table.saveOutput(0, 8, output3);
-    
-    TreeMap<Long, Map<Integer, Integer>> maps = table.lookup(0);
-    
-    Entry<Long, Map<Integer, Integer>> first = maps.pollFirstEntry();
-    Entry<Long, Map<Integer, Integer>> second = maps.pollFirstEntry();
-    Entry<Long, Map<Integer, Integer>> third = maps.pollFirstEntry();
+
+    final TreeMap<Long, Map<Integer, Integer>> maps = table.lookup(0);
+
+    final Entry<Long, Map<Integer, Integer>> first = maps.pollFirstEntry();
+    final Entry<Long, Map<Integer, Integer>> second = maps.pollFirstEntry();
+    final Entry<Long, Map<Integer, Integer>> third = maps.pollFirstEntry();
 
     Assert.assertEquals(5L, (long)first.getKey());
     Assert.assertEquals(output2, first.getValue());
@@ -61,12 +61,12 @@ public class OutputLookupTableTest {
   
   @Test
   public void lookupLargestOutputTest() throws NotFoundException {
-    Map<Integer, Integer> output2 = new HashMap<>();
+    final Map<Integer, Integer> output2 = new HashMap<>();
     output2.put(1, 20);
     
     table.saveOutput(0, 5, output2);
 
-    Map<Integer, Integer> output3 = new HashMap<>();
+    final Map<Integer, Integer> output3 = new HashMap<>();
     output3.put(1, 20);
     
     table.saveOutput(0, 8, output3);
@@ -79,12 +79,12 @@ public class OutputLookupTableTest {
   
   @Test
   public void deleteRowTest() {
-    Map<Integer, Integer> output2 = new HashMap<>();
+    final Map<Integer, Integer> output2 = new HashMap<>();
     output2.put(1, 20);
     
     table.saveOutput(0, 5, output2);
 
-    Map<Integer, Integer> output3 = new HashMap<>();
+    final Map<Integer, Integer> output3 = new HashMap<>();
     output3.put(1, 20);
     
     table.saveOutput(0, 8, output3);

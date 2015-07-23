@@ -34,19 +34,19 @@ public class StaticSlicedWindowOperatorTest {
    */
   @Test
   public void defaultSlicedWindowTest() {
-    StaticSlicedWindowOperatorImpl<Integer, Map<Integer, Integer>> operator =
+    final StaticSlicedWindowOperatorImpl<Integer, Map<Integer, Integer>> operator =
         new StaticSlicedWindowOperatorImpl<>(aggregator, relationGraph, 0L);
 
     when(relationGraph.nextSliceTime()).thenReturn(1L, 3L, 4L, 6L, 7L, 9L, 10L, 12L);
 
-    Map<Integer, Integer> result = new HashMap<>();
+    final Map<Integer, Integer> result = new HashMap<>();
     result.put(1, 3); result.put(2, 1); result.put(3, 1);
     operator.execute(1); operator.execute(2); operator.execute(3);
     operator.execute(1); operator.execute(1);
     operator.onNext(1L);
     verify(relationGraph).savePartialOutput(0, 1, result);
 
-    Map<Integer, Integer> result2 = new HashMap<>();
+    final Map<Integer, Integer> result2 = new HashMap<>();
     result2.put(1, 2); result2.put(4, 1); result2.put(5, 1); result2.put(3, 1);
     operator.execute(4); operator.execute(5); operator.execute(3);
     operator.execute(1); operator.execute(1);
@@ -54,7 +54,7 @@ public class StaticSlicedWindowOperatorTest {
     operator.onNext(3L);
     verify(relationGraph).savePartialOutput(1, 3, result2);
 
-    Map<Integer, Integer> result3 = new HashMap<>();
+    final Map<Integer, Integer> result3 = new HashMap<>();
     result3.put(1, 2); result3.put(4, 1);
     operator.execute(4); operator.execute(1); operator.execute(1);
 

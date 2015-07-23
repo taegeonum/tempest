@@ -2,8 +2,8 @@ package org.edu.snu.tempest.utils;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class Monitor {
-  private AtomicBoolean finished = new AtomicBoolean(false);
+public final class Monitor {
+  private final AtomicBoolean finished = new AtomicBoolean(false);
 
   public void mwait() throws InterruptedException {
     synchronized (this) {

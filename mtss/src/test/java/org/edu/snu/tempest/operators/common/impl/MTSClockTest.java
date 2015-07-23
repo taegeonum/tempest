@@ -18,16 +18,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.Mockito.mock;
 
-public class MTSClockTest {
+public final class MTSClockTest {
 
   @Test
   public void incrementTimeTest() throws Exception {
-    Monitor monitor = new Monitor();
-    Queue<Long> queue = new LinkedList<>();
-    long startTime = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
-    SlicedWindowOperator<Integer> operator = new TestSlicedWindowOperator(monitor, queue, startTime);
+    final Monitor monitor = new Monitor();
+    final Queue<Long> queue = new LinkedList<>();
+    final long startTime = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
+    final SlicedWindowOperator<Integer> operator = new TestSlicedWindowOperator(monitor, queue, startTime);
 
-    Clock clock = new DefaultMTSClockImpl(operator);
+    final Clock clock = new DefaultMTSClockImpl(operator);
     clock.start();
     monitor.mwait();
     
@@ -44,11 +44,11 @@ public class MTSClockTest {
   
   @Test
   public void overlappingWindowSubscribeUnsubscribeTest() throws Exception {
-    AtomicInteger counter = new AtomicInteger();
-    OverlappingWindowOperator<Map<Integer, Integer>> operator = new TestOverlappingWindowOperator(counter,
+    final AtomicInteger counter = new AtomicInteger();
+    final OverlappingWindowOperator<Map<Integer, Integer>> operator = new TestOverlappingWindowOperator(counter,
         new Timescale(10, 5));
-    Clock clock = new DefaultMTSClockImpl(mock(SlicedWindowOperator.class));
-    Subscription<Timescale> subscription = clock.subscribe(operator);
+    final Clock clock = new DefaultMTSClockImpl(mock(SlicedWindowOperator.class));
+    final Subscription<Timescale> subscription = clock.subscribe(operator);
     Thread.sleep(3000);
     subscription.unsubscribe();
     int prevCounter = counter.get();
@@ -64,15 +64,15 @@ public class MTSClockTest {
    */
   @Test
   public void notificationSchedulingTest() throws Exception {
-    Queue<String> queue = new ConcurrentLinkedQueue<>();
-    Monitor monitor = new Monitor();
-    SlicedWindowOperator<Integer> operator = new TestSlicedWindowOperator2(monitor, queue);
-    OverlappingWindowOperator<Map<Integer, Integer>> ow1 = new TestOverlappingWindowOperator2(queue,
+    final Queue<String> queue = new ConcurrentLinkedQueue<>();
+    final Monitor monitor = new Monitor();
+    final SlicedWindowOperator<Integer> operator = new TestSlicedWindowOperator2(monitor, queue);
+    final OverlappingWindowOperator<Map<Integer, Integer>> ow1 = new TestOverlappingWindowOperator2(queue,
         new Timescale(5,1));
-    OverlappingWindowOperator<Map<Integer, Integer>> ow2 = new TestOverlappingWindowOperator2(queue,
+    final OverlappingWindowOperator<Map<Integer, Integer>> ow2 = new TestOverlappingWindowOperator2(queue,
         new Timescale(10,2));
-    
-    Clock clock = new DefaultMTSClockImpl(operator);
+
+    final Clock clock = new DefaultMTSClockImpl(operator);
     clock.subscribe(ow2);
     clock.subscribe(ow1);
     clock.start();
@@ -114,7 +114,6 @@ public class MTSClockTest {
       if (count == 2) {
         monitor.mnotify();
       }
-      
       count++;
     }
 
@@ -134,7 +133,7 @@ public class MTSClockTest {
     }
     
     @Override
-    public void onNext(Long paramT) {
+    public void onNext(final Long paramT) {
       counter.incrementAndGet();
       System.out.println("Time: " + paramT);
     }
@@ -151,7 +150,7 @@ public class MTSClockTest {
     private final Monitor monitor;
     private final Queue<String> queue;
 
-    public TestSlicedWindowOperator2( final Monitor monitor, final Queue<String> queue) {
+    public TestSlicedWindowOperator2(final Monitor monitor, final Queue<String> queue) {
       this.monitor = monitor;
       this.queue = queue;
     }
@@ -163,7 +162,6 @@ public class MTSClockTest {
       if (count == 3) {
         monitor.mnotify();
       }
-      
       count++;
     }
 
@@ -184,7 +182,7 @@ public class MTSClockTest {
     }
     
     @Override
-    public void onNext(Long paramT) {
+    public void onNext(final Long paramT) {
       queue.add("OverlappingWindow" + ts.windowSize);
     }
 

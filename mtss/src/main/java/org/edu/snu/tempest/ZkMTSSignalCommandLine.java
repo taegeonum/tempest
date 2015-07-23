@@ -37,9 +37,8 @@ public final class ZkMTSSignalCommandLine {
     final Tang tang = Tang.Factory.getTang();
     final JavaConfigurationBuilder cb = tang.newConfigurationBuilder();
 
-    CommandLine cl = new CommandLine(cb)
+    final CommandLine cl = new CommandLine(cb)
         .registerShortNameOfClass(ZkMTSParameters.OperatorIdentifier.class)
-        .registerShortNameOfClass(ZkMTSParameters.ZkMTSNamespace.class)
         .registerShortNameOfClass(ZkMTSParameters.ZkServerAddress.class)
         .registerShortNameOfClass(WindowSize.class)
         .registerShortNameOfClass(Interval.class)
@@ -54,10 +53,9 @@ public final class ZkMTSSignalCommandLine {
     JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
     cb.bindImplementation(MTSSignalSender.class, ZkSignalSender.class);
     cb.addConfiguration(commandConf);
+
     Injector ij = Tang.Factory.getTang().newInjector(cb.build());
-    
     MTSSignalSender sender = ij.getInstance(MTSSignalSender.class);
-    
     String type = ij.getNamedInstance(TypeOfSignal.class);
     
     if (type.equalsIgnoreCase("addition")) {

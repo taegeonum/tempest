@@ -44,7 +44,6 @@ import java.util.logging.Logger;
  * It aggregateds word and calculates counts. 
  */
 public final class MTSWordCountTestBolt extends BaseRichBolt {
-
   /**
    * WordCount bolt using MTSOperator.
    */
@@ -128,8 +127,8 @@ public final class MTSWordCountTestBolt extends BaseRichBolt {
   }
 
   @Override
-  public void prepare(Map conf, TopologyContext paramTopologyContext,
-      OutputCollector paramOutputCollector) {
+  public void prepare(final Map conf, final TopologyContext paramTopologyContext,
+                      final OutputCollector paramOutputCollector) {
     // profiling 
     this.executor = Executors.newScheduledThreadPool(3);
     this.executor.scheduleAtFixedRate(new Runnable() {
@@ -160,7 +159,7 @@ public final class MTSWordCountTestBolt extends BaseRichBolt {
     }, 0, 1, TimeUnit.SECONDS);
 
     // create MTS operator
-    JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
+    final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
     cb.bindImplementation(Aggregator.class, CountByKeyAggregator.class);
     cb.bindNamedParameter(CachingRate.class, cachingRate + "");
     cb.bindNamedParameter(InitialStartTime.class, this.startTime + "");
@@ -181,10 +180,10 @@ public final class MTSWordCountTestBolt extends BaseRichBolt {
       throw new RuntimeException("Operator exception: " + operator);
     }
 
-    Injector ij = Tang.Factory.getTang().newInjector(cb.build());
+    final Injector ij = Tang.Factory.getTang().newInjector(cb.build());
     if (operatorName.equals("naive")) {
       // bind one timescale to each executors.
-      int index = paramTopologyContext.getThisTaskIndex();
+      final int index = paramTopologyContext.getThisTaskIndex();
       ij.bindVolatileInstance(Timescale.class, timescales.get(index));
     } else {
       ij.bindVolatileInstance(List.class, timescales);

@@ -34,7 +34,6 @@ public final class MTSWordCountTestTopology {
   }
 
   private static Configuration getCommandLineConf(String[] args) throws BindException, IOException {
-
     final Tang tang = Tang.Factory.getTang();
     final JavaConfigurationBuilder cb = tang.newConfigurationBuilder();
 

@@ -22,7 +22,6 @@ public final class HDFSOutputWriter implements OutputWriter {
   private FileSystem fs;
   private Configuration config;
   private boolean started = false;
-  
   private final Map<String, FSDataOutputStream> brMap;
   
   @Inject
@@ -32,9 +31,7 @@ public final class HDFSOutputWriter implements OutputWriter {
 
   @Override
   public void write(final String path, final String str) throws IOException {
-    
-    start();
-    
+    initialize();
     FSDataOutputStream br = brMap.get(path);
     Path p = null;
     if (br == null) {
@@ -42,7 +39,6 @@ public final class HDFSOutputWriter implements OutputWriter {
       br = (fs.create(p, true));
       brMap.put(path, br);
     }
-    
     br.write(str.getBytes("UTF-8"));
     br.hsync();
   }
@@ -52,7 +48,7 @@ public final class HDFSOutputWriter implements OutputWriter {
     this.write(path, str + "\n");
   }
   
-  private void start() {
+  private void initialize() {
     if (!started) {
       started = true;
       config = new Configuration();
@@ -66,7 +62,6 @@ public final class HDFSOutputWriter implements OutputWriter {
       config.addResource(new Path(hadoopHome + "/etc/hadoop/hdfs-site.xml"));
       
       try {
-
         fs = FileSystem.get(config);
         LOG.log(Level.INFO, "Hadoop configuration: " + config);
       } catch (IOException e) {
@@ -77,7 +72,7 @@ public final class HDFSOutputWriter implements OutputWriter {
   
   @Override
   public void close() throws IOException {
-    for (FSDataOutputStream br : brMap.values()) {
+    for (final FSDataOutputStream br : brMap.values()) {
       br.close();
     }
   }

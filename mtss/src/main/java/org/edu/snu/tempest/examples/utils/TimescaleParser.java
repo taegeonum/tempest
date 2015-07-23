@@ -38,17 +38,16 @@ public final class TimescaleParser {
   }
 
   private List<Timescale> parseToTimescaleList(final String params) {
-    List<Timescale> ts = new ArrayList<>();
-
+    final List<Timescale> ts = new ArrayList<>();
 
     // (1,2)(3,4) -> 1,2)3,4)
-    String trim = params.replace("(", "");
+    final String trim = params.replace("(", "");
 
     // 1,2)3,4) -> [ "1,2" , "3,4" ] 
-    String[] args = trim.split("\\)");
+    final String[] args = trim.split("\\)");
 
-    for (String arg : args) {
-      String[] windowAndInterval = arg.split(",");
+    for (final String arg : args) {
+      final String[] windowAndInterval = arg.split(",");
       ts.add(new Timescale(Integer.valueOf(windowAndInterval[0]),
           Integer.valueOf(windowAndInterval[1]), TimeUnit.SECONDS, TimeUnit.SECONDS));
     }

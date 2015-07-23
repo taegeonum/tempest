@@ -96,7 +96,7 @@ public final class DynamicRelationCubeImpl<T> implements DynamicRelationCube<T> 
     }
 
     // aggregates dependent outputs
-    T finalResult = finalAggregator.finalAggregate(dependentOutputs);
+    final T finalResult = finalAggregator.finalAggregate(dependentOutputs);
     LOG.log(Level.FINE, "AGG TIME OF " + ts + ": "
         + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - aggStartTime)
         + " at " + endTime + ", dependent size: " + dependentOutputs.size());

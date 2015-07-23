@@ -17,37 +17,35 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ZkTimescaleSignalTest {
 
-  private String identifier = "test-signal";
-  private String namespace = "test-mtss";
+  private final String identifier = "test-signal";
   private final int port = 2181;
   private final String host = "localhost";
 
-  /*
-   * ZkSignalSender sends three timescales to Zookeeper 
+  /**
+   * ZkSignalSender sends three timescales to Zookeeper.
    * ZKSignalReceiver receives the timescales. 
    */
   @Test
   public void addTimescaleSignalTest() throws Exception {
-    Monitor monitor = new Monitor();
-    ConcurrentLinkedQueue<Timescale> timescales = new ConcurrentLinkedQueue<>();
-    JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
+    final Monitor monitor = new Monitor();
+    final ConcurrentLinkedQueue<Timescale> timescales = new ConcurrentLinkedQueue<>();
+    final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
     cb.bindNamedParameter(ZkMTSParameters.OperatorIdentifier.class, identifier);
-    cb.bindNamedParameter(ZkMTSParameters.ZkMTSNamespace.class, namespace);
     cb.bindNamedParameter(ZkMTSParameters.ZkServerAddress.class, host + ":" + port);
     cb.bindImplementation(MTSSignalReceiver.class, ZkSignalReceiver.class);
     
-    Injector injector = Tang.Factory.getTang().newInjector(cb.build());
-    MTSSignalReceiver connector = injector.getInstance(MTSSignalReceiver.class);
+    final Injector injector = Tang.Factory.getTang().newInjector(cb.build());
+    final MTSSignalReceiver connector = injector.getInstance(MTSSignalReceiver.class);
     connector.addTimescaleSignalListener(new TestTimescaleListener(timescales, monitor, 3));
     connector.start();
     
     cb.bindImplementation(MTSSignalSender.class, ZkSignalSender.class);
-    Injector injector2 = Tang.Factory.getTang().newInjector(cb.build());
-    MTSSignalSender client = injector2.getInstance(MTSSignalSender.class);
-    
-    Timescale t1 = new Timescale(5, 1);
-    Timescale t2 = new Timescale(10, 2);
-    Timescale t3 = new Timescale(15, 3);
+    final Injector injector2 = Tang.Factory.getTang().newInjector(cb.build());
+    final MTSSignalSender client = injector2.getInstance(MTSSignalSender.class);
+
+    final Timescale t1 = new Timescale(5, 1);
+    final Timescale t2 = new Timescale(10, 2);
+    final Timescale t3 = new Timescale(15, 3);
 
     client.addTimescale(t1);
     Thread.sleep(500);
@@ -64,32 +62,29 @@ public class ZkTimescaleSignalTest {
     connector.close();
   }
   
-  /*
+  /**
    * Add two timescales and remove one timescale. 
    */
   
   @Test
   public void removeTimescaleSignalTest() throws Exception {
-    Monitor monitor = new Monitor();
-    ConcurrentLinkedQueue<Timescale> timescales = new ConcurrentLinkedQueue<>();
-    JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
+    final Monitor monitor = new Monitor();
+    final ConcurrentLinkedQueue<Timescale> timescales = new ConcurrentLinkedQueue<>();
+    final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
     cb.bindNamedParameter(ZkMTSParameters.OperatorIdentifier.class, identifier);
-    cb.bindNamedParameter(ZkMTSParameters.ZkMTSNamespace.class, namespace);
     cb.bindNamedParameter(ZkMTSParameters.ZkServerAddress.class, host + ":" + port);
     cb.bindImplementation(MTSSignalReceiver.class, ZkSignalReceiver.class);
     
-    Injector injector = Tang.Factory.getTang().newInjector(cb.build());
-    MTSSignalReceiver connector = injector.getInstance(MTSSignalReceiver.class);
+    final Injector injector = Tang.Factory.getTang().newInjector(cb.build());
+    final MTSSignalReceiver connector = injector.getInstance(MTSSignalReceiver.class);
     connector.addTimescaleSignalListener(new TestTimescaleListener(timescales, monitor, 3));
-    
     connector.start();
-    
     cb.bindImplementation(MTSSignalSender.class, ZkSignalSender.class);
-    Injector injector2 = Tang.Factory.getTang().newInjector(cb.build());
-    MTSSignalSender client = injector2.getInstance(MTSSignalSender.class);
-    
-    Timescale t1 = new Timescale(5, 1);
-    Timescale t2 = new Timescale(10, 2);
+    final Injector injector2 = Tang.Factory.getTang().newInjector(cb.build());
+    final MTSSignalSender client = injector2.getInstance(MTSSignalSender.class);
+
+    final Timescale t1 = new Timescale(5, 1);
+    final Timescale t2 = new Timescale(10, 2);
 
     client.addTimescale(t1);
     Thread.sleep(500);
@@ -106,7 +101,6 @@ public class ZkTimescaleSignalTest {
   }
   
   static class TestTimescaleListener implements TimescaleSignalListener {
-
     private final Collection<Timescale> list;
     private final Monitor monitor;
     private final AtomicInteger counter;
@@ -116,8 +110,9 @@ public class ZkTimescaleSignalTest {
       this.monitor = monitor;
       this.counter = new AtomicInteger(numOfTimescales);
     }
+
     @Override
-    public void onTimescaleAddition(Timescale ts, final long startTime) {
+    public void onTimescaleAddition(final Timescale ts, final long startTime) {
       this.list.add(ts);
       if (this.counter.decrementAndGet() == 0) {
         monitor.mnotify();
@@ -125,7 +120,7 @@ public class ZkTimescaleSignalTest {
     }
 
     @Override
-    public void onTimescaleDeletion(Timescale ts) {
+    public void onTimescaleDeletion(final Timescale ts) {
       this.list.remove(ts);
       if (this.counter.decrementAndGet() == 0) {
         monitor.mnotify();

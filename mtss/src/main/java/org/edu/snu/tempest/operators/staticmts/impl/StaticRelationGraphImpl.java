@@ -108,29 +108,24 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
     }
 
     T output = finalAggregator.finalAggregate(list);
-
     // save the output
     if (node.getRefCnt() != 0) {
       node.setState(output);
     }
-
     LOG.log(Level.FINE, "finalAggregate: " + startTime + " - " + endTime + ", " + start + " - " + end
         + ", period: " + period + ", dep: " + node.getDependencies().size() + ", listLen: " + list.size());
     return output;
   }
 
-  private long adjStartTime(long time) {
-    long adj = (time - initialStartTime) % period;
-
+  private long adjStartTime(final long time) {
+    final long adj = (time - initialStartTime) % period;
     LOG.log(Level.INFO, "time: " + time + ", adj: " + adj);
-
     return adj;
   }
 
-  private long adjEndTime(long time) {
-    long adj = (time - initialStartTime) % period == 0 ? period : (time - initialStartTime) % period;
+  private long adjEndTime(final long time) {
+    final long adj = (time - initialStartTime) % period == 0 ? period : (time - initialStartTime) % period;
     LOG.log(Level.INFO, "time: " + time + ", adj: " + adj);
-
     return adj;
   }
 
@@ -139,50 +134,47 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
    * Similar to initializeWindowState function
    */
   private void addSlicedWindowNodeAndEdge() {
-
     // add sliced window edges
-    for (Timescale ts : timescales) {
-      long pairedB = ts.windowSize % ts.intervalSize;
-      long pairedA = ts.intervalSize - pairedB;
-
+    for (final Timescale ts : timescales) {
+      final long pairedB = ts.windowSize % ts.intervalSize;
+      final long pairedA = ts.intervalSize - pairedB;
       long time = pairedA;
       boolean odd = true;
 
       while(time <= period) {
         sliceQueue.add(time);
-
         if (odd) {
           time += pairedB;
         } else {
           time += pairedA;
         }
-
         odd = !odd;
       }
     }
 
     Collections.sort(sliceQueue);
     long startTime = 0;
-    for (long endTime : sliceQueue) {
+    for (final long endTime : sliceQueue) {
       if (startTime != endTime) {
         table.saveOutput(startTime, endTime, new RelationGraphNode(startTime, endTime));
         startTime = endTime;
       }
     }
-
     LOG.log(Level.FINE, "Sliced queue: " + sliceQueue);
   }
 
+  /**
+   * Add RelationGraphNode.
+   */
   private void addOverlappingWindowNodeAndEdge() {
-    for (Timescale timescale : timescales) {
+    for (final Timescale timescale : timescales) {
       for (long time = timescale.intervalSize; time <= period; time += timescale.intervalSize) {
-
         // create vertex and add it to the table cell of (time, windowsize)
         final long start = time - timescale.windowSize;
-        RelationGraphNode referer = new RelationGraphNode(start, time);
-        List<RelationGraphNode> dependencies = new LinkedList<>();
+        final RelationGraphNode parent = new RelationGraphNode(start, time);
+        final List<RelationGraphNode> childNodes = new LinkedList<>();
 
-        // lookup dependencies
+        // find child nodes.
         long st = start;
         while (st < time) {
           TimeAndValue<RelationGraphNode> elem;
@@ -191,14 +183,13 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
             if (st == elem.endTime) {
               break;
             } else {
-              dependencies.add(elem.value);
-              //referer.addDependency(elem.value);
+              childNodes.add(elem.value);
               st = elem.endTime;
             }
           } catch (NotFoundException e) {
             try {
               elem = table.lookupLargestSizeOutput(st + period, period);
-              dependencies.add(elem.value);
+              childNodes.add(elem.value);
               st = elem.endTime - period;
             } catch (NotFoundException e1) {
               e1.printStackTrace();
@@ -207,15 +198,12 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
           }
         }
 
-        LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies1: " + dependencies);
-
-        for (RelationGraphNode elem : dependencies) {
-          referer.addDependency(elem);
+        LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies1: " + childNodes);
+        for (final RelationGraphNode elem : childNodes) {
+          parent.addDependency(elem);
         }
-
-        table.saveOutput(start, time, referer);
-
-        LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies2: " + dependencies);
+        table.saveOutput(start, time, parent);
+        LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies2: " + childNodes);
       }
     }
   }
@@ -229,13 +217,12 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
     long period = 0;
     long largestWindowSize = 0;
 
-    for (Timescale ts : timescales) {
+    for (final Timescale ts : timescales) {
       if (period == 0) {
         period = ts.intervalSize;
       } else {
         period = lcm(period, ts.intervalSize);
       }
-
       // find largest window size
       if (largestWindowSize < ts.windowSize) {
         largestWindowSize = ts.windowSize;
@@ -244,14 +231,12 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
 
     if (period < largestWindowSize) {
       long div = largestWindowSize / period;
-
       if (largestWindowSize % period == 0) {
         period *= div;
       } else {
         period *= (div+1);
       }
     }
-
     return period;
   }
 
@@ -268,8 +253,7 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
     return a * (b / gcd(a, b));
   }
 
-  public class RelationGraphNode {
-
+  public final class RelationGraphNode {
     private final List<RelationGraphNode> dependencies;
     private int refCnt;
     private int initialRefCnt;
@@ -277,9 +261,9 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
     public final long start;
     public final long end;
 
-    public RelationGraphNode(long start, long end) {
+    public RelationGraphNode(final long start, final long end) {
       this.dependencies = new LinkedList<>();
-      refCnt = 0;
+      this.refCnt = 0;
       this.start = start;
       this.end = end;
     }
@@ -287,10 +271,8 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
     public synchronized void decreaseRefCnt() {
       if (refCnt > 0) {
         refCnt--;
-
         if (refCnt == 0) {
           // Remove state
-
           LOG.log(Level.FINE, "Release: [" + start + "-" + end + "]");
           state = null;
           refCnt = initialRefCnt;

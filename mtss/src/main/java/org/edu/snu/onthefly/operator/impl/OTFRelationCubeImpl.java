@@ -28,17 +28,15 @@ public final class OTFRelationCubeImpl<T> implements DynamicRelationCube<T> {
   private final Aggregator<?, T> finalAggregator;
   private final OutputLookupTable<T> table;
   private final GarbageCollector gc;
-  private long largestWindowSize;
 
   @Inject
   public OTFRelationCubeImpl(final List<Timescale> timescales,
-                                 final Aggregator<?, T> finalAggregator,
-                                 final long startTime) {
+                             final Aggregator<?, T> finalAggregator,
+                             final long startTime) {
     this.timescales = timescales;
     this.finalAggregator = finalAggregator;
     this.table = new DefaultOutputLookupTableImpl<>();
     this.gc = new DefaultGarbageCollectorImpl(timescales, table, startTime);
-    this.largestWindowSize = findLargestWindowSize();
   }
 
   @Override
@@ -105,9 +103,6 @@ public final class OTFRelationCubeImpl<T> implements DynamicRelationCube<T> {
     synchronized (this.timescales) {
       gc.onTimescaleAddition(ts, startTime);
       this.timescales.add(ts);
-      if (ts.windowSize > this.largestWindowSize) {
-        this.largestWindowSize = ts.windowSize;
-      }
     }
   }
 
@@ -117,19 +112,6 @@ public final class OTFRelationCubeImpl<T> implements DynamicRelationCube<T> {
     synchronized (this.timescales) {
       gc.onTimescaleDeletion(ts);
       this.timescales.remove(ts);
-      if (ts.windowSize == this.largestWindowSize) {
-        this.largestWindowSize = findLargestWindowSize();
-      }
     }
-  }
-
-  private long findLargestWindowSize() {
-    long result = 0;
-    for (Timescale ts : timescales) {
-      if (result < ts.windowSize) {
-        result = ts.windowSize;
-      }
-    }
-    return result;
   }
 }

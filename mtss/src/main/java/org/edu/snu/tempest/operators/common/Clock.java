@@ -13,20 +13,20 @@ import org.edu.snu.tempest.operators.common.impl.DefaultMTSClockImpl;
 @DefaultImplementation(DefaultMTSClockImpl.class)
 public interface Clock extends Stage {
 
-  /*
-   * Start clock
+  /**
+   * Start clock.
    */
   void start();
   
-  /*
-   * Subscribe OverlappingWindowOperator and returns Subscription
+  /**
+   * Subscribe OverlappingWindowOperator and returns Subscription.
    * 
    * @param overlappingWindowoperator a new OverlappingWindowOperator
    */
   Subscription<Timescale> subscribe(final OverlappingWindowOperator<?> overlappingWindowoperator);
   
-  /*
-   * Get current logical time
+  /**
+   * Get current time.
    */
   long getCurrentTime();
 }

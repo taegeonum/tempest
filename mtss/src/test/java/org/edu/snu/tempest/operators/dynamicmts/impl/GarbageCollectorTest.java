@@ -10,16 +10,16 @@ import java.util.List;
 
 import static org.mockito.Mockito.*;
 
-public class GarbageCollectorTest {
+public final class GarbageCollectorTest {
 
   @Test
   public void onTimescaleAdditionTest() {
-    List<Timescale> timescales = new LinkedList<>();
+    final List<Timescale> timescales = new LinkedList<>();
     timescales.add(new Timescale(3,1));
-    
-    OutputLookupTable<?> table = mock(OutputLookupTable.class);
-    
-    DynamicRelationCube.GarbageCollector gc = new DefaultGarbageCollectorImpl(timescales, table, 0);
+
+    final OutputLookupTable<?> table = mock(OutputLookupTable.class);
+    final DynamicRelationCube.GarbageCollector gc = new DefaultGarbageCollectorImpl(timescales, table, 0);
+
     gc.onNext(3L);
     verify(table, never()).deleteRow(0);
     gc.onNext(4L);
@@ -40,16 +40,16 @@ public class GarbageCollectorTest {
   
   @Test
   public void onTimescaleDeletionTest() {
-    List<Timescale> timescales = new LinkedList<>();
-    Timescale t1 = new Timescale(3,1);
-    Timescale t2 = new Timescale(10,2);
+    final List<Timescale> timescales = new LinkedList<>();
+    final Timescale t1 = new Timescale(3,1);
+    final Timescale t2 = new Timescale(10,2);
     
     timescales.add(t1);
     timescales.add(t2);
-    
-    OutputLookupTable<?> table = mock(OutputLookupTable.class);
-    
-    DynamicRelationCube.GarbageCollector gc = new DefaultGarbageCollectorImpl(timescales, table, 0);
+
+    final OutputLookupTable<?> table = mock(OutputLookupTable.class);
+    final DynamicRelationCube.GarbageCollector gc = new DefaultGarbageCollectorImpl(timescales, table, 0);
+
     gc.onNext(10L);
     verify(table, never()).deleteRow(0);
     gc.onNext(11L);
