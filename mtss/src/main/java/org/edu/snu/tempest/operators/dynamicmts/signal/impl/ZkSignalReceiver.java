@@ -40,7 +40,7 @@ public class ZkSignalReceiver implements MTSSignalReceiver, Watcher {
       @Parameter(ZkTSDecoder.class) Decoder<TimescaleSignal> decoder,
       @Parameter(ZkServerAddress.class) final String address,
       @Parameter(ZkRetryTimes.class) final int retryTimes,
-      @Parameter(ZkRetryPeriod.class) final int retryPeriod) throws Exception {
+      @Parameter(ZkRetryPeriod.class) final int retryPeriod) {
     this.identifier = identifier;
     this.namespace = namespace; 
     this.decoder = decoder;
