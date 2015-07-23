@@ -5,6 +5,7 @@ MTSS project
 0. Install and start zookeeper
   - download from https://zookeeper.apache.org/
   - tar
+  - cp conf/zoo_sample.cfg conf/zoo.cfg
   - ./bin/zkServer.sh start
 
 1. Install YCSB 0.2.0 
