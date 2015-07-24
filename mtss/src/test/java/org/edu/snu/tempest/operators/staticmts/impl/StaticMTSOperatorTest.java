@@ -5,11 +5,11 @@ import junit.framework.Assert;
 import org.edu.snu.tempest.operators.Timescale;
 import org.edu.snu.tempest.operators.common.WindowOutput;
 import org.edu.snu.tempest.operators.common.aggregators.CountByKeyAggregator;
-import org.edu.snu.tempest.operators.dynamicmts.signal.MTSSignalReceiver;
-import org.edu.snu.tempest.operators.dynamicmts.TimescaleSignalListener;
 import org.edu.snu.tempest.operators.staticmts.MTSOperator;
+import org.edu.snu.tempest.utils.IntegerExtractor;
 import org.edu.snu.tempest.utils.MTSTestUtils;
 import org.edu.snu.tempest.utils.Monitor;
+import org.edu.snu.tempest.utils.TestOutputHandler;
 import org.junit.Test;
 
 import java.util.*;
@@ -40,7 +40,7 @@ public class StaticMTSOperatorTest {
 
     final MTSOperator<Integer> operator =
         new StaticMTSOperatorImpl<>(new CountByKeyAggregator<Integer, Integer>(new IntegerExtractor()),
-            timescales, new TestHandler(monitor, results, startTime), startTime);
+            timescales, new TestOutputHandler(monitor, results, startTime), startTime);
     operator.start();
 
     executor.submit(new Runnable() {
@@ -74,66 +74,6 @@ public class StaticMTSOperatorTest {
       final WindowOutput<Map<Integer, Long>> ts1Output3 = results.get(ts1).poll();
       final WindowOutput<Map<Integer, Long>> ts1Output4 = results.get(ts1).poll();
       Assert.assertEquals(MTSTestUtils.merge(ts1Output3.output, ts1Output4.output), ts2Output2.output);
-    }
-  }
-
-  class IntegerExtractor implements CountByKeyAggregator.KeyExtractor<Integer, Integer> {
-    @Override
-    public Integer getKey(final Integer value) {
-      return value;
-    }
-  }
-
-  class TestHandler implements MTSOperator.OutputHandler<Map<Integer, Long>> {
-    private final Map<Timescale,
-        Queue<WindowOutput<Map<Integer, Long>>>> results;
-    private final long startTime;
-    private final Monitor monitor;
-    private int count = 0;
-
-    public TestHandler(final Monitor monitor,
-                       final Map<Timescale,
-                           Queue<WindowOutput<Map<Integer, Long>>>> results,
-                       final long startTime) {
-      this.monitor = monitor;
-      this.results = results;
-      this.startTime = startTime;
-    }
-
-    @Override
-    public void onNext(final WindowOutput<Map<Integer, Long>> windowOutput) {
-      if (count < 2) {
-        if (windowOutput.fullyProcessed) {
-          Queue<WindowOutput<Map<Integer, Long>>> outputs = this.results.get(windowOutput.timescale);
-          System.out.println(windowOutput);
-          outputs.add(windowOutput);
-        }
-      } else {
-        this.monitor.mnotify();
-      }
-
-      if (windowOutput.timescale.windowSize == 8) {
-        count++;
-      }
-    }
-  }
-
-  class TestSignalReceiver implements MTSSignalReceiver {
-    private TimescaleSignalListener listener;
-
-    @Override
-    public void start() throws Exception {
-
-    }
-
-    @Override
-    public void addTimescaleSignalListener(final TimescaleSignalListener listener) {
-      this.listener = listener;
-    }
-
-    @Override
-    public void close() throws Exception {
-
     }
   }
 }

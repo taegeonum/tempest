@@ -66,7 +66,6 @@ public class ZkTimescaleSignalTest {
   /**
    * Add two timescales and remove one timescale. 
    */
-  
   @Test
   public void removeTimescaleSignalTest() throws Exception {
     final Monitor monitor = new Monitor();

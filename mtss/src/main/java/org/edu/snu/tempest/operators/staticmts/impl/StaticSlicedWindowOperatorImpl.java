@@ -49,7 +49,7 @@ public final class StaticSlicedWindowOperatorImpl<I, V> implements SlicedWindowO
         final V output = innerMap;
         innerMap = aggregator.init();
         // saves output to RelationCube
-        LOG.log(Level.INFO, "Save partial output : [" + prevSliceTime + "-" + nextSliceTime + "]"
+        LOG.log(Level.FINE, "Save partial output : [" + prevSliceTime + "-" + nextSliceTime + "]"
             + ", output: " + output);
         relationGraph.savePartialOutput(prevSliceTime, nextSliceTime, output);
       }
