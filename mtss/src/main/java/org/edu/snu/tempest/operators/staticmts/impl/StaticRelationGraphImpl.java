@@ -96,7 +96,7 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
     if (start >= end) {
       start -= period;
     }
-    LOG.log(Level.INFO,
+    LOG.log(Level.FINE,
         "savePartialOutput: " + startTime + " - " + endTime +", " + start  + " - " + end);
 
     RelationGraphNode node = null;
@@ -150,7 +150,7 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
 
     long start = adjStartTime(startTime);
     final long end = adjEndTime(endTime);
-    LOG.log(Level.INFO, "final aggregate: [" + start+ "-" + end +"]");
+    LOG.log(Level.FINE, "final aggregate: [" + start+ "-" + end +"]");
 
     // reuse!
     if (start >= end) {
@@ -168,12 +168,10 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
     final List<T> list = new LinkedList<>();
     for (final RelationGraphNode child : node.getDependencies()) {
       if (child.getOutput() != null) {
-        LOG.log(Level.INFO, "add dependent outputs: " + child.getOutput());
         list.add(child.getOutput());
         child.decreaseRefCnt();
       }
     }
-    LOG.log(Level.FINE, "child: " + list);
 
     final T output = finalAggregator.finalAggregate(list);
     // save the output
@@ -252,7 +250,13 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
     LOG.log(Level.FINE, "Sliced queue: " + sliceQueue);
   }
 
-
+  /**
+   * Find child nodes which are included in the range of [start-end].
+   * For example, if the range is [0-10]
+   * it finds relation graph nodes which are included in the range of [0-10].
+   * @param start start time of the output
+   * @param end end time of the output.
+   */
   private List<RelationGraphNode> findChildNodes(final long start, final long end) {
     final List<RelationGraphNode> childNodes = new LinkedList<>();
     // find child nodes.

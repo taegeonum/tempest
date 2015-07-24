@@ -7,6 +7,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * CountByKeyAggregator.
+ * It counts input by key.
+ * @param <I> input
+ * @param <K> key
+ */
 public final class CountByKeyAggregator<I, K> implements Aggregator<I, Map<K, Long>> {
 
   private final KeyExtractor<I, K> extractor;

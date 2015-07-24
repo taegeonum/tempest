@@ -1,7 +1,6 @@
 package org.edu.snu.tempest.operators.dynamicmts;
 
 import org.edu.snu.tempest.operators.staticmts.SlicedWindowOperator;
-import org.edu.snu.tempest.operators.dynamicmts.signal.TimescaleSignalListener;
 
 /**
  * DynamicSliced window operator [ reference: On-the-fly sharing for streamed aggregation ].

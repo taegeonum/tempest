@@ -5,6 +5,7 @@ import org.edu.snu.tempest.operators.common.OutputLookupTable;
 import org.edu.snu.tempest.operators.dynamicmts.DynamicRelationCube;
 
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -16,7 +17,7 @@ import java.util.logging.Logger;
  * if they are unnecessary.
  *
  * When the largest window size cannot reach outputs,
- * then the outputs are removed by GC.
+ * the outputs are removed by GC.
  */
 public final class DefaultGarbageCollectorImpl implements DynamicRelationCube.GarbageCollector {
   private static final Logger LOG = Logger.getLogger(DefaultGarbageCollectorImpl.class.getName());
@@ -30,7 +31,7 @@ public final class DefaultGarbageCollectorImpl implements DynamicRelationCube.Ga
                                      final OutputLookupTable<?> table,
                                      final long startTime) {
     this.table = table;
-    this.timescales = timescales;
+    this.timescales = new LinkedList<>(timescales);
     largestWindowSize = new AtomicLong(findLargestWindowSize());
     prevDeletedRow = startTime;
   }

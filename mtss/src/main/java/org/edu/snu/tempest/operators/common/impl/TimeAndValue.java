@@ -1,7 +1,6 @@
 package org.edu.snu.tempest.operators.common.impl;
 
 public final class TimeAndValue<V> {
-
   public final long startTime;
   public final long endTime;
   public final V value;

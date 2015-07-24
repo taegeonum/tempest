@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 public final class TestAggregator implements Aggregator<Integer, Map<Integer, Integer>> {
 
   @Override
@@ -30,7 +29,6 @@ public final class TestAggregator implements Aggregator<Integer, Map<Integer, In
   @Override
   public Map<Integer, Integer> finalAggregate(final List<Map<Integer, Integer>> partials) {
     final Map<Integer, Integer> result = new HashMap<>();
-
     for (final Map<Integer, Integer> partial : partials) {
       if (result.size() == 0) {
         result.putAll(partial);
@@ -44,7 +42,6 @@ public final class TestAggregator implements Aggregator<Integer, Map<Integer, In
         }
       }
     }
-
     return result;
   }
 }

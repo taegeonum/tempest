@@ -6,7 +6,7 @@ import org.edu.snu.tempest.operators.common.WindowOutput;
 import org.edu.snu.tempest.operators.dynamicmts.DynamicMTSOperator;
 import org.edu.snu.tempest.operators.dynamicmts.impl.DynamicMTSOperatorImpl;
 import org.edu.snu.tempest.operators.dynamicmts.signal.MTSSignalReceiver;
-import org.edu.snu.tempest.operators.dynamicmts.signal.TimescaleSignalListener;
+import org.edu.snu.tempest.operators.dynamicmts.TimescaleSignalListener;
 import org.edu.snu.tempest.operators.staticmts.MTSOperator;
 
 import java.util.LinkedList;

@@ -7,7 +7,7 @@ import org.edu.snu.tempest.operators.common.WindowOutput;
 import org.edu.snu.tempest.operators.common.aggregators.CountByKeyAggregator;
 import org.edu.snu.tempest.operators.dynamicmts.DynamicMTSOperator;
 import org.edu.snu.tempest.operators.dynamicmts.signal.MTSSignalReceiver;
-import org.edu.snu.tempest.operators.dynamicmts.signal.TimescaleSignalListener;
+import org.edu.snu.tempest.operators.dynamicmts.TimescaleSignalListener;
 import org.edu.snu.tempest.operators.staticmts.MTSOperator;
 import org.edu.snu.tempest.utils.MTSTestUtils;
 import org.edu.snu.tempest.utils.Monitor;
@@ -41,7 +41,7 @@ public class DynamicMTSOperatorTest {
 
     final DynamicMTSOperator<Integer> operator =
         new DynamicMTSOperatorImpl<>(new CountByKeyAggregator<Integer, Integer>(new IntegerExtractor()),
-            timescales, new TestHandler(monitor, results, startTime), new TestSignalReceiver(), 0, startTime);
+            timescales, new TestHandler(monitor, results, startTime), new TestSignalReceiver(), 1, startTime);
     operator.start();
 
     executor.submit(new Runnable() {

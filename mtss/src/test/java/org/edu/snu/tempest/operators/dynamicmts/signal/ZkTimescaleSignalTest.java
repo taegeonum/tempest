@@ -5,6 +5,7 @@ import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
 import org.edu.snu.tempest.operators.Timescale;
+import org.edu.snu.tempest.operators.dynamicmts.TimescaleSignalListener;
 import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkMTSParameters;
 import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkSignalReceiver;
 import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkSignalSender;

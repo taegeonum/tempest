@@ -34,8 +34,10 @@ public interface OutputLookupTable<V> {
   
   /**
    * Lookup largest endTime output which starts at startTime until endTime.
-   * e.g) if this table has [s=3, e=4] [s=3, e=5], [s=3, e=7] outputs and startTime=3, endTime=8, 
+   * e.g) if this table has [s=3, e=4] [s=3, e=5], [s=3, e=7] outputs
+   *      and a user calls lookupLargestSizeOutput(startTime=3, endTime=8),
    *      then it returns [s=3, e=7] which is biggest endTime at startTime=3
+   * @return TimeAndValue this contains value and time information.
    */
   TimeAndValue<V> lookupLargestSizeOutput(long startTime, long endTime) throws NotFoundException;
   

@@ -23,6 +23,7 @@ import java.util.logging.Logger;
 
 /**
  * Default MTS Clock implementation.
+ * It triggers a sliced window operator and overlapping window operators every second.
  *
  * It first executes a SlicedWindowOperator.
  * After that, it executes OverlappingWindowOperators according to the window size.
@@ -120,7 +121,12 @@ public final class DefaultMTSClockImpl implements Clock {
       }, tickTime, tickTime, TimeUnit.MILLISECONDS);
     }
   }
-  
+
+  /**
+   * Subscribe overlapping window operators.
+   * It triggers overlapping window operators every second.
+   * @param o an overlapping window operator.
+   */
   @Override
   public Subscription<Timescale> subscribe(final OverlappingWindowOperator<?> o) {
     LOG.log(Level.INFO, "Clock subscribe OverlappingWindowOperator: " + o);
@@ -134,7 +140,6 @@ public final class DefaultMTSClockImpl implements Clock {
   public long getCurrentTime() {
     return TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
   }
-
 
   @Override
   public void close() {

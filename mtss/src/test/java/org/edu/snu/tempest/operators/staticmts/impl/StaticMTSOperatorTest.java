@@ -6,7 +6,7 @@ import org.edu.snu.tempest.operators.Timescale;
 import org.edu.snu.tempest.operators.common.WindowOutput;
 import org.edu.snu.tempest.operators.common.aggregators.CountByKeyAggregator;
 import org.edu.snu.tempest.operators.dynamicmts.signal.MTSSignalReceiver;
-import org.edu.snu.tempest.operators.dynamicmts.signal.TimescaleSignalListener;
+import org.edu.snu.tempest.operators.dynamicmts.TimescaleSignalListener;
 import org.edu.snu.tempest.operators.staticmts.MTSOperator;
 import org.edu.snu.tempest.utils.MTSTestUtils;
 import org.edu.snu.tempest.utils.Monitor;

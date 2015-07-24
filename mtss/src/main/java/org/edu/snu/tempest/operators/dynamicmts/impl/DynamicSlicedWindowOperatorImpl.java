@@ -20,14 +20,45 @@ import java.util.logging.Logger;
  */
 public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlicedWindowOperator<I> {
   private static final Logger LOG = Logger.getLogger(DynamicSlicedWindowOperatorImpl.class.getName());
-  
+
+  /**
+   * Aggregator for partial aggregation.
+   */
   private final Aggregator<I, V> aggregator;
+
+  /**
+   * RelationCube for saving partial outputs.
+   */
   private final DynamicRelationCube<V> relationCube;
+
+  /**
+   * SliceQueue containing next slice time.
+   */
   private final PriorityQueue<SliceInfo> sliceQueue;
+
+  /**
+   * Previous slice time.
+   */
   private long prevSliceTime = 0;
+
+  /**
+   * Current slice time.
+   */
   private long nextSliceTime = 0;
-  private V innerMap;
+
+  /**
+   * Partial output.
+   */
+  private V partialOutput;
+
+  /**
+   * Timescales.
+   */
   private final List<Timescale> timescales;
+
+  /**
+   * Sync object for partial output.
+   */
   private final Object sync = new Object();
   
   @Inject
@@ -38,31 +69,35 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
       final Long startTime) {
     this.aggregator = aggregator;
     this.relationCube = relationCube;
-    this.innerMap = aggregator.init();
-    this.sliceQueue = new PriorityQueue<SliceInfo>(10, new SliceInfoComparator());
+    this.partialOutput = aggregator.init();
+    this.sliceQueue = new PriorityQueue<>(10, new SliceInfoComparator());
     this.timescales = timescales;
     initializeWindowState(startTime);
-    nextSliceTime = nextSliceTime();
+    nextSliceTime = advanceWindowGetNextSlice();
   }
-  
+
+  /**
+   * It aggregates input data and slices the aggregated data every slice time.
+   * @param currTime current time
+   */
   @Override
   public synchronized void onNext(final Long currTime) {
     while (nextSliceTime < currTime) {
       prevSliceTime = nextSliceTime;
-      nextSliceTime = nextSliceTime();
+      nextSliceTime = advanceWindowGetNextSlice();
     }
 
     LOG.log(Level.FINE, "SlicedWindow tickTime " + currTime + ", nextSlice: " + nextSliceTime);
     if (nextSliceTime == currTime) {
       LOG.log(Level.FINE, "Sliced : [" + prevSliceTime + "-" + currTime + "]");
       synchronized (sync) {
-        final V output = innerMap;
-        innerMap = aggregator.init();
+        final V output = partialOutput;
+        partialOutput = aggregator.init();
         // saves output to RelationCube
         relationCube.savePartialOutput(prevSliceTime, nextSliceTime, output);
       }
       prevSliceTime = nextSliceTime;
-      nextSliceTime = nextSliceTime();
+      nextSliceTime = advanceWindowGetNextSlice();
     }
   }
 
@@ -70,7 +105,7 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
   public void execute(final I val) {
     LOG.log(Level.FINE, "SlicedWindow aggregates input of [" +  val + "]");
     synchronized (sync) {
-      innerMap = aggregator.partialAggregate(innerMap, val);
+      partialOutput = aggregator.partialAggregate(partialOutput, val);
     }
   }
 
@@ -79,7 +114,7 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
     LOG.log(Level.INFO, "SlicedWindow addTimescale " + ts);
     // Add slices
     synchronized (sliceQueue) {
-      long nst = sliceQueue.peek().sliceTime;
+      final long nst = sliceQueue.peek().sliceTime;
       addSlices(startTime, ts);
       long sliceTime = sliceQueue.peek().sliceTime;
       while (sliceTime < nst) {
@@ -101,11 +136,7 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
     }
   }
 
-  private long nextSliceTime() {
-    return advanceWindowGetNextSlice();
-  }
-
-  /*
+  /**
    * This method is based on "On-the-Fly Sharing " paper.
    * Similar to initializeWindowState function
    */
@@ -116,8 +147,8 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
     }
   }
 
-  /*
-   * Similar to addEdges function in the "On-the-Fly ... " paper
+  /**
+   * Similar to addEdges function in the "On-the-Fly ... " paper.
    */
   private void addSlices(final long startTime, final Timescale ts) {
     final long pairedB = ts.windowSize % ts.intervalSize;
@@ -128,8 +159,8 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
     }
   }
 
-  /*
-   * Similar to advanceWindowGetNextEdge function in the "On-the-Fly ..." paper
+  /**
+   * Similar to advanceWindowGetNextEdge function in the "On-the-Fly ..." paper.
    */
   private long advanceWindowGetNextSlice() {
     SliceInfo info = null;

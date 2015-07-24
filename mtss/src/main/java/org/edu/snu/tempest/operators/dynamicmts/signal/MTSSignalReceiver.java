@@ -1,7 +1,7 @@
 package org.edu.snu.tempest.operators.dynamicmts.signal;
 
-
 import org.apache.reef.tang.annotations.DefaultImplementation;
+import org.edu.snu.tempest.operators.dynamicmts.TimescaleSignalListener;
 import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkSignalReceiver;
 
 /**

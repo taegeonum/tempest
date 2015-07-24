@@ -7,8 +7,8 @@ import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/*
- * Subscription 
+/**
+ * Subscription.
  */
 public final class DefaultSubscription<T, Token> implements Subscription<Token> {
 
@@ -25,7 +25,6 @@ public final class DefaultSubscription<T, Token> implements Subscription<Token> 
     this.val = val;
     this.container = container;
     this.token = token;
-    
   }
   
   @Override

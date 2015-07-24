@@ -41,7 +41,8 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSOperator<I>
                                 @Parameter(CachingRate.class) final double cachingRate,
                                 @Parameter(InitialStartTime.class) final long startTime) {
     this.outputHandler = handler;
-    this.relationCube = new DynamicRelationCubeImpl<>(timescales, aggregator, cachingRate, startTime);
+    this.relationCube = new DynamicRelationCubeImpl<>(timescales, aggregator,
+        new CachingRatePolicy(timescales, cachingRate), startTime);
     this.subscriptions = new HashMap<>();
     this.receiver = receiver;
     this.receiver.addTimescaleSignalListener(this);

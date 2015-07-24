@@ -1,6 +1,5 @@
 package org.edu.snu.tempest.operators.common;
 
-
 /**
  * Subscription interface.
  */

@@ -1,6 +1,5 @@
 package org.edu.snu.tempest.operators.dynamicmts.signal;
 
-
 import org.edu.snu.tempest.operators.Timescale;
 
 /**

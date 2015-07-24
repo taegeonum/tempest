@@ -2,7 +2,6 @@ package org.edu.snu.tempest.operators.common;
 
 import org.edu.snu.tempest.operators.Timescale;
 
-
 /**
  * RelationCube interface.
  *

@@ -32,7 +32,7 @@ public class DynamicRelationCubeTest {
         });
 
     final DynamicRelationCube<Map<Integer, Long>> relationCube =
-        new DynamicRelationCubeImpl<>(timescales, aggregator, 0, startTime);
+        new DynamicRelationCubeImpl<>(timescales, aggregator, new CachingRatePolicy(timescales, 1), startTime);
 
     final Map<Integer, Long> partialOutput1 = new HashMap<>();
     partialOutput1.put(1, 10L); partialOutput1.put(2, 15L);

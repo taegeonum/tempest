@@ -3,7 +3,6 @@ package org.edu.snu.tempest.operators.dynamicmts;
 import org.apache.reef.tang.annotations.DefaultImplementation;
 import org.edu.snu.tempest.operators.dynamicmts.impl.DynamicMTSOperatorImpl;
 import org.edu.snu.tempest.operators.staticmts.MTSOperator;
-import org.edu.snu.tempest.operators.dynamicmts.signal.TimescaleSignalListener;
 
 /**
  * MTS operator interface.

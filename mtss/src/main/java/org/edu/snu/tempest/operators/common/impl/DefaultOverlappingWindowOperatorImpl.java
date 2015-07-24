@@ -10,6 +10,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * It triggers final aggregation every its interval.
+ */
 public final class DefaultOverlappingWindowOperatorImpl<V> implements OverlappingWindowOperator<V> {
   private static final Logger LOG = Logger.getLogger(DefaultOverlappingWindowOperatorImpl.class.getName());
 

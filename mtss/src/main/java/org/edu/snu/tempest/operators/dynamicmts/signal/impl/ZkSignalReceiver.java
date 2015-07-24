@@ -10,7 +10,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.edu.snu.tempest.operators.dynamicmts.signal.MTSSignalReceiver;
 import org.edu.snu.tempest.operators.dynamicmts.signal.TimescaleSignal;
-import org.edu.snu.tempest.operators.dynamicmts.signal.TimescaleSignalListener;
+import org.edu.snu.tempest.operators.dynamicmts.TimescaleSignalListener;
 import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkMTSParameters.*;
 
 import javax.inject.Inject;
