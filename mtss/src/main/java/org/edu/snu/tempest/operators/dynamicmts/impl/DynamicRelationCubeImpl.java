@@ -72,7 +72,7 @@ public final class DynamicRelationCubeImpl<T> implements DynamicRelationCube<T> 
 
     // fetch dependent outputs
     while(start < endTime) {
-      TimeAndValue<T> elem;
+      final TimeAndValue<T> elem;
       try {
         elem = table.lookupLargestSizeOutput(start, endTime);
         LOG.log(Level.FINE, ts + " Lookup : (" + start + ", " + endTime + ")");
@@ -103,7 +103,7 @@ public final class DynamicRelationCubeImpl<T> implements DynamicRelationCube<T> 
     Long latestSaveTime = timescaleToSavingTimeMap.get(ts);
 
     if (latestSaveTime == null) {
-      latestSaveTime = new Long(0);
+      latestSaveTime = 0L;
     }
 
     // save final result if the condition is satisfied.
@@ -146,7 +146,7 @@ public final class DynamicRelationCubeImpl<T> implements DynamicRelationCube<T> 
 
   private long findLargestWindowSize() {
     long result = 0;
-    for (Timescale ts : timescales) {
+    for (final Timescale ts : timescales) {
       if (result < ts.windowSize) {
         result = ts.windowSize;
       }

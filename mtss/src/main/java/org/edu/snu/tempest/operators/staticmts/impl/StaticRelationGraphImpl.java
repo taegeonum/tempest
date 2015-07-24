@@ -23,19 +23,57 @@ import java.util.logging.Logger;
 public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> {
   private static final Logger LOG = Logger.getLogger(StaticRelationGraphImpl.class.getName());
 
+  /**
+   * A table containing RelationGraphNode for final output.
+   */
   private final OutputLookupTable<RelationGraphNode> table;
+
+  /**
+   * A table containing RelationGraphNode for partial output.
+   */
+  private final OutputLookupTable<RelationGraphNode> partialOutputTable;
+
+  /**
+   * The list of timescale.
+   */
   private final List<Timescale> timescales;
+
+  /**
+   * Aggregator for final aggregation.
+   */
   private final Aggregator<?, T> finalAggregator;
+
+  /**
+   * A queue containing next slice time.
+   */
   private final List<Long> sliceQueue;
+
+  /**
+   * A period of the repeated pattern.
+   */
   private final long period;
+
+  /**
+   * An index for looking up sliceQueue.
+   */
   private int index = 0;
+
+  /**
+   * An initial start time.
+   */
   private final long initialStartTime;
+
+  /**
+   * A previous slice time.
+   */
+  private long prevSliceTime = 0;
 
   @Inject
   public StaticRelationGraphImpl(final List<Timescale> timescales,
                                  final Aggregator<?, T> finalAggregator,
                                  final long startTime) {
     this.table = new DefaultOutputLookupTableImpl<>();
+    this.partialOutputTable = new DefaultOutputLookupTableImpl<>();
     this.timescales = timescales;
     this.finalAggregator = finalAggregator;
     this.sliceQueue = new LinkedList<>();
@@ -53,38 +91,66 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
                                 final long endTime,
                                 final T output) {
     long start = adjStartTime(startTime);
-    long end = adjEndTime(endTime);
+    final long end = adjEndTime(endTime);
 
     if (start >= end) {
       start -= period;
     }
-    LOG.log(Level.FINE,
+    LOG.log(Level.INFO,
         "savePartialOutput: " + startTime + " - " + endTime +", " + start  + " - " + end);
 
     RelationGraphNode node = null;
     try {
-      node = table.lookup(start, end);
+      node = partialOutputTable.lookup(start, end);
     } catch (NotFoundException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
     }
 
-    // save partial output to node
-    node.setState(output);
+    node.saveOutput(output);
   }
 
+  /**
+   * Gets next slice time for slicing input and creating partial outputs.
+   *
+   * SlicedWindowOperator can use this to slice input.
+   */
   @Override
   public synchronized long nextSliceTime() {
+    long sliceTime = adjustNextSliceTime();
+    while (prevSliceTime == sliceTime) {
+      sliceTime = adjustNextSliceTime();
+    }
+    prevSliceTime = sliceTime;
+    return sliceTime;
+  }
+
+  /**
+   * Adjust next slice time.
+   */
+  private long adjustNextSliceTime() {
     return initialStartTime + (index / sliceQueue.size()) * period
         + sliceQueue.get((index++) % sliceQueue.size());
   }
 
+  /**
+   * Aggregates partial outputs and produces a final output.
+   *
+   * Dependent outputs can be aggregated into final output.
+   * The dependeny information is statically constructed at start time.
+   *
+   * @param startTime start time of the output
+   * @param endTime end time of the output
+   * @param ts timescale
+   * @return
+   */
   @Override
-  public T finalAggregate(long startTime, long endTime, final Timescale ts) {
+  public T finalAggregate(final long startTime, final long endTime, final Timescale ts) {
     LOG.log(Level.FINE, "Lookup " + startTime + ", " + endTime);
 
     long start = adjStartTime(startTime);
-    long end = adjEndTime(endTime);
+    final long end = adjEndTime(endTime);
+    LOG.log(Level.INFO, "final aggregate: [" + start+ "-" + end +"]");
 
     // reuse!
     if (start >= end) {
@@ -94,42 +160,65 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
     RelationGraphNode node = null;
     try {
       node = table.lookup(start, end);
-    } catch (NotFoundException e) {
+    } catch (final NotFoundException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
     }
 
-    List<T> list = new LinkedList<>();
-    for (RelationGraphNode child : node.getDependencies()) {
-      if (child.getState() != null) {
-        list.add(child.getState());
+    final List<T> list = new LinkedList<>();
+    for (final RelationGraphNode child : node.getDependencies()) {
+      if (child.getOutput() != null) {
+        LOG.log(Level.INFO, "add dependent outputs: " + child.getOutput());
+        list.add(child.getOutput());
         child.decreaseRefCnt();
       }
     }
+    LOG.log(Level.FINE, "child: " + list);
 
-    T output = finalAggregator.finalAggregate(list);
+    final T output = finalAggregator.finalAggregate(list);
     // save the output
     if (node.getRefCnt() != 0) {
-      node.setState(output);
+      node.saveOutput(output);
     }
     LOG.log(Level.FINE, "finalAggregate: " + startTime + " - " + endTime + ", " + start + " - " + end
         + ", period: " + period + ", dep: " + node.getDependencies().size() + ", listLen: " + list.size());
     return output;
   }
 
+  /**
+   * Adjust current time to fetch a corresponding node.
+   * For example, if current time is 31 but period is 15,
+   * then it adjust start time to 1.
+   *
+   * @param time current time
+   */
   private long adjStartTime(final long time) {
-    final long adj = (time - initialStartTime) % period;
-    LOG.log(Level.INFO, "time: " + time + ", adj: " + adj);
-    return adj;
+    if (time < initialStartTime) {
+      return (time - initialStartTime) % period + period;
+    } else {
+      return (time - initialStartTime) % period;
+    }
   }
 
+  /**
+   * Adjust current time to fetch a corresponding node.
+   * For example, if current time is 30 and period is 15,
+   * then it adjust end time to 15.
+   *
+   * if current time is 31 and period is 15,
+   *  then it adjust end time to 1.
+   *
+   * @param time current time
+   */
   private long adjEndTime(final long time) {
     final long adj = (time - initialStartTime) % period == 0 ? period : (time - initialStartTime) % period;
-    LOG.log(Level.INFO, "time: " + time + ", adj: " + adj);
+    LOG.log(Level.FINE, "adjEndTime: time: " + time + ", adj: " + adj);
     return adj;
   }
 
   /**
+   * It creates the list of next slice time.
+   *
    * This method is based on "On-the-Fly Sharing " paper.
    * Similar to initializeWindowState function
    */
@@ -156,11 +245,61 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
     long startTime = 0;
     for (final long endTime : sliceQueue) {
       if (startTime != endTime) {
-        table.saveOutput(startTime, endTime, new RelationGraphNode(startTime, endTime));
+        partialOutputTable.saveOutput(startTime, endTime, new RelationGraphNode(startTime, endTime));
         startTime = endTime;
       }
     }
     LOG.log(Level.FINE, "Sliced queue: " + sliceQueue);
+  }
+
+
+  private List<RelationGraphNode> findChildNodes(final long start, final long end) {
+    final List<RelationGraphNode> childNodes = new LinkedList<>();
+    // find child nodes.
+    long st = start;
+    while (st < end) {
+      TimeAndValue<RelationGraphNode> elem = null;
+      try {
+        elem = table.lookupLargestSizeOutput(st, end);
+        if (st == elem.endTime) {
+          break;
+        } else {
+          childNodes.add(elem.value);
+          st = elem.endTime;
+        }
+      } catch (final NotFoundException e) {
+        try {
+          elem = table.lookupLargestSizeOutput(st + period, period);
+          childNodes.add(elem.value);
+          st = elem.endTime - period;
+        } catch (final NotFoundException e1) {
+          // do nothing
+        }
+      }
+
+      // find from partial output table.
+      if (elem == null) {
+        try {
+          elem = partialOutputTable.lookupLargestSizeOutput(st, end);
+          if (st == elem.endTime) {
+            break;
+          } else {
+            childNodes.add(elem.value);
+            st = elem.endTime;
+          }
+        } catch (final NotFoundException e) {
+          try {
+            elem = partialOutputTable.lookupLargestSizeOutput(st + period, period);
+            childNodes.add(elem.value);
+            st = elem.endTime - period;
+          } catch (final NotFoundException e1) {
+            e1.printStackTrace();
+            throw new RuntimeException(e1);
+          }
+        }
+      }
+    }
+    return childNodes;
   }
 
   /**
@@ -172,32 +311,7 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
         // create vertex and add it to the table cell of (time, windowsize)
         final long start = time - timescale.windowSize;
         final RelationGraphNode parent = new RelationGraphNode(start, time);
-        final List<RelationGraphNode> childNodes = new LinkedList<>();
-
-        // find child nodes.
-        long st = start;
-        while (st < time) {
-          TimeAndValue<RelationGraphNode> elem;
-          try {
-            elem = table.lookupLargestSizeOutput(st, time);
-            if (st == elem.endTime) {
-              break;
-            } else {
-              childNodes.add(elem.value);
-              st = elem.endTime;
-            }
-          } catch (NotFoundException e) {
-            try {
-              elem = table.lookupLargestSizeOutput(st + period, period);
-              childNodes.add(elem.value);
-              st = elem.endTime - period;
-            } catch (NotFoundException e1) {
-              e1.printStackTrace();
-              throw new RuntimeException(e1);
-            }
-          }
-        }
-
+        final List<RelationGraphNode> childNodes = findChildNodes(start, time);
         LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies1: " + childNodes);
         for (final RelationGraphNode elem : childNodes) {
           parent.addDependency(elem);
@@ -230,7 +344,7 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
     }
 
     if (period < largestWindowSize) {
-      long div = largestWindowSize / period;
+      final long div = largestWindowSize / period;
       if (largestWindowSize % period == 0) {
         period *= div;
       } else {
@@ -242,14 +356,14 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
 
   private static long gcd(long a, long b) {
     while (b > 0) {
-      long temp = b;
+      final long temp = b;
       b = a % b; // % is remainder
       a = temp;
     }
     return a;
   }
 
-  private static long lcm(long a, long b) {
+  private static long lcm(final long a, final long b) {
     return a * (b / gcd(a, b));
   }
 
@@ -257,7 +371,7 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
     private final List<RelationGraphNode> dependencies;
     private int refCnt;
     private int initialRefCnt;
-    private T state;
+    private T output;
     public final long start;
     public final long end;
 
@@ -268,19 +382,25 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
       this.end = end;
     }
 
+    /**
+     * Decrease reference count of RelationGraphNode.
+     * If the reference count is zero, then it removes the saved output
+     * and resets the reference count to initial count
+     * in order to reuse this node.
+     */
     public synchronized void decreaseRefCnt() {
       if (refCnt > 0) {
         refCnt--;
         if (refCnt == 0) {
-          // Remove state
+          // Remove output
           LOG.log(Level.FINE, "Release: [" + start + "-" + end + "]");
-          state = null;
+          output = null;
           refCnt = initialRefCnt;
         }
       }
     }
 
-    public void addDependency(RelationGraphNode n) {
+    public void addDependency(final RelationGraphNode n) {
       if (n == null) {
         throw new NullPointerException();
       }
@@ -302,16 +422,16 @@ public final class StaticRelationGraphImpl<T> implements StaticRelationGraph<T> 
     }
 
     public String toString() {
-      boolean isState = !(state == null);
-      return "(refCnt: " + refCnt + ", range: [" + start + "-" + end + "]" + ", s: " + isState + ")";
+      final boolean outputExists = !(output == null);
+      return "(refCnt: " + refCnt + ", range: [" + start + "-" + end + "]" + ", s: " + outputExists + ")";
     }
 
-    public T getState() {
-      return state;
+    public T getOutput() {
+      return output;
     }
 
-    public void setState(T state) {
-      this.state = state;
+    public void saveOutput(final T value) {
+      this.output = value;
     }
   }
 }

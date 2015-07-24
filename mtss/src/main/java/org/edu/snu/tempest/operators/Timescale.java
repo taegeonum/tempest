@@ -31,8 +31,8 @@ public final class Timescale implements Comparable, Serializable {
   }
 
   @Override
-  public int compareTo(Object o) {
-    Timescale tt = (Timescale)o;
+  public int compareTo(final Object o) {
+    final Timescale tt = (Timescale)o;
     if (windowSize < tt.windowSize) { 
       return -1;
     } else if (windowSize > tt.windowSize) {
@@ -52,7 +52,7 @@ public final class Timescale implements Comparable, Serializable {
   }
 
   @Override
-  public boolean equals(Object obj) {
+  public boolean equals(final Object obj) {
     if (this == obj) {
       return true;
     }
@@ -62,7 +62,7 @@ public final class Timescale implements Comparable, Serializable {
     if (getClass() != obj.getClass()) {
       return false;
     }
-    Timescale other = (Timescale) obj;
+    final Timescale other = (Timescale) obj;
     if (intervalSize != other.intervalSize) {
       return false;
     }

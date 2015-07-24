@@ -33,7 +33,7 @@ public final class ZkMTSSignalCommandLine {
 
   }
 
-  private static Configuration getCommandLineConf(String[] args) throws BindException, IOException {
+  private static Configuration getCommandLineConf(final String[] args) throws BindException, IOException {
     final Tang tang = Tang.Factory.getTang();
     final JavaConfigurationBuilder cb = tang.newConfigurationBuilder();
 
@@ -48,15 +48,15 @@ public final class ZkMTSSignalCommandLine {
     return cl.getBuilder().build();
   }
   
-  public static void main(String[] args) throws Exception {
-    Configuration commandConf = getCommandLineConf(args);
-    JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
+  public static void main(final String[] args) throws Exception {
+    final Configuration commandConf = getCommandLineConf(args);
+    final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
     cb.bindImplementation(MTSSignalSender.class, ZkSignalSender.class);
     cb.addConfiguration(commandConf);
 
-    Injector ij = Tang.Factory.getTang().newInjector(cb.build());
-    MTSSignalSender sender = ij.getInstance(MTSSignalSender.class);
-    String type = ij.getNamedInstance(TypeOfSignal.class);
+    final Injector ij = Tang.Factory.getTang().newInjector(cb.build());
+    final MTSSignalSender sender = ij.getInstance(MTSSignalSender.class);
+    final String type = ij.getNamedInstance(TypeOfSignal.class);
     
     if (type.equalsIgnoreCase("addition")) {
       sender.addTimescale(new Timescale(ij.getNamedInstance(WindowSize.class), ij.getNamedInstance(Interval.class)));

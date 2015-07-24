@@ -34,14 +34,15 @@ public final class DefaultOverlappingWindowOperatorImpl<V> implements Overlappin
         + ", " + (currTime - startTime) % timescale.intervalSize);
     if (((currTime - startTime) % timescale.intervalSize) == 0) {
       LOG.log(Level.FINE, "OverlappingWindowOperator final aggregation: " + currTime + ", timescale: " + timescale);
-      long aggStartTime = System.nanoTime();
+      final long aggStartTime = System.nanoTime();
       final long endTime = currTime;
       final long start = endTime - timescale.windowSize;
       try {
+        final boolean fullyProcessed = this.startTime <= start;
         final V finalResult = relationCube.finalAggregate(start, currTime, timescale);
         // send the result
-        long etime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - aggStartTime);
-        outputHandler.onNext(new WindowOutput<>(timescale, finalResult, start, currTime, etime));
+        final long etime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - aggStartTime);
+        outputHandler.onNext(new WindowOutput<>(timescale, finalResult, start, currTime, etime, fullyProcessed));
       } catch (Exception e) {
         throw new RuntimeException(e);
       }

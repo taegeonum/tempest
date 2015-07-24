@@ -1,12 +1,12 @@
 package org.edu.snu.tempest.operators.common.impl;
 
+import junit.framework.Assert;
 import org.edu.snu.tempest.operators.Timescale;
 import org.edu.snu.tempest.operators.common.Clock;
 import org.edu.snu.tempest.operators.common.OverlappingWindowOperator;
 import org.edu.snu.tempest.operators.common.Subscription;
 import org.edu.snu.tempest.operators.staticmts.SlicedWindowOperator;
 import org.edu.snu.tempest.utils.Monitor;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.LinkedList;
@@ -21,25 +21,41 @@ import static org.mockito.Mockito.mock;
 public final class MTSClockTest {
 
   @Test
-  public void incrementTimeTest() throws Exception {
+  public void incrementClockTimeTest() throws Exception {
     final Monitor monitor = new Monitor();
     final Queue<Long> queue = new LinkedList<>();
     final long startTime = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
     final SlicedWindowOperator<Integer> operator = new TestSlicedWindowOperator(monitor, queue, startTime);
+    final AtomicInteger owoCount = new AtomicInteger(0);
 
     final Clock clock = new DefaultMTSClockImpl(operator);
+    final OverlappingWindowOperator<Integer> owo = new OverlappingWindowOperator<Integer>() {
+      @Override
+      public Timescale getTimescale() {
+        return new Timescale(5, 2);
+      }
+
+      @Override
+      public void onNext(final Long time) {
+        if (owoCount.get() < 3) {
+          owoCount.incrementAndGet();
+        }
+      }
+    };
+
+    clock.subscribe(owo);
     clock.start();
     monitor.mwait();
     
     Assert.assertEquals(3, queue.size());
-    Long time1 = queue.poll();
-    Long time2 = queue.poll();
-    Long time3 = queue.poll();
+    final Long time1 = queue.poll();
+    final Long time2 = queue.poll();
+    final Long time3 = queue.poll();
     
     Assert.assertEquals(1L, time2 - time1);
     Assert.assertEquals(1L, time3 - time2);
-
     clock.close();
+    Assert.assertEquals(3, owoCount.get());
   }
   
   @Test
@@ -51,15 +67,15 @@ public final class MTSClockTest {
     final Subscription<Timescale> subscription = clock.subscribe(operator);
     Thread.sleep(3000);
     subscription.unsubscribe();
-    int prevCounter = counter.get();
+    final int prevCounter = counter.get();
     
     Thread.sleep(2000);
     Assert.assertEquals(prevCounter, counter.get());
     clock.close();
   }
 
-  /*
-   * It should call SlicedWindowOperator.onNext first
+  /**
+   * It should call SlicedWindowOperator.onNext first.
    * and call a overlapping window operator which has small size of window.
    */
   @Test
@@ -109,8 +125,10 @@ public final class MTSClockTest {
     
     @Override
     public void onNext(Long time) {
-      queue.add(time);
-      System.out.println("Time: " + time);
+      if (count < 3) {
+        queue.add(time);
+      }
+
       if (count == 2) {
         monitor.mnotify();
       }

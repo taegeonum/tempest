@@ -42,7 +42,7 @@ public final class DefaultGarbageCollectorImpl implements DynamicRelationCube.Ga
   
   @Override
   public void onNext(final Long time) {
-    long deleteRow = time - largestWindowSize.get() - 1;
+    final long deleteRow = time - largestWindowSize.get() - 1;
     if (deleteRow >= 0) {
       for (; prevDeletedRow <= deleteRow; prevDeletedRow++) {
         LOG.log(Level.FINE, "GC remove " + prevDeletedRow + " startTime row at currentTime " + time);

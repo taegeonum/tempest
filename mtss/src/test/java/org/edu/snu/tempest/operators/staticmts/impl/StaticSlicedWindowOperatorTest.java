@@ -29,8 +29,8 @@ public class StaticSlicedWindowOperatorTest {
     aggregator = new TestAggregator();
   }
 
-  /*
-   * SlicedWindowOperator should aggregate the input 
+  /**
+   * SlicedWindowOperator should aggregate the input.
    */
   @Test
   public void defaultSlicedWindowTest() {

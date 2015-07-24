@@ -10,7 +10,7 @@ import java.util.logging.Logger;
 /*
  * Subscription 
  */
-public class DefaultSubscription<T, Token> implements Subscription<Token> {
+public final class DefaultSubscription<T, Token> implements Subscription<Token> {
 
   private static final Logger LOG = Logger.getLogger(DefaultSubscription.class.getName());
   

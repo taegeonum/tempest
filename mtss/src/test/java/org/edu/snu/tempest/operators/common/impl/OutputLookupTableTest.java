@@ -1,8 +1,8 @@
 package org.edu.snu.tempest.operators.common.impl;
 
+import junit.framework.Assert;
 import org.edu.snu.tempest.operators.common.NotFoundException;
 import org.edu.snu.tempest.operators.common.OutputLookupTable;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 

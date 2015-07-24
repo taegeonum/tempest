@@ -19,7 +19,7 @@ public final class StormRunner {
                                         final Config conf,
                                         final int runtimeInSeconds)
       throws InterruptedException {
-    LocalCluster cluster = new LocalCluster();
+    final LocalCluster cluster = new LocalCluster();
     cluster.submitTopology(topologyName, conf, topology);
     Thread.sleep((long) runtimeInSeconds * MILLIS_IN_SEC);
     cluster.killTopology(topologyName);

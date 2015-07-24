@@ -13,8 +13,8 @@ public class TimescaleSignalEncoder implements Encoder<TimescaleSignal> {
   }
   
   @Override
-  public byte[] encode(TimescaleSignal signal) {
-    TimescaleProtoMessage.TimescaleSignal encoded = TimescaleProtoMessage.TimescaleSignal.newBuilder()
+  public byte[] encode(final TimescaleSignal signal) {
+    final TimescaleProtoMessage.TimescaleSignal encoded = TimescaleProtoMessage.TimescaleSignal.newBuilder()
         .setWindowSize(signal.ts.windowSize)
         .setInterval(signal.ts.intervalSize)
         .setStartTime(signal.startTime)

@@ -16,7 +16,6 @@ import org.edu.snu.tempest.operators.parameters.InitialStartTime;
 
 import javax.inject.Inject;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,12 +26,10 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSOperator<I>
   private static final Logger LOG = Logger.getLogger(DynamicMTSOperatorImpl.class.getName());
 
   private final AtomicBoolean started = new AtomicBoolean(false);
-  private final Aggregator<I, V> aggregator;
   private final OutputHandler<V> outputHandler;
   private final Clock clock;
   private final DynamicRelationCubeImpl<V> relationCube;
   private final DynamicSlicedWindowOperator<I> slicedWindow;
-  private final List<OverlappingWindowOperator<V>> overlappingWindowOperators;
   private final Map<Timescale, Subscription<Timescale>> subscriptions;
   private final MTSSignalReceiver receiver;
 
@@ -43,11 +40,9 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSOperator<I>
                                 final MTSSignalReceiver receiver,
                                 @Parameter(CachingRate.class) final double cachingRate,
                                 @Parameter(InitialStartTime.class) final long startTime) {
-    this.aggregator = aggregator;
     this.outputHandler = handler;
     this.relationCube = new DynamicRelationCubeImpl<>(timescales, aggregator, cachingRate, startTime);
     this.subscriptions = new HashMap<>();
-    this.overlappingWindowOperators = new LinkedList<>();
     this.receiver = receiver;
     this.receiver.addTimescaleSignalListener(this);
 
@@ -58,7 +53,6 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSOperator<I>
     for (final Timescale timescale : timescales) {
       final OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperatorImpl<V>(
           timescale, relationCube, outputHandler, startTime);
-      this.overlappingWindowOperators.add(owo);
       final Subscription<Timescale> ss = clock.subscribe(owo);
       subscriptions.put(ss.getToken(), ss);
     }
@@ -71,7 +65,7 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSOperator<I>
       this.clock.start();
       try {
         this.receiver.start();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         e.printStackTrace();
         throw new RuntimeException(e);
       }
@@ -96,7 +90,6 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSOperator<I>
     //3. add overlapping window operator
     final OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperatorImpl<>(
         ts, relationCube, outputHandler, startTime);
-    this.overlappingWindowOperators.add(owo);
     final Subscription<Timescale> ss = this.clock.subscribe(owo);
     subscriptions.put(ss.getToken(), ss);
   }

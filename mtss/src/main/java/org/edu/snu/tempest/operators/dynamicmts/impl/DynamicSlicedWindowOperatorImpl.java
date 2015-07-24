@@ -56,7 +56,7 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
     if (nextSliceTime == currTime) {
       LOG.log(Level.FINE, "Sliced : [" + prevSliceTime + "-" + currTime + "]");
       synchronized (sync) {
-        V output = innerMap;
+        final V output = innerMap;
         innerMap = aggregator.init();
         // saves output to RelationCube
         relationCube.savePartialOutput(prevSliceTime, nextSliceTime, output);
@@ -92,8 +92,8 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
   public void onTimescaleDeletion(final Timescale ts) {
     LOG.log(Level.INFO, "SlicedWindow removeTimescale " + ts);
     synchronized (sliceQueue) {
-      for (Iterator<SliceInfo> iterator = sliceQueue.iterator(); iterator.hasNext();) {
-        SliceInfo slice = iterator.next();
+      for (final Iterator<SliceInfo> iterator = sliceQueue.iterator(); iterator.hasNext();) {
+        final SliceInfo slice = iterator.next();
         if (slice.timescale.equals(ts)) {
           iterator.remove();
         }
@@ -138,7 +138,7 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
         return 0;
       }
 
-      long time = sliceQueue.peek().sliceTime;
+      final long time = sliceQueue.peek().sliceTime;
       while (time == sliceQueue.peek().sliceTime) {
         info = sliceQueue.poll();
         if (info.last) {
@@ -165,7 +165,7 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
 
   private final class SliceInfoComparator implements Comparator<SliceInfo> {
     @Override
-    public int compare(SliceInfo o1, SliceInfo o2) {
+    public int compare(final SliceInfo o1, final SliceInfo o2) {
       if (o1.sliceTime < o2.sliceTime) {
         return -1;
       } else if (o1.sliceTime > o2.sliceTime) {

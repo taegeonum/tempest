@@ -16,17 +16,20 @@ public final class WindowOutput<V> implements Serializable {
   public final long startTime;
   public final long endTime;
   public final long elapsedTime;
+  public final boolean fullyProcessed;
   
   public WindowOutput(final Timescale ts,
                       final V output,
                       final long startTime,
                       final long endTime,
-                      final long elapsedTime) {
+                      final long elapsedTime,
+                      final boolean fullyProcessed) {
     this.timescale = ts;
     this.output = output;
     this.startTime = startTime;
     this.endTime = endTime;
     this.elapsedTime = elapsedTime;
+    this.fullyProcessed = fullyProcessed;
   }
   
   @Override
@@ -48,7 +51,7 @@ public final class WindowOutput<V> implements Serializable {
   }
 
   @Override
-  public boolean equals(Object obj) {
+  public boolean equals(final Object obj) {
     if (this == obj) {
       return true;
     }
@@ -58,7 +61,7 @@ public final class WindowOutput<V> implements Serializable {
     if (getClass() != obj.getClass()) {
       return false;
     }
-    WindowOutput other = (WindowOutput) obj;
+    final WindowOutput other = (WindowOutput) obj;
     if (endTime != other.endTime) {
       return false;
     }

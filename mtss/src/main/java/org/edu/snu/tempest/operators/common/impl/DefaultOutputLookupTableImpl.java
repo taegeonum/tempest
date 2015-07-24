@@ -28,17 +28,17 @@ public final class DefaultOutputLookupTableImpl<V> implements OutputLookupTable<
   @Override
   public void saveOutput(final long startTime, final long endTime, final V output) {
     table.putIfAbsent(startTime, new TreeMap<Long, V>(new LongComparator()));
-    
-    TreeMap<Long, V> row = table.get(startTime);
+
+    final TreeMap<Long, V> row = table.get(startTime);
     row.put(endTime, output);
   }
 
   @Override
   public V lookup(final long startTime, final long endTime) throws NotFoundException {
-    V entry;
+    final V entry;
     try {
       entry = table.get(startTime).get(endTime);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new NotFoundException("Cannot find element: at (" + startTime + ", " + endTime + ")");
     }
     
@@ -52,13 +52,13 @@ public final class DefaultOutputLookupTableImpl<V> implements OutputLookupTable<
 
   @Override
   public TimeAndValue<V> lookupLargestSizeOutput(final long startTime, final long endTime) throws NotFoundException {
-    TreeMap<Long, V> row = table.get(startTime);
+    final TreeMap<Long, V> row = table.get(startTime);
     
     if (row == null) {
       throw new NotFoundException("Cannot lookup startTime " + startTime + " in lookupLargestSizeOutput");
     }
-    
-    Long largestKey = row.floorKey(endTime);
+
+    final Long largestKey = row.floorKey(endTime);
     if (largestKey == null) {
       throw new NotFoundException(
           "Cannot lookup endTime " + endTime  + "from " + startTime + " in lookupLargestSizeOutput");
@@ -75,7 +75,7 @@ public final class DefaultOutputLookupTableImpl<V> implements OutputLookupTable<
   class LongComparator implements Comparator<Long> {
 
     @Override
-    public int compare(Long o1, Long o2) {
+    public int compare(final Long o1, final Long o2) {
       if (o1 - o2 < 0) {
         return -1;
       } else if (o1 - o2 > 0) {

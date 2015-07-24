@@ -1,5 +1,6 @@
 package org.edu.snu.tempest.operators.dynamicmts.signal;
 
+import junit.framework.Assert;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
@@ -8,7 +9,6 @@ import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkMTSParameters;
 import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkSignalReceiver;
 import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkSignalSender;
 import org.edu.snu.tempest.utils.Monitor;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Collection;
