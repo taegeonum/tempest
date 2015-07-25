@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 
 /**
  * WordCountTest topology.
+ * Test naive, on-the-fly, static-mts, and dynamic-mts operators.
  */
 public final class MTSWordCountTestTopology {
   private static final Logger LOG = Logger.getLogger(MTSWordCountTestTopology.class.getName());

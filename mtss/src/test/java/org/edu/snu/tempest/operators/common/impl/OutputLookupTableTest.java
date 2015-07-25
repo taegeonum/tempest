@@ -1,6 +1,6 @@
 package org.edu.snu.tempest.operators.common.impl;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.edu.snu.tempest.operators.common.NotFoundException;
 import org.edu.snu.tempest.operators.common.OutputLookupTable;
 import org.junit.Before;
@@ -78,7 +78,7 @@ public class OutputLookupTableTest {
   }
   
   @Test
-  public void deleteRowTest() {
+  public void deleteOutputsTest() {
     final Map<Integer, Integer> output2 = new HashMap<>();
     output2.put(1, 20);
     
@@ -89,7 +89,7 @@ public class OutputLookupTableTest {
     
     table.saveOutput(0, 8, output3);
   
-    table.deleteRow(0);
+    table.deleteOutputs(0);
     Assert.assertEquals(table.lookup(0), null);
   }
 }

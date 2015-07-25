@@ -1,6 +1,6 @@
 package org.edu.snu.tempest.operators.dynamicmts.impl;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.edu.snu.tempest.operators.Timescale;
 import org.edu.snu.tempest.operators.common.Aggregator;
 import org.edu.snu.tempest.operators.common.aggregators.CountByKeyAggregator;

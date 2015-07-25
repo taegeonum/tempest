@@ -1,7 +1,7 @@
 package org.edu.snu.tempest.operators.staticmts.impl;
 
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.edu.snu.tempest.operators.Timescale;
 import org.edu.snu.tempest.operators.common.WindowOutput;
 import org.edu.snu.tempest.operators.common.aggregators.CountByKeyAggregator;

@@ -68,7 +68,7 @@ public final class DefaultOutputLookupTableImpl<V> implements OutputLookupTable<
   }
 
   @Override
-  public void deleteRow(final long startTime) {
+  public void deleteOutputs(final long startTime) {
     table.remove(startTime);
   }
 

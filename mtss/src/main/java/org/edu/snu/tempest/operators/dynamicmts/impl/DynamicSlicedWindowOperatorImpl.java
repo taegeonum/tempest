@@ -77,7 +77,7 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
   }
 
   /**
-   * It aggregates input data and slices the aggregated data every slice time.
+   * It slices the partially aggregated data every slice time.
    * @param currTime current time
    */
   @Override
@@ -101,6 +101,10 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
     }
   }
 
+  /**
+   * Aggregates input into a partial aggregated output.
+   * @param val input
+   */
   @Override
   public void execute(final I val) {
     LOG.log(Level.FINE, "SlicedWindow aggregates input of [" +  val + "]");
@@ -109,6 +113,11 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
     }
   }
 
+  /**
+   * Update next slice time.
+   * @param ts timescale
+   * @param startTime current time
+   */
   @Override
   public void onTimescaleAddition(final Timescale ts, final long startTime) {
     LOG.log(Level.INFO, "SlicedWindow addTimescale " + ts);
@@ -123,6 +132,10 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
     }
   }
 
+  /**
+   * Update next slice time.
+   * @param ts timescale
+   */
   @Override
   public void onTimescaleDeletion(final Timescale ts) {
     LOG.log(Level.INFO, "SlicedWindow removeTimescale " + ts);

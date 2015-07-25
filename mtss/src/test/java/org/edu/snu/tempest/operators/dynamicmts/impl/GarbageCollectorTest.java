@@ -12,6 +12,9 @@ import static org.mockito.Mockito.*;
 
 public final class GarbageCollectorTest {
 
+  /**
+   * default garbage collector deletes outputs according to the largest window size.
+   */
   @Test
   public void onTimescaleAdditionTest() {
     final List<Timescale> timescales = new LinkedList<>();
@@ -21,23 +24,29 @@ public final class GarbageCollectorTest {
     final DynamicRelationCube.GarbageCollector gc = new DefaultGarbageCollectorImpl(timescales, table, 0);
 
     gc.onNext(3L);
-    verify(table, never()).deleteRow(0);
+    verify(table, never()).deleteOutputs(0);
     gc.onNext(4L);
-    verify(table, times(1)).deleteRow(0);
+    verify(table, times(1)).deleteOutputs(0);
     gc.onNext(5L);
-    verify(table, times(1)).deleteRow(1);
+    verify(table, times(1)).deleteOutputs(1);
     
     gc.onTimescaleAddition(new Timescale(5,1), 5L);
     gc.onNext(6L);
-    verify(table, never()).deleteRow(2);
+    verify(table, never()).deleteOutputs(2);
     
     gc.onNext(7L);
-    verify(table, never()).deleteRow(2);
+    verify(table, never()).deleteOutputs(2);
     
     gc.onNext(8L);
-    verify(table, times(1)).deleteRow(2);
+    verify(table, times(1)).deleteOutputs(2);
+
+    gc.onNext(9L);
+    verify(table, times(1)).deleteOutputs(3);
   }
-  
+
+  /**
+   * default garbage collector deletes outputs according to the largest window size.
+   */
   @Test
   public void onTimescaleDeletionTest() {
     final List<Timescale> timescales = new LinkedList<>();
@@ -51,26 +60,26 @@ public final class GarbageCollectorTest {
     final DynamicRelationCube.GarbageCollector gc = new DefaultGarbageCollectorImpl(timescales, table, 0);
 
     gc.onNext(10L);
-    verify(table, never()).deleteRow(0);
+    verify(table, never()).deleteOutputs(0);
     gc.onNext(11L);
-    verify(table, times(1)).deleteRow(0);
+    verify(table, times(1)).deleteOutputs(0);
     gc.onNext(12L);
-    verify(table, times(1)).deleteRow(1);
+    verify(table, times(1)).deleteOutputs(1);
 
     // delete timescale
     gc.onTimescaleDeletion(t2);
     gc.onNext(13L);
-    verify(table, times(1)).deleteRow(2);
-    verify(table, times(1)).deleteRow(3);
-    verify(table, times(1)).deleteRow(4);
-    verify(table, times(1)).deleteRow(5);
-    verify(table, times(1)).deleteRow(6);
-    verify(table, times(1)).deleteRow(7);
-    verify(table, times(1)).deleteRow(8);
-    verify(table, times(1)).deleteRow(9);
-    verify(table, never()).deleteRow(10);
+    verify(table, times(1)).deleteOutputs(2);
+    verify(table, times(1)).deleteOutputs(3);
+    verify(table, times(1)).deleteOutputs(4);
+    verify(table, times(1)).deleteOutputs(5);
+    verify(table, times(1)).deleteOutputs(6);
+    verify(table, times(1)).deleteOutputs(7);
+    verify(table, times(1)).deleteOutputs(8);
+    verify(table, times(1)).deleteOutputs(9);
+    verify(table, never()).deleteOutputs(10);
 
     gc.onNext(14L);
-    verify(table, times(1)).deleteRow(10);
+    verify(table, times(1)).deleteOutputs(10);
   }
 }

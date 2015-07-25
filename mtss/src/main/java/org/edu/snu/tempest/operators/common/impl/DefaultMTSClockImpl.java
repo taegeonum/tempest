@@ -88,6 +88,12 @@ public final class DefaultMTSClockImpl implements Clock {
     this(swo, 200L, TimeUnit.MILLISECONDS);
   }
 
+  /**
+   * Triggers a sliced window operator and overlapping window operators every second.
+   * It first triggers sliced window operator
+   * because sliced window operator should save partial aggregation before final aggregation.
+   * After that, it triggers overlapping window operators in order to trigger final aggregation.
+   */
   @Override
   public void start() {
     if (started.compareAndSet(false, true)) {

@@ -1,6 +1,6 @@
 package org.edu.snu.tempest.operators.dynamicmts.signal;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;

@@ -13,5 +13,10 @@ import org.edu.snu.tempest.operators.dynamicmts.signal.impl.ZkSignalReceiver;
 public interface MTSSignalReceiver extends AutoCloseable {
 
   void start() throws Exception;
+
+  /**
+   * MTSSignalReceiver sends timescale information to TimescaleSignalListener.
+   * @param listener timescale signal listener
+   */
   void addTimescaleSignalListener(TimescaleSignalListener listener);
 }

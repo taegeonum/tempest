@@ -42,9 +42,8 @@ public interface OutputLookupTable<V> {
   TimeAndValue<V> lookupLargestSizeOutput(long startTime, long endTime) throws NotFoundException;
   
   /**
-   * Delete outputs which start with startTime.
-   * @param startTime row of the table
+   * Delete outputs which start from startTime.
+   * @param startTime start time of the outputs.
    */
-  void deleteRow(long startTime);
-  
+  void deleteOutputs(long startTime);
 }

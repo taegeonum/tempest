@@ -35,6 +35,10 @@ public final class StaticSlicedWindowOperatorImpl<I, V> implements SlicedWindowO
     this.innerMap = aggregator.init();
   }
 
+  /**
+   * Slice partial aggregation and save the partial aggregation into RelationGraph in order to reuse it.
+   * @param currTime current time
+   */
   @Override
   public synchronized void onNext(final Long currTime) {
     LOG.log(Level.FINE, "SlicedWindow tickTime " + currTime + ", nextSlice: " + nextSliceTime);
@@ -46,6 +50,7 @@ public final class StaticSlicedWindowOperatorImpl<I, V> implements SlicedWindowO
     if (nextSliceTime == currTime) {
       LOG.log(Level.FINE, "Sliced : [" + prevSliceTime + "-" + currTime + "]");
       synchronized (sync) {
+        // slice
         final V output = innerMap;
         innerMap = aggregator.init();
         // saves output to RelationCube
@@ -58,10 +63,15 @@ public final class StaticSlicedWindowOperatorImpl<I, V> implements SlicedWindowO
     }
   }
 
+  /**
+   * Aggregates input.
+   * @param val input
+   */
   @Override
   public void execute(final I val) {
     LOG.log(Level.FINE, "SlicedWindow aggregates input of [" +  val + "]");
     synchronized (sync) {
+      // partial aggregation
       innerMap = aggregator.partialAggregate(innerMap, val);
     }
   }

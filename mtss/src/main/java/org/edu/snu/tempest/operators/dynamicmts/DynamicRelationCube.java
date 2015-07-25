@@ -16,7 +16,7 @@ public interface DynamicRelationCube<T> extends RelationCube<T>, TimescaleSignal
   /**
    * GarbageCollector interface.
    *
-   * It periodically removes OutputLookupTable rows in which startTime < currentTime - largestWindowSize
+   * It periodically removes outputs saved in OutputLookupTable.
    * It receives LogicalTime tick from Clock
    */
   public interface GarbageCollector extends TimescaleSignalListener, EventHandler<Long> {

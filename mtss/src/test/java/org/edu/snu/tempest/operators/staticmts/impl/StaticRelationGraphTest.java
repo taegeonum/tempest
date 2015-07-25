@@ -4,7 +4,7 @@ import org.edu.snu.tempest.operators.Timescale;
 import org.edu.snu.tempest.operators.common.Aggregator;
 import org.edu.snu.tempest.operators.common.aggregators.CountByKeyAggregator;
 import org.edu.snu.tempest.operators.staticmts.StaticRelationGraph;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.HashMap;

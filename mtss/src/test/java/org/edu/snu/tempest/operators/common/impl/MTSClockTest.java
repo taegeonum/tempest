@@ -1,12 +1,12 @@
 package org.edu.snu.tempest.operators.common.impl;
 
-import junit.framework.Assert;
 import org.edu.snu.tempest.operators.Timescale;
 import org.edu.snu.tempest.operators.common.Clock;
 import org.edu.snu.tempest.operators.common.OverlappingWindowOperator;
 import org.edu.snu.tempest.operators.common.Subscription;
 import org.edu.snu.tempest.operators.staticmts.SlicedWindowOperator;
 import org.edu.snu.tempest.utils.Monitor;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.LinkedList;
