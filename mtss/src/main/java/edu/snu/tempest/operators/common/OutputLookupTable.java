@@ -4,7 +4,7 @@ import edu.snu.tempest.operators.common.impl.DefaultOutputLookupTableImpl;
 import edu.snu.tempest.operators.common.impl.TimeAndOutput;
 import org.apache.reef.tang.annotations.DefaultImplementation;
 
-import java.util.TreeMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * OutputLookupTable interface.
@@ -39,7 +39,7 @@ public interface OutputLookupTable<V> {
    * @throws NotFoundException throws NotFoundException
    * when it cannot find and output starting at startTime.
    */
-  TreeMap<Long, V> lookup(long startTime) throws NotFoundException;
+  ConcurrentSkipListMap<Long, V> lookup(long startTime) throws NotFoundException;
   
   /**
    * Lookup an output having largest endTime within outputs which start at startTime.

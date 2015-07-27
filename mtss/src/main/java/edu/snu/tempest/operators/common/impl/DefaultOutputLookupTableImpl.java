@@ -1,19 +1,17 @@
 package edu.snu.tempest.operators.common.impl;
 
+import edu.snu.tempest.operators.common.NotFoundException;
 import edu.snu.tempest.operators.common.OutputLookupTable;
 import org.apache.log4j.Logger;
-import edu.snu.tempest.operators.common.NotFoundException;
 
 import javax.inject.Inject;
 import java.util.Comparator;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * It saves outputs into Table.
- * 
- * TODO: consider concurrency
  */
 public final class DefaultOutputLookupTableImpl<V> implements OutputLookupTable<V> {
   private static final Logger LOG = Logger.getLogger(DefaultOutputLookupTableImpl.class.getName());
@@ -21,11 +19,11 @@ public final class DefaultOutputLookupTableImpl<V> implements OutputLookupTable<
   /**
    * A data structure for saving outputs.
    */
-  public final ConcurrentMap<Long, TreeMap<Long, V>> table;
+  public final ConcurrentMap<Long, ConcurrentSkipListMap<Long, V>> table;
   
   @Inject
   public DefaultOutputLookupTableImpl() {
-    table = new ConcurrentHashMap<Long, TreeMap<Long, V>>();
+    table = new ConcurrentHashMap<>();
   }
 
   /**
@@ -36,10 +34,12 @@ public final class DefaultOutputLookupTableImpl<V> implements OutputLookupTable<
    */
   @Override
   public void saveOutput(final long startTime, final long endTime, final V output) {
-    table.putIfAbsent(startTime, new TreeMap<Long, V>(new LongComparator()));
-
-    final TreeMap<Long, V> row = table.get(startTime);
-    row.put(endTime, output);
+    ConcurrentSkipListMap<Long, V> row = table.get(startTime);
+    if (row == null) {
+      table.putIfAbsent(startTime, new ConcurrentSkipListMap<Long, V>(new LongComparator()));
+      row = table.get(startTime);
+    }
+    row.putIfAbsent(endTime, output);
   }
 
   /**
@@ -57,7 +57,6 @@ public final class DefaultOutputLookupTableImpl<V> implements OutputLookupTable<
     } catch (final Exception e) {
       throw new NotFoundException("Cannot find element: at (" + startTime + ", " + endTime + ")");
     }
-    
     return entry;
   }
 
@@ -68,7 +67,7 @@ public final class DefaultOutputLookupTableImpl<V> implements OutputLookupTable<
    * @throws NotFoundException
    */
   @Override
-  public TreeMap<Long, V> lookup(final long startTime) throws NotFoundException {
+  public ConcurrentSkipListMap<Long, V> lookup(final long startTime) throws NotFoundException {
     return table.get(startTime);
   }
 
@@ -81,8 +80,7 @@ public final class DefaultOutputLookupTableImpl<V> implements OutputLookupTable<
    */
   @Override
   public TimeAndOutput<V> lookupLargestSizeOutput(final long startTime, final long endTime) throws NotFoundException {
-    final TreeMap<Long, V> row = table.get(startTime);
-    
+    final ConcurrentSkipListMap<Long, V> row = table.get(startTime);
     if (row == null) {
       throw new NotFoundException("Cannot lookup startTime " + startTime + " in lookupLargestSizeOutput");
     }

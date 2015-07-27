@@ -9,7 +9,7 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TreeMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 public class OutputLookupTableTest {
 
@@ -49,7 +49,7 @@ public class OutputLookupTableTest {
     
     table.saveOutput(0, 8, output3);
 
-    final TreeMap<Long, Map<Integer, Integer>> maps = table.lookup(0);
+    final ConcurrentSkipListMap<Long, Map<Integer, Integer>> maps = table.lookup(0);
 
     final Entry<Long, Map<Integer, Integer>> first = maps.pollFirstEntry();
     final Entry<Long, Map<Integer, Integer>> second = maps.pollFirstEntry();
