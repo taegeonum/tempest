@@ -2,5 +2,5 @@
 --test_name=test_wordcount/dynamic_mts
 --spouts=1
 --total_time=90
---operator=dynamic_mts
+--mts_operator=dynamic_mts
 --timescales=(5,1)(10,2)(15,3)(20,4)

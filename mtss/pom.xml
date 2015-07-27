@@ -306,11 +306,11 @@
           <version>2.6.0</version>
         </dependency>
 
-        <!-- YCSB -->
+        <!-- Math3 -->
         <dependency>
-          <groupId>com.yahoo.ycsb</groupId>
-          <artifactId>core</artifactId>
-          <version>0.2.0</version>
+          <groupId>org.apache.commons</groupId>
+          <artifactId>commons-math3</artifactId>
+          <version>3.5</version>
         </dependency>
       </dependencies>
 
