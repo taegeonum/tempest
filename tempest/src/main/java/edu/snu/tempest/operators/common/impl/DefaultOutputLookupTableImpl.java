@@ -23,7 +23,6 @@ import edu.snu.tempest.operators.common.OutputLookupTable;
 import org.apache.log4j.Logger;
 
 import javax.inject.Inject;
-import java.util.Comparator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -119,19 +118,5 @@ public final class DefaultOutputLookupTableImpl<V> implements OutputLookupTable<
   @Override
   public void deleteOutputs(final long startTime) {
     table.remove(startTime);
-  }
-
-  class LongComparator implements Comparator<Long> {
-    @Override
-    public int compare(final Long o1, final Long o2) {
-      if (o1 - o2 < 0) {
-        return -1;
-      } else if (o1 - o2 > 0) {
-        return 1;
-      } else {
-        return 0;
-      }
-    }
-    
   }
 }
