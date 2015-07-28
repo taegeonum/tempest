@@ -94,13 +94,13 @@ public final class CountByKeyAggregator<I, K> implements Aggregator<I, Map<K, Lo
   }
 
   /**
-   * Extract key from input
+   * Extract key from input.
    * @param <I> input
    * @param <K> key
    */
   public interface KeyExtractor<I, K> {
     /**
-     * Get key from the input
+     * Get key from the input.
      * @param value input value
      * @return key
      */
