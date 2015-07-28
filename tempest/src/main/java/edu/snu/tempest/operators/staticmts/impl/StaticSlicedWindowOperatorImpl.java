@@ -55,14 +55,14 @@ public final class StaticSlicedWindowOperatorImpl<I, V> implements SlicedWindowO
   private long prevSliceTime;
 
   /**
-   * Sync object for partial output.
+   * Sync object for the bucket.
    */
   private final Object sync = new Object();
 
   /**
-   * Partial output.
+   * A bucket for partial aggregation.
    */
-  private V partialOutput;
+  private V bucket;
 
   /**
    * StaticSlicedWindowOperatorImpl.
@@ -79,7 +79,7 @@ public final class StaticSlicedWindowOperatorImpl<I, V> implements SlicedWindowO
     this.relationGraph = relationGraph;
     this.prevSliceTime = startTime;
     this.nextSliceTime = relationGraph.nextSliceTime();
-    this.partialOutput = aggregator.init();
+    this.bucket = aggregator.init();
   }
 
   /**
@@ -96,10 +96,11 @@ public final class StaticSlicedWindowOperatorImpl<I, V> implements SlicedWindowO
 
     if (nextSliceTime == currTime) {
       LOG.log(Level.FINE, "Sliced : [" + prevSliceTime + "-" + currTime + "]");
+      // create a new bucket
       synchronized (sync) {
         // slice
-        final V output = partialOutput;
-        partialOutput = aggregator.init();
+        final V output = bucket;
+        bucket = aggregator.init();
         // saves output to RelationCube
         LOG.log(Level.FINE, "Save partial output : [" + prevSliceTime + "-" + nextSliceTime + "]"
             + ", output: " + output);
@@ -111,7 +112,7 @@ public final class StaticSlicedWindowOperatorImpl<I, V> implements SlicedWindowO
   }
 
   /**
-   * Aggregates input and generate a partial aggregated output.
+   * Aggregates input into the current bucket.
    * @param val input
    */
   @Override
@@ -119,7 +120,7 @@ public final class StaticSlicedWindowOperatorImpl<I, V> implements SlicedWindowO
     LOG.log(Level.FINE, "SlicedWindow aggregates input of [" +  val + "]");
     synchronized (sync) {
       // partial aggregation
-      partialOutput = aggregator.partialAggregate(partialOutput, val);
+      bucket = aggregator.partialAggregate(bucket, val);
     }
   }
 }

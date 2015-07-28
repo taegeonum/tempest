@@ -32,31 +32,52 @@ import java.util.Map;
  * @param <K> key
  */
 public final class CountByKeyAggregator<I, K> implements Aggregator<I, Map<K, Long>> {
-
+  /**
+   * Key extractor for the input.
+   */
   private final KeyExtractor<I, K> extractor;
 
+  /**
+   * Count the input by key.
+   * @param extractor a key extractor
+   */
   @Inject
   public CountByKeyAggregator(final KeyExtractor<I, K> extractor) {
     this.extractor = extractor;
   }
 
+  /**
+   * Create a new bucket for partial aggregation.
+   * @return a map
+   */
   @Override
   public Map<K, Long> init() {
     return new HashMap<>();
   }
 
+  /**
+   * Counts the newVal.
+   * @param bucket a bucket for partial aggregation.
+   * @param newVal new value
+   * @return the bucket in which the newVal is counted.
+   */
   @Override
-  public Map<K, Long> partialAggregate(final Map<K, Long> oldVal, final I newVal) {
+  public Map<K, Long> partialAggregate(final Map<K, Long> bucket, final I newVal) {
     final K key = extractor.getKey(newVal);
-    Long old = oldVal.get(key);
+    Long old = bucket.get(key);
 
     if (old == null) {
       old = 0L;
     }
-    oldVal.put(key, old + 1);
-    return oldVal;
+    bucket.put(key, old + 1);
+    return bucket;
   }
 
+  /**
+   * Merge the list of buckets to create count by key.
+   * @param partials a list of buckets of partial aggregation.
+   * @return an output of final aggregation
+   */
   @Override
   public Map<K, Long> finalAggregate(final List<Map<K, Long>> partials) {
     final Map<K, Long> result = new HashMap<>();
@@ -72,7 +93,17 @@ public final class CountByKeyAggregator<I, K> implements Aggregator<I, Map<K, Lo
     return result;
   }
 
+  /**
+   * Extract key from input
+   * @param <I> input
+   * @param <K> key
+   */
   public interface KeyExtractor<I, K> {
+    /**
+     * Get key from the input
+     * @param value input value
+     * @return key
+     */
     K getKey(I value);
   }
 }

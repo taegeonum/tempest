@@ -26,23 +26,23 @@ import java.util.List;
 public interface Aggregator<I, V> {
 
   /**
-   * Initialization function when the data is new.
-   * @return initial output.
+   * Create a new bucket for partial aggregation.
+   * @return a bucket for aggregation.
    */
   V init();
 
   /**
-   * Aggregate the new data with aggOutput.
-   * @param aggOutput an aggregated output.
+   * Aggregate the new data into the bucket.
+   * @param bucket a bucket for partial aggregation.
    * @param newVal new value
-   * @return partially aggregated data.
+   * @return a bucket in which the newVal is aggregated
    */
-  V partialAggregate(final V aggOutput, final I newVal);
+  V partialAggregate(final V bucket, final I newVal);
 
   /**
    * Final aggregation of the partial results.
-   * @param partials a list of outputs of partial aggregation.
-   * @return an output aggregating the list of outputs.
+   * @param partials a list of buckets of partial aggregation.
+   * @return an output aggregating the list of buckets.
    */
   V finalAggregate(List<V> partials);
 }

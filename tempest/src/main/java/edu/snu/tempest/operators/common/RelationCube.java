@@ -21,7 +21,7 @@ package edu.snu.tempest.operators.common;
 import edu.snu.tempest.operators.Timescale;
 
 /**
- * RelationCube interface.
+ * RelationCube interface. This is a data structure for computation reuse.
  *
  * It saves partial aggregation and produces final aggregation.
  */

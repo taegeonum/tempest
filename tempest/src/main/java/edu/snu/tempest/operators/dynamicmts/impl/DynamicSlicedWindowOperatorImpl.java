@@ -64,9 +64,9 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
   private long nextSliceTime = 0;
 
   /**
-   * Partial output.
+   * A bucket for partial aggregation.
    */
-  private V partialOutput;
+  private V bucket;
 
   /**
    * Timescales.
@@ -74,7 +74,7 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
   private final List<Timescale> timescales;
 
   /**
-   * Sync object for partial output.
+   * Sync object for bucket.
    */
   private final Object sync = new Object();
 
@@ -93,7 +93,7 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
       final Long startTime) {
     this.aggregator = aggregator;
     this.relationCube = relationCube;
-    this.partialOutput = aggregator.init();
+    this.bucket = aggregator.init();
     this.sliceQueue = new PriorityQueue<>(10, new SliceInfoComparator());
     this.timescales = timescales;
     initializeWindowState(startTime);
@@ -101,7 +101,7 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
   }
 
   /**
-   * It slices the partially aggregated data every next slice time.
+   * It creates a new bucket every next slice time to slice the partially aggregated data.
    * @param currTime current time
    */
   @Override
@@ -114,11 +114,12 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
     LOG.log(Level.FINE, "SlicedWindow tickTime " + currTime + ", nextSlice: " + nextSliceTime);
     if (nextSliceTime == currTime) {
       LOG.log(Level.FINE, "Sliced : [" + prevSliceTime + "-" + currTime + "]");
+      // create a new bucket
       synchronized (sync) {
-        final V output = partialOutput;
-        partialOutput = aggregator.init();
+        final V partialAggregation = bucket;
+        bucket = aggregator.init();
         // saves output to RelationCube
-        relationCube.savePartialOutput(prevSliceTime, nextSliceTime, output);
+        relationCube.savePartialOutput(prevSliceTime, nextSliceTime, partialAggregation);
       }
       prevSliceTime = nextSliceTime;
       nextSliceTime = advanceWindowGetNextSlice();
@@ -126,14 +127,14 @@ public final class DynamicSlicedWindowOperatorImpl<I, V> implements DynamicSlice
   }
 
   /**
-   * Aggregates input and generate a partial aggregated output.
+   * Aggregates input into the current bucket.
    * @param val input
    */
   @Override
   public void execute(final I val) {
     LOG.log(Level.FINE, "SlicedWindow aggregates input of [" +  val + "]");
     synchronized (sync) {
-      partialOutput = aggregator.partialAggregate(partialOutput, val);
+      bucket = aggregator.partialAggregate(bucket, val);
     }
   }
 

@@ -62,11 +62,22 @@ public final class DefaultMTSOperatorSchedulerImpl implements MTSOperatorSchedul
 
   /**
    * SchedulerExecutor for a sliced window operator.
+   * This is a thread for slicing the aggregated input.
+   * In MTS Scheduler, It triggers a sliced window operator every second, by sending current time.
+   * It calls the `slicedWindowOperator.onNext(current_time)` to slice the aggregated input.
+   * In SlicedWindowOperator, if the current time is equal to the next slice time,
+   * then it slices the aggregated input and creates a new bucket for next partial aggregation.
+   * After slicing the aggregated input,
+   * It (in sliced window operator) saves the result into RelationCube, by calling `relationCube.savePartialOutput`
    */
   private final ScheduledExecutorService scheduler;
 
   /**
-   * Executor for overlapping window operators.
+   * It is a thread for final aggregation.
+   * After slicing the aggregated input in `scheduler`,
+   * the `scheduler` executes this `executor` to compute final aggregation.
+   * The `executor` calls overlapping window operators in the ascendant ordered by window size,
+   * and it computes final aggregation if current time is equal to the interval of the overlapping window operator.
    */
   private final ExecutorService executor;
 
