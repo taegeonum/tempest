@@ -52,7 +52,7 @@ public final class NaiveWindowOperator<I, V> implements MTSOperator<I> {
   private final AtomicBoolean started = new AtomicBoolean(false);
 
   /**
-   * Clock for window operation.
+   * Scheduler for window operation.
    */
   private final MTSOperatorScheduler mtsScheduler;
 
