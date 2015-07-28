@@ -28,7 +28,7 @@ import javax.inject.Inject;
 /**
  * Class for parsing parameters for test.
  */
-public final class WordCountTest {
+public final class WordCountTestUtil {
   public final int numSpouts;
   public final String testName;
   public final String logDir;
@@ -39,14 +39,14 @@ public final class WordCountTest {
   public final String inputType;
   
   @Inject
-  public WordCountTest(@Parameter(NumSpouts.class) final int numSpouts,
-      @Parameter(TestName.class) final String testName,
-      @Parameter(LogDir.class) final String logDir,
-      @Parameter(CachingRate.class) final double cachingRate,
-      @Parameter(TotalTime.class) final int totalTime,
-      @Parameter(Operator.class) final String operator,
-      @Parameter(InputType.class) final String inputType,
-      TimescaleParser tsParser) {
+  public WordCountTestUtil(@Parameter(NumSpouts.class) final int numSpouts,
+                           @Parameter(TestName.class) final String testName,
+                           @Parameter(LogDir.class) final String logDir,
+                           @Parameter(CachingRate.class) final double cachingRate,
+                           @Parameter(TotalTime.class) final int totalTime,
+                           @Parameter(Operator.class) final String operator,
+                           @Parameter(InputType.class) final String inputType,
+                           TimescaleParser tsParser) {
     this.numSpouts = numSpouts;
     this.testName = testName;
     this.logDir = logDir;

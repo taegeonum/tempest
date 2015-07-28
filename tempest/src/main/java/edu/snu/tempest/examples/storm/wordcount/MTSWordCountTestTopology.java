@@ -78,7 +78,7 @@ public final class MTSWordCountTestTopology {
     
     final Configuration commandLineConf = getCommandLineConf(args);
     final Injector injector = Tang.Factory.getTang().newInjector(commandLineConf);
-    final WordCountTest test = injector.getInstance(WordCountTest.class);
+    final WordCountTestUtil test = injector.getInstance(WordCountTestUtil.class);
     final String testName = injector.getNamedInstance(TestName.class);
     final String logDir = injector.getNamedInstance(LogDir.class);
     final double cachingRate = injector.getNamedInstance(CachingRate.class);
