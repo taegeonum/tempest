@@ -25,7 +25,7 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
 import edu.snu.stream.naive.operator.impl.NaiveWindowOperator;
 import edu.snu.stream.onthefly.operator.impl.OTFMTSOperatorImpl;
-import edu.snu.tempest.examples.utils.Profiler;
+import edu.snu.tempest.utils.Profiler;
 import edu.snu.tempest.examples.utils.writer.OutputWriter;
 import edu.snu.tempest.operators.Timescale;
 import edu.snu.tempest.operators.common.Aggregator;

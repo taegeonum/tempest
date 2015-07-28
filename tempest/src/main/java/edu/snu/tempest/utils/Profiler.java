@@ -16,13 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.examples.utils;
+package edu.snu.tempest.utils;
 
 import com.sun.management.OperatingSystemMXBean;
 
 import javax.management.*;
 import java.lang.management.ManagementFactory;
 
+/**
+ * Profiler class for profiling system load.
+ */
 public final class Profiler {
 
   private Profiler() {
