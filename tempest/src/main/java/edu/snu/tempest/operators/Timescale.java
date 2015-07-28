@@ -28,12 +28,11 @@ import java.util.concurrent.TimeUnit;
  * Unit: sec
  */
 public final class Timescale implements Comparable, Serializable {
-  private static final long serialVersionUID = 439658002747284570L;
   public final long windowSize;
   public final long intervalSize;
   
-  public Timescale(final int windowSize,
-                   final int intervalSize,
+  public Timescale(final long windowSize,
+                   final long intervalSize,
                    final TimeUnit windowTimeUnit,
                    final TimeUnit intervalTimeUnit) {
     if (windowSize <= 0 || windowSize - intervalSize < 0) {
@@ -44,7 +43,7 @@ public final class Timescale implements Comparable, Serializable {
     this.intervalSize = intervalTimeUnit.toSeconds(intervalSize);
   }
   
-  public Timescale(final int windowSize, final int intervalSize) {
+  public Timescale(final long windowSize, final long intervalSize) {
     this(windowSize, intervalSize, TimeUnit.SECONDS, TimeUnit.SECONDS);
   }
 

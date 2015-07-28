@@ -20,15 +20,10 @@ package edu.snu.tempest.operators.common;
 
 import edu.snu.tempest.operators.Timescale;
 
-import java.io.Serializable;
-
 /**
  * MTSOperator sends MTSWindowOutput to OutputHandler.
  */
-public final class MTSWindowOutput<V> implements Serializable {
-
-  private static final long serialVersionUID = 1L;
-
+public final class MTSWindowOutput<V> {
   /**
    * A timescale for the output.
    */
@@ -125,5 +120,4 @@ public final class MTSWindowOutput<V> implements Serializable {
     }
     return true;
   }
-
 }

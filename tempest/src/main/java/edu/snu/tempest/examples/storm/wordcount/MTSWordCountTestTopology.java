@@ -29,6 +29,7 @@ import edu.snu.tempest.examples.utils.StormRunner;
 import edu.snu.tempest.examples.utils.TimescaleParser.TimescaleParameter;
 import edu.snu.tempest.examples.utils.writer.LocalOutputWriter;
 import edu.snu.tempest.examples.utils.writer.OutputWriter;
+import edu.snu.tempest.operators.common.MTSWindowOutput;
 import edu.snu.tempest.operators.parameters.CachingRate;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
@@ -36,6 +37,7 @@ import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.exceptions.BindException;
 import org.apache.reef.tang.formats.CommandLine;
+
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -75,7 +77,8 @@ public final class MTSWordCountTestTopology {
     conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS, "-Xms16384m -Xmx30000m");
     conf.put(Config.STORM_ZOOKEEPER_CONNECTION_TIMEOUT, 500000);
     conf.put(Config.STORM_ZOOKEEPER_SESSION_TIMEOUT, 500000);
-    
+    conf.registerSerialization(MTSWindowOutput.class, WordCountWindowOutputSerializer.class);
+
     final Configuration commandLineConf = getCommandLineConf(args);
     final Injector injector = Tang.Factory.getTang().newInjector(commandLineConf);
     final WordCountTestUtil test = injector.getInstance(WordCountTestUtil.class);
