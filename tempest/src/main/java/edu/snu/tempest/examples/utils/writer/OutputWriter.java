@@ -28,7 +28,7 @@ import java.io.Serializable;
 /**
  * Output writer for logging.
  */
-public interface OutputWriter extends Serializable, Stage{
+public interface OutputWriter extends Serializable, Stage {
   
   @NamedParameter(doc = "output file path", default_value = "")
   public static final class OutputFilePath implements Name<String> {}

@@ -32,4 +32,4 @@ target
 !/.gitignore
 *.txt
 *~HEAD*
-mtss/log/wordcount
+log/*

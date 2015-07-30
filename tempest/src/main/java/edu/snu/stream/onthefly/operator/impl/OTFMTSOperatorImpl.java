@@ -40,10 +40,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * "On-the-fly sharing for streamed aggregation"'s operator
- * for multi-time scale sliding window operator.
- *
- * This operator is for evaluation.
+ * A mts operator for multi-time scale sliding window operator.
+ * Reference: S. Krishnamurthy, C. Wu, and M. Franklin. On-the-fly sharing
+ * for streamed aggregation. In ACM SIGMOD, 2006
  */
 public final class OTFMTSOperatorImpl<I, V> implements DynamicMTSOperator<I> {
   private static final Logger LOG = Logger.getLogger(DynamicMTSOperatorImpl.class.getName());
@@ -61,7 +60,7 @@ public final class OTFMTSOperatorImpl<I, V> implements DynamicMTSOperator<I> {
   /**
    * A mts scheduler for mts window operation.
    */
-  private final MTSOperatorScheduler mtsScheduler;
+  private final MTSOperatorScheduler scheduler;
 
   /**
    * A relationCube for saving outputs.
@@ -106,12 +105,12 @@ public final class OTFMTSOperatorImpl<I, V> implements DynamicMTSOperator<I> {
 
     this.slicedWindow = new DynamicSlicedWindowOperatorImpl<>(aggregator, timescales,
         relationCube, startTime);
-    this.mtsScheduler = new DefaultMTSOperatorSchedulerImpl(slicedWindow);
+    this.scheduler = new DefaultMTSOperatorSchedulerImpl(slicedWindow);
 
     for (final Timescale timescale : timescales) {
       final OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperatorImpl<V>(
           timescale, relationCube, outputHandler, startTime);
-      final Subscription<Timescale> ss = mtsScheduler.subscribe(owo);
+      final Subscription<Timescale> ss = scheduler.subscribe(owo);
       subscriptions.put(ss.getToken(), ss);
     }
   }
@@ -123,7 +122,7 @@ public final class OTFMTSOperatorImpl<I, V> implements DynamicMTSOperator<I> {
   public void start() {
     if (started.compareAndSet(false, true)) {
       LOG.log(Level.INFO, "MTSOperator start");
-      this.mtsScheduler.start();
+      this.scheduler.start();
       try {
         this.receiver.start();
       } catch (final Exception e) {
@@ -139,7 +138,7 @@ public final class OTFMTSOperatorImpl<I, V> implements DynamicMTSOperator<I> {
    */
   @Override
   public void execute(final I val) {
-    LOG.log(Level.FINEST, "MTSOperator execute : ( " + val + ")");
+    LOG.log(Level.FINEST, "OTFMTSOperatorImpl execute : ( " + val + ")");
     this.slicedWindow.execute(val);
   }
 
@@ -160,7 +159,7 @@ public final class OTFMTSOperatorImpl<I, V> implements DynamicMTSOperator<I> {
     LOG.log(Level.INFO, "MTSOperator addTimescale: " + ts);
     final OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperatorImpl<>(
         ts, relationCube, outputHandler, startTime);
-    final Subscription<Timescale> ss = this.mtsScheduler.subscribe(owo);
+    final Subscription<Timescale> ss = this.scheduler.subscribe(owo);
     subscriptions.put(ss.getToken(), ss);
   }
 
@@ -170,7 +169,7 @@ public final class OTFMTSOperatorImpl<I, V> implements DynamicMTSOperator<I> {
    */
   @Override
   public synchronized void onTimescaleDeletion(final Timescale ts) {
-    LOG.log(Level.INFO, "MTSOperator removeTimescale: " + ts);
+    LOG.log(Level.INFO, "OTFMTSOperatorImpl removeTimescale: " + ts);
     final Subscription<Timescale> ss = subscriptions.get(ts);
     if (ss == null) {
       LOG.log(Level.WARNING, "Deletion error: Timescale " + ts + " not exists. ");
@@ -183,6 +182,6 @@ public final class OTFMTSOperatorImpl<I, V> implements DynamicMTSOperator<I> {
 
   @Override
   public void close() throws Exception {
-    mtsScheduler.close();
+    scheduler.close();
   }
 }

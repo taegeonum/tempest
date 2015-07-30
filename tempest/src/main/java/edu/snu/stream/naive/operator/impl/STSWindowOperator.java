@@ -41,9 +41,8 @@ import java.util.logging.Logger;
 
 /**
  * Execute just one timescale window operator.
- * This operator is just for evaluation.
  */
-public final class NaiveWindowOperator<I, V> implements MTSOperator<I> {
+public final class STSWindowOperator<I, V> implements MTSOperator<I> {
   private static final Logger LOG = Logger.getLogger(DynamicMTSOperatorImpl.class.getName());
 
   /**
@@ -54,7 +53,7 @@ public final class NaiveWindowOperator<I, V> implements MTSOperator<I> {
   /**
    * Scheduler for window operation.
    */
-  private final MTSOperatorScheduler mtsScheduler;
+  private final MTSOperatorScheduler scheduler;
 
   /**
    * Sliced window operator for partial aggregation.
@@ -69,19 +68,19 @@ public final class NaiveWindowOperator<I, V> implements MTSOperator<I> {
    * @param startTime an initial start time of the operator.
    */
   @Inject
-  public NaiveWindowOperator(final Aggregator<I, V> aggregator,
-                             final Timescale timescale,
-                             final MTSOutputHandler<V> handler,
-                             final Long startTime) {
+  public STSWindowOperator(final Aggregator<I, V> aggregator,
+                           final Timescale timescale,
+                           final MTSOutputHandler<V> handler,
+                           final Long startTime) {
     final List<Timescale> timescales = new LinkedList<>();
     timescales.add(timescale);
     final OTFRelationCubeImpl<V> relationCube = new OTFRelationCubeImpl<>(timescales, aggregator, startTime);
     this.slicedWindow = new DynamicSlicedWindowOperatorImpl<>(aggregator, timescales,
         relationCube, startTime);
-    this.mtsScheduler = new DefaultMTSOperatorSchedulerImpl(slicedWindow);
+    this.scheduler = new DefaultMTSOperatorSchedulerImpl(slicedWindow);
     final OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperatorImpl<V>(
         timescale, relationCube, handler, startTime);
-    mtsScheduler.subscribe(owo);
+    scheduler.subscribe(owo);
   }
 
   /**
@@ -91,7 +90,7 @@ public final class NaiveWindowOperator<I, V> implements MTSOperator<I> {
   public void start() {
     if (started.compareAndSet(false, true)) {
       LOG.log(Level.INFO, "NaiveMTSOperator start");
-      this.mtsScheduler.start();
+      this.scheduler.start();
     }
   }
 
@@ -107,6 +106,6 @@ public final class NaiveWindowOperator<I, V> implements MTSOperator<I> {
 
   @Override
   public void close() throws Exception {
-    mtsScheduler.close();
+    scheduler.close();
   }
 }

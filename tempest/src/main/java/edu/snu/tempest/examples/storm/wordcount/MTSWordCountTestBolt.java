@@ -23,7 +23,7 @@ import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
-import edu.snu.stream.naive.operator.impl.NaiveWindowOperator;
+import edu.snu.stream.naive.operator.impl.STSWindowOperator;
 import edu.snu.stream.onthefly.operator.impl.OTFMTSOperatorImpl;
 import edu.snu.tempest.utils.Profiler;
 import edu.snu.tempest.examples.utils.writer.OutputWriter;
@@ -200,7 +200,7 @@ public final class MTSWordCountTestBolt extends BaseRichBolt {
       cb.bindNamedParameter(ZkMTSParameters.ZkServerAddress.class, address);
       cb.bindImplementation(MTSSignalReceiver.class, ZkSignalReceiver.class);
     } else if (operatorType.equals("naive")) {
-      cb.bindImplementation(MTSOperator.class, NaiveWindowOperator.class);
+      cb.bindImplementation(MTSOperator.class, STSWindowOperator.class);
     } else if (operatorType.equals("static_mts")) {
       cb.bindImplementation(MTSOperator.class, StaticMTSOperatorImpl.class);
     } else if (operatorType.equals("otf")) {
