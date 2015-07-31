@@ -19,7 +19,7 @@
 package edu.snu.tempest.operator.window.common;
 
 import edu.snu.tempest.operator.common.NotFoundException;
-import edu.snu.tempest.operator.window.Aggregator;
+import edu.snu.tempest.operator.window.FinalAggregator;
 import edu.snu.tempest.operator.window.Timescale;
 
 import javax.inject.Inject;
@@ -55,7 +55,7 @@ public final class StaticTSOutputGeneratorImpl<T> implements StaticTSOutputGener
   /**
    * Aggregator for final aggregation.
    */
-  private final Aggregator<?, T> finalAggregator;
+  private final FinalAggregator<T> finalAggregator;
 
   /**
    * A queue containing next slice time.
@@ -84,7 +84,7 @@ public final class StaticTSOutputGeneratorImpl<T> implements StaticTSOutputGener
 
   @Inject
   public StaticTSOutputGeneratorImpl(final List<Timescale> timescales,
-                                     final Aggregator<?, T> finalAggregator,
+                                     final FinalAggregator<T> finalAggregator,
                                      final long startTime) {
     this.table = new DefaultOutputLookupTableImpl<>();
     this.partialOutputTable = new DefaultOutputLookupTableImpl<>();

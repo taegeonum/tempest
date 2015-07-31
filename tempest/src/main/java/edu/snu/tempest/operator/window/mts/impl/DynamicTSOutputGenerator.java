@@ -19,7 +19,7 @@
 package edu.snu.tempest.operator.window.mts.impl;
 
 import edu.snu.tempest.operator.common.NotFoundException;
-import edu.snu.tempest.operator.window.Aggregator;
+import edu.snu.tempest.operator.window.FinalAggregator;
 import edu.snu.tempest.operator.window.Timescale;
 import edu.snu.tempest.operator.window.common.DefaultOutputLookupTableImpl;
 import edu.snu.tempest.operator.window.common.DynamicOutputCleaner;
@@ -46,7 +46,7 @@ final class DynamicTSOutputGenerator<T> implements TSOutputGenerator<T> {
   /**
    * An aggregator for final aggregation.
    */
-  private final Aggregator<?, T> finalAggregator;
+  private final FinalAggregator<T> finalAggregator;
 
   /**
    * A table for saving outputs.
@@ -72,7 +72,7 @@ final class DynamicTSOutputGenerator<T> implements TSOutputGenerator<T> {
    */
   @Inject
   public DynamicTSOutputGenerator(final List<Timescale> timescales,
-                                  final Aggregator<?, T> finalAggregator,
+                                  final FinalAggregator<T> finalAggregator,
                                   final CachingPolicy cachingPolicy,
                                   final long startTime) {
     this.finalAggregator = finalAggregator;

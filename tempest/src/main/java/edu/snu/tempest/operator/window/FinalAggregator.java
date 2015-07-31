@@ -18,22 +18,13 @@
  */
 package edu.snu.tempest.operator.window;
 
-/**
- * Aggregation function for multi-time scale aggregation.
- */
-public interface Aggregator<I, V> extends FinalAggregator<V> {
+import java.util.List;
 
+public interface FinalAggregator<V> {
   /**
-   * Create a new bucket for partial aggregation.
-   * @return a bucket for aggregation.
+   * Final aggregation of the partial results.
+   * @param partials a list of buckets of partial aggregation.
+   * @return an output aggregating the list of buckets.
    */
-  V init();
-
-  /**
-   * Aggregate the new data into the bucket.
-   * @param bucket a bucket for partial aggregation.
-   * @param newVal new value
-   * @return a bucket in which the newVal is aggregated
-   */
-  V partialAggregate(final V bucket, final I newVal);
+  V finalAggregate(List<V> partials);
 }
