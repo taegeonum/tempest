@@ -137,7 +137,7 @@ final class OTFTSOutputGenerator<T> implements TSOutputGenerator<T> {
   }
 
   /**
-   * Adjust garbage collector.
+   * Adjust output cleaner.
    * @param ts timescale to be added.
    * @param startTime the time when timescale is added..
    */
@@ -147,7 +147,7 @@ final class OTFTSOutputGenerator<T> implements TSOutputGenerator<T> {
   }
 
   /**
-   * Adjust garbage collector.
+   * Adjust output cleaner.
    * @param ts timescale to be deleted.
    */
   public void removeTimescale(final Timescale ts) {

@@ -30,7 +30,7 @@ import java.util.logging.Logger;
 /**
  * It triggers final aggregation every its interval.
  */
-final class DefaultOverlappingWindowOperator<V> implements OverlappingWindowOperator<V> {
+public final class DefaultOverlappingWindowOperator<V> implements OverlappingWindowOperator<V> {
   private static final Logger LOG = Logger.getLogger(DefaultOverlappingWindowOperator.class.getName());
 
   /**
