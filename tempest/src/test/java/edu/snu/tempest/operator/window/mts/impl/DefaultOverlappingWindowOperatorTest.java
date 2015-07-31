@@ -21,7 +21,7 @@ package edu.snu.tempest.operator.window.mts.impl;
 import edu.snu.tempest.operator.common.NotFoundException;
 import edu.snu.tempest.operator.window.Timescale;
 import edu.snu.tempest.operator.window.common.OverlappingWindowOperator;
-import edu.snu.tempest.operator.window.common.TSOutputGenerator;
+import edu.snu.tempest.operator.window.common.ComputationReuser;
 import edu.snu.tempest.operator.window.mts.MTSWindowOperator;
 import org.junit.Test;
 
@@ -34,7 +34,7 @@ import static org.mockito.Mockito.verify;
 public final class DefaultOverlappingWindowOperatorTest {
 
   /**
-   * Overlapping window operator should call tsOutputGenerator.finalAggregate
+   * Overlapping window operator should call computationReuser.finalAggregate
    * every its interval.
    */
   @Test
@@ -42,14 +42,14 @@ public final class DefaultOverlappingWindowOperatorTest {
     final Map<Integer, Integer> map = new HashMap<>();
     map.put(1, 1);
     final Timescale ts = new Timescale(5, 3);
-    final TSOutputGenerator<Map<Integer, Integer>> cube = mock(TSOutputGenerator.class);
+    final ComputationReuser<Map<Integer, Integer>> computationReuser = mock(ComputationReuser.class);
     final MTSWindowOperator.MTSOutputHandler<Map<Integer, Integer>> outputHandler =
         mock(MTSWindowOperator.MTSOutputHandler.class);
     final OverlappingWindowOperator<Map<Integer, Integer>> operator = new DefaultOverlappingWindowOperator<>(
-        ts, cube, outputHandler, 0L);
+        ts, computationReuser, outputHandler, 0L);
     operator.onNext(3L);
-    verify(cube).finalAggregate(-2, 3, ts);
+    verify(computationReuser).finalAggregate(-2, 3, ts);
     operator.onNext(6L);
-    verify(cube).finalAggregate(1, 6, ts);
+    verify(computationReuser).finalAggregate(1, 6, ts);
   }
 }

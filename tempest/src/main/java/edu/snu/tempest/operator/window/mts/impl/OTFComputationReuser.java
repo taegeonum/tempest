@@ -23,9 +23,8 @@ import edu.snu.tempest.operator.window.FinalAggregator;
 import edu.snu.tempest.operator.window.Timescale;
 import edu.snu.tempest.operator.window.common.DefaultOutputLookupTableImpl;
 import edu.snu.tempest.operator.window.common.DynamicOutputCleaner;
-import edu.snu.tempest.operator.window.common.TSOutputGenerator;
+import edu.snu.tempest.operator.window.common.ComputationReuser;
 import edu.snu.tempest.operator.window.common.WindowingTimeAndOutput;
-import edu.snu.tempest.operator.window.mts.CachingPolicy;
 
 import javax.inject.Inject;
 import java.util.LinkedList;
@@ -35,13 +34,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * DynamicTSOutputGenerator for DynamicMTSOperatorImpl.
- *
- * It saves final aggregation outputs according to the cachingPolicy
- * and reuses the cached outputs when doing final aggregation.
+ * OTFComputationReuser for OTFMTSOperatorImpl.
+ * Compared to computation reuse (save final aggregation) in DynamicComputationReuser and StaticComputationReuser,
+ * it just saves partial aggregation and does not do computation reuse.
  */
-final class DynamicTSOutputGenerator<T> implements TSOutputGenerator<T> {
-  private static final Logger LOG = Logger.getLogger(DynamicTSOutputGenerator.class.getName());
+final class OTFComputationReuser<T> implements ComputationReuser<T> {
+  private static final Logger LOG = Logger.getLogger(OTFComputationReuser.class.getName());
 
   /**
    * An aggregator for final aggregation.
@@ -49,40 +47,34 @@ final class DynamicTSOutputGenerator<T> implements TSOutputGenerator<T> {
   private final FinalAggregator<T> finalAggregator;
 
   /**
-   * A table for saving outputs.
+   * A table for saving partial/final outputs.
    */
   private final DefaultOutputLookupTableImpl<T> table;
 
   /**
-   * An output cleaner removing stale outputs.
+   * An output cleaner for removing stale outputs in the table.
    */
-  private final DynamicOutputCleaner cleaner;
+  private final DynamicOutputCleaner outputCleaner;
 
   /**
-   * A caching policy to determine output caching.
-   */
-  private final CachingPolicy cachingPolicy;
-
-  /**
-   * DynamicTSOutputGenerator for DynamicMTSOperatorImpl.
-   * @param timescales an initial timescales
+   * OTFComputationReuser.
+   * Compared to computation reuse (save final aggregation) in tempest MTS operators,
+   * it just saves partial aggregation.
+   * @param timescales an intial timescales.
    * @param finalAggregator an aggregator for final aggregation.
-   * @param cachingPolicy a caching policy for output caching
    * @param startTime an initial start time of the OTFMTSOperator.
    */
   @Inject
-  public DynamicTSOutputGenerator(final List<Timescale> timescales,
-                                  final FinalAggregator<T> finalAggregator,
-                                  final CachingPolicy cachingPolicy,
-                                  final long startTime) {
+  public OTFComputationReuser(final List<Timescale> timescales,
+                              final FinalAggregator<T> finalAggregator,
+                              final long startTime) {
     this.finalAggregator = finalAggregator;
     this.table = new DefaultOutputLookupTableImpl<>();
-    this.cleaner = new DynamicOutputCleaner(timescales, table, startTime);
-    this.cachingPolicy = cachingPolicy;
+    this.outputCleaner = new DynamicOutputCleaner(timescales, table, startTime);
   }
 
   /**
-   * Save partial output.
+   * Save a partial output containing data starting from the startTime to endTime.
    * @param startTime start time of the output
    * @param endTime end time of the output
    * @param output output
@@ -93,8 +85,8 @@ final class DynamicTSOutputGenerator<T> implements TSOutputGenerator<T> {
   }
 
   /**
-   * Produces a final output by doing computation reuse..
-   * It saves the final result and reuses it for other timescales' final aggregation
+   * It just produces the final result
+   * and does not save the output.
    * @param startTime start time of the output
    * @param endTime end time of the output
    * @param ts timescale
@@ -139,36 +131,27 @@ final class DynamicTSOutputGenerator<T> implements TSOutputGenerator<T> {
         + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - aggStartTime)
         + " at " + endTime + ", dependent size: " + dependentOutputs.size());
 
-    // save final result if the condition is satisfied.
-    if (cachingPolicy.cache(startTime, endTime, ts)) {
-      LOG.log(Level.FINE, "Saves output of : " + ts +
-          "[" + startTime + "-" + endTime + "]");
-      table.saveOutput(startTime, endTime, finalResult);
-    }
-
-    // remove stale outputs.
-    cleaner.onNext(endTime);
+    // remove
+    outputCleaner.onNext(endTime);
     return finalResult;
   }
 
   /**
-   * Adjust output cleaner and caching policy.
+   * Adjust output cleaner.
    * @param ts timescale to be added.
    * @param startTime the time when timescale is added..
    */
   public void addTimescale(final Timescale ts, final long startTime) {
     LOG.log(Level.INFO, "addTimescale " + ts);
-    cleaner.addTimescale(ts, startTime);
-    cachingPolicy.addTimescale(ts, startTime);
+    outputCleaner.addTimescale(ts, startTime);
   }
 
   /**
-   * Adjust output cleaner and caching policy.
-   * @param ts timescale to be added.
+   * Adjust output cleaner.
+   * @param ts timescale to be deleted.
    */
   public void removeTimescale(final Timescale ts) {
     LOG.log(Level.INFO, "removeTimescale " + ts);
-    cleaner.removeTimescale(ts);
-    cachingPolicy.removeTimescale(ts);
+    outputCleaner.removeTimescale(ts);
   }
 }

@@ -67,8 +67,8 @@ final class MTSOperatorScheduler {
    * In SlicedWindowOperator, if the current time is equal to the next slice time,
    * then it slices the aggregated input and creates a new bucket for next partial aggregation.
    * After slicing the aggregated input,
-   * It (in sliced window operator) saves the result into TSOutputGenerator,
-   * by calling `tsOutputGenerator.savePartialOutput`
+   * It (in sliced window operator) saves the result into ComputationReuser,
+   * by calling `computationReuser.savePartialOutput`
    */
   private final ScheduledExecutorService scheduler;
 

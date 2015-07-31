@@ -21,7 +21,7 @@ package edu.snu.tempest.operator.window.sts.impl;
 import edu.snu.tempest.operator.window.Aggregator;
 import edu.snu.tempest.operator.window.Timescale;
 import edu.snu.tempest.operator.window.common.StaticSlicedWindowOperatorImpl;
-import edu.snu.tempest.operator.window.common.StaticTSOutputGeneratorImpl;
+import edu.snu.tempest.operator.window.common.StaticComputationReuserImpl;
 import edu.snu.tempest.operator.window.mts.impl.SlicedWindowOperator;
 import edu.snu.tempest.operator.window.mts.parameters.InitialStartTime;
 import edu.snu.tempest.operator.window.sts.STSWindowOperator;
@@ -72,12 +72,12 @@ public final class STSWindowOperatorImpl<I, V> implements STSWindowOperator<I> {
                                @Parameter(InitialStartTime.class) final long startTime) {
     final List<Timescale> timescales = new LinkedList<>();
     timescales.add(timescale);
-    final StaticTSOutputGeneratorImpl<V> tsOutputGenerator =
-        new StaticTSOutputGeneratorImpl<>(timescales, aggregator, startTime);
+    final StaticComputationReuserImpl<V> computationReuser =
+        new StaticComputationReuserImpl<>(timescales, aggregator, startTime);
     this.slicedWindow = new StaticSlicedWindowOperatorImpl<>(aggregator,
-        tsOutputGenerator, startTime);
+        computationReuser, startTime);
     this.scheduler = new STSOperatorScheduler(slicedWindow,
-        new STSOverlappingWindowOperator<>(timescale, tsOutputGenerator, handler, startTime));
+        new STSOverlappingWindowOperator<>(timescale, computationReuser, handler, startTime));
   }
 
   /**

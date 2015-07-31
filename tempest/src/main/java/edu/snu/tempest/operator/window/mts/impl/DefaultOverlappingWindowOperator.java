@@ -20,7 +20,7 @@ package edu.snu.tempest.operator.window.mts.impl;
 
 import edu.snu.tempest.operator.window.Timescale;
 import edu.snu.tempest.operator.window.common.OverlappingWindowOperator;
-import edu.snu.tempest.operator.window.common.TSOutputGenerator;
+import edu.snu.tempest.operator.window.common.ComputationReuser;
 import edu.snu.tempest.operator.window.mts.MTSWindowOperator;
 import edu.snu.tempest.operator.window.mts.MTSWindowOutput;
 
@@ -39,9 +39,9 @@ public final class DefaultOverlappingWindowOperator<V> implements OverlappingWin
   private final Timescale timescale;
 
   /**
-   * An output generator for creating window outputs.
+   * A computation reuser for creating window outputs.
    */
-  private final TSOutputGenerator<V> tsOutputGenerator;
+  private final ComputationReuser<V> computationReuser;
 
   /**
    * An output handler for mts window output.
@@ -56,23 +56,23 @@ public final class DefaultOverlappingWindowOperator<V> implements OverlappingWin
   /**
    * Default overlapping window operator.
    * @param timescale a timescale
-   * @param tsOutputGenerator an output generator for creating window outputs.
+   * @param computationReuser an output generator for creating window outputs.
    * @param outputHandler an output handler
    * @param startTime an initial start time
    */
   public DefaultOverlappingWindowOperator(final Timescale timescale,
-                                          final TSOutputGenerator<V> tsOutputGenerator,
+                                          final ComputationReuser<V> computationReuser,
                                           final MTSWindowOperator.MTSOutputHandler<V> outputHandler,
                                           final long startTime) {
     this.timescale = timescale;
-    this.tsOutputGenerator = tsOutputGenerator;
+    this.computationReuser = computationReuser;
     this.outputHandler = outputHandler;
     this.startTime = startTime;
   }
 
   /**
    * If elapsed time is multiple of the interval
-   * then this operator executes final aggregation by using a tsOutputGenerator.
+   * then this operator executes final aggregation by using a computation reuser.
    * @param currTime current time
    */
   public synchronized void onNext(final Long currTime) {
@@ -84,7 +84,7 @@ public final class DefaultOverlappingWindowOperator<V> implements OverlappingWin
       final long start = endTime - timescale.windowSize;
       try {
         final boolean fullyProcessed = this.startTime <= start;
-        final V finalResult = tsOutputGenerator.finalAggregate(start, currTime, timescale);
+        final V finalResult = computationReuser.finalAggregate(start, currTime, timescale);
         // send the result
         outputHandler.onNext(new MTSWindowOutput<>(timescale, finalResult, start, currTime, fullyProcessed));
       } catch (Exception e) {

@@ -60,9 +60,9 @@ public final class DynamicMTSOperatorImpl<I, V> implements MTSWindowOperator<I> 
   private final MTSOperatorScheduler scheduler;
 
   /**
-   * An output generator for creating window outputs.
+   * A computation reuser for creating window outputs.
    */
-  private final DynamicTSOutputGenerator<V> tsOutputGenerator;
+  private final DynamicComputationReuser<V> computationReuser;
 
   /**
    * A sliced window operator for mts partial aggregation.
@@ -96,19 +96,19 @@ public final class DynamicMTSOperatorImpl<I, V> implements MTSWindowOperator<I> 
                                 final CachingPolicy cachingPolicy,
                                 @Parameter(InitialStartTime.class) final long startTime) {
     this.outputHandler = handler;
-    this.tsOutputGenerator = new DynamicTSOutputGenerator<>(timescales, aggregator,
+    this.computationReuser = new DynamicComputationReuser<>(timescales, aggregator,
         cachingPolicy, startTime);
     this.subscriptions = new HashMap<>();
     this.receiver = receiver;
     this.receiver.addTimescaleSignalListener(new SignalListener());
 
     this.slicedWindow = new DynamicSlicedWindowOperator<>(aggregator, timescales,
-        tsOutputGenerator, startTime);
+        computationReuser, startTime);
     this.scheduler = new MTSOperatorScheduler(slicedWindow);
 
     for (final Timescale timescale : timescales) {
       final DefaultOverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperator<V>(
-          timescale, tsOutputGenerator, outputHandler, startTime);
+          timescale, computationReuser, outputHandler, startTime);
       final Subscription<Timescale> ss = scheduler.subscribe(owo);
       subscriptions.put(ss.getToken(), ss);
     }
@@ -159,12 +159,12 @@ public final class DynamicMTSOperatorImpl<I, V> implements MTSWindowOperator<I> 
       //1. add timescale to SlicedWindowOperator
       DynamicMTSOperatorImpl.this.slicedWindow.addTimescale(ts, startTime);
 
-      //2. add timescale to tsOutputGenerator.
-      DynamicMTSOperatorImpl.this.tsOutputGenerator.addTimescale(ts, startTime);
+      //2. add timescale to computationReuser.
+      DynamicMTSOperatorImpl.this.computationReuser.addTimescale(ts, startTime);
 
       //3. add overlapping window operator
       final DefaultOverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperator<>(
-          ts, tsOutputGenerator, outputHandler, startTime);
+          ts, computationReuser, outputHandler, startTime);
       final Subscription<Timescale> ss = DynamicMTSOperatorImpl.this.scheduler.subscribe(owo);
       subscriptions.put(ss.getToken(), ss);
     }
@@ -181,7 +181,7 @@ public final class DynamicMTSOperatorImpl<I, V> implements MTSWindowOperator<I> 
         LOG.log(Level.WARNING, "Deletion error: Timescale " + ts + " not exists. ");
       } else {
         DynamicMTSOperatorImpl.this.slicedWindow.removeTimescale(ts);
-        DynamicMTSOperatorImpl.this.tsOutputGenerator.removeTimescale(ts);
+        DynamicMTSOperatorImpl.this.computationReuser.removeTimescale(ts);
         ss.unsubscribe();
       }
     }

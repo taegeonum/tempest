@@ -18,27 +18,15 @@
  */
 package edu.snu.tempest.operator.window.common;
 
-import edu.snu.tempest.operator.window.Timescale;
-
 /**
- * Timescale output generator interface. This is a data structure for output generation of window output.
+ * Computation reuser interface. This is a data structure for output generation of window output.
+ *
  * It saves partial aggregation and produces final aggregation of window output.
  */
-public interface TSOutputGenerator<T> {
+public interface StaticComputationReuser<T> extends ComputationReuser<T> {
   /**
-   * Save a partial output containing data starting from the startTime to endTime.
-   * @param startTime start time of the output
-   * @param endTime end time of the output
-   * @param output output
+   * Return next slice time for SlicedWindowOperator.
+   * @return next slice time
    */
-  void savePartialOutput(long startTime, long endTime, T output);
-
-  /**
-   * Produce an output containing data starting from the startTime to endTime.
-   * @param startTime start time of the output
-   * @param endTime end time of the output
-   * @param ts timescale
-   * @return an aggregated output ranging from startTime to endTime.
-   */
-  T finalAggregate(long startTime, long endTime, Timescale ts);
+  long nextSliceTime();
 }

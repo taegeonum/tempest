@@ -61,9 +61,9 @@ public final class OTFMTSOperatorImpl<I, V> implements MTSWindowOperator<I> {
   private final MTSOperatorScheduler scheduler;
 
   /**
-   * An output generator for creating window outputs.
+   * An computationReuser for creating window outputs.
    */
-  private final OTFTSOutputGenerator<V> tsOutputGenerator;
+  private final OTFComputationReuser<V> computationReuser;
 
   /**
    * A sliced window operator for partial aggregation.
@@ -96,18 +96,18 @@ public final class OTFMTSOperatorImpl<I, V> implements MTSWindowOperator<I> {
                             final MTSSignalReceiver receiver,
                             @Parameter(InitialStartTime.class) final long startTime) {
     this.outputHandler = handler;
-    this.tsOutputGenerator = new OTFTSOutputGenerator<>(timescales, aggregator, startTime);
+    this.computationReuser = new OTFComputationReuser<>(timescales, aggregator, startTime);
     this.subscriptions = new HashMap<>();
     this.receiver = receiver;
     this.receiver.addTimescaleSignalListener(new SignalListener());
 
     this.slicedWindow = new DynamicSlicedWindowOperator<>(aggregator, timescales,
-        tsOutputGenerator, startTime);
+        computationReuser, startTime);
     this.scheduler = new MTSOperatorScheduler(slicedWindow);
 
     for (final Timescale timescale : timescales) {
       final DefaultOverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperator<V>(
-          timescale, tsOutputGenerator, outputHandler, startTime);
+          timescale, computationReuser, outputHandler, startTime);
       final Subscription<Timescale> ss = scheduler.subscribe(owo);
       subscriptions.put(ss.getToken(), ss);
     }
@@ -157,12 +157,12 @@ public final class OTFMTSOperatorImpl<I, V> implements MTSWindowOperator<I> {
       //1. add timescale to SlicedWindowOperator
       OTFMTSOperatorImpl.this.slicedWindow.addTimescale(ts, startTime);
 
-      //2. add timescale to tsOutputGenerator.
-      OTFMTSOperatorImpl.this.tsOutputGenerator.addTimescale(ts, startTime);
+      //2. add timescale to computationReuser.
+      OTFMTSOperatorImpl.this.computationReuser.addTimescale(ts, startTime);
 
       //3. add overlapping window operator
       final DefaultOverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperator<>(
-          ts, tsOutputGenerator, outputHandler, startTime);
+          ts, computationReuser, outputHandler, startTime);
       final Subscription<Timescale> ss = OTFMTSOperatorImpl.this.scheduler.subscribe(owo);
       subscriptions.put(ss.getToken(), ss);
     }
@@ -179,7 +179,7 @@ public final class OTFMTSOperatorImpl<I, V> implements MTSWindowOperator<I> {
         LOG.log(Level.WARNING, "Deletion error: Timescale " + ts + " not exists. ");
       } else {
         OTFMTSOperatorImpl.this.slicedWindow.removeTimescale(ts);
-        OTFMTSOperatorImpl.this.tsOutputGenerator.removeTimescale(ts);
+        OTFMTSOperatorImpl.this.computationReuser.removeTimescale(ts);
         ss.unsubscribe();
       }
     }

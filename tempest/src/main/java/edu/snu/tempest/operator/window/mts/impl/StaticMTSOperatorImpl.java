@@ -21,7 +21,7 @@ package edu.snu.tempest.operator.window.mts.impl;
 import edu.snu.tempest.operator.window.Aggregator;
 import edu.snu.tempest.operator.window.Timescale;
 import edu.snu.tempest.operator.window.common.StaticSlicedWindowOperatorImpl;
-import edu.snu.tempest.operator.window.common.StaticTSOutputGeneratorImpl;
+import edu.snu.tempest.operator.window.common.StaticComputationReuserImpl;
 import edu.snu.tempest.operator.window.mts.MTSWindowOperator;
 import edu.snu.tempest.operator.window.mts.parameters.InitialStartTime;
 import org.apache.reef.tang.annotations.Parameter;
@@ -68,14 +68,14 @@ public final class StaticMTSOperatorImpl<I, V> implements MTSWindowOperator<I> {
                                final List<Timescale> timescales,
                                final MTSOutputHandler<V> handler,
                                @Parameter(InitialStartTime.class) final long startTime) {
-    final StaticTSOutputGeneratorImpl<V> tsOutputGenerator =
-        new StaticTSOutputGeneratorImpl<>(timescales, aggregator, startTime);
+    final StaticComputationReuserImpl<V> computationReuser =
+        new StaticComputationReuserImpl<>(timescales, aggregator, startTime);
     this.slicedWindow = new StaticSlicedWindowOperatorImpl<>(aggregator,
-        tsOutputGenerator, startTime);
+        computationReuser, startTime);
     this.scheduler = new MTSOperatorScheduler(slicedWindow);
     for (final Timescale ts : timescales) {
       final DefaultOverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperator<>(
-          ts, tsOutputGenerator, handler, startTime);
+          ts, computationReuser, handler, startTime);
       scheduler.subscribe(owo);
     }
   }

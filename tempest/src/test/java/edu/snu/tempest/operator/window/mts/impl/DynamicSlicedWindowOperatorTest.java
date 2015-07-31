@@ -19,7 +19,7 @@
 package edu.snu.tempest.operator.window.mts.impl;
 
 import edu.snu.tempest.operator.window.Timescale;
-import edu.snu.tempest.operator.window.common.TSOutputGenerator;
+import edu.snu.tempest.operator.window.common.ComputationReuser;
 import edu.snu.tempest.util.TestAggregator;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,14 +33,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class DynamicSlicedWindowOperatorTest {
-  TSOutputGenerator<Map<Integer, Integer>> cube;
+  ComputationReuser<Map<Integer, Integer>> cube;
   List<Timescale> timescales;
   IntegerRef counter;
   TestAggregator aggregator;
   
   @Before
   public void initialize() {
-    cube = mock(TSOutputGenerator.class);
+    cube = mock(ComputationReuser.class);
     timescales = new LinkedList<>();
     counter = new IntegerRef(0);
     timescales.add(new Timescale(5, 3));

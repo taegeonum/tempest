@@ -30,12 +30,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * StaticTSOutputGeneratorImpl Implementation.
+ * StaticComputationReuserImpl Implementation.
  *
  * It constructs RelationGraph at start time.
  */
-public final class StaticTSOutputGeneratorImpl<T> implements StaticTSOutputGenerator<T> {
-  private static final Logger LOG = Logger.getLogger(StaticTSOutputGeneratorImpl.class.getName());
+public final class StaticComputationReuserImpl<T> implements StaticComputationReuser<T> {
+  private static final Logger LOG = Logger.getLogger(StaticComputationReuserImpl.class.getName());
 
   /**
    * A table containing RelationGraphNode for final output.
@@ -83,7 +83,7 @@ public final class StaticTSOutputGeneratorImpl<T> implements StaticTSOutputGener
   private long prevSliceTime = 0;
 
   @Inject
-  public StaticTSOutputGeneratorImpl(final List<Timescale> timescales,
+  public StaticComputationReuserImpl(final List<Timescale> timescales,
                                      final FinalAggregator<T> finalAggregator,
                                      final long startTime) {
     this.table = new DefaultOutputLookupTableImpl<>();
@@ -93,7 +93,7 @@ public final class StaticTSOutputGeneratorImpl<T> implements StaticTSOutputGener
     this.sliceQueue = new LinkedList<>();
     this.period = calculatePeriod(timescales);
     this.initialStartTime = startTime;
-    LOG.log(Level.INFO, StaticTSOutputGeneratorImpl.class + " started. PERIOD: " + period);
+    LOG.log(Level.INFO, StaticComputationReuserImpl.class + " started. PERIOD: " + period);
 
     // create RelationGraph.
     addSlicedWindowNodeAndEdge();

@@ -23,7 +23,7 @@ import org.apache.reef.wake.EventHandler;
 /**
  * Sliced window operator.
  * It chops input stream and aggregates the input using Aggregator.
- * After that, it saves the partially aggregated results into TSOutputGenerator.
+ * After that, it saves the partially aggregated results into computationReuser.
  */
 public interface SlicedWindowOperator<I> extends EventHandler<Long> {
   /**

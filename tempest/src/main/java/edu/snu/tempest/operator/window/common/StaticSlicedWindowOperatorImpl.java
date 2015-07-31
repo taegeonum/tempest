@@ -40,9 +40,9 @@ public final class StaticSlicedWindowOperatorImpl<I, V> implements SlicedWindowO
   private final Aggregator<I, V> aggregator;
 
   /**
-   * An output generator for creating window outputs.
+   * An computation reuser for creating window outputs.
    */
-  private final StaticTSOutputGenerator<V> tsOutputGenerator;
+  private final StaticComputationReuser<V> computationReuser;
 
   /**
    * The next slice time to be sliced.
@@ -67,23 +67,23 @@ public final class StaticSlicedWindowOperatorImpl<I, V> implements SlicedWindowO
   /**
    * StaticSlicedWindowOperatorImpl.
    * @param aggregator an aggregator for partial aggregation
-   * @param tsOutputGenerator an output generator for creating window outputs.
+   * @param computationReuser an computation reuser for creating window outputs.
    * @param startTime a start time of the mts operator
    */
   @Inject
   public StaticSlicedWindowOperatorImpl(
       final Aggregator<I, V> aggregator,
-      final StaticTSOutputGenerator<V> tsOutputGenerator,
+      final StaticComputationReuser<V> computationReuser,
       final long startTime) {
     this.aggregator = aggregator;
-    this.tsOutputGenerator = tsOutputGenerator;
+    this.computationReuser = computationReuser;
     this.prevSliceTime = startTime;
-    this.nextSliceTime = tsOutputGenerator.nextSliceTime();
+    this.nextSliceTime = computationReuser.nextSliceTime();
     this.bucket = aggregator.init();
   }
 
   /**
-   * Slice partial aggregation and save the partial aggregation into tsOutputGenerator in order to reuse it.
+   * Slice partial aggregation and save the partial aggregation into computationReuser in order to reuse it.
    * @param currTime current time
    */
   @Override
@@ -91,7 +91,7 @@ public final class StaticSlicedWindowOperatorImpl<I, V> implements SlicedWindowO
     LOG.log(Level.FINE, "SlicedWindow tickTime " + currTime + ", nextSlice: " + nextSliceTime);
     while (nextSliceTime < currTime) {
       prevSliceTime = nextSliceTime;
-      nextSliceTime = tsOutputGenerator.nextSliceTime();
+      nextSliceTime = computationReuser.nextSliceTime();
     }
 
     if (nextSliceTime == currTime) {
@@ -104,10 +104,10 @@ public final class StaticSlicedWindowOperatorImpl<I, V> implements SlicedWindowO
         // saves output to TSOutputGenerator
         LOG.log(Level.FINE, "Save partial output : [" + prevSliceTime + "-" + nextSliceTime + "]"
             + ", output: " + output);
-        tsOutputGenerator.savePartialOutput(prevSliceTime, nextSliceTime, output);
+        computationReuser.savePartialOutput(prevSliceTime, nextSliceTime, output);
       }
       prevSliceTime = nextSliceTime;
-      nextSliceTime = tsOutputGenerator.nextSliceTime();
+      nextSliceTime = computationReuser.nextSliceTime();
     }
   }
 

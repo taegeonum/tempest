@@ -20,7 +20,7 @@ package edu.snu.tempest.operator.window.mts.impl;
 
 import edu.snu.tempest.operator.window.Aggregator;
 import edu.snu.tempest.operator.window.Timescale;
-import edu.snu.tempest.operator.window.common.TSOutputGenerator;
+import edu.snu.tempest.operator.window.common.ComputationReuser;
 
 import javax.inject.Inject;
 import java.util.Comparator;
@@ -45,9 +45,9 @@ final class DynamicSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
   private final Aggregator<I, V> aggregator;
 
   /**
-   * An output generator for creating window outputs.
+   * A computation reuser for creating window outputs.
    */
-  private final TSOutputGenerator<V> tsOutputGenerator;
+  private final ComputationReuser<V> computationReuser;
 
   /**
    * SliceQueue containing next slice time.
@@ -83,17 +83,17 @@ final class DynamicSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
    * DynamicSlicedWindowOperatorImpl.
    * @param aggregator an aggregator for partial aggregation
    * @param timescales an initial timescales
-   * @param tsOutputGenerator an output generator for creating window outputs.
+   * @param computationReuser an output generator for creating window outputs.
    * @param startTime a start time of the mts operator
    */
   @Inject
   public DynamicSlicedWindowOperator(
       final Aggregator<I, V> aggregator,
       final List<Timescale> timescales,
-      final TSOutputGenerator<V> tsOutputGenerator,
+      final ComputationReuser<V> computationReuser,
       final Long startTime) {
     this.aggregator = aggregator;
-    this.tsOutputGenerator = tsOutputGenerator;
+    this.computationReuser = computationReuser;
     this.bucket = aggregator.init();
     this.sliceQueue = new PriorityQueue<>(10, new SliceInfoComparator());
     this.timescales = timescales;
@@ -119,8 +119,8 @@ final class DynamicSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
       synchronized (sync) {
         final V partialAggregation = bucket;
         bucket = aggregator.init();
-        // saves output to tsOutputGenerator
-        tsOutputGenerator.savePartialOutput(prevSliceTime, nextSliceTime, partialAggregation);
+        // saves output to computation reuser
+        computationReuser.savePartialOutput(prevSliceTime, nextSliceTime, partialAggregation);
       }
       prevSliceTime = nextSliceTime;
       nextSliceTime = advanceWindowGetNextSlice();
