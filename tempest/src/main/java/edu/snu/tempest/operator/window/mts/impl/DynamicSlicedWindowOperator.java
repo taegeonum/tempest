@@ -32,6 +32,8 @@ import java.util.logging.Logger;
 
 /**
  * This implementation is based on "On-the-fly Sharing for Streamed Aggregation" paper.
+ * Reference: S. Krishnamurthy, C. Wu, and M. Franklin. On-the-fly sharing
+ * for streamed aggregation. In ACM SIGMOD, 2006
  * It chops input stream into paired sliced window.
  */
 final class DynamicSlicedWindowOperator<I, V> implements SlicedWindowOperator<I> {
