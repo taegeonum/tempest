@@ -20,8 +20,8 @@ Tempest project
 3. --spouts: the number of spouts 
 4. --total_time : total elapsed time to test
 5. --mts_operator: mts/naive/otf/rg
-  * dynamic_mts: Dynamic RelationCube impl
-  * static_mts: Static RelationCube impl
+  * dynamic_mts: Dynamic multi-timescale impl
+  * static_mts: Static multi-timescale impl
   * naive: Naive impl
   * otf: On-the-fly sharing (input sharing) impl
 6. --timescales: timescales

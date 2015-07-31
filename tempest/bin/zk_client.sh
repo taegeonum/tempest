@@ -4,4 +4,4 @@
 # w: window size
 # i: interval size
 # type: addtion/deletion
-java -cp ./target/mtss-0.11-SNAPSHOT.jar org.edu.snu.tempest.ZkMTSSignalCommandLine --zkAddress=$1 --zkIdentifier=$2 --w=$3 --i=$4 --type=$5
+java -cp ./target/mtss-0.11-SNAPSHOT.jar org.edu.snu.tempest.operator.window.mts.signal.impl.ZkMTSSignalCommandLine --zkAddress=$1 --zkIdentifier=$2 --w=$3 --i=$4 --type=$5
