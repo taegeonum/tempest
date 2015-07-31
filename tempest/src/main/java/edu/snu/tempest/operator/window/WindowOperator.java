@@ -1,4 +1,4 @@
-package edu.snu.tempest.operator;
+package edu.snu.tempest.operator.window;
 
 import org.apache.reef.wake.Stage;
 import org.apache.reef.wake.EventHandler;

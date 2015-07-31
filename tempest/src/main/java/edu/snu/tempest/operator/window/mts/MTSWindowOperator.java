@@ -18,7 +18,7 @@
  */
 package edu.snu.tempest.operator.window.mts;
 
-import edu.snu.tempest.operator.WindowOperator;
+import edu.snu.tempest.operator.window.WindowOperator;
 
 /**
  * Multi-time scale window operator interface.

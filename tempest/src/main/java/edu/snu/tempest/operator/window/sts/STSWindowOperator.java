@@ -18,7 +18,7 @@
  */
 package edu.snu.tempest.operator.window.sts;
 
-import edu.snu.tempest.operator.WindowOperator;
+import edu.snu.tempest.operator.window.WindowOperator;
 
 /**
  * Single timescale window operator interface.
