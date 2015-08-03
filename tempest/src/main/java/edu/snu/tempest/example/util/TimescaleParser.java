@@ -47,11 +47,9 @@ public final class TimescaleParser {
 
   @Inject
   private TimescaleParser(@Parameter(TimescaleParameter.class) final String params) {
-
     if (!params.matches(REGEX)) {
       throw new InvalidParameterException("Invalid timescales: " + params + " The format should be " + REGEX);
     }
-
     this.timescales = parseToTimescaleList(params);
   }
   

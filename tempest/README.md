@@ -29,5 +29,5 @@ Tempest project
   * unit: second
   * ex) (5,1)(10,2) -> two timescales: window size is 5seconds, interval is 1 second. window size is 10 seconds, interval is 2 seconds.
 7. --bolts: the number of bolts
-9. --input_interval: interval of sending input.
+8. --input_interval: interval of sending input.
 

@@ -146,7 +146,6 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
   
   @Override
   public void declareOutputFields(final OutputFieldsDeclarer paramOutputFieldsDeclarer) {
-
   }
 
   @Override

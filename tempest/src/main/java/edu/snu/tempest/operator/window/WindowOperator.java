@@ -14,7 +14,6 @@ public interface WindowOperator<I> extends Stage {
 
   /**
    * It receives input from this function.
-   *
    * @param val input value
    */
   void execute(final I val);
@@ -24,6 +23,5 @@ public interface WindowOperator<I> extends Stage {
    * @param <V> output
    */
   public interface WindowOutputHandler<V> extends EventHandler<V> {
-
   }
 }

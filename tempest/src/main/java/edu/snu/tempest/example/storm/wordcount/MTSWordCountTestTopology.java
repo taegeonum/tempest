@@ -48,8 +48,8 @@ import java.util.logging.Logger;
  */
 final class MTSWordCountTestTopology {
   private static final Logger LOG = Logger.getLogger(MTSWordCountTestTopology.class.getName());
-  private MTSWordCountTestTopology() {
 
+  private MTSWordCountTestTopology() {
   }
 
   /**

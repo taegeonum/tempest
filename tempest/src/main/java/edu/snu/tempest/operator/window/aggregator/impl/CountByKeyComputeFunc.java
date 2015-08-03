@@ -27,7 +27,6 @@ final class CountByKeyComputeFunc implements ComputeByKeyAggregator.ComputeByKey
 
   @Inject
   private CountByKeyComputeFunc() {
-
   }
 
   /**
