@@ -44,6 +44,10 @@ public final class TestOutputHandler implements MTSWindowOperator.MTSOutputHandl
     this.startTime = startTime;
   }
 
+  /**
+   * Collect window outputs.
+   * @param windowOutput a mts window output
+   */
   @Override
   public void onNext(final MTSWindowOutput<Map<Integer, Long>> windowOutput) {
     if (count < 2) {

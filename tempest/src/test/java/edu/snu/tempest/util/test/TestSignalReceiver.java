@@ -25,7 +25,7 @@ import edu.snu.tempest.operator.window.time.mts.signal.MTSSignalReceiver;
 import javax.inject.Inject;
 
 /**
- * SignalReceiver for test.
+ * A default SignalReceiver for test.
  */
 public final class TestSignalReceiver implements MTSSignalReceiver {
   private TimescaleSignalListener listener;

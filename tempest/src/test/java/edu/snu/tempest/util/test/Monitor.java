@@ -26,6 +26,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class Monitor {
   private final AtomicBoolean finished = new AtomicBoolean(false);
 
+  /**
+   * Waiting.
+   * @throws InterruptedException
+   */
   public void mwait() throws InterruptedException {
     synchronized (this) {
       while (!finished.get()) {
@@ -35,6 +39,9 @@ public final class Monitor {
     }
   }
 
+  /**
+   * Notify.
+   */
   public void mnotify() {
     synchronized (this) {
       finished.compareAndSet(false, true);

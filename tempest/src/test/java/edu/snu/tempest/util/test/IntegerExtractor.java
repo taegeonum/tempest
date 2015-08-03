@@ -32,6 +32,11 @@ public final class IntegerExtractor implements KeyExtractor<Integer, Integer> {
   private IntegerExtractor() {
   }
 
+  /**
+   * Extract integer.
+   * @param value input
+   * @return integer
+   */
   @Override
   public Integer getKey(final Integer value) {
     return value;

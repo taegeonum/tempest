@@ -40,7 +40,7 @@ final class CountByKeyComputeFunc implements ComputeByKeyAggregator.ComputeByKey
   }
 
   /**
-   * Sum the two counts
+   * Sum the counts.
    * @param oldVal old value
    * @param newVal new value
    * @return sum
