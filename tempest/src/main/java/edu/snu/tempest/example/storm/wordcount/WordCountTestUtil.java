@@ -20,7 +20,7 @@ package edu.snu.tempest.example.storm.wordcount;
 
 import edu.snu.tempest.example.storm.parameters.*;
 import edu.snu.tempest.example.util.TimescaleParser;
-import edu.snu.tempest.operator.window.mts.parameters.CachingRate;
+import edu.snu.tempest.operator.window.time.mts.parameters.CachingRate;
 import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;
@@ -28,7 +28,7 @@ import javax.inject.Inject;
 /**
  * Class for parsing parameters for test.
  */
-public final class WordCountTestUtil {
+final class WordCountTestUtil {
   public final int numSpouts;
   public final String testName;
   public final String logDir;
@@ -39,12 +39,12 @@ public final class WordCountTestUtil {
   public final String inputType;
   
   @Inject
-  public WordCountTestUtil(@Parameter(NumSpouts.class) final int numSpouts,
+  private WordCountTestUtil(@Parameter(NumSpouts.class) final int numSpouts,
                            @Parameter(TestName.class) final String testName,
                            @Parameter(LogDir.class) final String logDir,
                            @Parameter(CachingRate.class) final double cachingRate,
                            @Parameter(TotalTime.class) final int totalTime,
-                           @Parameter(Operator.class) final String operator,
+                           @Parameter(OperatorType.class) final String operator,
                            @Parameter(InputType.class) final String inputType,
                            final TimescaleParser tsParser) {
     this.numSpouts = numSpouts;

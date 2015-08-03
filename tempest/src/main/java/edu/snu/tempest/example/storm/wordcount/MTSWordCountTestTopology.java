@@ -29,8 +29,8 @@ import edu.snu.tempest.example.storm.parameters.*;
 import edu.snu.tempest.example.util.TimescaleParser.TimescaleParameter;
 import edu.snu.tempest.example.util.writer.LocalOutputWriter;
 import edu.snu.tempest.example.util.writer.OutputWriter;
-import edu.snu.tempest.operator.window.mts.MTSWindowOutput;
-import edu.snu.tempest.operator.window.mts.parameters.CachingRate;
+import edu.snu.tempest.operator.window.time.mts.MTSWindowOutput;
+import edu.snu.tempest.operator.window.time.mts.parameters.CachingRate;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
@@ -44,15 +44,17 @@ import java.util.logging.Logger;
 
 /**
  * WordCountTest topology.
- * Test naive, on-the-fly, static-mts, and dynamic-mts operators.
+ * This can run naive, on-the-fly, static-mts, and dynamic-mts operators.
  */
-public final class MTSWordCountTestTopology {
+final class MTSWordCountTestTopology {
   private static final Logger LOG = Logger.getLogger(MTSWordCountTestTopology.class.getName());
-
   private MTSWordCountTestTopology() {
 
   }
 
+  /**
+   * Parse command line arguments.
+   */
   private static Configuration getCommandLineConf(String[] args) throws BindException, IOException {
     final Tang tang = Tang.Factory.getTang();
     final JavaConfigurationBuilder cb = tang.newConfigurationBuilder();
@@ -64,7 +66,7 @@ public final class MTSWordCountTestTopology {
         .registerShortNameOfClass(TimescaleParameter.class)
         .registerShortNameOfClass(NumSpouts.class)
         .registerShortNameOfClass(TotalTime.class)
-        .registerShortNameOfClass(Operator.class)
+        .registerShortNameOfClass(OperatorType.class)
         .registerShortNameOfClass(InputType.class)
         .registerShortNameOfClass(NumBolts.class)
         .processCommandLine(args);
@@ -85,20 +87,21 @@ public final class MTSWordCountTestTopology {
     final String testName = injector.getNamedInstance(TestName.class);
     final String logDir = injector.getNamedInstance(LogDir.class);
     final double cachingRate = injector.getNamedInstance(CachingRate.class);
-    final String operator = injector.getNamedInstance(Operator.class);
+    final String operator = injector.getNamedInstance(OperatorType.class);
     final String topologyName = operator + "_WC_TOPOLOGY";
     final String inputType = injector.getNamedInstance(InputType.class);
     final int numBolts = injector.getNamedInstance(NumBolts.class);
+    final double inputInterval = injector.getNamedInstance(InputInterval.class);
     
     final TopologyBuilder builder = new TopologyBuilder();
     BaseRichSpout spout = null;
     if (inputType.compareTo("random") == 0) {
-      spout = new RandomWordSpout(1);
+      spout = new RandomWordSpout(inputInterval);
     } else if (inputType.compareTo("zipfian") == 0) {
-      spout = new ZipfianWordSpout(1);
+      spout = new ZipfianWordSpout(inputInterval);
     }
     
-    final OutputWriter writer = new LocalOutputWriter();
+    final OutputWriter writer = injector.getInstance(LocalOutputWriter.class);
     // For logging initial configuration.
     writer.write(logDir + testName + "/conf", test.print() + "\n" + "saving: " + cachingRate);
     writer.write(logDir + testName + "/initialTime", System.currentTimeMillis()+"");
@@ -107,7 +110,8 @@ public final class MTSWordCountTestTopology {
 
     // set spout
     builder.setSpout("wcspout", spout, test.numSpouts);
-    final BaseRichBolt bolt = new MTSWordCountTestBolt(new LocalOutputWriter(),
+    final BaseRichBolt bolt = new MTSWordCountTestBolt(
+        injector.getInstance(LocalOutputWriter.class),
         logDir + testName,
         test.tsParser.timescales,
         test.operatorName,

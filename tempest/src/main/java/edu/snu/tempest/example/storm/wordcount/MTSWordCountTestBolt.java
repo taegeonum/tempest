@@ -25,33 +25,30 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
 import edu.snu.tempest.example.util.writer.OutputWriter;
 import edu.snu.tempest.operator.window.WindowOperator;
-import edu.snu.tempest.operator.window.Aggregator;
-import edu.snu.tempest.operator.window.Timescale;
-import edu.snu.tempest.operator.window.aggregator.CountByKeyAggregator;
-import edu.snu.tempest.operator.window.mts.MTSWindowOperator;
-import edu.snu.tempest.operator.window.mts.MTSWindowOutput;
-import edu.snu.tempest.operator.window.mts.impl.DynamicMTSOperatorImpl;
-import edu.snu.tempest.operator.window.mts.impl.OTFMTSOperatorImpl;
-import edu.snu.tempest.operator.window.mts.impl.StaticMTSOperatorImpl;
-import edu.snu.tempest.operator.window.mts.parameters.CachingRate;
-import edu.snu.tempest.operator.window.mts.parameters.InitialStartTime;
-import edu.snu.tempest.operator.window.mts.signal.MTSSignalReceiver;
-import edu.snu.tempest.operator.window.mts.signal.impl.ZkMTSParameters;
-import edu.snu.tempest.operator.window.mts.signal.impl.ZkSignalReceiver;
-import edu.snu.tempest.operator.window.sts.STSWindowOperator;
-import edu.snu.tempest.operator.window.sts.STSWindowOutput;
-import edu.snu.tempest.operator.window.sts.impl.STSWindowOperatorImpl;
+import edu.snu.tempest.operator.window.aggregator.ComAndAscAggregator;
+import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
+import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
+import edu.snu.tempest.operator.window.time.Timescale;
+import edu.snu.tempest.operator.window.time.mts.MTSWindowOperator;
+import edu.snu.tempest.operator.window.time.mts.impl.DynamicMTSOperatorImpl;
+import edu.snu.tempest.operator.window.time.mts.impl.OTFMTSOperatorImpl;
+import edu.snu.tempest.operator.window.time.mts.impl.StaticMTSOperatorImpl;
+import edu.snu.tempest.operator.window.time.mts.parameters.CachingRate;
+import edu.snu.tempest.operator.window.time.mts.parameters.InitialStartTime;
+import edu.snu.tempest.operator.window.time.mts.signal.MTSSignalReceiver;
+import edu.snu.tempest.operator.window.time.mts.signal.impl.ZkMTSParameters;
+import edu.snu.tempest.operator.window.time.mts.signal.impl.ZkSignalReceiver;
+import edu.snu.tempest.operator.window.time.sts.STSWindowOperator;
+import edu.snu.tempest.operator.window.time.sts.impl.STSWindowOperatorImpl;
 import edu.snu.tempest.util.Profiler;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.exceptions.InjectionException;
 
-import javax.inject.Inject;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -61,9 +58,9 @@ import java.util.logging.Logger;
 
 /**
  * MTSWordCountTestBolt.
- * It aggregateds word and calculates counts. 
+ * It creates MTS operator and aggregates word and calculates counts.
  */
-public final class MTSWordCountTestBolt extends BaseRichBolt {
+final class MTSWordCountTestBolt extends BaseRichBolt {
   /**
    * WordCount bolt using MTSOperator.
    */
@@ -178,12 +175,12 @@ public final class MTSWordCountTestBolt extends BaseRichBolt {
             // memory logging
             writer.writeLine(pathPrefix + "/memory", (System.currentTimeMillis()) + "\t" 
                 + Profiler.getMemoryUsage());
-            long executionNum = numOfExecution.get();
+            final long executionNum = numOfExecution.get();
             // number of execution
             writer.writeLine(pathPrefix + "/slicedWindowExecution", (System.currentTimeMillis()) + "\t" 
                 + executionNum);
             numOfExecution.addAndGet(-1 * executionNum);
-          } catch (IOException e) {
+          } catch (final IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
           }
@@ -194,7 +191,7 @@ public final class MTSWordCountTestBolt extends BaseRichBolt {
 
     // create MTS operator
     final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
-    cb.bindImplementation(Aggregator.class, CountByKeyAggregator.class);
+    cb.bindImplementation(ComAndAscAggregator.class, CountByKeyAggregator.class);
     cb.bindNamedParameter(CachingRate.class, cachingRate + "");
     cb.bindNamedParameter(InitialStartTime.class, this.startTime + "");
 
@@ -214,8 +211,8 @@ public final class MTSWordCountTestBolt extends BaseRichBolt {
     }
 
     final Injector ij = Tang.Factory.getTang().newInjector(cb.build());
-    ij.bindVolatileInstance(CountByKeyAggregator.KeyExtractor.class,
-        new CountByKeyAggregator.KeyExtractor<Tuple, String>() {
+    ij.bindVolatileInstance(KeyExtractor.class,
+        new KeyExtractor<Tuple, String>() {
           @Override
           public String getKey(final Tuple tuple) {
             return tuple.getString(0);
@@ -226,7 +223,8 @@ public final class MTSWordCountTestBolt extends BaseRichBolt {
       // bind one timescale to each executors.
       final int index = paramTopologyContext.getThisTaskIndex();
       ij.bindVolatileInstance(Timescale.class, timescales.get(index));
-      ij.bindVolatileInstance(STSWindowOperator.STSOutputHandler.class, new STSWCOutputHandler(timescales.get(index)));
+      ij.bindVolatileInstance(STSWindowOperator.STSOutputHandler.class,
+          new STSWordCountOutputHandler(writer, pathPrefix, timescales.get(index)));
       try {
         operator = ij.getInstance(STSWindowOperator.class);
       } catch (final InjectionException e) {
@@ -235,7 +233,8 @@ public final class MTSWordCountTestBolt extends BaseRichBolt {
       }
     } else {
       ij.bindVolatileInstance(List.class, timescales);
-      ij.bindVolatileInstance(MTSWindowOperator.MTSOutputHandler.class, new WCOutputHandler());
+      ij.bindVolatileInstance(MTSWindowOperator.MTSOutputHandler.class,
+          new MTSWordCountOutputHandler(writer, pathPrefix));
       try {
         operator = ij.getInstance(MTSWindowOperator.class);
       } catch (final InjectionException e) {
@@ -253,60 +252,6 @@ public final class MTSWordCountTestBolt extends BaseRichBolt {
       this.executor.shutdown();
     } catch (Exception e) {
       e.printStackTrace();
-    }
-  }
-
-  public final class WCOutputHandler implements MTSWindowOperator.MTSOutputHandler<Map<String, Long>> {
-    @Inject
-    public WCOutputHandler() {
-      
-    }
-    
-    @Override
-    public void onNext(final MTSWindowOutput<Map<String, Long>> output) {
-      long count = 0;
-      for (final Entry<String, Long> entry : output.output.entrySet()) {
-        count += entry.getValue();
-      }
-      
-      try {
-        writer.writeLine(pathPrefix + "/" + output.timescale.windowSize
-            + "-" + output.timescale.intervalSize, (System.currentTimeMillis()) + "\t"
-            + count);
-      } catch (final IOException e) {
-        e.printStackTrace();
-        throw new RuntimeException(e);
-      }
-      LOG.log(Level.INFO, "output of ts" + output.timescale + ": "
-          + output.startTime + "-" + output.endTime + ", count: " + count);
-    }
-  }
-
-  public final class STSWCOutputHandler implements STSWindowOperator.STSOutputHandler<Map<String, Long>> {
-    private final Timescale timescale;
-
-    @Inject
-    public STSWCOutputHandler(final Timescale timescale) {
-      this.timescale = timescale;
-    }
-
-    @Override
-    public void onNext(final STSWindowOutput<Map<String, Long>> output) {
-      long count = 0;
-      for (final Entry<String, Long> entry : output.output.entrySet()) {
-        count += entry.getValue();
-      }
-
-      try {
-        writer.writeLine(pathPrefix + "/" + timescale.windowSize
-            + "-" + timescale.intervalSize, (System.currentTimeMillis()) + "\t"
-            + count);
-      } catch (final IOException e) {
-        e.printStackTrace();
-        throw new RuntimeException(e);
-      }
-      LOG.log(Level.INFO, "output of ts" + timescale + ": "
-          + output.startTime + "-" + output.endTime + ", count: " + count);
     }
   }
 }

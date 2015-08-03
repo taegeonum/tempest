@@ -18,7 +18,7 @@
  */
 package edu.snu.tempest.example.util;
 
-import edu.snu.tempest.operator.window.Timescale;
+import edu.snu.tempest.operator.window.time.Timescale;
 import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 import org.apache.reef.tang.annotations.Parameter;
@@ -34,18 +34,22 @@ import java.util.concurrent.TimeUnit;
  */
 public final class TimescaleParser {
 
+  private static final String REGEX = "(\\(\\d+,\\d+\\))*";
+
+  /**
+   * A list of timescales.
+   */
   public final List<Timescale> timescales;
-  private static final String regex = "(\\(\\d+,\\d+\\))*";
-  
+
   @NamedParameter(doc = "timescales. format: (\\(\\d+,\\d+\\))*. TimeUnit: sec",
       short_name = "timescales", default_value = "(30,2)(60,5)(90,6)")
   public static final class TimescaleParameter implements Name<String> {}
 
   @Inject
-  public TimescaleParser(@Parameter(TimescaleParameter.class) final String params) {
+  private TimescaleParser(@Parameter(TimescaleParameter.class) final String params) {
 
-    if (!params.matches(regex)) {
-      throw new InvalidParameterException("Invalid timescales: " + params + " The format should be " + regex);
+    if (!params.matches(REGEX)) {
+      throw new InvalidParameterException("Invalid timescales: " + params + " The format should be " + REGEX);
     }
 
     this.timescales = parseToTimescaleList(params);

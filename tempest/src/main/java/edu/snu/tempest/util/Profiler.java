@@ -34,6 +34,8 @@ public final class Profiler {
 
   /**
    * http://stackoverflow.com/questions/18489273/how-to-get-percentage-of-cpu-usage-of-os-from-java.
+   * Get process cpu load
+   * @return process cpu load
    */
   public static double getProcessCpuLoad()
       throws MalformedObjectNameException, ReflectionException, InstanceNotFoundException {
@@ -56,11 +58,19 @@ public final class Profiler {
     // returns a percentage value with 1 decimal point precision
     return ((int)(value * 1000) / 10.0);
   }
-  
+
+  /**
+   * Get memory usage of current runtime.
+   * @return memory usage
+   */
   public static long getMemoryUsage() {
     return Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
   }
-  
+
+  /**
+   * Get system cpu load.
+   * @return system cpu load.
+   */
   public static double getCpuLoad() {
     final OperatingSystemMXBean osBean = ManagementFactory.getPlatformMXBean(
         OperatingSystemMXBean.class);

@@ -57,10 +57,16 @@ public final class HDFSOutputWriter implements OutputWriter {
   private final ConcurrentMap<String, FSDataOutputStream> brMap;
   
   @Inject
-  public HDFSOutputWriter() {
+  private HDFSOutputWriter() {
     this.brMap = new ConcurrentHashMap<>();
   }
 
+  /**
+   * Write string into a file.
+   * @param path a file path
+   * @param str a content
+   * @throws IOException
+   */
   @Override
   public void write(final String path, final String str) throws IOException {
     initialize();
@@ -75,7 +81,13 @@ public final class HDFSOutputWriter implements OutputWriter {
     br.write(str.getBytes("UTF-8"));
     br.hsync();
   }
-  
+
+  /**
+   * Write string with line into a file.
+   * @param path a file path
+   * @param str a content
+   * @throws IOException
+   */
   @Override
   public void writeLine(final String path, final String str) throws IOException {
     this.write(path, str + "\n");

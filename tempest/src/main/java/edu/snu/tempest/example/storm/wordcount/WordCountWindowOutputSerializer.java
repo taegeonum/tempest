@@ -22,15 +22,15 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import edu.snu.tempest.operator.window.Timescale;
-import edu.snu.tempest.operator.window.mts.MTSWindowOutput;
+import edu.snu.tempest.operator.window.time.Timescale;
+import edu.snu.tempest.operator.window.time.mts.MTSWindowOutput;
 
 import java.util.Map;
 
 /**
  * Serializer for MTSWindowOutput in WordCount.
  */
-public final class WordCountWindowOutputSerializer extends Serializer<MTSWindowOutput<Map<String, Long>>> {
+final class WordCountWindowOutputSerializer extends Serializer<MTSWindowOutput<Map<String, Long>>> {
 
   @Override
   public void write(final Kryo kryo,

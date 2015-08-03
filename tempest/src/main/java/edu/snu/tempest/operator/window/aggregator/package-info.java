@@ -17,6 +17,6 @@
  * under the License.
  */
 /**
- * Aggregators for multi-time scale aggregation.
+ * Aggregators for window operation.
  */
 package edu.snu.tempest.operator.window.aggregator;

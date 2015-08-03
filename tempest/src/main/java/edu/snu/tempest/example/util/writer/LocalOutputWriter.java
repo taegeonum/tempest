@@ -42,7 +42,7 @@ public final class LocalOutputWriter implements OutputWriter {
   private final ConcurrentMap<String, FileWriter> writerMap;
   
   @Inject
-  public LocalOutputWriter() {
+  private LocalOutputWriter() {
     this.writerMap = new ConcurrentHashMap<>();
   }
 
@@ -53,6 +53,12 @@ public final class LocalOutputWriter implements OutputWriter {
     }
   }
 
+  /**
+   * Write string into a file.
+   * @param path a file path
+   * @param str a content
+   * @throws IOException
+   */
   @Override
   public void write(final String path, final String str) throws IOException {
     if (path.length() == 0 || path == null) {
@@ -73,6 +79,12 @@ public final class LocalOutputWriter implements OutputWriter {
     }
   }
 
+  /**
+   * Write string with line into a file.
+   * @param path a file path
+   * @param str a content
+   * @throws IOException
+   */
   @Override
   public void writeLine(final String path, final String str) throws IOException {
     write(path, str + "\n");

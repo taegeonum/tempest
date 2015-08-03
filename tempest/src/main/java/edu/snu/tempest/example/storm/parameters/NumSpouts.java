@@ -22,5 +22,5 @@ import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 
 
-@NamedParameter(doc = "num of spouts", short_name = "spouts", default_value="30")
+@NamedParameter(doc = "num of spouts", short_name = "spouts", default_value="5")
 public final class NumSpouts implements Name<Integer> {}

@@ -18,14 +18,17 @@
  */
 package edu.snu.tempest.example;
 
-import edu.snu.tempest.operator.window.Aggregator;
-import edu.snu.tempest.operator.window.Timescale;
-import edu.snu.tempest.operator.window.mts.MTSWindowOperator;
-import edu.snu.tempest.operator.window.mts.MTSWindowOutput;
-import edu.snu.tempest.operator.window.mts.impl.DynamicMTSOperatorImpl;
-import edu.snu.tempest.operator.window.mts.signal.MTSSignalSender;
-import edu.snu.tempest.operator.window.mts.signal.impl.ZkMTSParameters;
-import edu.snu.tempest.operator.window.mts.signal.impl.ZkSignalSender;
+import edu.snu.tempest.operator.window.aggregator.ComAndAscAggregator;
+import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
+import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
+import edu.snu.tempest.operator.window.time.Timescale;
+import edu.snu.tempest.operator.window.time.mts.MTSWindowOperator;
+import edu.snu.tempest.operator.window.time.mts.MTSWindowOutput;
+import edu.snu.tempest.operator.window.time.mts.impl.DynamicMTSOperatorImpl;
+import edu.snu.tempest.operator.window.time.mts.parameters.InitialStartTime;
+import edu.snu.tempest.operator.window.time.mts.signal.MTSSignalSender;
+import edu.snu.tempest.operator.window.time.mts.signal.impl.ZkMTSParameters;
+import edu.snu.tempest.operator.window.time.mts.signal.impl.ZkSignalSender;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
@@ -38,13 +41,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Creates DynamicMTSOperatorImpl and adds timescales dynamically.
- * 
+ * This example creates DynamicMTSOperatorImpl
+ * and sends integer values to the operator.
+ * The mts operator calculates the integer by key.
+ * Also, this example add adds 3 timescales dynamically to the operator.
  */
 public final class DynamicMTSWindowOperatorExample {
 
   private DynamicMTSWindowOperatorExample() {
-
   }
   
   public static void main(String[] args) throws Exception {
@@ -53,7 +57,6 @@ public final class DynamicMTSWindowOperatorExample {
     final List<Timescale> list = new LinkedList<>();
     list.add(ts);
     final long startTime = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
-    final Aggregator<Integer, Integer> testAggregator = new TestAggregator();
 
     // configure zookeeper setting.
     final String identifier = "mts-test";
@@ -62,16 +65,25 @@ public final class DynamicMTSWindowOperatorExample {
     final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
     cb.bindNamedParameter(ZkMTSParameters.OperatorIdentifier.class, identifier);
     cb.bindNamedParameter(ZkMTSParameters.ZkServerAddress.class, address);
+    cb.bindImplementation(ComAndAscAggregator.class, CountByKeyAggregator.class);
+    cb.bindNamedParameter(InitialStartTime.class, Long.toString(startTime));
 
     final Injector ij = Tang.Factory.getTang().newInjector(cb.build());
-    ij.bindVolatileInstance(Aggregator.class, testAggregator);
+    ij.bindVolatileInstance(KeyExtractor.class, new KeyExtractor<Integer, Integer>() {
+      @Override
+      public Integer getKey(final Integer input) {
+        return input;
+      }
+    });
     ij.bindVolatileInstance(List.class, list);
     ij.bindVolatileInstance(MTSWindowOperator.MTSOutputHandler.class, new TestHandler());
     ij.bindVolatileInstance(Long.class, startTime);
     final MTSWindowOperator<Integer> operator = ij.getInstance(DynamicMTSOperatorImpl.class);
     final MTSSignalSender sender = ij.getInstance(ZkSignalSender.class);
 
+    // start mts operator
     operator.start();
+    // add input
     executor.submit(new Runnable() {
       @Override
       public void run() {
@@ -88,11 +100,11 @@ public final class DynamicMTSWindowOperatorExample {
     });
 
     // add timescales to the MTS operator
-    Thread.sleep(1500);
+    Thread.sleep(3000);
     sender.addTimescale(new Timescale(10, 5));
-    Thread.sleep(1000);
+    Thread.sleep(4000);
     sender.addTimescale(new Timescale(20, 8));
-    Thread.sleep(1000);
+    Thread.sleep(5000);
     sender.addTimescale(new Timescale(15, 7));
     
     executor.shutdown();
@@ -101,37 +113,9 @@ public final class DynamicMTSWindowOperatorExample {
     sender.close();
   }
 
-
-  private static final class TestAggregator implements Aggregator<Integer, Integer> {
-
-    private TestAggregator() {
-
-    }
-
-    @Override
-    public Integer init() {
-      return 0;
-    }
-
-    @Override
-    public Integer partialAggregate(final Integer oldVal, final Integer newVal) {
-      return oldVal + newVal;
-    }
-
-    @Override
-    public Integer finalAggregate(final List<Integer> partials) {
-      int sum = 0;
-      for (Integer partial : partials) {
-        sum += partial;
-      }
-      return sum;
-    }
-  }
-
   private static final class TestHandler implements MTSWindowOperator.MTSOutputHandler<Integer> {
 
     private TestHandler() {
-
     }
 
     @Override

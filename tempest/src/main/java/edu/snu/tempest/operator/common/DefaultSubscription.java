@@ -18,7 +18,6 @@
  */
 package edu.snu.tempest.operator.common;
 
-import javax.inject.Inject;
 import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -51,8 +50,7 @@ public final class DefaultSubscription<T, Token> implements Subscription<Token> 
    * @param val a value
    * @param token a token for identifying the subscription
    */
-  @Inject
-  public DefaultSubscription(final Collection<T> container, 
+  public DefaultSubscription(final Collection<T> container,
       final T val,
       final Token token) {
     this.val = val;

@@ -18,8 +18,6 @@
  */
 package edu.snu.tempest.example.util.writer;
 
-import org.apache.reef.tang.annotations.Name;
-import org.apache.reef.tang.annotations.NamedParameter;
 import org.apache.reef.wake.Stage;
 
 import java.io.IOException;
@@ -29,9 +27,20 @@ import java.io.Serializable;
  * Output writer for logging.
  */
 public interface OutputWriter extends Serializable, Stage {
-  
-  @NamedParameter(doc = "output file path", default_value = "")
-  public static final class OutputFilePath implements Name<String> {}
+
+  /**
+   * Write string into path.
+   * @param path a file path
+   * @param str a content
+   * @throws IOException
+   */
   void write(String path, String str) throws IOException;
+
+  /**
+   * Write string with line into path.
+   * @param path a file path
+   * @param str a content
+   * @throws IOException
+   */
   void writeLine(String path, String str) throws IOException;
 }

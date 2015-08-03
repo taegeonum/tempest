@@ -25,6 +25,9 @@ import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.generated.StormTopology;
 
+/**
+ * Class for running Storm.
+ */
 public final class StormRunner {
 
   private static final int MILLIS_IN_SEC = 1000;
@@ -32,6 +35,14 @@ public final class StormRunner {
   private StormRunner() {
   }
 
+  /**
+   * Run storm locally.
+   * @param topology a topology
+   * @param topologyName a topology name
+   * @param conf a configuration
+   * @param runtimeInSeconds runtime
+   * @throws InterruptedException
+   */
   public static void runTopologyLocally(final StormTopology topology,
                                         final String topologyName,
                                         final Config conf,
@@ -45,6 +56,14 @@ public final class StormRunner {
     cluster.shutdown();
   }
 
+  /**
+   * Run storm remotely.
+   * @param topology a topology
+   * @param topologyName a topology name
+   * @param conf a configuration
+   * @throws AlreadyAliveException
+   * @throws InvalidTopologyException
+   */
   public static void runTopologyRemotely(final StormTopology topology,
                                          final String topologyName,
                                          final Config conf)
