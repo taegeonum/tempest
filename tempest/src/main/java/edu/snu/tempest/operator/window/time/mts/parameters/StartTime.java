@@ -16,23 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window.aggregator;
+package edu.snu.tempest.operator.window.time.mts.parameters;
 
-/**
- * Commutative and associative aggregator for window operation.
- */
-public interface ComAndAscAggregator<I, V> extends Aggregator<V, V> {
-  /**
-   * Create a new bucket for partial aggregation.
-   * @return a bucket for aggregation.
-   */
-  V init();
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
 
-  /**
-   * Aggregate the new data into the bucket.
-   * @param bucket a bucket for partial aggregation.
-   * @param newVal new value
-   * @return a bucket in which the newVal is aggregated
-   */
-  V partialAggregate(final V bucket, final I newVal);
-}
+@NamedParameter(doc = "start time of MTS operator", short_name = "start_time")
+public final class StartTime implements Name<Long> {}

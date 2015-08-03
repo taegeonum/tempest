@@ -19,11 +19,11 @@
 package edu.snu.tempest.operator.window.time.mts.impl;
 
 import edu.snu.tempest.operator.common.Subscription;
-import edu.snu.tempest.operator.window.aggregator.ComAndAscAggregator;
+import edu.snu.tempest.operator.window.aggregator.AssociativeAggregator;
 import edu.snu.tempest.operator.window.time.Timescale;
 import edu.snu.tempest.operator.window.time.mts.MTSWindowOperator;
 import edu.snu.tempest.operator.window.time.mts.TimescaleSignalListener;
-import edu.snu.tempest.operator.window.time.mts.parameters.InitialStartTime;
+import edu.snu.tempest.operator.window.time.mts.parameters.StartTime;
 import edu.snu.tempest.operator.window.time.mts.signal.MTSSignalReceiver;
 import org.apache.reef.tang.annotations.Parameter;
 
@@ -87,11 +87,11 @@ public final class OTFMTSOperatorImpl<I, V> implements MTSWindowOperator<I> {
    * @param receiver a receiver for triggering timescale addition/deletion.
    * @param startTime an initial start time of the operator.
    */
-  public OTFMTSOperatorImpl(final ComAndAscAggregator<I, V> aggregator,
+  public OTFMTSOperatorImpl(final AssociativeAggregator<I, V> aggregator,
                             final List<Timescale> timescales,
                             final MTSOutputHandler<V> handler,
                             final MTSSignalReceiver receiver,
-                            @Parameter(InitialStartTime.class) final long startTime) {
+                            @Parameter(StartTime.class) final long startTime) {
     this.outputHandler = handler;
     this.computationReuser = new OTFComputationReuser<>(timescales, aggregator, startTime);
     this.subscriptions = new HashMap<>();

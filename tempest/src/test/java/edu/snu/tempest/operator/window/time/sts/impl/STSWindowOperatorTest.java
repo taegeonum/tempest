@@ -18,11 +18,11 @@
  */
 package edu.snu.tempest.operator.window.time.sts.impl;
 
-import edu.snu.tempest.operator.window.aggregator.ComAndAscAggregator;
+import edu.snu.tempest.operator.window.aggregator.AssociativeAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.time.Timescale;
-import edu.snu.tempest.operator.window.time.mts.parameters.InitialStartTime;
+import edu.snu.tempest.operator.window.time.mts.parameters.StartTime;
 import edu.snu.tempest.operator.window.time.sts.STSWindowOperator;
 import edu.snu.tempest.operator.window.time.sts.STSWindowOutput;
 import edu.snu.tempest.util.test.IntegerExtractor;
@@ -57,9 +57,9 @@ public class STSWindowOperatorTest {
     results.put(ts1, new LinkedList<STSWindowOutput<Map<Integer, Long>>>());
 
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
-    jcb.bindNamedParameter(InitialStartTime.class, Long.toString(startTime));
+    jcb.bindNamedParameter(StartTime.class, Long.toString(startTime));
     jcb.bindImplementation(KeyExtractor.class, IntegerExtractor.class);
-    jcb.bindImplementation(ComAndAscAggregator.class, CountByKeyAggregator.class);
+    jcb.bindImplementation(AssociativeAggregator.class, CountByKeyAggregator.class);
     final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
     injector.bindVolatileInstance(Timescale.class, ts1);
     injector.bindVolatileInstance(STSWindowOperator.STSOutputHandler.class,

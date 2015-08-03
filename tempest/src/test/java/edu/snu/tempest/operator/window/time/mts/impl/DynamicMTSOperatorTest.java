@@ -19,7 +19,7 @@
 package edu.snu.tempest.operator.window.time.mts.impl;
 
 
-import edu.snu.tempest.operator.window.aggregator.ComAndAscAggregator;
+import edu.snu.tempest.operator.window.aggregator.AssociativeAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.time.Timescale;
@@ -27,7 +27,7 @@ import edu.snu.tempest.operator.window.time.mts.CachingPolicy;
 import edu.snu.tempest.operator.window.time.mts.MTSWindowOperator;
 import edu.snu.tempest.operator.window.time.mts.MTSWindowOutput;
 import edu.snu.tempest.operator.window.time.mts.parameters.CachingRate;
-import edu.snu.tempest.operator.window.time.mts.parameters.InitialStartTime;
+import edu.snu.tempest.operator.window.time.mts.parameters.StartTime;
 import edu.snu.tempest.operator.window.time.mts.signal.MTSSignalReceiver;
 import edu.snu.tempest.util.test.*;
 import org.apache.reef.tang.Injector;
@@ -67,9 +67,9 @@ public class DynamicMTSOperatorTest {
     results.put(ts3, new LinkedList<MTSWindowOutput<Map<Integer, Long>>>());
 
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
-    jcb.bindNamedParameter(InitialStartTime.class, Long.toString(startTime));
+    jcb.bindNamedParameter(StartTime.class, Long.toString(startTime));
     jcb.bindImplementation(KeyExtractor.class, IntegerExtractor.class);
-    jcb.bindImplementation(ComAndAscAggregator.class, CountByKeyAggregator.class);
+    jcb.bindImplementation(AssociativeAggregator.class, CountByKeyAggregator.class);
     jcb.bindImplementation(MTSSignalReceiver.class, TestSignalReceiver.class);
     jcb.bindImplementation(CachingPolicy.class, CachingRatePolicy.class);
     jcb.bindNamedParameter(CachingRate.class, Integer.toString(0));

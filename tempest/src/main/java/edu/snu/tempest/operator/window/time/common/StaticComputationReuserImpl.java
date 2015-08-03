@@ -71,9 +71,9 @@ public final class StaticComputationReuserImpl<T> implements StaticComputationRe
   private int index = 0;
 
   /**
-   * An initial start time.
+   * A start time.
    */
-  private final long initialStartTime;
+  private final long startTime;
 
   /**
    * A previous slice time.
@@ -95,7 +95,7 @@ public final class StaticComputationReuserImpl<T> implements StaticComputationRe
     this.finalAggregator = finalAggregator;
     this.sliceQueue = new LinkedList<>();
     this.period = calculatePeriod(timescales);
-    this.initialStartTime = startTime;
+    this.startTime = startTime;
     LOG.log(Level.INFO, StaticComputationReuserImpl.class + " started. PERIOD: " + period);
 
     // create RelationGraph.
@@ -105,27 +105,27 @@ public final class StaticComputationReuserImpl<T> implements StaticComputationRe
 
   /**
    * Save a partial output into the table.
-   * @param startTime start time of the output
-   * @param endTime end time of the output
+   * @param wStartTime start time of the output
+   * @param wEndTime end time of the output
    * @param output output
    */
   @Override
-  public void savePartialOutput(final long startTime,
-                                final long endTime,
+  public void savePartialOutput(final long wStartTime,
+                                final long wEndTime,
                                 final T output) {
-    long start = adjStartTime(startTime);
-    final long end = adjEndTime(endTime);
+    long start = adjStartTime(wStartTime);
+    final long end = adjEndTime(wEndTime);
 
     if (start >= end) {
       start -= period;
     }
     LOG.log(Level.FINE,
-        "savePartialOutput: " + startTime + " - " + endTime +", " + start  + " - " + end);
+        "savePartialOutput: " + wStartTime + " - " + wEndTime +", " + start  + " - " + end);
 
     RelationGraphNode node = null;
     try {
       node = partialOutputTable.lookup(start, end);
-    } catch (NotFoundException e) {
+    } catch (final NotFoundException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
     }
@@ -150,7 +150,7 @@ public final class StaticComputationReuserImpl<T> implements StaticComputationRe
    * Adjust next slice time.
    */
   private long adjustNextSliceTime() {
-    return initialStartTime + (index / sliceQueue.size()) * period
+    return startTime + (index / sliceQueue.size()) * period
         + sliceQueue.get((index++) % sliceQueue.size());
   }
 
@@ -158,17 +158,17 @@ public final class StaticComputationReuserImpl<T> implements StaticComputationRe
    * Aggregates partial outputs and produces a final output.
    * Dependent outputs can be aggregated into final output.
    * The dependency information is statically constructed at start time.
-   * @param startTime start time of the output
-   * @param endTime end time of the output
+   * @param wStartTime start time of the output
+   * @param wEndTime end time of the output
    * @param ts timescale
    * @return an aggregated output ranging from startTime to endTime.
    */
   @Override
-  public T finalAggregate(final long startTime, final long endTime, final Timescale ts) {
-    LOG.log(Level.FINE, "Lookup " + startTime + ", " + endTime);
+  public T finalAggregate(final long wStartTime, final long wEndTime, final Timescale ts) {
+    LOG.log(Level.FINE, "Lookup " + wStartTime + ", " + wEndTime);
 
-    long start = adjStartTime(startTime);
-    final long end = adjEndTime(endTime);
+    long start = adjStartTime(wStartTime);
+    final long end = adjEndTime(wEndTime);
     LOG.log(Level.FINE, "final aggregate: [" + start+ "-" + end +"]");
 
     // reuse!
@@ -197,7 +197,7 @@ public final class StaticComputationReuserImpl<T> implements StaticComputationRe
     if (node.getRefCnt() != 0) {
       node.saveOutput(output);
     }
-    LOG.log(Level.FINE, "finalAggregate: " + startTime + " - " + endTime + ", " + start + " - " + end
+    LOG.log(Level.FINE, "finalAggregate: " + wStartTime + " - " + wEndTime + ", " + start + " - " + end
         + ", period: " + period + ", dep: " + node.getDependencies().size() + ", listLen: " + list.size());
     return output;
   }
@@ -209,10 +209,10 @@ public final class StaticComputationReuserImpl<T> implements StaticComputationRe
    * @param time current time
    */
   private long adjStartTime(final long time) {
-    if (time < initialStartTime) {
-      return (time - initialStartTime) % period + period;
+    if (time < startTime) {
+      return (time - startTime) % period + period;
     } else {
-      return (time - initialStartTime) % period;
+      return (time - startTime) % period;
     }
   }
 
@@ -225,7 +225,7 @@ public final class StaticComputationReuserImpl<T> implements StaticComputationRe
    * @param time current time
    */
   private long adjEndTime(final long time) {
-    final long adj = (time - initialStartTime) % period == 0 ? period : (time - initialStartTime) % period;
+    final long adj = (time - startTime) % period == 0 ? period : (time - startTime) % period;
     LOG.log(Level.FINE, "adjEndTime: time: " + time + ", adj: " + adj);
     return adj;
   }
@@ -255,11 +255,11 @@ public final class StaticComputationReuserImpl<T> implements StaticComputationRe
     }
 
     Collections.sort(sliceQueue);
-    long startTime = 0;
+    long wStartTime = 0;
     for (final long endTime : sliceQueue) {
-      if (startTime != endTime) {
-        partialOutputTable.saveOutput(startTime, endTime, new RelationGraphNode(startTime, endTime));
-        startTime = endTime;
+      if (wStartTime != endTime) {
+        partialOutputTable.saveOutput(wStartTime, endTime, new RelationGraphNode(wStartTime, endTime));
+        wStartTime = endTime;
       }
     }
     LOG.log(Level.FINE, "Sliced queue: " + sliceQueue);

@@ -18,12 +18,12 @@
  */
 package edu.snu.tempest.operator.window.time.sts.impl;
 
-import edu.snu.tempest.operator.window.aggregator.ComAndAscAggregator;
+import edu.snu.tempest.operator.window.aggregator.AssociativeAggregator;
 import edu.snu.tempest.operator.window.time.Timescale;
 import edu.snu.tempest.operator.window.time.common.StaticComputationReuserImpl;
 import edu.snu.tempest.operator.window.time.common.StaticSlicedWindowOperatorImpl;
 import edu.snu.tempest.operator.window.time.mts.impl.SlicedWindowOperator;
-import edu.snu.tempest.operator.window.time.mts.parameters.InitialStartTime;
+import edu.snu.tempest.operator.window.time.mts.parameters.StartTime;
 import edu.snu.tempest.operator.window.time.sts.STSWindowOperator;
 import org.apache.reef.tang.annotations.Parameter;
 
@@ -67,10 +67,10 @@ public final class STSWindowOperatorImpl<I, V> implements STSWindowOperator<I> {
    * @param startTime an initial start time of the operator
    */
   @Inject
-  private STSWindowOperatorImpl(final ComAndAscAggregator<I, V> aggregator,
+  private STSWindowOperatorImpl(final AssociativeAggregator<I, V> aggregator,
                                final Timescale timescale,
                                final STSOutputHandler<V> handler,
-                               @Parameter(InitialStartTime.class) final long startTime) {
+                               @Parameter(StartTime.class) final long startTime) {
     final List<Timescale> timescales = new LinkedList<>();
     timescales.add(timescale);
     final StaticComputationReuserImpl<V> computationReuser =

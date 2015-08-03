@@ -25,7 +25,7 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
 import edu.snu.tempest.example.util.writer.OutputWriter;
 import edu.snu.tempest.operator.window.WindowOperator;
-import edu.snu.tempest.operator.window.aggregator.ComAndAscAggregator;
+import edu.snu.tempest.operator.window.aggregator.AssociativeAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.time.Timescale;
@@ -34,7 +34,7 @@ import edu.snu.tempest.operator.window.time.mts.impl.DynamicMTSOperatorImpl;
 import edu.snu.tempest.operator.window.time.mts.impl.OTFMTSOperatorImpl;
 import edu.snu.tempest.operator.window.time.mts.impl.StaticMTSOperatorImpl;
 import edu.snu.tempest.operator.window.time.mts.parameters.CachingRate;
-import edu.snu.tempest.operator.window.time.mts.parameters.InitialStartTime;
+import edu.snu.tempest.operator.window.time.mts.parameters.StartTime;
 import edu.snu.tempest.operator.window.time.mts.signal.MTSSignalReceiver;
 import edu.snu.tempest.operator.window.time.mts.signal.impl.ZkMTSParameters;
 import edu.snu.tempest.operator.window.time.mts.signal.impl.ZkSignalReceiver;
@@ -190,9 +190,9 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
 
     // create MTS operator
     final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
-    cb.bindImplementation(ComAndAscAggregator.class, CountByKeyAggregator.class);
+    cb.bindImplementation(AssociativeAggregator.class, CountByKeyAggregator.class);
     cb.bindNamedParameter(CachingRate.class, cachingRate + "");
-    cb.bindNamedParameter(InitialStartTime.class, this.startTime + "");
+    cb.bindNamedParameter(StartTime.class, this.startTime + "");
 
     if (operatorType.equals("dynamic_mts")) {
       cb.bindImplementation(MTSWindowOperator.class, DynamicMTSOperatorImpl.class);

@@ -18,12 +18,12 @@
  */
 package edu.snu.tempest.operator.window.time.mts.impl;
 
-import edu.snu.tempest.operator.window.aggregator.ComAndAscAggregator;
+import edu.snu.tempest.operator.window.aggregator.AssociativeAggregator;
 import edu.snu.tempest.operator.window.time.Timescale;
 import edu.snu.tempest.operator.window.time.common.StaticComputationReuserImpl;
 import edu.snu.tempest.operator.window.time.common.StaticSlicedWindowOperatorImpl;
 import edu.snu.tempest.operator.window.time.mts.MTSWindowOperator;
-import edu.snu.tempest.operator.window.time.mts.parameters.InitialStartTime;
+import edu.snu.tempest.operator.window.time.mts.parameters.StartTime;
 import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;
@@ -65,10 +65,10 @@ public final class StaticMTSOperatorImpl<I, V> implements MTSWindowOperator<I> {
    * @param startTime an initial start time of the operator
    */
   @Inject
-  private StaticMTSOperatorImpl(final ComAndAscAggregator<I, V> aggregator,
+  private StaticMTSOperatorImpl(final AssociativeAggregator<I, V> aggregator,
                                 final List<Timescale> timescales,
                                 final MTSOutputHandler<V> handler,
-                                @Parameter(InitialStartTime.class) final long startTime) {
+                                @Parameter(StartTime.class) final long startTime) {
     final StaticComputationReuserImpl<V> computationReuser =
         new StaticComputationReuserImpl<>(timescales, aggregator, startTime);
     this.slicedWindow = new StaticSlicedWindowOperatorImpl<>(aggregator,

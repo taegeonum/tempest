@@ -18,14 +18,14 @@
  */
 package edu.snu.tempest.example;
 
-import edu.snu.tempest.operator.window.aggregator.ComAndAscAggregator;
+import edu.snu.tempest.operator.window.aggregator.AssociativeAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.time.Timescale;
 import edu.snu.tempest.operator.window.time.mts.MTSWindowOperator;
 import edu.snu.tempest.operator.window.time.mts.MTSWindowOutput;
 import edu.snu.tempest.operator.window.time.mts.impl.DynamicMTSOperatorImpl;
-import edu.snu.tempest.operator.window.time.mts.parameters.InitialStartTime;
+import edu.snu.tempest.operator.window.time.mts.parameters.StartTime;
 import edu.snu.tempest.operator.window.time.mts.signal.MTSSignalSender;
 import edu.snu.tempest.operator.window.time.mts.signal.impl.ZkMTSParameters;
 import edu.snu.tempest.operator.window.time.mts.signal.impl.ZkSignalSender;
@@ -65,8 +65,8 @@ public final class DynamicMTSWindowOperatorExample {
     final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
     cb.bindNamedParameter(ZkMTSParameters.OperatorIdentifier.class, identifier);
     cb.bindNamedParameter(ZkMTSParameters.ZkServerAddress.class, address);
-    cb.bindImplementation(ComAndAscAggregator.class, CountByKeyAggregator.class);
-    cb.bindNamedParameter(InitialStartTime.class, Long.toString(startTime));
+    cb.bindImplementation(AssociativeAggregator.class, CountByKeyAggregator.class);
+    cb.bindNamedParameter(StartTime.class, Long.toString(startTime));
 
     final Injector ij = Tang.Factory.getTang().newInjector(cb.build());
     ij.bindVolatileInstance(KeyExtractor.class, new KeyExtractor<Integer, Integer>() {

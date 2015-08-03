@@ -18,7 +18,7 @@
  */
 package edu.snu.tempest.operator.window.aggregator.impl;
 
-import edu.snu.tempest.operator.window.aggregator.ComAndAscAggregator;
+import edu.snu.tempest.operator.window.aggregator.AssociativeAggregator;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -31,7 +31,7 @@ import java.util.Map;
  * @param <I> input
  * @param <K> key
  */
-public final class ComputeByKeyAggregator<I, K, V> implements ComAndAscAggregator<I, Map<K, V>> {
+public final class ComputeByKeyAggregator<I, K, V> implements AssociativeAggregator<I, Map<K, V>> {
   /**
    * Extractor for key.
    */

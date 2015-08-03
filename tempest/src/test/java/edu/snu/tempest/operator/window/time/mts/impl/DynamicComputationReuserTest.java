@@ -18,7 +18,7 @@
  */
 package edu.snu.tempest.operator.window.time.mts.impl;
 
-import edu.snu.tempest.operator.window.aggregator.ComAndAscAggregator;
+import edu.snu.tempest.operator.window.aggregator.AssociativeAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.time.Timescale;
@@ -59,7 +59,7 @@ public class DynamicComputationReuserTest {
     injector.bindVolatileInstance(List.class, timescales);
     final CachingPolicy policy = injector.getInstance(CachingRatePolicy.class);
 
-    final ComAndAscAggregator<Integer, Map<Integer, Long>> aggregator =
+    final AssociativeAggregator<Integer, Map<Integer, Long>> aggregator =
         injector.getInstance(CountByKeyAggregator.class);
     final ComputationReuser<Map<Integer, Long>> computationReuser =
         new DynamicComputationReuser<>(timescales, aggregator, policy, startTime);

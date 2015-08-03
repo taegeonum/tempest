@@ -18,7 +18,7 @@
  */
 package edu.snu.tempest.operator.window.aggregator.impl;
 
-import edu.snu.tempest.operator.window.aggregator.ComAndAscAggregator;
+import edu.snu.tempest.operator.window.aggregator.AssociativeAggregator;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
@@ -34,7 +34,7 @@ import java.util.Map;
  * @param <I> input
  * @param <K> key
  */
-public final class CountByKeyAggregator<I, K> implements ComAndAscAggregator<I, Map<K, Long>> {
+public final class CountByKeyAggregator<I, K> implements AssociativeAggregator<I, Map<K, Long>> {
   /**
    * ComputeByKeyAggregator for countByKey.
    */
