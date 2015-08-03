@@ -95,7 +95,7 @@ public final class ComputeByKeyAggregator<I, K, V> implements ComAndAscAggregato
    * @return an output of final aggregation
    */
   @Override
-  public Map<K, V> finalAggregate(final Collection<Map<K, V>> partials) {
+  public Map<K, V> aggregate(final Collection<Map<K, V>> partials) {
     final Map<K, V> result = new HashMap<>();
     for (final Map<K, V> partial : partials) {
       for (final Map.Entry<K, V> entry : partial.entrySet()) {

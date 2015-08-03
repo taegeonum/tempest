@@ -80,7 +80,7 @@ public final class CountByKeyAggregator<I, K> implements ComAndAscAggregator<I, 
    * @return an output of final aggregation
    */
   @Override
-  public Map<K, Long> finalAggregate(final Collection<Map<K, Long>> partials) {
-    return this.aggregator.finalAggregate(partials);
+  public Map<K, Long> aggregate(final Collection<Map<K, Long>> partials) {
+    return this.aggregator.aggregate(partials);
   }
 }

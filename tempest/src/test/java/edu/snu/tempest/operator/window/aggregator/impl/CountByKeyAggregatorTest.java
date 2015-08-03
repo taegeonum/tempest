@@ -64,7 +64,7 @@ public final class CountByKeyAggregatorTest {
     partials.add(map1);
     partials.add(map2);
 
-    final Map<Integer, Long> result = aggregator.finalAggregate(partials);
+    final Map<Integer, Long> result = aggregator.aggregate(partials);
 
     final Map<Integer, Long> expected = new HashMap<>();
     expected.put(1, 3L);

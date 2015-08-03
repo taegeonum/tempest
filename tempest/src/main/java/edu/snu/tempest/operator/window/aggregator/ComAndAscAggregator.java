@@ -21,7 +21,7 @@ package edu.snu.tempest.operator.window.aggregator;
 /**
  * Commutative and associative aggregator for window operation.
  */
-public interface ComAndAscAggregator<I, V> extends FinalAggregator<V> {
+public interface ComAndAscAggregator<I, V> extends Aggregator<V, V> {
   /**
    * Create a new bucket for partial aggregation.
    * @return a bucket for aggregation.

@@ -19,7 +19,7 @@
 package edu.snu.tempest.operator.window.time.common;
 
 import edu.snu.tempest.operator.common.NotFoundException;
-import edu.snu.tempest.operator.window.aggregator.FinalAggregator;
+import edu.snu.tempest.operator.window.aggregator.Aggregator;
 import edu.snu.tempest.operator.window.time.Timescale;
 
 import java.util.Collections;
@@ -53,7 +53,7 @@ public final class StaticComputationReuserImpl<T> implements StaticComputationRe
   /**
    * Aggregator for final aggregation.
    */
-  private final FinalAggregator<T> finalAggregator;
+  private final Aggregator<T, T> finalAggregator;
 
   /**
    * A queue containing next slice time.
@@ -87,7 +87,7 @@ public final class StaticComputationReuserImpl<T> implements StaticComputationRe
    * @param startTime an initial start time
    */
   public StaticComputationReuserImpl(final List<Timescale> timescales,
-                                     final FinalAggregator<T> finalAggregator,
+                                     final Aggregator<T, T> finalAggregator,
                                      final long startTime) {
     this.table = new DefaultOutputLookupTableImpl<>();
     this.partialOutputTable = new DefaultOutputLookupTableImpl<>();
@@ -192,7 +192,7 @@ public final class StaticComputationReuserImpl<T> implements StaticComputationRe
       }
     }
 
-    final T output = finalAggregator.finalAggregate(list);
+    final T output = finalAggregator.aggregate(list);
     // save the output
     if (node.getRefCnt() != 0) {
       node.saveOutput(output);

@@ -19,7 +19,7 @@
 package edu.snu.tempest.operator.window.time.mts.impl;
 
 import edu.snu.tempest.operator.common.NotFoundException;
-import edu.snu.tempest.operator.window.aggregator.FinalAggregator;
+import edu.snu.tempest.operator.window.aggregator.Aggregator;
 import edu.snu.tempest.operator.window.time.Timescale;
 import edu.snu.tempest.operator.window.time.common.ComputationReuser;
 import edu.snu.tempest.operator.window.time.common.DefaultOutputLookupTableImpl;
@@ -43,7 +43,7 @@ final class OTFComputationReuser<T> implements ComputationReuser<T> {
   /**
    * An aggregator for final aggregation.
    */
-  private final FinalAggregator<T> finalAggregator;
+  private final Aggregator<T, T> finalAggregator;
 
   /**
    * A table for saving partial/final outputs.
@@ -64,7 +64,7 @@ final class OTFComputationReuser<T> implements ComputationReuser<T> {
    * @param startTime an initial start time of the OTFMTSOperator.
    */
   public OTFComputationReuser(final List<Timescale> timescales,
-                              final FinalAggregator<T> finalAggregator,
+                              final Aggregator<T, T> finalAggregator,
                               final long startTime) {
     this.finalAggregator = finalAggregator;
     this.table = new DefaultOutputLookupTableImpl<>();
@@ -124,7 +124,7 @@ final class OTFComputationReuser<T> implements ComputationReuser<T> {
     }
 
     // aggregates dependent outputs
-    final T finalResult = finalAggregator.finalAggregate(dependentOutputs);
+    final T finalResult = finalAggregator.aggregate(dependentOutputs);
     LOG.log(Level.FINE, "AGG TIME OF " + ts + ": "
         + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - aggStartTime)
         + " at " + endTime + ", dependent size: " + dependentOutputs.size());
