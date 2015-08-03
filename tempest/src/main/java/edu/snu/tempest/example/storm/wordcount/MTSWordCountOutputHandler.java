@@ -42,12 +42,21 @@ final class MTSWordCountOutputHandler implements MTSWindowOperator.MTSOutputHand
    */
   private final String pathPrefix;
 
+  /**
+   * Output handler for word count example.
+   * @param writer a writer
+   * @param pathPrefix a logging path
+   */
   public MTSWordCountOutputHandler(final OutputWriter writer,
                                     final String pathPrefix) {
     this.writer = writer;
     this.pathPrefix = pathPrefix;
   }
 
+  /**
+   * Logging the mts output.
+   * @param output an mts output
+   */
   @Override
   public void onNext(final MTSWindowOutput<Map<String, Long>> output) {
     long count = 0;

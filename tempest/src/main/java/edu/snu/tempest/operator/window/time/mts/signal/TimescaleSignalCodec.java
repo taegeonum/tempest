@@ -22,6 +22,9 @@ import org.apache.reef.wake.remote.Codec;
 
 import javax.inject.Inject;
 
+/**
+ * Codec for TimescaleSignal.
+ */
 public final class TimescaleSignalCodec implements Codec<TimescaleSignal> {
 
   /**
@@ -35,7 +38,9 @@ public final class TimescaleSignalCodec implements Codec<TimescaleSignal> {
   private final TimescaleSignalDecoder decoder;
 
   /**
-   * TimescaleSignalCodec.
+   * Codec for TimescaleSignal.
+   * @param encoder encoder of TimescaleSignal
+   * @param decoder decoder of TimescaleSignal
    */
   @Inject
   private TimescaleSignalCodec(final TimescaleSignalEncoder encoder,

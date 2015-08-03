@@ -30,6 +30,10 @@ package edu.snu.tempest.operator.window.time.mts.signal;
 @DefaultImplementation(ZkSignalReceiver.class)
 public interface MTSSignalReceiver extends AutoCloseable {
 
+  /**
+   * Start receiving signal.
+   * @throws Exception an exception when it cannot receive signal.
+   */
   void start() throws Exception;
 
   /**

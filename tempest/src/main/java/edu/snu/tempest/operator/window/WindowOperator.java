@@ -3,6 +3,9 @@ package edu.snu.tempest.operator.window;
 import org.apache.reef.wake.Stage;
 import org.apache.reef.wake.EventHandler;
 
+/**
+ * WindowOperator interface.
+ */
 public interface WindowOperator<I> extends Stage {
   /**
    * Start of WindowOperator.

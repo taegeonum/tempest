@@ -19,7 +19,7 @@ Tempest project
 2. --test_name: test name
 3. --spouts: the number of spouts 
 4. --total_time : total elapsed time to test
-5. --mts_operator: mts/naive/otf/rg
+5. --operator_type: dynamic_mts/naive/otf/static_mts
   * dynamic_mts: Dynamic multi-timescale impl
   * static_mts: Static multi-timescale impl
   * naive: Naive impl
@@ -29,4 +29,5 @@ Tempest project
   * unit: second
   * ex) (5,1)(10,2) -> two timescales: window size is 5seconds, interval is 1 second. window size is 10 seconds, interval is 2 seconds.
 7. --bolts: the number of bolts
+9. --input_interval: interval of sending input.
 

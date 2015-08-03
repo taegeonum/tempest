@@ -146,7 +146,7 @@ public final class ZkSignalReceiver implements MTSSignalReceiver, Watcher {
   /**
    * This is zookeeper interface for retrieving events from zookeeper.
    * Notice: Zookeeper cannot process multiple concurrent events. 
-   * Need to use another receiver if you want to address multiple concurrent events.
+   * Need to use another receiver in order to address multiple concurrent events.
    */
   @Override
   public void process(final WatchedEvent event) {

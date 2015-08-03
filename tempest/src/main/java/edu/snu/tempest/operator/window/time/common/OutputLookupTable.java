@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * OutputLookupTable interface.
- *
  * Data structure for saving timescale outputs.
  */
 public interface OutputLookupTable<V> {

@@ -17,6 +17,6 @@
  * under the License.
  */
 /**
- * Package for common interface and implementation of dynamic/static mts operators.
+ * Package for common interface and implementation of time-based window operators.
  */
 package edu.snu.tempest.operator.window.time.common;

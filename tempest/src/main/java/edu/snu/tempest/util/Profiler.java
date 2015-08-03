@@ -29,11 +29,10 @@ import java.lang.management.ManagementFactory;
 public final class Profiler {
 
   private Profiler() {
-
   }
 
   /**
-   * http://stackoverflow.com/questions/18489273/how-to-get-percentage-of-cpu-usage-of-os-from-java.
+   * Reference: http://stackoverflow.com/questions/18489273/how-to-get-percentage-of-cpu-usage-of-os-from-java.
    * Get process cpu load
    * @return process cpu load
    */
@@ -74,7 +73,6 @@ public final class Profiler {
   public static double getCpuLoad() {
     final OperatingSystemMXBean osBean = ManagementFactory.getPlatformMXBean(
         OperatingSystemMXBean.class);
-
     // What % load the overall system is at, from 0.0-1.0
     return osBean.getSystemCpuLoad();
   }

@@ -38,7 +38,6 @@ import java.util.logging.Logger;
  * A mts operator for multi-time scale sliding window operator.
  * Reference: S. Krishnamurthy, C. Wu, and M. Franklin. On-the-fly sharing
  * for streamed aggregation. In ACM SIGMOD, 2006
- *
  * It reuses partial aggregation, but does not reuse final aggregation.
  */
 public final class OTFMTSOperatorImpl<I, V> implements MTSWindowOperator<I> {

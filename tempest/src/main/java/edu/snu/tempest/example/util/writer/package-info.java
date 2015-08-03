@@ -17,6 +17,6 @@
  * under the License.
  */
 /**
- * Writer.
+ * A package for writer.
  */
 package edu.snu.tempest.example.util.writer;

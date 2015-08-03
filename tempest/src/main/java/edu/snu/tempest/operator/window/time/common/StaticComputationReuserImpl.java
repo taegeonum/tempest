@@ -30,7 +30,6 @@ import java.util.logging.Logger;
 
 /**
  * StaticComputationReuserImpl Implementation.
- *
  * It constructs RelationGraph at start time.
  */
 public final class StaticComputationReuserImpl<T> implements StaticComputationReuser<T> {
@@ -81,6 +80,12 @@ public final class StaticComputationReuserImpl<T> implements StaticComputationRe
    */
   private long prevSliceTime = 0;
 
+  /**
+   * StaticComputationReuserImpl Implementation.
+   * @param timescales a list of timescales
+   * @param finalAggregator a final aggregator
+   * @param startTime an initial start time
+   */
   public StaticComputationReuserImpl(final List<Timescale> timescales,
                                      final FinalAggregator<T> finalAggregator,
                                      final long startTime) {
@@ -130,7 +135,6 @@ public final class StaticComputationReuserImpl<T> implements StaticComputationRe
 
   /**
    * Gets next slice time for slicing input and creating partial outputs.
-   *
    * SlicedWindowOperator can use this to slice input.
    */
   public synchronized long nextSliceTime() {
@@ -152,10 +156,8 @@ public final class StaticComputationReuserImpl<T> implements StaticComputationRe
 
   /**
    * Aggregates partial outputs and produces a final output.
-   *
    * Dependent outputs can be aggregated into final output.
    * The dependency information is statically constructed at start time.
-   *
    * @param startTime start time of the output
    * @param endTime end time of the output
    * @param ts timescale
@@ -204,7 +206,6 @@ public final class StaticComputationReuserImpl<T> implements StaticComputationRe
    * Adjust current time to fetch a corresponding node.
    * For example, if current time is 31 but period is 15,
    * then it adjust start time to 1.
-   *
    * @param time current time
    */
   private long adjStartTime(final long time) {
@@ -219,10 +220,8 @@ public final class StaticComputationReuserImpl<T> implements StaticComputationRe
    * Adjust current time to fetch a corresponding node.
    * For example, if current time is 30 and period is 15,
    * then it adjust end time to 15.
-   *
    * if current time is 31 and period is 15,
    *  then it adjust end time to 1.
-   *
    * @param time current time
    */
   private long adjEndTime(final long time) {
@@ -233,7 +232,6 @@ public final class StaticComputationReuserImpl<T> implements StaticComputationRe
 
   /**
    * It creates the list of next slice time.
-   *
    * This method is based on "On-the-Fly Sharing " paper.
    * Similar to initializeWindowState function
    */
@@ -453,6 +451,10 @@ public final class StaticComputationReuserImpl<T> implements StaticComputationRe
       }
     }
 
+    /**
+     * Add dependent node.
+     * @param n a dependent node
+     */
     public void addDependency(final RelationGraphNode n) {
       if (n == null) {
         throw new NullPointerException();
@@ -466,10 +468,18 @@ public final class StaticComputationReuserImpl<T> implements StaticComputationRe
       initialRefCnt = refCnt;
     }
 
+    /**
+     * Get number of parent nodes.
+     * @return number of parent nodes.
+     */
     public int getRefCnt() {
       return refCnt;
     }
 
+    /**
+     * Get child (dependent) nodes.
+     * @return child nodes
+     */
     public List<RelationGraphNode> getDependencies() {
       return dependencies;
     }

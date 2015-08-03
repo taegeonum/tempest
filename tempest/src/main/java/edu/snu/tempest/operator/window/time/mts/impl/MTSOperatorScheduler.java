@@ -92,20 +92,18 @@ final class MTSOperatorScheduler {
    */
   private long prevTime;
 
-  public MTSOperatorScheduler(final SlicedWindowOperator<?> swo,
-                              final long tickTime,
-                              final TimeUnit tickTimeUnit) {
+  /**
+   * MTSOperatorScheduler.
+   * @param swo a sliced window operator for mts
+   */
+  public MTSOperatorScheduler(final SlicedWindowOperator<?> swo) {
     this.handlers = new PriorityQueue<>(10, new OWOComparator());
     this.scheduler = Executors.newScheduledThreadPool(1,
         new DefaultThreadFactory("MTSOperatorScheduler"));
     this.executor = Executors.newFixedThreadPool(1);
     this.slicedWindowOperator = swo;
-    this.tickTime = tickTimeUnit.toMillis(tickTime);
+    this.tickTime = TimeUnit.MILLISECONDS.toMillis(200L);
     this.prevTime = 0;
-  }
-  
-  public MTSOperatorScheduler(final SlicedWindowOperator<?> swo) {
-    this(swo, 200L, TimeUnit.MILLISECONDS);
   }
 
   /**

@@ -20,6 +20,9 @@ package edu.snu.tempest.operator.window.aggregator.impl;
 
 import javax.inject.Inject;
 
+/**
+ * Compute function for count by key.
+ */
 final class CountByKeyComputeFunc implements ComputeByKeyAggregator.ComputeByKeyFunc<Long> {
 
   @Inject
@@ -27,11 +30,21 @@ final class CountByKeyComputeFunc implements ComputeByKeyAggregator.ComputeByKey
 
   }
 
+  /**
+   * Returns zero.
+   * @return initial value
+   */
   @Override
   public Long init() {
     return 0L;
   }
 
+  /**
+   * Sum the two counts
+   * @param oldVal old value
+   * @param newVal new value
+   * @return sum
+   */
   @Override
   public Long compute(final Long oldVal, final Long newVal) {
     return oldVal + newVal;

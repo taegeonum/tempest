@@ -33,7 +33,6 @@ import java.util.logging.Logger;
 /**
  * Default STS operator scheduler implementation.
  * It triggers a sliced window operator and a overlapping window operator every second.
- *
  * It first executes a SlicedWindowOperator.
  * After that, it executes an overlapping window operator.
  */
@@ -81,22 +80,20 @@ final class STSOperatorScheduler {
    */
   private long prevTime;
 
+  /**
+   * STSOperatorScheduler.
+   * @param swo a sliced window operator for sts
+   * @param owo an overlapping window operator
+   */
   public STSOperatorScheduler(final SlicedWindowOperator<?> swo,
-                              final OverlappingWindowOperator<?> owo,
-                              final long tickTime,
-                              final TimeUnit tickTimeUnit) {
+                              final OverlappingWindowOperator<?> owo) {
     this.owo = owo;
     this.scheduler = Executors.newScheduledThreadPool(1,
         new DefaultThreadFactory("STSOperatorScheduler"));
     this.executor = Executors.newFixedThreadPool(1);
     this.slicedWindowOperator = swo;
-    this.tickTime = tickTimeUnit.toMillis(tickTime);
+    this.tickTime = TimeUnit.MILLISECONDS.toMillis(200L);
     this.prevTime = 0;
-  }
-
-  public STSOperatorScheduler(final SlicedWindowOperator<?> swo,
-                              final OverlappingWindowOperator<?> owo) {
-    this(swo, owo, 200L, TimeUnit.MILLISECONDS);
   }
 
   /**

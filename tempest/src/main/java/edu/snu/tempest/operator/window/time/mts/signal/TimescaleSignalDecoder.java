@@ -25,14 +25,13 @@ import org.apache.reef.wake.remote.Decoder;
 
 import javax.inject.Inject;
 
+/**
+ * Decoder for TimescaleSignal.
+ */
 public final class TimescaleSignalDecoder implements Decoder<TimescaleSignal> {
 
-  /**
-   * Decode TimescaleSignal.
-   */
   @Inject
   private TimescaleSignalDecoder() {
-    
   }
   
   @Override

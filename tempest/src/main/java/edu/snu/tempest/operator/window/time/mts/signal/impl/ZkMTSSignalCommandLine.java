@@ -47,7 +47,6 @@ public final class ZkMTSSignalCommandLine {
   public static final class TypeOfSignal implements Name<String> {}
 
   private ZkMTSSignalCommandLine() {
-
   }
 
   private static Configuration getCommandLineConf(final String[] args) throws BindException, IOException {

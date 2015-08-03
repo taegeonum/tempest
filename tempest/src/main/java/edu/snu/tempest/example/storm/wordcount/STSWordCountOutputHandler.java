@@ -47,6 +47,12 @@ final class STSWordCountOutputHandler implements STSWindowOperator.STSOutputHand
    */
   private final String pathPrefix;
 
+  /**
+   * Output handler for word count example.
+   * @param writer a writer
+   * @param pathPrefix logging path
+   * @param timescale a timescale
+   */
   public STSWordCountOutputHandler(final OutputWriter writer,
                                    final String pathPrefix,
                                    final Timescale timescale) {
@@ -55,6 +61,10 @@ final class STSWordCountOutputHandler implements STSWindowOperator.STSOutputHand
     this.timescale = timescale;
   }
 
+  /**
+   * Log the single timescale output.
+   * @param output an output.
+   */
   @Override
   public void onNext(final STSWindowOutput<Map<String, Long>> output) {
     long count = 0;

@@ -23,14 +23,16 @@ import org.apache.reef.wake.remote.Encoder;
 
 import javax.inject.Inject;
 
+/**
+ * Encoder for TimescaleSignal.
+ */
 public final class TimescaleSignalEncoder implements Encoder<TimescaleSignal> {
 
   /**
-   * Encode TimescaleSignal.
+   * Encoder for TimescaleSignal.
    */
   @Inject
   private TimescaleSignalEncoder() {
-    
   }
   
   @Override
