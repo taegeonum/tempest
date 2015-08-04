@@ -28,16 +28,20 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Parsing timescales from command line.
+ * Parse timescales from/to string.
  */
 public final class TimescaleParser {
   /**
-   * Regular expression of parse timescale.
+   * Regular expression for string.
    */
   private static final String REGEX = "(\\(\\d+,\\d+\\))*";
 
   public final List<Timescale> timescales;
 
+  /**
+   * Parse timescales from/to string.
+   * @param timescaleString string
+   */
   @Inject
   private TimescaleParser(@Parameter(TimescaleString.class) final String timescaleString) {
     this.timescales = parseFromString(timescaleString);

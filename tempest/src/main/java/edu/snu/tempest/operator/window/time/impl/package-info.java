@@ -17,6 +17,6 @@
  * under the License.
  */
 /**
- * Implementation of multi-time scale sliding window operator.
+ * Implementation of time window operator.
  */
 package edu.snu.tempest.operator.window.time.impl;

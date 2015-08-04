@@ -17,6 +17,6 @@
  * under the License.
  */
 /**
- * A package for MTS examples on Storm.
+ * A package for tempest operator examples on Storm.
  */
 package edu.snu.tempest.example.storm;

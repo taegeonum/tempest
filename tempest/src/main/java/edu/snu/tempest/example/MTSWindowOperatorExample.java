@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
  * This example creates DynamicMTSOperatorImpl
  * and sends integer values to the operator.
  * The mts operator calculates the integer by key.
- * Also, this example add adds 3 timescales dynamically to the operator.
+ * Also, this example adds 3 timescales dynamically to the operator.
  */
 public final class MTSWindowOperatorExample {
 
@@ -83,7 +83,7 @@ public final class MTSWindowOperatorExample {
       @Override
       public void run() {
         final Random rand = new Random();
-        for (int i = 0; i < 3000; i++) {
+        for (int i = 0; i < 25000; i++) {
           operator.execute(Math.abs(rand.nextInt() % 5));
           try {
             Thread.sleep(10);

@@ -17,6 +17,6 @@
  * under the License.
  */
 /**
- * A package for parameters.
+ * A package for example parameters.
  */
 package edu.snu.tempest.example.storm.parameter;

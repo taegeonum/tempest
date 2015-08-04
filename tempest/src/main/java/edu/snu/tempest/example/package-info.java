@@ -17,6 +17,6 @@
  * under the License.
  */
 /**
- * This package includes examples of MTS.
+ * This package includes examples of tempest operator.
  */
 package edu.snu.tempest.example;

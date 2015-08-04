@@ -26,6 +26,11 @@ import javax.inject.Inject;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * This executes partial aggregation and slices the results.
+ * @param <I> input
+ * @param <V> aggregated result
+ */
 final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I> {
   private static final Logger LOG = Logger.getLogger(DefaultSlicedWindowOperator.class.getName());
 

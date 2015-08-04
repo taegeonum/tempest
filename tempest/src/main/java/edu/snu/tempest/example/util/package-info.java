@@ -17,6 +17,6 @@
  * under the License.
  */
 /**
- * Utils package.
+ * A package for example util.
  */
 package edu.snu.tempest.example.util;

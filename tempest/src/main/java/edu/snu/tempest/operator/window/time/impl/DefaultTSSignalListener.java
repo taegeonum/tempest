@@ -34,7 +34,7 @@ import java.util.logging.Logger;
 
 /**
  * Timescale signal listener for dynamic multi-time scale.
- * It handles dynamic timescale addition/deletion.
+ * It handles dynamic timescale addition/deletion and changes the behavior of the mts operator.
  */
 public final class DefaultTSSignalListener<V> implements TimescaleSignalListener {
   private static final Logger LOG = Logger.getLogger(DefaultTSSignalListener.class.getName());

@@ -65,6 +65,7 @@ public final class DynamicNextSliceTimeProvider implements NextSliceTimeProvider
   }
 
   /**
+   * It returns a next slice time for producing partial results.
    * Similar to advanceWindowGetNextEdge function in the "On-the-Fly ..." paper.
    */
   @Override
@@ -124,6 +125,7 @@ public final class DynamicNextSliceTimeProvider implements NextSliceTimeProvider
   }
 
   /**
+   * Initialize next slice time.
    * This method is based on "On-the-Fly Sharing " paper.
    * Similar to initializeWindowState function
    */
@@ -135,6 +137,7 @@ public final class DynamicNextSliceTimeProvider implements NextSliceTimeProvider
   }
 
   /**
+   * Add next slice time into sliceQueue.
    * Similar to addEdges function in the "On-the-Fly ... " paper.
    */
   private void addSlices(final long startTime, final Timescale ts) {
