@@ -25,7 +25,7 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
 import edu.snu.tempest.example.util.writer.OutputWriter;
 import edu.snu.tempest.operator.window.WindowOperator;
-import edu.snu.tempest.operator.window.aggregator.AssociativeAggregator;
+import edu.snu.tempest.operator.window.aggregator.CAAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.time.Timescale;
@@ -190,7 +190,7 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
 
     // create MTS operator
     final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
-    cb.bindImplementation(AssociativeAggregator.class, CountByKeyAggregator.class);
+    cb.bindImplementation(CAAggregator.class, CountByKeyAggregator.class);
     cb.bindNamedParameter(CachingRate.class, cachingRate + "");
     cb.bindNamedParameter(StartTime.class, this.startTime + "");
 

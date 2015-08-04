@@ -18,7 +18,7 @@
  */
 package edu.snu.tempest.operator.window.time.mts.impl;
 
-import edu.snu.tempest.operator.window.aggregator.AssociativeAggregator;
+import edu.snu.tempest.operator.window.aggregator.CAAggregator;
 import edu.snu.tempest.operator.window.time.Timescale;
 import edu.snu.tempest.operator.window.time.common.ComputationReuser;
 
@@ -41,7 +41,7 @@ final class DynamicSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
   /**
    * Aggregator for partial aggregation.
    */
-  private final AssociativeAggregator<I, V> aggregator;
+  private final CAAggregator<I, V> aggregator;
 
   /**
    * A computation reuser for creating window outputs.
@@ -86,7 +86,7 @@ final class DynamicSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
    * @param startTime a start time of the mts operator
    */
   public DynamicSlicedWindowOperator(
-      final AssociativeAggregator<I, V> aggregator,
+      final CAAggregator<I, V> aggregator,
       final List<Timescale> timescales,
       final ComputationReuser<V> computationReuser,
       final Long startTime) {

@@ -19,7 +19,7 @@
 package edu.snu.tempest.operator.window.time.mts.impl;
 
 
-import edu.snu.tempest.operator.window.aggregator.AssociativeAggregator;
+import edu.snu.tempest.operator.window.aggregator.CAAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.time.Timescale;
@@ -68,7 +68,7 @@ public class StaticMTSOperatorTest {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindNamedParameter(StartTime.class, Long.toString(startTime));
     jcb.bindImplementation(KeyExtractor.class, IntegerExtractor.class);
-    jcb.bindImplementation(AssociativeAggregator.class, CountByKeyAggregator.class);
+    jcb.bindImplementation(CAAggregator.class, CountByKeyAggregator.class);
     final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
     injector.bindVolatileInstance(List.class, timescales);
     injector.bindVolatileInstance(MTSWindowOperator.MTSOutputHandler.class,

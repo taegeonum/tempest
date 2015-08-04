@@ -19,7 +19,7 @@
 package edu.snu.tempest.operator.window.time.mts.impl;
 
 import edu.snu.tempest.operator.common.Subscription;
-import edu.snu.tempest.operator.window.aggregator.AssociativeAggregator;
+import edu.snu.tempest.operator.window.aggregator.CAAggregator;
 import edu.snu.tempest.operator.window.time.Timescale;
 import edu.snu.tempest.operator.window.time.mts.CachingPolicy;
 import edu.snu.tempest.operator.window.time.mts.MTSWindowOperator;
@@ -90,7 +90,7 @@ public final class DynamicMTSOperatorImpl<I, V> implements MTSWindowOperator<I> 
    * @param startTime an initial start time of the operator
    */
   @Inject
-  private DynamicMTSOperatorImpl(final AssociativeAggregator<I, V> aggregator,
+  private DynamicMTSOperatorImpl(final CAAggregator<I, V> aggregator,
                                  final List<Timescale> timescales,
                                  final MTSWindowOperator.MTSOutputHandler<V> handler,
                                  final MTSSignalReceiver receiver,

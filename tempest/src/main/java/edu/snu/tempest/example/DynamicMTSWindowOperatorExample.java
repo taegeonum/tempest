@@ -18,7 +18,7 @@
  */
 package edu.snu.tempest.example;
 
-import edu.snu.tempest.operator.window.aggregator.AssociativeAggregator;
+import edu.snu.tempest.operator.window.aggregator.CAAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.time.Timescale;
@@ -65,7 +65,7 @@ public final class DynamicMTSWindowOperatorExample {
     final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
     cb.bindNamedParameter(ZkMTSParameters.OperatorIdentifier.class, identifier);
     cb.bindNamedParameter(ZkMTSParameters.ZkServerAddress.class, address);
-    cb.bindImplementation(AssociativeAggregator.class, CountByKeyAggregator.class);
+    cb.bindImplementation(CAAggregator.class, CountByKeyAggregator.class);
     cb.bindNamedParameter(StartTime.class, Long.toString(startTime));
 
     final Injector ij = Tang.Factory.getTang().newInjector(cb.build());

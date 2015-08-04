@@ -18,7 +18,7 @@
  */
 package edu.snu.tempest.operator.window.time.common;
 
-import edu.snu.tempest.operator.window.aggregator.AssociativeAggregator;
+import edu.snu.tempest.operator.window.aggregator.CAAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.time.Timescale;
@@ -51,7 +51,7 @@ public class StaticComputationReuserImplTest {
     final Timescale ts3 = new Timescale(10, 4);
     timescales.add(ts1); timescales.add(ts2); timescales.add(ts3);
     final long startTime = 0;
-    final AssociativeAggregator<Integer, Map<Integer, Long>> aggregator = mock(AssociativeAggregator.class);
+    final CAAggregator<Integer, Map<Integer, Long>> aggregator = mock(CAAggregator.class);
     final StaticComputationReuserImpl<Map<Integer, Long>> computationReuser =
         new StaticComputationReuserImpl<>(timescales, aggregator, startTime);
 
@@ -84,7 +84,7 @@ public class StaticComputationReuserImplTest {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, IntegerExtractor.class);
     final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
-    final AssociativeAggregator<Integer, Map<Integer, Long>> aggregator =
+    final CAAggregator<Integer, Map<Integer, Long>> aggregator =
         injector.getInstance(CountByKeyAggregator.class);
     final StaticComputationReuserImpl<Map<Integer, Long>> computationReuser =
         new StaticComputationReuserImpl<>(timescales, aggregator, startTime);

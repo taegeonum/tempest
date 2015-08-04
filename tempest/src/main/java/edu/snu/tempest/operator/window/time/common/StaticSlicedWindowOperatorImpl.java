@@ -19,7 +19,7 @@
 package edu.snu.tempest.operator.window.time.common;
 
 
-import edu.snu.tempest.operator.window.aggregator.AssociativeAggregator;
+import edu.snu.tempest.operator.window.aggregator.CAAggregator;
 import edu.snu.tempest.operator.window.time.mts.impl.SlicedWindowOperator;
 
 import java.util.logging.Level;
@@ -38,7 +38,7 @@ public final class StaticSlicedWindowOperatorImpl<I, V> implements SlicedWindowO
   /**
    * Aggregator for partial aggregation.
    */
-  private final AssociativeAggregator<I, V> aggregator;
+  private final CAAggregator<I, V> aggregator;
 
   /**
    * An computation reuser for creating window outputs.
@@ -72,7 +72,7 @@ public final class StaticSlicedWindowOperatorImpl<I, V> implements SlicedWindowO
    * @param startTime a start time of the mts operator
    */
   public StaticSlicedWindowOperatorImpl(
-      final AssociativeAggregator<I, V> aggregator,
+      final CAAggregator<I, V> aggregator,
       final StaticComputationReuser<V> computationReuser,
       final long startTime) {
     this.aggregator = aggregator;
