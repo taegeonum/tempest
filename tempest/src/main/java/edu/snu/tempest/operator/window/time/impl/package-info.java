@@ -16,15 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window;
-
 /**
- * WindowOperator interface.
+ * Implementation of multi-time scale sliding window operator.
  */
-public interface WindowOperator<I> {
-  /**
-   * It receives input from this function.
-   * @param val input value
-   */
-  void execute(final I val);
-}
+package edu.snu.tempest.operator.window.time.impl;

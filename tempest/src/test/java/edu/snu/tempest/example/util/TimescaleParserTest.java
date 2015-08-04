@@ -19,7 +19,7 @@
 package edu.snu.tempest.example.util;
 
 import edu.snu.tempest.operator.window.time.Timescale;
-import org.apache.reef.tang.Injector;
+import edu.snu.tempest.operator.window.time.TimescaleParser;
 import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.exceptions.InjectionException;
@@ -37,7 +37,7 @@ public final class TimescaleParserTest {
    * @throws InjectionException
    */
   @Test
-  public void parseSuccessTest() throws InjectionException {
+  public void parseToTimescaleSuccessTest() throws InjectionException {
     final String str = "(30,2)(40,4)(50,6)(60,7)";
     final List<Timescale> list = new ArrayList<>();
     list.add(new Timescale(30, 2, TimeUnit.SECONDS, TimeUnit.SECONDS));
@@ -45,13 +45,7 @@ public final class TimescaleParserTest {
     list.add(new Timescale(50, 6, TimeUnit.SECONDS, TimeUnit.SECONDS));
     list.add(new Timescale(60, 7, TimeUnit.SECONDS, TimeUnit.SECONDS));
 
-    final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
-    cb.bindNamedParameter(TimescaleParser.TimescaleParameter.class, str);
-    final Injector ij = Tang.Factory.getTang().newInjector(cb.build());
-
-    final TimescaleParser tsc = ij.getInstance(TimescaleParser.class);
-    final List<Timescale> timescales = tsc.timescales;
-    
+    final List<Timescale> timescales = TimescaleParser.parseFromString(str);
     assert(timescales.equals(list));
   }
 
@@ -59,23 +53,22 @@ public final class TimescaleParserTest {
    * Parse invalid string to timescales.
    * @throws Exception
    */
-  @Test
-  public void parseInvalidStringTest() throws Exception {
+  @Test(expected=InvalidParameterException.class)
+  public void parseToTimescaleInvalidStringTest() {
     final String invalidStr = "23, 45, 15, 12";
 
     final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
-    cb.bindNamedParameter(TimescaleParser.TimescaleParameter.class, invalidStr);
-    final Injector ij = Tang.Factory.getTang().newInjector(cb.build());
+    TimescaleParser.parseFromString(invalidStr);
+  }
 
-    TimescaleParser tsc = null;
-    try {
-      tsc = ij.getInstance(TimescaleParser.class);
-    } catch (InjectionException e) {
-      assert(e.getCause().getClass().equals(InvalidParameterException.class));
-    }
-    
-    if (tsc != null) { 
-      throw new Exception("Timescale parser should throw InvalidParameterException");
-    }
+  @Test
+  public void parseToStringTest() {
+    final String str = "(30,2)(40,4)(50,6)(60,7)";
+    final List<Timescale> list = new ArrayList<>();
+    list.add(new Timescale(30, 2, TimeUnit.SECONDS, TimeUnit.SECONDS));
+    list.add(new Timescale(40, 4, TimeUnit.SECONDS, TimeUnit.SECONDS));
+    list.add(new Timescale(50, 6, TimeUnit.SECONDS, TimeUnit.SECONDS));
+    list.add(new Timescale(60, 7, TimeUnit.SECONDS, TimeUnit.SECONDS));
+    assert(str.compareTo(TimescaleParser.parseToString(list)) == 0);
   }
 }

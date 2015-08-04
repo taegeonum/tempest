@@ -22,23 +22,22 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import edu.snu.tempest.operator.window.time.TimeWindowOutput;
 import edu.snu.tempest.operator.window.time.Timescale;
-import edu.snu.tempest.operator.window.time.mts.MTSWindowOutput;
 
 import java.util.Map;
 
 /**
  * Serializer for MTSWindowOutput in WordCount.
  */
-final class WordCountWindowOutputSerializer extends Serializer<MTSWindowOutput<Map<String, Long>>> {
+final class WordCountWindowOutputSerializer extends Serializer<TimeWindowOutput<Map<String, Long>>> {
 
   @Override
   public void write(final Kryo kryo,
                     final Output output,
-                    final MTSWindowOutput<Map<String, Long>> mapMTSWindowOutput) {
+                    final TimeWindowOutput<Map<String, Long>> mapMTSWindowOutput) {
     output.writeLong(mapMTSWindowOutput.timescale.windowSize);
     output.writeLong(mapMTSWindowOutput.timescale.intervalSize);
-    kryo.writeObject(output, mapMTSWindowOutput.timescale);
     kryo.writeObject(output, mapMTSWindowOutput.output);
     output.writeLong(mapMTSWindowOutput.startTime);
     output.writeLong(mapMTSWindowOutput.endTime);
@@ -46,10 +45,10 @@ final class WordCountWindowOutputSerializer extends Serializer<MTSWindowOutput<M
   }
 
   @Override
-  public MTSWindowOutput<Map<String, Long>> read(final Kryo kryo,
+  public TimeWindowOutput<Map<String, Long>> read(final Kryo kryo,
                                                  final Input input,
-                                                 final Class<MTSWindowOutput<Map<String, Long>>> aClass) {
-    return new MTSWindowOutput<>(new Timescale(input.readLong(), input.readLong()),
+                                                 final Class<TimeWindowOutput<Map<String, Long>>> aClass) {
+    return new TimeWindowOutput<>(new Timescale(input.readLong(), input.readLong()),
         (Map<String, Long>)kryo.readObject(input, Map.class),
         input.readLong(),
         input.readLong(),

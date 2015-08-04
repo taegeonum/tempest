@@ -16,15 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window;
-
 /**
- * WindowOperator interface.
+ * A package for parameters.
  */
-public interface WindowOperator<I> {
-  /**
-   * It receives input from this function.
-   * @param val input value
-   */
-  void execute(final I val);
-}
+package edu.snu.tempest.example.storm.parameter;

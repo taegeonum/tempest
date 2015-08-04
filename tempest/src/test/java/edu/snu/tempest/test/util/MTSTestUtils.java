@@ -16,15 +16,36 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window;
+package edu.snu.tempest.test.util;
+
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * WindowOperator interface.
+ * Test util class.
  */
-public interface WindowOperator<I> {
+public final class MTSTestUtils {
+
   /**
-   * It receives input from this function.
-   * @param val input value
+   * Merge map.
+   * @param map1 initial map
+   * @param maps other maps
+   * @return merged map
    */
-  void execute(final I val);
+  public static Map<Integer, Long> merge(final Map<Integer, Long> map1, final Map<Integer, Long> ... maps) {
+    final Map<Integer, Long> result = new HashMap<>();
+    result.putAll(map1);
+
+    for (final Map<Integer, Long> map2 : maps) {
+      for (final Map.Entry<Integer, Long> entry : map2.entrySet()) {
+        Long oldVal = result.get(entry.getKey());
+        if (oldVal == null) {
+          oldVal = 0L;
+        }
+        result.put(entry.getKey(), oldVal + entry.getValue());
+      }
+    }
+    return result;
+  }
 }

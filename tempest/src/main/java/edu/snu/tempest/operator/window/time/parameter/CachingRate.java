@@ -16,15 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window;
+package edu.snu.tempest.operator.window.time.parameter;
 
-/**
- * WindowOperator interface.
- */
-public interface WindowOperator<I> {
-  /**
-   * It receives input from this function.
-   * @param val input value
-   */
-  void execute(final I val);
-}
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
+
+@NamedParameter(doc = "caching rate for saving outputs in dynamic mts operator.",
+    short_name="caching_rate", default_value = "1.0")
+public final class CachingRate implements Name<Double> {}

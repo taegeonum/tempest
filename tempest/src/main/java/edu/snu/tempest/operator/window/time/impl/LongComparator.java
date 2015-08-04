@@ -16,15 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window;
+package edu.snu.tempest.operator.window.time.impl;
+
+import java.util.Comparator;
 
 /**
- * WindowOperator interface.
+ * Long comparator comparing long value.
  */
-public interface WindowOperator<I> {
-  /**
-   * It receives input from this function.
-   * @param val input value
-   */
-  void execute(final I val);
+public final class LongComparator implements Comparator<Long> {
+  @Override
+  public int compare(final Long o1, final Long o2) {
+    if (o1 - o2 < 0) {
+      return -1;
+    } else if (o1 - o2 > 0) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
 }

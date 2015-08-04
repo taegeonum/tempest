@@ -18,7 +18,7 @@
  */
 package edu.snu.tempest.operator.window.aggregator.impl;
 
-import edu.snu.tempest.util.test.IntegerExtractor;
+import edu.snu.tempest.test.util.IntegerExtractor;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;

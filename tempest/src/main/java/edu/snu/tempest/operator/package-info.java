@@ -17,6 +17,6 @@
  * under the License.
  */
 /**
- * tempest operators.
+ * A package for tempest operators.
  */
 package edu.snu.tempest.operator;

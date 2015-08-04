@@ -16,15 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window;
+package edu.snu.tempest.example.storm.parameter;
 
-/**
- * WindowOperator interface.
- */
-public interface WindowOperator<I> {
-  /**
-   * It receives input from this function.
-   * @param val input value
-   */
-  void execute(final I val);
-}
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
+
+@NamedParameter(doc = "input", short_name="input", default_value = "zipfian")
+public final class InputType implements Name<String> {}

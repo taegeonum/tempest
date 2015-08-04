@@ -18,12 +18,15 @@
  */
 package edu.snu.tempest.example.storm.wordcount;
 
-import edu.snu.tempest.example.storm.parameters.*;
-import edu.snu.tempest.example.util.TimescaleParser;
-import edu.snu.tempest.operator.window.time.mts.parameters.CachingRate;
+import edu.snu.tempest.example.storm.parameter.*;
+import edu.snu.tempest.operator.window.time.Timescale;
+import edu.snu.tempest.operator.window.time.parameter.CachingRate;
+import edu.snu.tempest.operator.window.time.TimescaleParser;
+import edu.snu.tempest.operator.window.time.parameter.TimescaleString;
 import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;
+import java.util.List;
 
 /**
  * Class for parsing parameters for test.
@@ -34,25 +37,25 @@ final class WordCountTestUtil {
   public final String logDir;
   public final double cachingRate;
   public final int totalTime;
-  public final TimescaleParser tsParser;
   public final String operatorName;
   public final String inputType;
+  public final List<Timescale> timescales;
   
   @Inject
   private WordCountTestUtil(@Parameter(NumSpouts.class) final int numSpouts,
-                           @Parameter(TestName.class) final String testName,
-                           @Parameter(LogDir.class) final String logDir,
-                           @Parameter(CachingRate.class) final double cachingRate,
-                           @Parameter(TotalTime.class) final int totalTime,
-                           @Parameter(OperatorType.class) final String operator,
-                           @Parameter(InputType.class) final String inputType,
-                           final TimescaleParser tsParser) {
+                            @Parameter(TestName.class) final String testName,
+                            @Parameter(LogDir.class) final String logDir,
+                            @Parameter(CachingRate.class) final double cachingRate,
+                            @Parameter(TotalTime.class) final int totalTime,
+                            @Parameter(OperatorType.class) final String operator,
+                            @Parameter(InputType.class) final String inputType,
+                            @Parameter(TimescaleString.class) final String timescaleParameter) {
     this.numSpouts = numSpouts;
     this.testName = testName;
     this.logDir = logDir;
     this.cachingRate = cachingRate;
     this.totalTime = totalTime;
-    this.tsParser = tsParser;
+    this.timescales = TimescaleParser.parseFromString(timescaleParameter);
     this.operatorName = operator;
     this.inputType = inputType;
   }
@@ -61,13 +64,12 @@ final class WordCountTestUtil {
     StringBuilder sb = new StringBuilder();
     sb.append("TOTAL_TIME: " + totalTime +"\n"
         + "NUM_SPOUT: " + numSpouts + "\n" 
-        + "TIMESCALES: " + tsParser.timescales + "\n"
+        + "TIMESCALES: " + timescales + "\n"
         + "START_TIME: " + System.currentTimeMillis() + "\n" 
         + "SAVING_RATE: " + cachingRate + "\n"
-        + "NUM_TIMESCALES: " + tsParser.timescales.size() + "\n"
+        + "NUM_TIMESCALES: " + timescales.size() + "\n"
         + "INPUT_TYPE: " + inputType + "\n"
         + "OPERATOR: " + operatorName);
-    
     return sb.toString();
   }
 }

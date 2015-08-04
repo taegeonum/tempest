@@ -16,15 +16,24 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window;
+package edu.snu.tempest.operator.window.time.signal;
 
 /**
- * WindowOperator interface.
+ * Receiver for runtime multiple timescale addition/deletion.
+ * It receives timescale addition/deletion messages from MTSSignalSender
+ * and triggers TimescaleSignalListener.onTimescaleAddition / onTimescaleDeletion
  */
-public interface WindowOperator<I> {
+public interface MTSSignalReceiver extends AutoCloseable {
+
   /**
-   * It receives input from this function.
-   * @param val input value
+   * Start receiving signal.
+   * @throws Exception an exception when it cannot receive signal.
    */
-  void execute(final I val);
+  void start() throws Exception;
+
+  /**
+   * MTSSignalReceiver sends timescale information to TimescaleSignalListener.
+   * @param listener timescale signal listener
+   */
+  void addTimescaleSignalListener(TimescaleSignalListener listener);
 }

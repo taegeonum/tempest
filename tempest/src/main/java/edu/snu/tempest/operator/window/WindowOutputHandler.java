@@ -18,13 +18,11 @@
  */
 package edu.snu.tempest.operator.window;
 
+import org.apache.reef.wake.EventHandler;
+
 /**
- * WindowOperator interface.
+ * Output handler for windowing.
+ * @param <V> output
  */
-public interface WindowOperator<I> {
-  /**
-   * It receives input from this function.
-   * @param val input value
-   */
-  void execute(final I val);
+public interface WindowOutputHandler<V> extends EventHandler<V> {
 }

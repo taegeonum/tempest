@@ -16,15 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window;
+package edu.snu.tempest.operator.window.time.impl;
+
+import edu.snu.tempest.operator.window.time.Timescale;
+import org.apache.reef.wake.EventHandler;
+
 
 /**
- * WindowOperator interface.
+ * OverlappingWindowOperator.
+ * It is triggered and does final aggregation per interval.
+ * For example, if a timescale is [w=10s, i=3s],
+ * then OWO produces an output with 10 seconds window size every 3 seconds.
  */
-public interface WindowOperator<I> {
+public interface OverlappingWindowOperator extends EventHandler<Long> {
   /**
-   * It receives input from this function.
-   * @param val input value
+   * Return a timescale related to this overlapping window operator.
+   * @return timescale.
    */
-  void execute(final I val);
+  Timescale getTimescale();
 }

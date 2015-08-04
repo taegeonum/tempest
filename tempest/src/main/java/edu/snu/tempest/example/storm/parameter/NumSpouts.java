@@ -16,15 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window;
+package edu.snu.tempest.example.storm.parameter;
 
-/**
- * WindowOperator interface.
- */
-public interface WindowOperator<I> {
-  /**
-   * It receives input from this function.
-   * @param val input value
-   */
-  void execute(final I val);
-}
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
+
+
+@NamedParameter(doc = "num of spouts", short_name = "spouts", default_value="5")
+public final class NumSpouts implements Name<Integer> {}

@@ -24,13 +24,13 @@ import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
+import edu.snu.tempest.example.storm.parameter.*;
 import edu.snu.tempest.example.storm.util.StormRunner;
-import edu.snu.tempest.example.storm.parameters.*;
-import edu.snu.tempest.example.util.TimescaleParser.TimescaleParameter;
 import edu.snu.tempest.example.util.writer.LocalOutputWriter;
 import edu.snu.tempest.example.util.writer.OutputWriter;
-import edu.snu.tempest.operator.window.time.mts.MTSWindowOutput;
-import edu.snu.tempest.operator.window.time.mts.parameters.CachingRate;
+import edu.snu.tempest.operator.window.time.Timescale;
+import edu.snu.tempest.operator.window.time.parameter.CachingRate;
+import edu.snu.tempest.operator.window.time.parameter.TimescaleString;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
@@ -39,12 +39,13 @@ import org.apache.reef.tang.exceptions.BindException;
 import org.apache.reef.tang.formats.CommandLine;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
  * WordCountTest topology.
- * This can run naive, on-the-fly, static-mts, and dynamic-mts operators.
+ * This can run naive, static-mts, and dynamic-mts operators.
  */
 final class MTSWordCountTestTopology {
   private static final Logger LOG = Logger.getLogger(MTSWordCountTestTopology.class.getName());
@@ -63,7 +64,7 @@ final class MTSWordCountTestTopology {
         .registerShortNameOfClass(TestName.class)
         .registerShortNameOfClass(LogDir.class)
         .registerShortNameOfClass(CachingRate.class)
-        .registerShortNameOfClass(TimescaleParameter.class)
+        .registerShortNameOfClass(TimescaleString.class)
         .registerShortNameOfClass(NumSpouts.class)
         .registerShortNameOfClass(TotalTime.class)
         .registerShortNameOfClass(OperatorType.class)
@@ -79,7 +80,9 @@ final class MTSWordCountTestTopology {
     conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS, "-Xms16384m -Xmx30000m");
     conf.put(Config.STORM_ZOOKEEPER_CONNECTION_TIMEOUT, 500000);
     conf.put(Config.STORM_ZOOKEEPER_SESSION_TIMEOUT, 500000);
-    conf.registerSerialization(MTSWindowOutput.class, WordCountWindowOutputSerializer.class);
+
+    // FIXME: unable to serialize error
+    //conf.registerSerialization(TimeWindowOutput.class, WordCountWindowOutputSerializer.class);
 
     final Configuration commandLineConf = getCommandLineConf(args);
     final Injector injector = Tang.Factory.getTang().newInjector(commandLineConf);
@@ -92,7 +95,7 @@ final class MTSWordCountTestTopology {
     final String inputType = injector.getNamedInstance(InputType.class);
     final int numBolts = injector.getNamedInstance(NumBolts.class);
     final double inputInterval = injector.getNamedInstance(InputInterval.class);
-    
+
     final TopologyBuilder builder = new TopologyBuilder();
     BaseRichSpout spout = null;
     if (inputType.compareTo("random") == 0) {
@@ -102,18 +105,18 @@ final class MTSWordCountTestTopology {
     }
     
     final OutputWriter writer = injector.getInstance(LocalOutputWriter.class);
+    final List<Timescale> timescales = test.timescales;
     // For logging initial configuration.
     writer.write(logDir + testName + "/conf", test.print() + "\n" + "saving: " + cachingRate);
     writer.write(logDir + testName + "/initialTime", System.currentTimeMillis()+"");
-    writer.write(logDir + testName + "/largestTimescale", test.tsParser.largestWindowSize()+"");
+    writer.write(logDir + testName + "/largestTimescale", timescales.get(timescales.size()-1)+"");
     writer.close();
 
     // set spout
     builder.setSpout("wcspout", spout, test.numSpouts);
     final BaseRichBolt bolt = new MTSWordCountTestBolt(
-        injector.getInstance(LocalOutputWriter.class),
         logDir + testName,
-        test.tsParser.timescales,
+        timescales,
         test.operatorName,
         "localhost:2181",
         cachingRate,
@@ -123,7 +126,7 @@ final class MTSWordCountTestTopology {
     if (test.operatorName.equals("naive")) {
       // naive creates a bolt with multiple executors.
       // Each executors runs one timescale window operator.
-      builder.setBolt("wcbolt", bolt, test.tsParser.timescales.size()).allGrouping("wcspout");
+      builder.setBolt("wcbolt", bolt, timescales.size()).allGrouping("wcspout");
     } else {
       builder.setBolt("wcbolt", bolt, numBolts).fieldsGrouping("wcspout", new Fields("word"));
     }

@@ -16,15 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window;
+package edu.snu.tempest.operator.window.time.impl;
+
+import edu.snu.tempest.operator.window.time.Timescale;
+import edu.snu.tempest.operator.window.time.signal.TimescaleSignalListener;
+import org.apache.reef.tang.annotations.DefaultImplementation;
 
 /**
- * WindowOperator interface.
+ * CachingPolicy for caching multi-time scale outputs.
  */
-public interface WindowOperator<I> {
+@DefaultImplementation(CachingRatePolicy.class)
+public interface CachingPolicy extends TimescaleSignalListener {
   /**
-   * It receives input from this function.
-   * @param val input value
+   * Decide to cache or not the output of ts ranging from startTime to endTime.
+   * @param startTime start time of the output
+   * @param endTime end time of the output
+   * @param ts the timescale of the output
+   * @return cache or not
    */
-  void execute(final I val);
+  boolean cache(long startTime, long endTime, Timescale ts);
 }

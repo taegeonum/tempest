@@ -16,15 +16,24 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window;
+package edu.snu.tempest.operator.window.time.impl;
+
+import java.util.Comparator;
 
 /**
- * WindowOperator interface.
+ * An overlapping window operator which has small size of window
+ * is executed before another OWOs having large size of window.
  */
-public interface WindowOperator<I> {
-  /**
-   * It receives input from this function.
-   * @param val input value
-   */
-  void execute(final I val);
+final class OWOComparator implements Comparator<OverlappingWindowOperator> {
+
+  @Override
+  public int compare(OverlappingWindowOperator x, OverlappingWindowOperator y) {
+    if (x.getTimescale().windowSize < y.getTimescale().windowSize) {
+      return -1;
+    } else if (x.getTimescale().windowSize > y.getTimescale().windowSize) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
 }

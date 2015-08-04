@@ -16,15 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window;
+package edu.snu.tempest.operator.window.time.parameter;
 
-/**
- * WindowOperator interface.
- */
-public interface WindowOperator<I> {
-  /**
-   * It receives input from this function.
-   * @param val input value
-   */
-  void execute(final I val);
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
+
+
+@NamedParameter(doc = "The period for the sliced window stage. (ms)", default_value = "1000")
+public final class SlicedWindowTriggerPeriod implements Name<Long> {
 }

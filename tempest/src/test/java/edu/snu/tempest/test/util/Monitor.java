@@ -16,15 +16,41 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window;
+package edu.snu.tempest.test.util;
+
+import javax.inject.Inject;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * WindowOperator interface.
+ * Monitor class for test.
  */
-public interface WindowOperator<I> {
+public final class Monitor {
+  private final AtomicBoolean finished = new AtomicBoolean(false);
+
+  @Inject
+  public Monitor() {
+  }
+
   /**
-   * It receives input from this function.
-   * @param val input value
+   * Waiting.
+   * @throws InterruptedException
    */
-  void execute(final I val);
+  public void mwait() throws InterruptedException {
+    synchronized (this) {
+      while (!finished.get()) {
+        this.wait();
+      }
+      finished.compareAndSet(true, false);
+    }
+  }
+
+  /**
+   * Notify.
+   */
+  public void mnotify() {
+    synchronized (this) {
+      finished.compareAndSet(false, true);
+      this.notifyAll();
+    }
+  }
 }

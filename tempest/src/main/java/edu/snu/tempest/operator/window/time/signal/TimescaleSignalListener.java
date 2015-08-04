@@ -16,15 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window;
+package edu.snu.tempest.operator.window.time.signal;
+
+import edu.snu.tempest.operator.window.time.Timescale;
 
 /**
- * WindowOperator interface.
+ * Dynamically add/remove timescales.
  */
-public interface WindowOperator<I> {
+public interface TimescaleSignalListener {
+  // time unit is second.
   /**
-   * It receives input from this function.
-   * @param val input value
+   * Receive timescale to be added.
+   * @param ts timescale to be added.
+   * @param addTime the time when timescale is added.
    */
-  void execute(final I val);
+  void onTimescaleAddition(Timescale ts, long addTime);
+
+  /**
+   * Receive timescale to be deleted.
+   * @param ts timescale to be deleted.
+   * @param deleteTime the time when timescale is deleted.
+   */
+  void onTimescaleDeletion(Timescale ts, long deleteTime);
 }

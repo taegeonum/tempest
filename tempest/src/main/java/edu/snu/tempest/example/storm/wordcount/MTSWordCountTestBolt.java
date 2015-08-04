@@ -23,37 +23,31 @@ import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
+import edu.snu.tempest.example.util.writer.LocalOutputWriter;
 import edu.snu.tempest.example.util.writer.OutputWriter;
 import edu.snu.tempest.operator.window.WindowOperator;
 import edu.snu.tempest.operator.window.aggregator.CAAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
-import edu.snu.tempest.operator.window.time.Timescale;
-import edu.snu.tempest.operator.window.time.mts.MTSWindowOperator;
-import edu.snu.tempest.operator.window.time.mts.impl.DynamicMTSOperatorImpl;
-import edu.snu.tempest.operator.window.time.mts.impl.OTFMTSOperatorImpl;
-import edu.snu.tempest.operator.window.time.mts.impl.StaticMTSOperatorImpl;
-import edu.snu.tempest.operator.window.time.mts.parameters.CachingRate;
-import edu.snu.tempest.operator.window.time.mts.parameters.StartTime;
-import edu.snu.tempest.operator.window.time.mts.signal.MTSSignalReceiver;
-import edu.snu.tempest.operator.window.time.mts.signal.impl.ZkMTSParameters;
-import edu.snu.tempest.operator.window.time.mts.signal.impl.ZkSignalReceiver;
-import edu.snu.tempest.operator.window.time.sts.STSWindowOperator;
-import edu.snu.tempest.operator.window.time.sts.impl.STSWindowOperatorImpl;
+import edu.snu.tempest.operator.window.time.*;
+import edu.snu.tempest.operator.window.time.parameter.CachingRate;
+import edu.snu.tempest.operator.window.time.parameter.StartTime;
 import edu.snu.tempest.util.Profiler;
+import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.exceptions.InjectionException;
+import org.apache.reef.wake.impl.StageManager;
 
 import java.io.IOException;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -70,7 +64,7 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
   /**
    * OutputWriter for logging.
    */
-  private final OutputWriter writer;
+  private OutputWriter writer;
 
   /**
    * Log directory.
@@ -84,7 +78,7 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
 
   /**
    * A type of operator.
-   * [dynamic_mts, naive, static_mts, otf]
+   * [dynamic_mts, naive, static_mts]
    */
   private final String operatorType;
 
@@ -112,15 +106,15 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
    * Number of execution.
    */
   private final AtomicLong numOfExecution = new AtomicLong();
+
+  /**
+   * Start time.
+   */
   private final long startTime;
-  private long totalBytes = 0;
-  private long sizeOfInt = 4;
-  private long sizeOfLong = 8;
 
   /**
    * MTSWordCountTestBolt.
    * It aggregateds word and calculates counts.
-   * @param writer a writer for logging.
    * @param pathPrefix a path of log directory.
    * @param timescales an initial timescales.
    * @param operatorType a type of operator
@@ -128,14 +122,12 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
    * @param cachingRate a caching rate for dynamic MTS operator.
    * @param startTime an initial start time.
    */
-  public MTSWordCountTestBolt(final OutputWriter writer,
-                              final String pathPrefix,
+  public MTSWordCountTestBolt(final String pathPrefix,
                               final List<Timescale> timescales,
                               final String operatorType,
                               final String address,
                               final double cachingRate,
                               final long startTime) {
-    this.writer = writer;
     this.pathPrefix = pathPrefix;
     this.timescales = timescales;
     this.operatorType = operatorType;
@@ -150,7 +142,6 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
 
   @Override
   public void execute(final Tuple tuple) {
-    totalBytes += (tuple.getString(0).length() + sizeOfInt + sizeOfLong);
     // send data to MTS operator.
     operator.execute(tuple);
     numOfExecution.incrementAndGet();
@@ -159,7 +150,14 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
   @Override
   public void prepare(final Map conf, final TopologyContext paramTopologyContext,
                       final OutputCollector paramOutputCollector) {
-    // profiling 
+    try {
+      this.writer = Tang.Factory.getTang().newInjector().getInstance(LocalOutputWriter.class);
+    } catch (final InjectionException e) {
+      e.printStackTrace();
+      throw new RuntimeException(e);
+    }
+
+    // profiling
     this.executor = Executors.newScheduledThreadPool(3);
     this.executor.scheduleAtFixedRate(new Runnable() {
       @Override
@@ -168,9 +166,6 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
             // cpu logging
             writer.writeLine(pathPrefix + "/cpu", (System.currentTimeMillis()) + "\t" 
                 + Profiler.getCpuLoad());
-            // bytes logging
-            writer.writeLine(pathPrefix + "/bytes", (System.currentTimeMillis()) + "\t" 
-                + totalBytes);
             // memory logging
             writer.writeLine(pathPrefix + "/memory", (System.currentTimeMillis()) + "\t" 
                 + Profiler.getMemoryUsage());
@@ -183,8 +178,6 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
             e.printStackTrace();
             throw new RuntimeException(e);
           }
-          LOG.log(Level.INFO, (System.currentTimeMillis()) + "\t" 
-              + totalBytes);
       }
     }, 0, 1, TimeUnit.SECONDS);
 
@@ -194,22 +187,39 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
     cb.bindNamedParameter(CachingRate.class, cachingRate + "");
     cb.bindNamedParameter(StartTime.class, this.startTime + "");
 
+    final Configuration operatorConf;
     if (operatorType.equals("dynamic_mts")) {
-      cb.bindImplementation(MTSWindowOperator.class, DynamicMTSOperatorImpl.class);
-      cb.bindNamedParameter(ZkMTSParameters.OperatorIdentifier.class, "mts-wcbolt");
-      cb.bindNamedParameter(ZkMTSParameters.ZkServerAddress.class, address);
-      cb.bindImplementation(MTSSignalReceiver.class, ZkSignalReceiver.class);
+      operatorConf = DynamicMTSWindowConfiguration.CONF
+          .set(DynamicMTSWindowConfiguration.START_TIME, startTime)
+          .set(DynamicMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(timescales))
+          .set(DynamicMTSWindowConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+          .set(DynamicMTSWindowConfiguration.OUTPUT_HANDLER, WordCountOutputHandler.class)
+          .set(DynamicMTSWindowConfiguration.CACHING_RATE, cachingRate)
+          .set(DynamicMTSWindowConfiguration.OPERATOR_IDENTIFIER, "mts-wcbolt")
+          .set(DynamicMTSWindowConfiguration.ZK_SERVER_ADDRESS, address)
+          .build();
     } else if (operatorType.equals("naive")) {
-      cb.bindImplementation(STSWindowOperator.class, STSWindowOperatorImpl.class);
+      final int index = paramTopologyContext.getThisTaskIndex();
+      final List<Timescale> tsList = new LinkedList<>();
+      tsList.add(timescales.get(index));
+      operatorConf = StaticMTSWindowConfiguration.CONF
+          .set(StaticMTSWindowConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+          .set(StaticMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(tsList))
+          .set(StaticMTSWindowConfiguration.OUTPUT_HANDLER, WordCountOutputHandler.class)
+          .set(StaticMTSWindowConfiguration.START_TIME, startTime)
+          .build();
     } else if (operatorType.equals("static_mts")) {
-      cb.bindImplementation(MTSWindowOperator.class, StaticMTSOperatorImpl.class);
-    } else if (operatorType.equals("otf")) {
-      cb.bindImplementation(MTSWindowOperator.class, OTFMTSOperatorImpl.class);
+      operatorConf = StaticMTSWindowConfiguration.CONF
+          .set(StaticMTSWindowConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+          .set(StaticMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(timescales))
+          .set(StaticMTSWindowConfiguration.OUTPUT_HANDLER, WordCountOutputHandler.class)
+          .set(StaticMTSWindowConfiguration.START_TIME, startTime)
+          .build();
     } else {
       throw new RuntimeException("Operator exception: " + operator);
     }
 
-    final Injector ij = Tang.Factory.getTang().newInjector(cb.build());
+    final Injector ij = Tang.Factory.getTang().newInjector(operatorConf);
     ij.bindVolatileInstance(KeyExtractor.class,
         new KeyExtractor<Tuple, String>() {
           @Override
@@ -217,38 +227,21 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
             return tuple.getString(0);
           }
         });
-
-    if (operatorType.equals("naive")) {
-      // bind one timescale to each executors.
-      final int index = paramTopologyContext.getThisTaskIndex();
-      ij.bindVolatileInstance(Timescale.class, timescales.get(index));
-      ij.bindVolatileInstance(STSWindowOperator.STSOutputHandler.class,
-          new STSWordCountOutputHandler(writer, pathPrefix, timescales.get(index)));
-      try {
-        operator = ij.getInstance(STSWindowOperator.class);
-      } catch (final InjectionException e) {
-        e.printStackTrace();
-        throw new RuntimeException(e);
-      }
-    } else {
-      ij.bindVolatileInstance(List.class, timescales);
-      ij.bindVolatileInstance(MTSWindowOperator.MTSOutputHandler.class,
-          new MTSWordCountOutputHandler(writer, pathPrefix));
-      try {
-        operator = ij.getInstance(MTSWindowOperator.class);
-      } catch (final InjectionException e) {
-        e.printStackTrace();
-        throw new RuntimeException(e);
-      }
+    ij.bindVolatileInstance(OutputWriter.class, writer);
+    ij.bindVolatileParameter(WordCountOutputHandler.PathPrefix.class, pathPrefix);
+    try {
+      operator = ij.getInstance(WindowOperator.class);
+    } catch (InjectionException e) {
+      e.printStackTrace();
+      throw new RuntimeException(e);
     }
-    operator.start();
   }
 
   @Override
   public void cleanup() {
     try {
-      this.operator.close();
       this.executor.shutdown();
+      StageManager.instance().close();
     } catch (Exception e) {
       e.printStackTrace();
     }

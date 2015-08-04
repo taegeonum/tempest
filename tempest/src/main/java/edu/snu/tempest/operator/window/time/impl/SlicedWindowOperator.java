@@ -16,15 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window;
+package edu.snu.tempest.operator.window.time.impl;
+
+import org.apache.reef.tang.annotations.DefaultImplementation;
+import org.apache.reef.wake.EventHandler;
 
 /**
- * WindowOperator interface.
+ * Sliced window operator.
+ * It chops input stream and aggregates the input using Aggregator.
+ * After that, it saves the partially aggregated results into computationReuser.
  */
-public interface WindowOperator<I> {
+@DefaultImplementation(DefaultSlicedWindowOperator.class)
+public interface SlicedWindowOperator<I> extends EventHandler<Long> {
   /**
-   * It receives input from this function.
-   * @param val input value
+   * Aggregate input.
    */
   void execute(final I val);
 }

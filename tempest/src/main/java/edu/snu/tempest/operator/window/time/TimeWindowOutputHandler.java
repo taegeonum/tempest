@@ -16,15 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window;
+package edu.snu.tempest.operator.window.time;
+
+import edu.snu.tempest.operator.window.WindowOutputHandler;
 
 /**
- * WindowOperator interface.
+ * A handler for time window outputs.
  */
-public interface WindowOperator<I> {
-  /**
-   * It receives input from this function.
-   * @param val input value
-   */
-  void execute(final I val);
+public interface TimeWindowOutputHandler<V> extends WindowOutputHandler<TimeWindowOutput<V>> {
 }

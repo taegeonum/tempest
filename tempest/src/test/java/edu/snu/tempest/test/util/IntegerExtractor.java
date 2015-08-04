@@ -16,15 +16,29 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window;
+package edu.snu.tempest.test.util;
+
+
+import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
+
+import javax.inject.Inject;
 
 /**
- * WindowOperator interface.
+ * Integer extractor for test.
  */
-public interface WindowOperator<I> {
+public final class IntegerExtractor implements KeyExtractor<Integer, Integer> {
+
+  @Inject
+  private IntegerExtractor() {
+  }
+
   /**
-   * It receives input from this function.
-   * @param val input value
+   * Extract integer.
+   * @param value input
+   * @return integer
    */
-  void execute(final I val);
+  @Override
+  public Integer getKey(final Integer value) {
+    return value;
+  }
 }

@@ -19,6 +19,7 @@
 package edu.snu.tempest.operator.common;
 
 import java.util.Collection;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -26,7 +27,6 @@ import java.util.logging.Logger;
  * Default Subscription.
  */
 public final class DefaultSubscription<T, Token> implements Subscription<Token> {
-
   private static final Logger LOG = Logger.getLogger(DefaultSubscription.class.getName());
 
   /**
@@ -45,6 +45,11 @@ public final class DefaultSubscription<T, Token> implements Subscription<Token> 
   private final Collection<T> container;
 
   /**
+   * Read/write lock.
+   */
+  private final ReadWriteLock lock;
+
+  /**
    * DefaultSubscription.
    * @param container a container subscribing this subscription.
    * @param val a value
@@ -52,10 +57,12 @@ public final class DefaultSubscription<T, Token> implements Subscription<Token> 
    */
   public DefaultSubscription(final Collection<T> container,
       final T val,
-      final Token token) {
+      final Token token,
+      final ReadWriteLock lock) {
     this.val = val;
     this.container = container;
     this.token = token;
+    this.lock = lock;
   }
 
   /**
@@ -73,9 +80,9 @@ public final class DefaultSubscription<T, Token> implements Subscription<Token> 
   @Override
   public void unsubscribe() {
     LOG.log(Level.FINE, "Unsubscribe " + token);
-    synchronized (container) {
-      container.remove(val);
-    }
+    this.lock.writeLock().lock();
+    container.remove(val);
+    this.lock.writeLock().unlock();
   }
   
 }

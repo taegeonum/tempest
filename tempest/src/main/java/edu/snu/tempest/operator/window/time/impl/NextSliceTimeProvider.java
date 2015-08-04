@@ -16,15 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window;
+package edu.snu.tempest.operator.window.time.impl;
+
+import edu.snu.tempest.operator.window.time.signal.TimescaleSignalListener;
 
 /**
- * WindowOperator interface.
+ * Provide next slice time for partial aggregation.
  */
-public interface WindowOperator<I> {
+public interface NextSliceTimeProvider extends TimescaleSignalListener {
+
   /**
-   * It receives input from this function.
-   * @param val input value
+   * Get next slice time for partial aggregation.
+   * @return next slice time
    */
-  void execute(final I val);
+  long nextSliceTime();
 }
