@@ -22,9 +22,9 @@ import edu.snu.tempest.operator.window.WindowOperator;
 import edu.snu.tempest.operator.window.time.TimeWindowOutputHandler;
 import edu.snu.tempest.operator.window.time.Timescale;
 import edu.snu.tempest.operator.window.time.TimescaleParser;
+import edu.snu.tempest.operator.window.time.parameter.MTSOperatorIdentifier;
 import edu.snu.tempest.operator.window.time.parameter.StartTime;
-import edu.snu.tempest.operator.window.time.signal.MTSSignalReceiver;
-import edu.snu.tempest.operator.window.time.signal.TimescaleSignalListener;
+import edu.snu.tempest.signal.TempestSignalReceiverStage;
 import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;
@@ -50,17 +50,19 @@ public final class MTSOperatorImpl<I, V> implements WindowOperator<I> {
    */
   @Inject
   private MTSOperatorImpl(
-      final SlicedWindowStage slicedWindowStage,
+      final NextSliceTimeProvider sliceTimeProvider,
       final OverlappingWindowStage owoStage,
       final ComputationReuser<V> computationReuser,
       final TimeWindowOutputHandler<V> outputHandler,
       final TimescaleParser tsParser,
       final SlicedWindowOperator<I> slicedWindowOperator,
+      final SlicedWindowStage<I> slicedWindowStage,
       @Parameter(StartTime.class) final long startTime,
-      final TimescaleSignalListener signalListener,
-      final MTSSignalReceiver receiver) throws Exception {
-    receiver.addTimescaleSignalListener(signalListener);
-    receiver.start();
+      @Parameter(MTSOperatorIdentifier.class) final String identifier,
+      final TempestSignalReceiverStage receiver) throws Exception {
+    // register timescale signal handler
+    receiver.registerHandler(identifier, new TimescaleSignalHandler<V>(
+        sliceTimeProvider, owoStage, computationReuser, outputHandler, tsParser, startTime));
     this.slicedWindowOperator = slicedWindowOperator;
   }
 
@@ -69,12 +71,13 @@ public final class MTSOperatorImpl<I, V> implements WindowOperator<I> {
    */
   @Inject
   private MTSOperatorImpl(
-      final SlicedWindowStage slicedWindowStage,
+      final NextSliceTimeProvider sliceTimeProvider,
       final OverlappingWindowStage owoStage,
       final ComputationReuser<V> computationReuser,
       final TimeWindowOutputHandler<V> outputHandler,
       final TimescaleParser tsParser,
       final SlicedWindowOperator<I> slicedWindowOperator,
+      final SlicedWindowStage<I> slicedWindowStage,
       @Parameter(StartTime.class) final long startTime) throws Exception {
     this.slicedWindowOperator = slicedWindowOperator;
     // add overlapping window operators

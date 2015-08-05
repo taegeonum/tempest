@@ -16,7 +16,34 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package edu.snu.tempest.signal.window.time;
+
+import edu.snu.tempest.proto.TimescaleProtoMessage;
+import org.apache.reef.wake.remote.Encoder;
+
+import javax.inject.Inject;
+
 /**
- * Signal implementation.
+ * Encoder for TimescaleSignal.
  */
-package edu.snu.tempest.operator.window.time.signal.impl;
+public final class TimescaleSignalEncoder implements Encoder<TimescaleSignal> {
+
+  /**
+   * Encoder for TimescaleSignal.
+   */
+  @Inject
+  private TimescaleSignalEncoder() {
+  }
+  
+  @Override
+  public byte[] encode(final TimescaleSignal signal) {
+    final TimescaleProtoMessage.TimescaleSignal encoded = TimescaleProtoMessage.TimescaleSignal.newBuilder()
+        .setWindowSize(signal.windowSize)
+        .setInterval(signal.interval)
+        .setType(signal.type)
+        .setStartTime(signal.startTime)
+        .build();
+    
+    return encoded.toByteArray();
+  }
+}

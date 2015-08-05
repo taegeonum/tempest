@@ -6,5 +6,6 @@ option java_generate_equals_and_hash = true;
 message TimescaleSignal {
   required sint64 windowSize = 1;
   required sint64 interval = 2;
-  required sint64 startTime = 3;
+  required sint32 type = 3;
+  required sint64 startTime = 4;
 }

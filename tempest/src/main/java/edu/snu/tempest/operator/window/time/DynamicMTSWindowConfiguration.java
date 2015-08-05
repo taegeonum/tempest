@@ -21,10 +21,10 @@ package edu.snu.tempest.operator.window.time;
 
 import edu.snu.tempest.operator.window.time.impl.*;
 import edu.snu.tempest.operator.window.time.parameter.CachingRate;
-import edu.snu.tempest.operator.window.time.signal.MTSSignalReceiver;
-import edu.snu.tempest.operator.window.time.signal.TimescaleSignalListener;
-import edu.snu.tempest.operator.window.time.signal.impl.ZkMTSParameters;
-import edu.snu.tempest.operator.window.time.signal.impl.ZkSignalReceiver;
+import edu.snu.tempest.operator.window.time.parameter.MTSOperatorIdentifier;
+import edu.snu.tempest.signal.impl.ZkMTSParameters;
+import edu.snu.tempest.signal.window.time.TimescaleSignalDecoder;
+import edu.snu.tempest.signal.window.time.TimescaleSignalEncoder;
 import org.apache.reef.tang.formats.ConfigurationModule;
 import org.apache.reef.tang.formats.OptionalParameter;
 import org.apache.reef.tang.formats.RequiredParameter;
@@ -54,10 +54,10 @@ public final class DynamicMTSWindowConfiguration extends TimeWindowBaseConfigura
       .bindImplementation(NextSliceTimeProvider.class, DynamicNextSliceTimeProvider.class)
       .bindImplementation(ComputationReuser.class, DynamicComputationReuser.class)
       .bindNamedParameter(CachingRate.class, CACHING_RATE)
-      .bindNamedParameter(ZkMTSParameters.OperatorIdentifier.class, OPERATOR_IDENTIFIER)
+      .bindNamedParameter(MTSOperatorIdentifier.class, OPERATOR_IDENTIFIER)
       .bindNamedParameter(ZkMTSParameters.ZkServerAddress.class, ZK_SERVER_ADDRESS)
-      .bindImplementation(TimescaleSignalListener.class, DefaultTSSignalListener.class)
-      .bindImplementation(MTSSignalReceiver.class, ZkSignalReceiver.class)
+      .bindNamedParameter(ZkMTSParameters.ZkSignalDecoder.class, TimescaleSignalDecoder.class)
+      .bindNamedParameter(ZkMTSParameters.ZkSignalEncoder.class, TimescaleSignalEncoder.class)
       .bindImplementation(CachingPolicy.class, CachingRatePolicy.class)
       .build();
 }

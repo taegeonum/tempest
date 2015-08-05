@@ -16,33 +16,34 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window.time.signal;
+package edu.snu.tempest.signal.window.time;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import edu.snu.tempest.proto.TimescaleProtoMessage;
-import org.apache.reef.wake.remote.Encoder;
+import org.apache.reef.wake.remote.Decoder;
 
 import javax.inject.Inject;
 
 /**
- * Encoder for TimescaleSignal.
+ * Decoder for TimescaleSignal.
  */
-public final class TimescaleSignalEncoder implements Encoder<TimescaleSignal> {
+public final class TimescaleSignalDecoder implements Decoder<TimescaleSignal> {
 
-  /**
-   * Encoder for TimescaleSignal.
-   */
   @Inject
-  private TimescaleSignalEncoder() {
+  private TimescaleSignalDecoder() {
   }
   
   @Override
-  public byte[] encode(final TimescaleSignal signal) {
-    final TimescaleProtoMessage.TimescaleSignal encoded = TimescaleProtoMessage.TimescaleSignal.newBuilder()
-        .setWindowSize(signal.ts.windowSize)
-        .setInterval(signal.ts.intervalSize)
-        .setStartTime(signal.startTime)
-        .build();
-    
-    return encoded.toByteArray();
+  public TimescaleSignal decode(final byte[] data) {
+    try {
+      final TimescaleProtoMessage.TimescaleSignal signal =
+          TimescaleProtoMessage.TimescaleSignal.parseFrom(data);
+      return new TimescaleSignal(signal.getWindowSize(),
+          signal.getInterval(), signal.getType(), signal.getStartTime());
+    } catch (final InvalidProtocolBufferException e) {
+      e.printStackTrace();
+      throw new RuntimeException("TimescaleDecoder decode error");
+    }
   }
+
 }

@@ -23,7 +23,6 @@ Tempest project
   * dynamic_mts: Dynamic multi-timescale impl
   * static_mts: Static multi-timescale impl
   * naive: Naive impl
-  * otf: On-the-fly sharing (input sharing) impl
 6. --timescales: timescales
   * format: (window_size,interval),(window_size2,interval2)...
   * unit: second
@@ -32,3 +31,13 @@ Tempest project
 8. --input_interval: interval of sending input.
 9. --caching_rate: caching rate for dynamic mts operator
 
+
+# How to add timescales dynamically
+* ./bin/mts_signal_sender.sh #parameters#
+
+# Parameters
+1. zookeeper address
+2. mts identifier
+3. window size
+4. interval
+5. type (addition/deletion)

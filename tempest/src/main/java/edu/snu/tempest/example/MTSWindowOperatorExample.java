@@ -22,8 +22,9 @@ import edu.snu.tempest.operator.window.WindowOperator;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.time.*;
-import edu.snu.tempest.operator.window.time.signal.MTSSignalSender;
-import edu.snu.tempest.operator.window.time.signal.impl.ZkSignalSender;
+import edu.snu.tempest.signal.window.time.TimescaleSignal;
+import edu.snu.tempest.signal.TempestSignalSenderStage;
+import edu.snu.tempest.signal.impl.ZkSignalSenderStage;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.Tang;
@@ -76,7 +77,7 @@ public final class MTSWindowOperatorExample {
       }
     });
     final WindowOperator<Integer> operator = ij.getInstance(WindowOperator.class);
-    final MTSSignalSender sender = ij.getInstance(ZkSignalSender.class);
+    final TempestSignalSenderStage<TimescaleSignal> sender = ij.getInstance(ZkSignalSenderStage.class);
 
     // add input
     executor.submit(new Runnable() {
@@ -96,12 +97,14 @@ public final class MTSWindowOperatorExample {
 
     // add timescales to the MTS operator
     Thread.sleep(3000);
-    sender.addTimescale(new Timescale(10, 5));
+    sender.sendSignal(identifier, new TimescaleSignal(10, 5,
+        TimescaleSignal.ADDITION, TimeUnit.NANOSECONDS.toSeconds(System.nanoTime())));
     Thread.sleep(4000);
-    sender.addTimescale(new Timescale(20, 8));
+    sender.sendSignal(identifier, new TimescaleSignal(20, 8,
+        TimescaleSignal.ADDITION, TimeUnit.NANOSECONDS.toSeconds(System.nanoTime())));
     Thread.sleep(5000);
-    sender.addTimescale(new Timescale(15, 7));
-    
+    sender.sendSignal(identifier, new TimescaleSignal(15, 7,
+        TimescaleSignal.ADDITION, TimeUnit.NANOSECONDS.toSeconds(System.nanoTime())));
     executor.shutdown();
     executor.awaitTermination(30, TimeUnit.SECONDS);
     sender.close();

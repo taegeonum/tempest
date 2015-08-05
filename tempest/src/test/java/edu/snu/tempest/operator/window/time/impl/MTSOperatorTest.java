@@ -60,7 +60,7 @@ public class MTSOperatorTest {
   }
 
   @Test
-  public void dynamicMTSTest() throws Exception {
+  public void dynamicMTSOperationTest() throws Exception {
     multipleTimescaleAggregationTest(DynamicMTSWindowConfiguration.CONF
         .set(DynamicMTSWindowConfiguration.START_TIME, startTime)
         .set(DynamicMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(timescales))
@@ -72,7 +72,7 @@ public class MTSOperatorTest {
   }
 
   @Test
-  public void staticMTSTest() throws Exception {
+  public void staticMTSOperationTest() throws Exception {
     multipleTimescaleAggregationTest(StaticMTSWindowConfiguration.CONF
         .set(StaticMTSWindowConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(StaticMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(timescales))

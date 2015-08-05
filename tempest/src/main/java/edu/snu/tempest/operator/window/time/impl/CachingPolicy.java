@@ -19,7 +19,6 @@
 package edu.snu.tempest.operator.window.time.impl;
 
 import edu.snu.tempest.operator.window.time.Timescale;
-import edu.snu.tempest.operator.window.time.signal.TimescaleSignalListener;
 import org.apache.reef.tang.annotations.DefaultImplementation;
 
 /**

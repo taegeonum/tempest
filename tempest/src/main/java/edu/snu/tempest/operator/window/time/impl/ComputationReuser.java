@@ -19,7 +19,6 @@
 package edu.snu.tempest.operator.window.time.impl;
 
 import edu.snu.tempest.operator.window.time.Timescale;
-import edu.snu.tempest.operator.window.time.signal.TimescaleSignalListener;
 
 /**
  * Computation reuser interface. This is a data structure for output generation of window output.

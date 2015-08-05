@@ -16,24 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window.time.signal;
+package edu.snu.tempest.operator.window.time.impl;
+
+import edu.snu.tempest.operator.window.time.Timescale;
 
 /**
- * Receiver for runtime multiple timescale addition/deletion.
- * It receives timescale addition/deletion messages from MTSSignalSender
- * and triggers TimescaleSignalListener.onTimescaleAddition / onTimescaleDeletion
+ * Dynamically add/remove timescales.
  */
-public interface MTSSignalReceiver extends AutoCloseable {
+public interface TimescaleSignalListener {
+  // time unit is second.
+  /**
+   * Receive timescale to be added.
+   * @param ts timescale to be added.
+   * @param addTime the time when timescale is added.
+   */
+  void onTimescaleAddition(Timescale ts, long addTime);
 
   /**
-   * Start receiving signal.
-   * @throws Exception an exception when it cannot receive signal.
+   * Receive timescale to be deleted.
+   * @param ts timescale to be deleted.
+   * @param deleteTime the time when timescale is deleted.
    */
-  void start() throws Exception;
-
-  /**
-   * MTSSignalReceiver sends timescale information to TimescaleSignalListener.
-   * @param listener timescale signal listener
-   */
-  void addTimescaleSignalListener(TimescaleSignalListener listener);
+  void onTimescaleDeletion(Timescale ts, long deleteTime);
 }

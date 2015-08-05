@@ -16,16 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window.time.impl;
-
 /**
- * Provide next slice time for partial aggregation.
+ * A package for sending signal to operators.
  */
-public interface NextSliceTimeProvider extends TimescaleSignalListener {
-
-  /**
-   * Get next slice time for partial aggregation.
-   * @return next slice time
-   */
-  long nextSliceTime();
-}
+package edu.snu.tempest.signal;

@@ -16,27 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window.time.signal;
+package edu.snu.tempest.operator.window.time.parameter;
 
-import edu.snu.tempest.operator.window.time.Timescale;
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
 
-/**
- * Signal sender for runtime multi-timescale addition/deletion.
- * It sends timescale addition/deletion messages to MTSSignalReceiver 
- */
-public interface MTSSignalSender extends AutoCloseable {
-
-  /**
-   * Send timescale information to MTSSignalReceiver.
-   * @param ts timescale to be added.
-   * @throws Exception
-   */
-  void addTimescale(Timescale ts) throws Exception;
-
-  /**
-   * Send timescale information to MTSSignalReceiver.
-   * @param ts timescale to be deleted.
-   * @throws Exception
-   */
-  void removeTimescale(Timescale ts) throws Exception;
+@NamedParameter(doc = "an identifier of dynamic mts operator")
+public final class MTSOperatorIdentifier implements Name<String> {
 }

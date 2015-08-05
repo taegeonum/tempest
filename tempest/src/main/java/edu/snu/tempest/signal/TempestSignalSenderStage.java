@@ -16,16 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window.time.impl;
+package edu.snu.tempest.signal;
+
+import edu.snu.tempest.signal.impl.ZkSignalSenderStage;
+import org.apache.reef.tang.annotations.DefaultImplementation;
+import org.apache.reef.wake.Stage;
 
 /**
- * Provide next slice time for partial aggregation.
+ * Signal sender for runtime.
  */
-public interface NextSliceTimeProvider extends TimescaleSignalListener {
+@DefaultImplementation(ZkSignalSenderStage.class)
+public interface TempestSignalSenderStage<T> extends Stage {
 
   /**
-   * Get next slice time for partial aggregation.
-   * @return next slice time
+   * Send signal to the operators which have the identifier.
+   * @param identifier an identifier of operators.
+   * @param signal a signal
+   * @throws Exception
    */
-  long nextSliceTime();
+  void sendSignal(String identifier, T signal) throws Exception;
 }

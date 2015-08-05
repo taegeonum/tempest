@@ -16,10 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window.time.signal.impl;
+package edu.snu.tempest.signal.window.time;
 
-import edu.snu.tempest.operator.window.time.Timescale;
-import edu.snu.tempest.operator.window.time.signal.MTSSignalSender;
+import edu.snu.tempest.signal.TempestSignalSenderStage;
+import edu.snu.tempest.signal.impl.ZkMTSParameters;
+import edu.snu.tempest.signal.impl.ZkSignalSenderStage;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
@@ -30,12 +31,13 @@ import org.apache.reef.tang.exceptions.BindException;
 import org.apache.reef.tang.formats.CommandLine;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Zookeeper client for sending timescale to MTSWindowOperator.
  * It parses command line arguments and sends timescale signal to ZkMTSSignalReceiver.
  */
-public final class ZkMTSSignalCommandLine {
+public final class MTSSignalSender {
   
   @NamedParameter(doc = "timescale window size(sec)", short_name = "w")
   public static final class WindowSize implements Name<Integer> {}
@@ -46,7 +48,10 @@ public final class ZkMTSSignalCommandLine {
   @NamedParameter(doc = "type of signal (addition/deletion)", short_name = "type")
   public static final class TypeOfSignal implements Name<String> {}
 
-  private ZkMTSSignalCommandLine() {
+  @NamedParameter(doc = "identifier", short_name = "mts_identifier", default_value="default")
+  public static final class OperatorIdentifier implements Name<String> {}
+
+  private MTSSignalSender() {
   }
 
   private static Configuration getCommandLineConf(final String[] args) throws BindException, IOException {
@@ -54,7 +59,7 @@ public final class ZkMTSSignalCommandLine {
     final JavaConfigurationBuilder cb = tang.newConfigurationBuilder();
 
     final CommandLine cl = new CommandLine(cb)
-        .registerShortNameOfClass(ZkMTSParameters.OperatorIdentifier.class)
+        .registerShortNameOfClass(OperatorIdentifier.class)
         .registerShortNameOfClass(ZkMTSParameters.ZkServerAddress.class)
         .registerShortNameOfClass(WindowSize.class)
         .registerShortNameOfClass(Interval.class)
@@ -67,21 +72,24 @@ public final class ZkMTSSignalCommandLine {
   public static void main(final String[] args) throws Exception {
     final Configuration commandConf = getCommandLineConf(args);
     final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
-    cb.bindImplementation(MTSSignalSender.class, ZkSignalSender.class);
+    cb.bindImplementation(TempestSignalSenderStage.class, ZkSignalSenderStage.class);
     cb.addConfiguration(commandConf);
 
     final Injector ij = Tang.Factory.getTang().newInjector(cb.build());
-    final MTSSignalSender sender = ij.getInstance(MTSSignalSender.class);
+    final TempestSignalSenderStage<TimescaleSignal> sender = ij.getInstance(TempestSignalSenderStage.class);
     final String type = ij.getNamedInstance(TypeOfSignal.class);
-    
+    final String identifier = ij.getNamedInstance(OperatorIdentifier.class);
+    final long windowSize = ij.getNamedInstance(WindowSize.class);
+    final long interval = ij.getNamedInstance(Interval.class);
+    final long startTime = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
+
     if (type.equalsIgnoreCase("addition")) {
-      sender.addTimescale(new Timescale(ij.getNamedInstance(WindowSize.class), ij.getNamedInstance(Interval.class)));
+      sender.sendSignal(identifier, new TimescaleSignal(windowSize, interval, TimescaleSignal.ADDITION, startTime));
     } else if (type.equalsIgnoreCase("deletion")) {
-      sender.removeTimescale(new Timescale(ij.getNamedInstance(WindowSize.class), ij.getNamedInstance(Interval.class)));
+      sender.sendSignal(identifier, new TimescaleSignal(windowSize, interval, TimescaleSignal.DELETION, startTime));
     } else {
       throw new RuntimeException("Invalid signal type: " + type);
     }
-    
     sender.close();
   }
 }

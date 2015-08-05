@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.tempest.operator.window.time.signal;
+package edu.snu.tempest.signal.window.time;
 
 import org.apache.reef.wake.remote.Codec;
 
