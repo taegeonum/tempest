@@ -61,24 +61,31 @@ public final class NextSliceProviderTest {
     nextSliceTimeTest(jcb.build());
   }
 
+  @Test
+  public void dynamicNextSlicTimeTest() throws InjectionException {
+    final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
+    jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(timescales));
+    jcb.bindImplementation(NextSliceTimeProvider.class, DynamicNextSliceTimeProvider.class);
+    jcb.bindNamedParameter(StartTime.class, Integer.toString(0));
+    nextSliceTimeTest(jcb.build());
+  }
+
   /**
    * Test static next slice time.
    */
-  public void nextSliceTimeTest(Configuration conf) throws InjectionException {
+  public void nextSliceTimeTest(final Configuration conf) throws InjectionException {
     final Injector injector = Tang.Factory.getTang().newInjector(conf);
     final NextSliceTimeProvider sliceTimeProvider = injector.getInstance(NextSliceTimeProvider.class);
-
-    Assert.assertEquals(2L, sliceTimeProvider.nextSliceTime());
-    Assert.assertEquals(3L, sliceTimeProvider.nextSliceTime());
-    Assert.assertEquals(4L, sliceTimeProvider.nextSliceTime());
-    Assert.assertEquals(6L, sliceTimeProvider.nextSliceTime());
-    Assert.assertEquals(8L, sliceTimeProvider.nextSliceTime());
-    Assert.assertEquals(9L, sliceTimeProvider.nextSliceTime());
-    Assert.assertEquals(10L, sliceTimeProvider.nextSliceTime());
-    Assert.assertEquals(12L, sliceTimeProvider.nextSliceTime());
-    Assert.assertEquals(14L, sliceTimeProvider.nextSliceTime());
-    Assert.assertEquals(15L, sliceTimeProvider.nextSliceTime());
-    Assert.assertEquals(16L, sliceTimeProvider.nextSliceTime());
-    Assert.assertEquals(18L, sliceTimeProvider.nextSliceTime());
+    final long period = 12L;
+    for (int i = 0; i < 5; i++) {
+      Assert.assertEquals(2L + period * i, sliceTimeProvider.nextSliceTime());
+      Assert.assertEquals(3L + period * i, sliceTimeProvider.nextSliceTime());
+      Assert.assertEquals(4L + period * i, sliceTimeProvider.nextSliceTime());
+      Assert.assertEquals(6L + period * i, sliceTimeProvider.nextSliceTime());
+      Assert.assertEquals(8L + period * i, sliceTimeProvider.nextSliceTime());
+      Assert.assertEquals(9L + period * i, sliceTimeProvider.nextSliceTime());
+      Assert.assertEquals(10L + period * i, sliceTimeProvider.nextSliceTime());
+      Assert.assertEquals(12L + period * i, sliceTimeProvider.nextSliceTime());
+    }
   }
 }
