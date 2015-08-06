@@ -55,7 +55,7 @@ public final class CountByKeyAggregator<I, K> implements CAAggregator<I, Map<K, 
   }
 
   /**
-   * Create a new bucket for partial aggregation.
+   * Create a new bucket for incremental aggregation.
    * @return a map
    */
   @Override
@@ -65,18 +65,17 @@ public final class CountByKeyAggregator<I, K> implements CAAggregator<I, Map<K, 
 
   /**
    * Counts the newVal.
-   * @param bucket a bucket for partial aggregation.
+   * @param bucket a bucket for incremental aggregation.
    * @param newVal new value
-   * @return the bucket in which the newVal is counted.
    */
   @Override
-  public Map<K, Long> partialAggregate(final Map<K, Long> bucket, final I newVal) {
-    return this.aggregator.partialAggregate(bucket, newVal);
+  public void incrementalAggregate(final Map<K, Long> bucket, final I newVal) {
+    this.aggregator.incrementalAggregate(bucket, newVal);
   }
 
   /**
    * Merge the list of buckets to create count by key.
-   * @param partials a list of buckets of partial aggregation.
+   * @param partials a list of buckets of incremental aggregation.
    * @return an output of final aggregation
    */
   @Override

@@ -27,7 +27,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * This executes partial aggregation and slices the results.
+ * This executes incremental aggregation and slices the results.
  * @param <I> input
  * @param <V> aggregated result
  */
@@ -35,7 +35,7 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
   private static final Logger LOG = Logger.getLogger(DefaultSlicedWindowOperator.class.getName());
 
   /**
-   * Aggregator for partial aggregation.
+   * Aggregator for incremental aggregation.
    */
   private final CAAggregator<I, V> aggregator;
 
@@ -55,7 +55,7 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
   private long nextSliceTime;
 
   /**
-   * A bucket for partial aggregation.
+   * A bucket for incremental aggregation.
    */
   private V bucket;
 
@@ -71,7 +71,7 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
 
   /**
    * DynamicSlicedWindowOperatorImpl.
-   * @param aggregator an aggregator for partial aggregation
+   * @param aggregator an aggregator for incremental aggregation
    * @param computationReuser a computation reuser for partial results.
    * @param sliceTimeProvider a next slice time provider
    * @param startTime a start time of the mts operator
@@ -91,7 +91,7 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
   }
 
   /**
-   * It creates a new bucket every next slice time to slice the partially aggregated data.
+   * It creates a new bucket every next slice time to slice the incrementally aggregated data.
    * @param currTime current time
    */
   @Override
@@ -124,7 +124,7 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
   public void execute(final I val) {
     LOG.log(Level.FINE, "SlicedWindow aggregates input of [" +  val + "]");
     synchronized (sync) {
-      bucket = aggregator.partialAggregate(bucket, val);
+      aggregator.incrementalAggregate(bucket, val);
     }
   }
 

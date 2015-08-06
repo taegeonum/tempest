@@ -45,20 +45,20 @@ public final class CountByKeyAggregatorTest {
         injector.getInstance(CountByKeyAggregator.class);
 
     Map<Integer, Long> map1 = aggregator.init();
-    map1 = aggregator.partialAggregate(map1, 1);
-    map1 = aggregator.partialAggregate(map1, 2);
-    map1 = aggregator.partialAggregate(map1, 2);
-    map1 = aggregator.partialAggregate(map1, 2);
-    map1 = aggregator.partialAggregate(map1, 3);
-    map1 = aggregator.partialAggregate(map1, 1);
+    aggregator.incrementalAggregate(map1, 1);
+    aggregator.incrementalAggregate(map1, 2);
+    aggregator.incrementalAggregate(map1, 2);
+    aggregator.incrementalAggregate(map1, 2);
+    aggregator.incrementalAggregate(map1, 3);
+    aggregator.incrementalAggregate(map1, 1);
 
     Map<Integer, Long> map2 = aggregator.init();
-    map2 = aggregator.partialAggregate(map2, 5);
-    map2 = aggregator.partialAggregate(map2, 2);
-    map2 = aggregator.partialAggregate(map2, 2);
-    map2 = aggregator.partialAggregate(map2, 1);
-    map2 = aggregator.partialAggregate(map2, 3);
-    map2 = aggregator.partialAggregate(map2, 5);
+    aggregator.incrementalAggregate(map2, 5);
+    aggregator.incrementalAggregate(map2, 2);
+    aggregator.incrementalAggregate(map2, 2);
+    aggregator.incrementalAggregate(map2, 1);
+    aggregator.incrementalAggregate(map2, 3);
+    aggregator.incrementalAggregate(map2, 5);
 
     final List<Map<Integer, Long>> partials = new LinkedList<>();
     partials.add(map1);

@@ -63,7 +63,7 @@ public final class ComputeByKeyAggregator<I, K, V> implements CAAggregator<I, Ma
   }
 
   /**
-   * Create a new bucket for partial aggregation.
+   * Create a new bucket for incremental aggregation.
    * @return a map
    */
   @Override
@@ -73,12 +73,11 @@ public final class ComputeByKeyAggregator<I, K, V> implements CAAggregator<I, Ma
 
   /**
    * Counts the newVal.
-   * @param bucket a bucket for partial aggregation.
+   * @param bucket a bucket for incremental aggregation.
    * @param newVal new value
-   * @return the bucket in which the newVal is counted.
    */
   @Override
-  public Map<K, V> partialAggregate(final Map<K, V> bucket, final I newVal) {
+  public void incrementalAggregate(final Map<K, V> bucket, final I newVal) {
     final K key = keyExtractor.getKey(newVal);
     V old = bucket.get(key);
 
@@ -86,12 +85,11 @@ public final class ComputeByKeyAggregator<I, K, V> implements CAAggregator<I, Ma
       old = computeFunc.init();
     }
     bucket.put(key, computeFunc.compute(old, valueExtractor.getValue(newVal)));
-    return bucket;
   }
 
   /**
    * Merge the list of buckets to create count by key.
-   * @param partials a list of buckets of partial aggregation.
+   * @param partials a list of buckets of incremental aggregation.
    * @return an output of final aggregation
    */
   @Override

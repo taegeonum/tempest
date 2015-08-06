@@ -41,7 +41,7 @@ public final class MTSOperatorImpl<I, V> implements WindowOperator<I> {
   private static final Logger LOG = Logger.getLogger(MTSOperatorImpl.class.getName());
 
   /**
-   * A sliced window operator for partial aggregation.
+   * A sliced window operator for incremental aggregation.
    */
   private final SlicedWindowOperator<I> slicedWindowOperator;
 

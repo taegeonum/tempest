@@ -23,16 +23,15 @@ package edu.snu.tempest.operator.window.aggregator;
  */
 public interface CAAggregator<I, V> extends Aggregator<V, V> {
   /**
-   * Create a new bucket for partial aggregation.
-   * @return a bucket for aggregation.
+   * Create a new bucket for incremental aggregation.
+   * @return a bucket for incremental aggregation.
    */
   V init();
 
   /**
-   * Aggregate the new data into the bucket.
-   * @param bucket a bucket for partial aggregation.
+   * Incrementally aggregate the new data into the bucket.
+   * @param bucket a bucket for incremental aggregation.
    * @param newVal new value
-   * @return a bucket in which the newVal is aggregated
    */
-  V partialAggregate(final V bucket, final I newVal);
+  void incrementalAggregate(final V bucket, final I newVal);
 }
