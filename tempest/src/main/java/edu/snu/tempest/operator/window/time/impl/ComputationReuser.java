@@ -25,6 +25,13 @@ import edu.snu.tempest.operator.window.time.Timescale;
  * It saves partial aggregation and produces final aggregation of window output.
  */
 public interface ComputationReuser<T> extends TimescaleSignalListener {
+
+  /**
+   * Get next slice time for partial aggregation.
+   * @return next slice time
+   */
+  long nextSliceTime();
+
   /**
    * Save a partial output containing data starting from the startTime to endTime.
    * @param startTime start time of the output

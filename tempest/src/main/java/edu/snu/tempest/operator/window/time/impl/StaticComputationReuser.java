@@ -70,6 +70,21 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
   private final long startTime;
 
   /**
+   * A queue containing next slice time.
+   */
+  private final List<Long> sliceQueue;
+
+  /**
+   * An index for looking up sliceQueue.
+   */
+  private int index = 0;
+
+  /**
+   * A previous slice time.
+   */
+  private long prevSliceTime = 0;
+
+  /**
    * StaticComputationReuserImpl Implementation.
    * @param tsParser timescale parser
    * @param finalAggregator a final aggregator
@@ -80,6 +95,7 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
       final TimescaleParser tsParser,
       final CAAggregator<I, T> finalAggregator,
       @Parameter(StartTime.class) final long startTime) {
+    this.sliceQueue = new LinkedList<>();
     this.table = new DefaultOutputLookupTableImpl<>();
     this.partialOutputTable = new DefaultOutputLookupTableImpl<>();
     this.timescales = tsParser.timescales;
@@ -91,6 +107,20 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     // create RelationGraph.
     addSlicedWindowNodeAndEdge();
     addOverlappingWindowNodeAndEdge();
+  }
+
+  /**
+   * Gets next slice time for slicing input and creating partial outputs.
+   * SlicedWindowOperator can use this to slice input.
+   */
+  @Override
+  public synchronized long nextSliceTime() {
+    long sliceTime = adjustNextSliceTime();
+    while (prevSliceTime == sliceTime) {
+      sliceTime = adjustNextSliceTime();
+    }
+    prevSliceTime = sliceTime;
+    return sliceTime;
   }
 
   /**
@@ -182,6 +212,14 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
   }
 
   /**
+   * Adjust next slice time.
+   */
+  private long adjustNextSliceTime() {
+    return startTime + (index / sliceQueue.size()) * period
+        + sliceQueue.get((index++) % sliceQueue.size());
+  }
+
+  /**
    * Adjust current time to fetch a corresponding node.
    * For example, if current time is 31 but period is 15,
    * then it adjust start time to 1.
@@ -216,7 +254,6 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
    */
   private void addSlicedWindowNodeAndEdge() {
     // add sliced window edges
-    final List<Long> sliceQueue = new LinkedList<>();
     for (final Timescale ts : timescales) {
       final long pairedB = ts.windowSize % ts.intervalSize;
       final long pairedA = ts.intervalSize - pairedB;

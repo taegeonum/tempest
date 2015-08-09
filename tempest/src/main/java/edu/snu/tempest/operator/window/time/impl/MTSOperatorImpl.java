@@ -50,7 +50,6 @@ public final class MTSOperatorImpl<I, V> implements WindowOperator<I> {
    */
   @Inject
   private MTSOperatorImpl(
-      final NextSliceTimeProvider sliceTimeProvider,
       final OverlappingWindowStage owoStage,
       final ComputationReuser<V> computationReuser,
       final TimeWindowOutputHandler<V> outputHandler,
@@ -62,7 +61,7 @@ public final class MTSOperatorImpl<I, V> implements WindowOperator<I> {
       final TempestSignalReceiverStage receiver) throws Exception {
     // register timescale signal handler
     receiver.registerHandler(identifier, new TimescaleSignalHandler<V>(
-        sliceTimeProvider, owoStage, computationReuser, outputHandler, tsParser, startTime));
+        owoStage, computationReuser, outputHandler, tsParser, startTime));
     this.slicedWindowOperator = slicedWindowOperator;
   }
 
@@ -71,7 +70,6 @@ public final class MTSOperatorImpl<I, V> implements WindowOperator<I> {
    */
   @Inject
   private MTSOperatorImpl(
-      final NextSliceTimeProvider sliceTimeProvider,
       final OverlappingWindowStage owoStage,
       final ComputationReuser<V> computationReuser,
       final TimeWindowOutputHandler<V> outputHandler,

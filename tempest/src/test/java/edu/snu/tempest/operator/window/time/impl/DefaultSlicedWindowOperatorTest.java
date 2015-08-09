@@ -41,8 +41,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class DefaultSlicedWindowOperatorTest {
-  ComputationReuser<Map<Integer, Long>> cube;
-  NextSliceTimeProvider sliceTimeProvider;
+  ComputationReuser<Map<Integer, Long>> computationReuser;
   List<Timescale> timescales;
   IntegerRef counter;
   Injector injector;
@@ -50,9 +49,8 @@ public class DefaultSlicedWindowOperatorTest {
   
   @Before
   public void initialize() throws InjectionException {
-    cube = mock(ComputationReuser.class);
-    sliceTimeProvider = mock(NextSliceTimeProvider.class);
-    when(sliceTimeProvider.nextSliceTime()).thenReturn(1L, 3L, 4L, 6L, 7L, 9L);
+    computationReuser = mock(ComputationReuser.class);
+    when(computationReuser.nextSliceTime()).thenReturn(1L, 3L, 4L, 6L, 7L, 9L);
     timescales = new LinkedList<>();
     counter = new IntegerRef(0);
     timescales.add(new Timescale(5, 3));
@@ -61,8 +59,7 @@ public class DefaultSlicedWindowOperatorTest {
     jcb.bindImplementation(CAAggregator.class, CountByKeyAggregator.class);
     jcb.bindNamedParameter(StartTime.class, Long.toString(0));
     injector = Tang.Factory.getTang().newInjector(jcb.build());
-    injector.bindVolatileInstance(ComputationReuser.class, cube);
-    injector.bindVolatileInstance(NextSliceTimeProvider.class, sliceTimeProvider);
+    injector.bindVolatileInstance(ComputationReuser.class, computationReuser);
   }
 
   /**
@@ -78,7 +75,7 @@ public class DefaultSlicedWindowOperatorTest {
     operator.execute(1); operator.execute(2); operator.execute(3);
     operator.execute(1); operator.execute(1);
     operator.onNext(1L);
-    verify(cube).savePartialOutput(0, 1, result);
+    verify(computationReuser).savePartialOutput(0, 1, result);
 
     Map<Integer, Long> result2 = new HashMap<>();
     result2.put(1, 2L); result2.put(4, 1L); result2.put(5, 1L); result2.put(3, 1L);
@@ -86,17 +83,17 @@ public class DefaultSlicedWindowOperatorTest {
     operator.execute(1); operator.execute(1);
 
     operator.onNext(3L);
-    verify(cube).savePartialOutput(1, 3, result2);
+    verify(computationReuser).savePartialOutput(1, 3, result2);
 
     Map<Integer, Long> result3 = new HashMap<>();
     result3.put(1, 2L); result3.put(4, 1L);
     operator.execute(4); operator.execute(1); operator.execute(1);
 
     operator.onNext(4L);
-    verify(cube).savePartialOutput(3, 4, result3);
+    verify(computationReuser).savePartialOutput(3, 4, result3);
 
     operator.onNext(6L);
-    verify(cube).savePartialOutput(4, 6, new HashMap<Integer, Long>());
+    verify(computationReuser).savePartialOutput(4, 6, new HashMap<Integer, Long>());
   }
   
   class IntegerRef {

@@ -51,7 +51,6 @@ public final class DynamicMTSWindowConfiguration extends TimeWindowBaseConfigura
 
   public static final ConfigurationModule CONF = new DynamicMTSWindowConfiguration()
       .merge(TimeWindowBaseConfiguration.CONF)
-      .bindImplementation(NextSliceTimeProvider.class, DynamicNextSliceTimeProvider.class)
       .bindImplementation(ComputationReuser.class, DynamicComputationReuser.class)
       .bindNamedParameter(CachingRate.class, CACHING_RATE)
       .bindNamedParameter(MTSOperatorIdentifier.class, OPERATOR_IDENTIFIER)

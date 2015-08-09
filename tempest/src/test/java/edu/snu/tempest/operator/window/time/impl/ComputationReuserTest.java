@@ -62,7 +62,27 @@ public class ComputationReuserTest {
   }
 
   @Test
-  public void dynamicComputationReuserTest() throws InjectionException {
+  public void dynamicComputationReuserFinalAggregateTest() throws InjectionException {
+    computationReuserTest(dynamicComputationReuserConfig());
+  }
+
+  @Test
+  public void staticComputationReuserFinalAggregateTest() throws InjectionException {
+    computationReuserTest(staticComputationReuserConfig());
+  }
+
+
+  @Test
+  public void staticComputationReuserNextSliceTimeTest() throws InjectionException {
+    nextSliceTimeTest(dynamicComputationReuserConfig());
+  }
+
+  @Test
+  public void dynamiComputationReusercNextSliceTimeTest() throws InjectionException {
+    nextSliceTimeTest(staticComputationReuserConfig());
+  }
+
+  private Configuration dynamicComputationReuserConfig() {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindNamedParameter(CachingRate.class, Integer.toString(1));
     jcb.bindImplementation(KeyExtractor.class, IntegerExtractor.class);
@@ -72,11 +92,10 @@ public class ComputationReuserTest {
     jcb.bindImplementation(CAAggregator.class, CountByKeyAggregator.class);
     jcb.bindImplementation(Aggregator.class, CountByKeyAggregator.class);
     jcb.bindImplementation(ComputationReuser.class, DynamicComputationReuser.class);
-    computationReuserTest(jcb.build());
+    return jcb.build();
   }
 
-  @Test
-  public void staticComputationReuserTest() throws InjectionException {
+  private Configuration staticComputationReuserConfig() {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, IntegerExtractor.class);
     jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(timescales));
@@ -84,7 +103,28 @@ public class ComputationReuserTest {
     jcb.bindImplementation(CAAggregator.class, CountByKeyAggregator.class);
     jcb.bindImplementation(Aggregator.class, CountByKeyAggregator.class);
     jcb.bindImplementation(ComputationReuser.class, StaticComputationReuser.class);
-    computationReuserTest(jcb.build());
+    return jcb.build();
+  }
+
+  /**
+   * Test next slice time.
+   */
+  public void nextSliceTimeTest(final Configuration conf) throws InjectionException {
+    final Injector injector = Tang.Factory.getTang().newInjector(conf);
+    final ComputationReuser<Map<Integer, Long>> computationReuser =
+        injector.getInstance(ComputationReuser.class);
+
+    final long period = 12L;
+    for (int i = 0; i < 5; i++) {
+      Assert.assertEquals(2L + period * i, computationReuser.nextSliceTime());
+      Assert.assertEquals(3L + period * i, computationReuser.nextSliceTime());
+      Assert.assertEquals(4L + period * i, computationReuser.nextSliceTime());
+      Assert.assertEquals(6L + period * i, computationReuser.nextSliceTime());
+      Assert.assertEquals(8L + period * i, computationReuser.nextSliceTime());
+      Assert.assertEquals(9L + period * i, computationReuser.nextSliceTime());
+      Assert.assertEquals(10L + period * i, computationReuser.nextSliceTime());
+      Assert.assertEquals(12L + period * i, computationReuser.nextSliceTime());
+    }
   }
 
   /**

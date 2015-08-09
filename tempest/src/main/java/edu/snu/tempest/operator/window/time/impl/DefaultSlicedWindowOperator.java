@@ -60,11 +60,6 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
   private V bucket;
 
   /**
-   * Next slice time provider.
-   */
-  private final NextSliceTimeProvider sliceTimeProvider;
-
-  /**
    * Sync object for bucket.
    */
   private final Object sync = new Object();
@@ -73,21 +68,18 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
    * DynamicSlicedWindowOperatorImpl.
    * @param aggregator an aggregator for incremental aggregation
    * @param computationReuser a computation reuser for partial results.
-   * @param sliceTimeProvider a next slice time provider
    * @param startTime a start time of the mts operator
    */
   @Inject
   private DefaultSlicedWindowOperator(
       final CAAggregator<I, V> aggregator,
       final ComputationReuser<V> computationReuser,
-      final NextSliceTimeProvider sliceTimeProvider,
       @Parameter(StartTime.class) final Long startTime) {
     this.aggregator = aggregator;
     this.computationReuser = computationReuser;
-    this.sliceTimeProvider = sliceTimeProvider;
     this.bucket = aggregator.init();
     prevSliceTime = startTime;
-    nextSliceTime = sliceTimeProvider.nextSliceTime();
+    nextSliceTime = computationReuser.nextSliceTime();
   }
 
   /**
@@ -98,7 +90,7 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
   public synchronized void onNext(final Long currTime) {
     while (nextSliceTime < currTime) {
       prevSliceTime = nextSliceTime;
-      nextSliceTime = sliceTimeProvider.nextSliceTime();
+      nextSliceTime = computationReuser.nextSliceTime();
     }
     LOG.log(Level.FINE, "SlicedWindow tickTime " + currTime + ", nextSlice: " + nextSliceTime);
 
@@ -112,7 +104,7 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
         computationReuser.savePartialOutput(prevSliceTime, nextSliceTime, partialAggregation);
       }
       prevSliceTime = nextSliceTime;
-      nextSliceTime = sliceTimeProvider.nextSliceTime();
+      nextSliceTime = computationReuser.nextSliceTime();
     }
   }
 

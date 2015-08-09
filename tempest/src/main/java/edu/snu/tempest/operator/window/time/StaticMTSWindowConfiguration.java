@@ -20,9 +20,7 @@
 package edu.snu.tempest.operator.window.time;
 
 import edu.snu.tempest.operator.window.time.impl.ComputationReuser;
-import edu.snu.tempest.operator.window.time.impl.NextSliceTimeProvider;
 import edu.snu.tempest.operator.window.time.impl.StaticComputationReuser;
-import edu.snu.tempest.operator.window.time.impl.StaticNextSliceTimeProvider;
 import org.apache.reef.tang.formats.ConfigurationModule;
 
 /**
@@ -32,7 +30,6 @@ public final class StaticMTSWindowConfiguration extends TimeWindowBaseConfigurat
 
   public static final ConfigurationModule CONF = new StaticMTSWindowConfiguration()
       .merge(TimeWindowBaseConfiguration.CONF)
-      .bindImplementation(NextSliceTimeProvider.class, StaticNextSliceTimeProvider.class)
       .bindImplementation(ComputationReuser.class, StaticComputationReuser.class)
       .build();
 }

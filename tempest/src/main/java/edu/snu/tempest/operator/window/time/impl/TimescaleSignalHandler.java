@@ -39,7 +39,6 @@ import java.util.logging.Logger;
 final class TimescaleSignalHandler<V> implements EventHandler<TimescaleSignal> {
   private static final Logger LOG = Logger.getLogger(TimescaleSignalHandler.class.getName());
 
-  private final NextSliceTimeProvider sliceTimeProvider;
   private final OverlappingWindowStage owoStage;
   private final ComputationReuser<V> computationReuser;
   private final TimeWindowOutputHandler<V> outputHandler;
@@ -55,13 +54,11 @@ final class TimescaleSignalHandler<V> implements EventHandler<TimescaleSignal> {
    * @param startTime a start time
    */
   public TimescaleSignalHandler(
-      final NextSliceTimeProvider sliceTimeProvider,
       final OverlappingWindowStage owoStage,
       final ComputationReuser<V> computationReuser,
       final TimeWindowOutputHandler<V> outputHandler,
       final TimescaleParser tsParser,
       @Parameter(StartTime.class) final long startTime) {
-    this.sliceTimeProvider = sliceTimeProvider;
     this.owoStage = owoStage;
     this.computationReuser = computationReuser;
     this.outputHandler = outputHandler;
@@ -81,13 +78,10 @@ final class TimescaleSignalHandler<V> implements EventHandler<TimescaleSignal> {
 
     if (ts.type == TimescaleSignal.ADDITION) {
       LOG.log(Level.INFO, MTSOperatorImpl.class.getName() + " addTimescale: " + timescale);
-      //1. add timescale to slice time provider
-      this.sliceTimeProvider.onTimescaleAddition(timescale, ts.startTime);
-
-      //2. add timescale to computationReuser.
+      //1. add timescale to computationReuser.
       this.computationReuser.onTimescaleAddition(timescale, ts.startTime);
 
-      //3. add overlapping window operator
+      //2. add overlapping window operator
       final OverlappingWindowOperator owo = new DefaultOverlappingWindowOperator<>(
           timescale, computationReuser, outputHandler, ts.startTime);
       final Subscription<Timescale> ss = this.owoStage.subscribe(owo);
@@ -98,7 +92,6 @@ final class TimescaleSignalHandler<V> implements EventHandler<TimescaleSignal> {
       if (ss == null) {
         LOG.log(Level.WARNING, "Deletion error: Timescale " + ts + " not exists. ");
       } else {
-        this.sliceTimeProvider.onTimescaleDeletion(timescale, ts.startTime);
         this.computationReuser.onTimescaleDeletion(timescale, ts.startTime);
         ss.unsubscribe();
       }

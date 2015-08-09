@@ -26,8 +26,7 @@ import edu.snu.tempest.operator.window.time.parameter.StartTime;
 import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,6 +39,11 @@ import java.util.logging.Logger;
  */
 public final class DynamicComputationReuser<I, T> implements ComputationReuser<T> {
   private static final Logger LOG = Logger.getLogger(DynamicComputationReuser.class.getName());
+
+  /**
+   * SliceQueue containing next slice time.
+   */
+  private final PriorityQueue<SliceInfo> sliceQueue;
 
   /**
    * Final aggregator.
@@ -73,10 +77,47 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
                                    final CAAggregator<I, T> finalAggregator,
                                    final CachingPolicy cachingPolicy,
                                    @Parameter(StartTime.class) final long startTime) {
+    this.sliceQueue = new PriorityQueue<>(10, new SliceInfoComparator());
     this.finalAggregator = finalAggregator;
     this.table = new DefaultOutputLookupTableImpl<>();
     this.cleaner = new DefaultOutputCleaner(tsParser.timescales, table, startTime);
     this.cachingPolicy = cachingPolicy;
+    initializeWindowState(startTime, tsParser.timescales);
+  }
+
+  /**
+   * Initialize next slice time.
+   * This method is based on "On-the-Fly Sharing " paper.
+   * Similar to initializeWindowState function
+   */
+  private void initializeWindowState(final long startTime, final List<Timescale> timescales) {
+    LOG.log(Level.INFO, "SlicedWindow initialization");
+    for (final Timescale ts : timescales) {
+      addSlices(startTime, ts);
+    }
+  }
+
+  /**
+   * It returns a next slice time for producing partial results.
+   * Similar to advanceWindowGetNextEdge function in the "On-the-Fly ..." paper.
+   */
+  @Override
+  public long nextSliceTime() {
+    SliceInfo info = null;
+    synchronized (sliceQueue) {
+      if (sliceQueue.size() == 0) {
+        return 0;
+      }
+
+      final long time = sliceQueue.peek().sliceTime;
+      while (time == sliceQueue.peek().sliceTime) {
+        info = sliceQueue.poll();
+        if (info.last) {
+          addSlices(info.sliceTime, info.timescale);
+        }
+      }
+    }
+    return info.sliceTime;
   }
 
   /**
@@ -158,6 +199,15 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
     LOG.log(Level.FINE, "addTimescale " + ts);
     cleaner.onTimescaleAddition(ts, addTime);
     cachingPolicy.onTimescaleAddition(ts, addTime);
+    // Add slices
+    synchronized (sliceQueue) {
+      final long nst = sliceQueue.peek().sliceTime;
+      addSlices(addTime, ts);
+      long sliceTime = sliceQueue.peek().sliceTime;
+      while (sliceTime < nst) {
+        sliceTime = nextSliceTime();
+      }
+    }
   }
 
   /**
@@ -170,5 +220,54 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
     LOG.log(Level.INFO, "removeTimescale " + ts);
     cleaner.onTimescaleDeletion(ts, deleteTime);
     cachingPolicy.onTimescaleDeletion(ts, deleteTime);
+    synchronized (sliceQueue) {
+      for (final Iterator<SliceInfo> iterator = sliceQueue.iterator(); iterator.hasNext();) {
+        final SliceInfo slice = iterator.next();
+        if (slice.timescale.equals(ts)) {
+          iterator.remove();
+        }
+      }
+    }
+  }
+
+  /**
+   * Add next slice time into sliceQueue.
+   * Similar to addEdges function in the "On-the-Fly ... " paper.
+   */
+  private void addSlices(final long startTime, final Timescale ts) {
+    final long pairedB = ts.windowSize % ts.intervalSize;
+    final long pairedA = ts.intervalSize - pairedB;
+    synchronized (sliceQueue) {
+      sliceQueue.add(new SliceInfo(startTime + pairedA, ts, false));
+      sliceQueue.add(new SliceInfo(startTime + pairedA + pairedB, ts, true));
+    }
+  }
+
+  private final class SliceInfo {
+    public final long sliceTime;
+    public final Timescale timescale;
+    public final boolean last;
+
+    SliceInfo(final long sliceTime,
+              final Timescale timescale,
+              final boolean last) {
+      this.sliceTime = sliceTime;
+      this.timescale = timescale;
+      this.last = last;
+    }
+  }
+
+  private final class SliceInfoComparator implements Comparator<SliceInfo> {
+    @Override
+    public int compare(final SliceInfo o1, final SliceInfo o2) {
+      if (o1.sliceTime < o2.sliceTime) {
+        return -1;
+      } else if (o1.sliceTime > o2.sliceTime) {
+        return 1;
+      } else {
+        return 0;
+      }
+    }
   }
 }
+
