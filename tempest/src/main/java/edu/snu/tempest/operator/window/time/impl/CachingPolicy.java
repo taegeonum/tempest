@@ -25,7 +25,7 @@ import org.apache.reef.tang.annotations.DefaultImplementation;
  * CachingPolicy for caching multi-time scale outputs.
  */
 @DefaultImplementation(CachingRatePolicy.class)
-public interface CachingPolicy extends TimescaleSignalListener {
+public interface CachingPolicy {
   /**
    * Decide to cache or not the output of ts ranging from startTime to endTime.
    * @param startTime start time of the output
@@ -34,4 +34,18 @@ public interface CachingPolicy extends TimescaleSignalListener {
    * @return cache or not
    */
   boolean cache(long startTime, long endTime, Timescale ts);
+
+  /**
+   * Receive timescale to be added.
+   * @param ts timescale to be added.
+   * @param addTime the time when timescale is added.
+   */
+  void onTimescaleAddition(Timescale ts, long addTime);
+
+  /**
+   * Receive timescale to be deleted.
+   * @param ts timescale to be deleted.
+   * @param deleteTime the time when timescale is deleted.
+   */
+  void onTimescaleDeletion(Timescale ts, long deleteTime);
 }

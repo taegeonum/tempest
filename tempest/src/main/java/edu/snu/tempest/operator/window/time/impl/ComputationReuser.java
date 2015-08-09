@@ -24,7 +24,7 @@ import edu.snu.tempest.operator.window.time.Timescale;
  * Computation reuser interface. This is a data structure for output generation of window output.
  * It saves partial aggregation and produces final aggregation of window output.
  */
-public interface ComputationReuser<T> extends TimescaleSignalListener {
+public interface ComputationReuser<T> {
 
   /**
    * Get next slice time for partial aggregation.
@@ -48,4 +48,18 @@ public interface ComputationReuser<T> extends TimescaleSignalListener {
    * @return an aggregated output ranging from startTime to endTime.
    */
   T finalAggregate(long startTime, long endTime, Timescale ts);
+
+  /**
+   * Receive timescale to be added.
+   * @param ts timescale to be added.
+   * @param addTime the time when timescale is added.
+   */
+  void onTimescaleAddition(Timescale ts, long addTime);
+
+  /**
+   * Receive timescale to be deleted.
+   * @param ts timescale to be deleted.
+   * @param deleteTime the time when timescale is deleted.
+   */
+  void onTimescaleDeletion(Timescale ts, long deleteTime);
 }
