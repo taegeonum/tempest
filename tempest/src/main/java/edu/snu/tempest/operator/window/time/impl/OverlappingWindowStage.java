@@ -20,7 +20,7 @@ package edu.snu.tempest.operator.window.time.impl;
 
 import edu.snu.tempest.operator.common.DefaultSubscription;
 import edu.snu.tempest.operator.common.Subscription;
-import edu.snu.tempest.operator.window.time.Timescale;
+import edu.snu.tempest.operator.common.SubscriptionHandler;
 import org.apache.reef.wake.EStage;
 import org.apache.reef.wake.WakeParameters;
 import org.apache.reef.wake.impl.StageManager;
@@ -68,6 +68,10 @@ final class OverlappingWindowStage implements EStage<Long> {
    */
   private final long shutdownTimeout = WakeParameters.EXECUTOR_SHUTDOWN_TIMEOUT;
 
+  /**
+   * subscription handler.
+   */
+  private final OWOSubscriptionHandler subscriptionHandler;
 
   /**
    * Overlapping window stage for doing final aggregation.
@@ -76,6 +80,7 @@ final class OverlappingWindowStage implements EStage<Long> {
   private OverlappingWindowStage() {
     this.handlers = new PriorityQueue<>(10, new OWOComparator());
     this.executor = Executors.newFixedThreadPool(1);
+    this.subscriptionHandler = new OWOSubscriptionHandler();
     StageManager.instance().register(this);
   }
 
@@ -111,11 +116,28 @@ final class OverlappingWindowStage implements EStage<Long> {
    * @param handler an overlapping window operator
    * @return a subscription for unsubscribe
    */
-  public Subscription<Timescale> subscribe(final OverlappingWindowOperator handler) {
-    LOG.log(Level.INFO, "Subscribe " + handler);
+  public Subscription<OverlappingWindowOperator> subscribe(final OverlappingWindowOperator handler) {
+    LOG.log(Level.FINE, "Subscribe " + handler);
     lock.writeLock().lock();
     handlers.add(handler);
     lock.writeLock().unlock();
-    return new DefaultSubscription<>(handlers, handler, handler.getTimescale(), lock);
+    return new DefaultSubscription<>(subscriptionHandler, handler);
+  }
+
+  /**
+   * Subscription handler for unsubscribe overlaping window operators.
+   */
+  class OWOSubscriptionHandler implements SubscriptionHandler<OverlappingWindowOperator> {
+    /**
+     * Unsubscribe the subscription.
+     * @param subscription a subscription
+     */
+    @Override
+    public void unsubscribe(final Subscription<OverlappingWindowOperator> subscription) {
+      LOG.log(Level.FINE, "Unsubscribe " + subscription.getToken());
+      OverlappingWindowStage.this.lock.writeLock().lock();
+      OverlappingWindowStage.this.handlers.remove(subscription.getToken());
+      OverlappingWindowStage.this.lock.writeLock().unlock();
+    }
   }
 }

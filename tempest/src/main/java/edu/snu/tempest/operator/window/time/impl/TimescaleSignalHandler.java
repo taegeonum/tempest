@@ -42,11 +42,10 @@ final class TimescaleSignalHandler<V> implements EventHandler<TimescaleSignal> {
   private final OverlappingWindowStage owoStage;
   private final ComputationReuser<V> computationReuser;
   private final TimeWindowOutputHandler<V> outputHandler;
-  private final Map<Timescale, Subscription<Timescale>> subscriptions;
+  private final Map<Timescale, Subscription<OverlappingWindowOperator>> subscriptions;
 
   /**
    * Timescale signal handler for dynamic multi-time scale.
-   * @param sliceTimeProvider a slice time prodiver
    * @param owoStage a stage for multiple overlapping window operators
    * @param computationReuser a computation reuser
    * @param outputHandler an output handler
@@ -67,8 +66,8 @@ final class TimescaleSignalHandler<V> implements EventHandler<TimescaleSignal> {
     for (final Timescale timescale : tsParser.timescales) {
       final OverlappingWindowOperator owo = new DefaultOverlappingWindowOperator<V>(
           timescale, computationReuser, outputHandler, startTime);
-      final Subscription<Timescale> ss = this.owoStage.subscribe(owo);
-      subscriptions.put(ss.getToken(), ss);
+      final Subscription<OverlappingWindowOperator> ss = this.owoStage.subscribe(owo);
+      subscriptions.put(ss.getToken().getTimescale(), ss);
     }
   }
 
@@ -84,11 +83,11 @@ final class TimescaleSignalHandler<V> implements EventHandler<TimescaleSignal> {
       //2. add overlapping window operator
       final OverlappingWindowOperator owo = new DefaultOverlappingWindowOperator<>(
           timescale, computationReuser, outputHandler, ts.startTime);
-      final Subscription<Timescale> ss = this.owoStage.subscribe(owo);
-      subscriptions.put(ss.getToken(), ss);
+      final Subscription<OverlappingWindowOperator> ss = this.owoStage.subscribe(owo);
+      subscriptions.put(ss.getToken().getTimescale(), ss);
     } else {
       LOG.log(Level.INFO, MTSOperatorImpl.class.getName() + " removeTimescale: " + timescale);
-      final Subscription<Timescale> ss = subscriptions.get(timescale);
+      final Subscription<OverlappingWindowOperator> ss = subscriptions.get(timescale);
       if (ss == null) {
         LOG.log(Level.WARNING, "Deletion error: Timescale " + ts + " not exists. ");
       } else {

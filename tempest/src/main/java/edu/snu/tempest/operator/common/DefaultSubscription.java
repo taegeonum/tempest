@@ -18,9 +18,6 @@
  */
 package edu.snu.tempest.operator.common;
 
-import java.util.Collection;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -30,39 +27,24 @@ public final class DefaultSubscription<T, Token> implements Subscription<Token> 
   private static final Logger LOG = Logger.getLogger(DefaultSubscription.class.getName());
 
   /**
-   * A value for the subscription.
-   */
-  private final T val;
-
-  /**
    * A token for identifying the subscription.
    */
   private final Token token;
 
   /**
-   * Container subscribing this subscription.
+   * Subscription handler for unsubscribe.
    */
-  private final Collection<T> container;
-
-  /**
-   * Read/write lock.
-   */
-  private final ReadWriteLock lock;
+  private final SubscriptionHandler<Token> handler;
 
   /**
    * DefaultSubscription.
-   * @param container a container subscribing this subscription.
-   * @param val a value
+   * @param handler a handler for unsubscribe this subscription.
    * @param token a token for identifying the subscription
    */
-  public DefaultSubscription(final Collection<T> container,
-      final T val,
-      final Token token,
-      final ReadWriteLock lock) {
-    this.val = val;
-    this.container = container;
+  public DefaultSubscription(final SubscriptionHandler<Token> handler,
+      final Token token) {
+    this.handler = handler;
     this.token = token;
-    this.lock = lock;
   }
 
   /**
@@ -79,10 +61,7 @@ public final class DefaultSubscription<T, Token> implements Subscription<Token> 
    */
   @Override
   public void unsubscribe() {
-    LOG.log(Level.FINE, "Unsubscribe " + token);
-    this.lock.writeLock().lock();
-    container.remove(val);
-    this.lock.writeLock().unlock();
+    handler.unsubscribe(this);
   }
   
 }

@@ -55,7 +55,7 @@ final class WordCountOutputHandler implements TimeWindowOutputHandler<Map<String
    * @param pathPrefix a logging path
    */
   @Inject
-  public WordCountOutputHandler(final OutputWriter writer,
+  private WordCountOutputHandler(final OutputWriter writer,
                                 @Parameter(PathPrefix.class) final String pathPrefix) {
     this.writer = writer;
     this.pathPrefix = pathPrefix;
