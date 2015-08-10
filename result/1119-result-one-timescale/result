@@ -1,6 +1,0 @@
-mtss Implementation
-WindowSize = 300, latency = 150037, throughput = 4828123
-
-
-naive Implementation
-WindowSize = 300, latency = 150020, throughput = 4820817
