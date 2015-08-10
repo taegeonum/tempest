@@ -1,9 +1,0 @@
-1120 ver experiment
-
-NUM_SPOUT = 8
-NUM_BOLT = 4
-INPUT_INTERVAL = 5ms
-RUNTIME = 40min
-
-Timescale
-- (300, 20)

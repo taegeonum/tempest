@@ -1,66 +1,43 @@
+Tempest project
 
-MTSS project
+# Pre-requisite
 
-#How to run 
+0. Install and start zookeeper
+  - download from https://zookeeper.apache.org/
+  - tar
+  - cp conf/zoo_sample.cfg conf/zoo.cfg
+  - ./bin/zkServer.sh start
 
-1. Download storm and install 
-http://mirror.apache-kr.org/storm/apache-storm-0.9.2-incubating/apache-storm-0.9.2-incubating.tar.gz
+# How to run WordCount example
 
-2. Add $STORM_DIR$/bin to $PATH$ 
+1. mvn clean package 
+2. ./bin/run_test.sh #parameter_file#
+  - ex) ./bin/run_test.sh test_param
 
-3. Download MTSS code 
-  - https://github.com/swsnu/MTSS/tree/refactoring-mtss
+# Parameters
+1. --log_dir: logging directory
+2. --test_name: test name
+3. --spouts: the number of spouts 
+4. --total_time : total elapsed time to test
+5. --operator_type: dynamic_mts/naive/static_mts
+  * dynamic_mts: Dynamic multi-timescale impl
+  * static_mts: Static multi-timescale impl
+  * naive: Naive impl
+6. --timescales: timescales
+  * format: (window_size,interval),(window_size2,interval2)...
+  * unit: second
+  * ex) (5,1)(10,2) -> two timescales: window size is 5seconds, interval is 1 second. window size is 10 seconds, interval is 2 seconds.
+7. --bolts: the number of bolts
+8. --input_interval: interval of sending input.
+9. --caching_rate: caching rate for dynamic mts operator
 
-  - git clone https://github.com/swsnu/MTSS.git
 
-  - cd MTSS && git checkout remotes/origin/refactoring-mtss
+# How to add timescales dynamically
+* ./bin/mts_signal_sender.sh #parameters#
 
-4. Install 
-  - cd mtss && mvn clean install 
-
-5. Configure parameter
-
-6. start bin/run.sh with params 
-Ex) bin/run.sh params. Example parameter file is in bin/params 
-
-
-# Parameter
-
-1. local : true / false
-  - Is this local mode or cluster mode. default is true
-  - To run in cluster mode, you need to setup the Storm cluster. 
-
-2. app_name: MTSSTopology / NaiveTopology / WordGroupingMTSSTopology / WordGroupingNaiveTopology 
-  - MTSSTopology: Top-k wordcount in mtss topology
-  - NaiveTopology: Top-k wordcount in naive topology
-  - WordGroupingMTSSTopology: Initial word character histogram in mtss topology
-  - WordGroupingNaiveTopology: Initial word character histogram in naive topology
-
-3. num_workers: the number of workers
-
-4. input_interval: input interval ( ms )
-
-5. num_spout: the number of spout
-
-6. num_bolt: the number of bolt 
-
-7. topN: the number of top-k in Top-K application (default 10)
-  - You don't need to set if you don't want to run Top-k application 
-
-8. runtime: runtime (sec) 
-  - It doesn't need in cluster mode. In cluster mode, we should kill by hand.
-
-9. input: input path (default: input/test_input) 
-  - It doesn't need in RandomWordSpout. 
-
-10. spout: FileReadWordSpout / RandomWordSpout 
-  - FileReadWordSpout: read input from path of input parameter.
-  - RandomWordSpout: create random word input
-
-11. timescales: timescale information 
-  - format: (\\(\\d+,\\d+\\))*
-  - ex) timescales=(30,2)(50,4)
-
-12. output: output path
-  - It logs latency and throughput. 
-  - You should create the output directory 
+# Parameters
+1. zookeeper address
+2. mts identifier
+3. window size
+4. interval
+5. type (addition/deletion)
