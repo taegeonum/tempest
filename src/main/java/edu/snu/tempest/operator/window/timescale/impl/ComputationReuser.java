@@ -25,6 +25,7 @@ public interface ComputationReuser<T> {
 
   /**
    * Get next slice time for partial aggregation.
+   * This can be used for slice time to create partial results of incremental aggregation.
    * @return next slice time
    */
   long nextSliceTime();

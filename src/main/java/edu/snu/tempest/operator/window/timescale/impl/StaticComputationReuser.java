@@ -108,6 +108,7 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
 
   /**
    * Gets next slice time for slicing input and creating partial outputs.
+   * This can be used for slice time to create partial results of incremental aggregation.
    * SlicedWindowOperator can use this to slice input.
    */
   @Override

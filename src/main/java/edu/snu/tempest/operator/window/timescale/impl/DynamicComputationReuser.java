@@ -96,6 +96,7 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
 
   /**
    * It returns a next slice time for producing partial results.
+   * This can be used for slice time to create partial results of incremental aggregation.
    * Similar to advanceWindowGetNextEdge function in the "On-the-Fly Sharing for Streamed Aggregation" paper.
    */
   @Override
