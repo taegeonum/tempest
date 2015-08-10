@@ -61,7 +61,7 @@ final class OverlappingWindowStage implements EStage<Long> {
   private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
   /**
-   * Shutdonw timeout.
+   * Shutdown timeout.
    */
   private final long shutdownTimeout = WakeParameters.EXECUTOR_SHUTDOWN_TIMEOUT;
 

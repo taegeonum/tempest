@@ -15,7 +15,7 @@
  */
 package edu.snu.tempest.signal.window.time;
 
-import edu.snu.tempest.signal.TempestSignalSenderStage;
+import edu.snu.tempest.signal.SignalSenderStage;
 import edu.snu.tempest.signal.impl.ZkMTSParameters;
 import edu.snu.tempest.signal.impl.ZkSignalSenderStage;
 import org.apache.reef.tang.Configuration;
@@ -69,11 +69,11 @@ public final class MTSSignalSender {
   public static void main(final String[] args) throws Exception {
     final Configuration commandConf = getCommandLineConf(args);
     final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
-    cb.bindImplementation(TempestSignalSenderStage.class, ZkSignalSenderStage.class);
+    cb.bindImplementation(SignalSenderStage.class, ZkSignalSenderStage.class);
     cb.addConfiguration(commandConf);
 
     final Injector ij = Tang.Factory.getTang().newInjector(cb.build());
-    final TempestSignalSenderStage<TimescaleSignal> sender = ij.getInstance(TempestSignalSenderStage.class);
+    final SignalSenderStage<TimescaleSignal> sender = ij.getInstance(SignalSenderStage.class);
     final String type = ij.getNamedInstance(TypeOfSignal.class);
     final String identifier = ij.getNamedInstance(OperatorIdentifier.class);
     final long windowSize = ij.getNamedInstance(WindowSize.class);

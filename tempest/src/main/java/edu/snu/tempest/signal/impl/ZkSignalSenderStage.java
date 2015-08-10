@@ -15,7 +15,7 @@
  */
 package edu.snu.tempest.signal.impl;
 
-import edu.snu.tempest.signal.TempestSignalSenderStage;
+import edu.snu.tempest.signal.SignalSenderStage;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -30,7 +30,7 @@ import java.util.logging.Logger;
 /**
  * SignalSender implementation using Zookeeper.
  */
-public final class ZkSignalSenderStage<T> implements TempestSignalSenderStage<T> {
+public final class ZkSignalSenderStage<T> implements SignalSenderStage<T> {
 
   private static final Logger LOG = Logger.getLogger(ZkSignalSenderStage.class.getName());
 

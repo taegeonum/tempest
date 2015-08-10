@@ -20,7 +20,7 @@ import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.time.*;
 import edu.snu.tempest.signal.window.time.TimescaleSignal;
-import edu.snu.tempest.signal.TempestSignalSenderStage;
+import edu.snu.tempest.signal.SignalSenderStage;
 import edu.snu.tempest.signal.impl.ZkSignalSenderStage;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
@@ -74,7 +74,7 @@ public final class MTSWindowOperatorExample {
       }
     });
     final WindowOperator<Integer> operator = ij.getInstance(WindowOperator.class);
-    final TempestSignalSenderStage<TimescaleSignal> sender = ij.getInstance(ZkSignalSenderStage.class);
+    final SignalSenderStage<TimescaleSignal> sender = ij.getInstance(ZkSignalSenderStage.class);
 
     // add input
     executor.submit(new Runnable() {

@@ -21,7 +21,7 @@ import edu.snu.tempest.operator.window.time.Timescale;
 import edu.snu.tempest.operator.window.time.TimescaleParser;
 import edu.snu.tempest.operator.window.time.parameter.MTSOperatorIdentifier;
 import edu.snu.tempest.operator.window.time.parameter.StartTime;
-import edu.snu.tempest.signal.TempestSignalReceiverStage;
+import edu.snu.tempest.signal.SignalReceiverStage;
 import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;
@@ -55,7 +55,7 @@ public final class MTSOperatorImpl<I, V> implements WindowOperator<I> {
       final SlicedWindowStage<I> slicedWindowStage,
       @Parameter(StartTime.class) final long startTime,
       @Parameter(MTSOperatorIdentifier.class) final String identifier,
-      final TempestSignalReceiverStage receiver) throws Exception {
+      final SignalReceiverStage receiver) throws Exception {
     // register timescale signal handler
     receiver.registerHandler(identifier, new TimescaleSignalHandler<V>(
         owoStage, computationReuser, outputHandler, tsParser, startTime));

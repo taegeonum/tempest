@@ -15,8 +15,8 @@
  */
 package edu.snu.tempest.signal.impl;
 
-import edu.snu.tempest.signal.TempestSignalReceiverStage;
-import edu.snu.tempest.signal.TempestSignalSenderStage;
+import edu.snu.tempest.signal.SignalReceiverStage;
+import edu.snu.tempest.signal.SignalSenderStage;
 import edu.snu.tempest.test.util.Monitor;
 import edu.snu.tempest.test.util.TestSignal;
 import edu.snu.tempest.test.util.TestSignalCodec;
@@ -42,14 +42,14 @@ public class ZkSignalTest {
     final Monitor monitor = new Monitor();
     final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
     cb.bindNamedParameter(ZkMTSParameters.ZkServerAddress.class, host + ":" + port);
-    cb.bindImplementation(TempestSignalReceiverStage.class, ZkSignalReceiverStage.class);
-    cb.bindImplementation(TempestSignalSenderStage.class, ZkSignalSenderStage.class);
+    cb.bindImplementation(SignalReceiverStage.class, ZkSignalReceiverStage.class);
+    cb.bindImplementation(SignalSenderStage.class, ZkSignalSenderStage.class);
     cb.bindNamedParameter(ZkMTSParameters.ZkSignalDecoder.class, TestSignalCodec.class);
     cb.bindNamedParameter(ZkMTSParameters.ZkSignalEncoder.class, TestSignalCodec.class);
 
     final Injector injector = Tang.Factory.getTang().newInjector(cb.build());
-    final TempestSignalSenderStage<TestSignal> sender = injector.getInstance(TempestSignalSenderStage.class);
-    final TempestSignalReceiverStage<TestSignal> receiver = injector.getInstance(TempestSignalReceiverStage.class);
+    final SignalSenderStage<TestSignal> sender = injector.getInstance(SignalSenderStage.class);
+    final SignalReceiverStage<TestSignal> receiver = injector.getInstance(SignalReceiverStage.class);
     receiver.registerHandler(identifier, new TestTimescaleListener(monitor, 3));
 
 

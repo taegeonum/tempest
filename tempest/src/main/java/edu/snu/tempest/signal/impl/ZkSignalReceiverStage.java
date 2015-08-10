@@ -15,7 +15,7 @@
  */
 package edu.snu.tempest.signal.impl;
 
-import edu.snu.tempest.signal.TempestSignalReceiverStage;
+import edu.snu.tempest.signal.SignalReceiverStage;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
@@ -35,7 +35,7 @@ import java.util.logging.Logger;
 /**
  * MTSSignalReceiver implementation using Zookeeper.
  */
-public final class ZkSignalReceiverStage<T> implements TempestSignalReceiverStage<T>, Watcher {
+public final class ZkSignalReceiverStage<T> implements SignalReceiverStage<T>, Watcher {
   private static final Logger LOG = Logger.getLogger(ZkSignalReceiverStage.class.getName());
   public static final String NAMESPACE = "tempest-signal";
 

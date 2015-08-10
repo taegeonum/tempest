@@ -15,24 +15,21 @@
  */
 package edu.snu.tempest.signal;
 
-import edu.snu.tempest.signal.impl.ZkSignalReceiverStage;
+import edu.snu.tempest.signal.impl.ZkSignalSenderStage;
 import org.apache.reef.tang.annotations.DefaultImplementation;
-import org.apache.reef.wake.EventHandler;
 import org.apache.reef.wake.Stage;
 
 /**
- * Receiver for runtime signal.
- * It receives signal messages from MTSSignalSender
- * and triggers an event handler which has same identifier
+ * Signal sender for runtime.
  */
-@DefaultImplementation(ZkSignalReceiverStage.class)
-public interface TempestSignalReceiverStage<T> extends Stage {
+@DefaultImplementation(ZkSignalSenderStage.class)
+public interface SignalSenderStage<T> extends Stage {
 
   /**
-   * Register a handler for the identifier.
-   * @param identifier an identifier
-   * @param handler a handler for the signal
+   * Send signal to the operators which have the identifier.
+   * @param identifier an identifier of operators.
+   * @param signal a signal
    * @throws Exception
    */
-  void registerHandler(String identifier, EventHandler<T> handler) throws Exception;
+  void sendSignal(String identifier, T signal) throws Exception;
 }
