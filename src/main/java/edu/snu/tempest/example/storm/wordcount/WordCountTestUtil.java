@@ -16,10 +16,10 @@
 package edu.snu.tempest.example.storm.wordcount;
 
 import edu.snu.tempest.example.storm.parameter.*;
-import edu.snu.tempest.operator.window.time.Timescale;
-import edu.snu.tempest.operator.window.time.parameter.CachingRate;
-import edu.snu.tempest.operator.window.time.TimescaleParser;
-import edu.snu.tempest.operator.window.time.parameter.TimescaleString;
+import edu.snu.tempest.operator.window.timescale.Timescale;
+import edu.snu.tempest.operator.window.timescale.parameter.CachingRate;
+import edu.snu.tempest.operator.window.timescale.TimescaleParser;
+import edu.snu.tempest.operator.window.timescale.parameter.TimescaleString;
 import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;

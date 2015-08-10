@@ -16,9 +16,9 @@
 package edu.snu.tempest.test.util;
 
 
-import edu.snu.tempest.operator.window.time.TimeWindowOutput;
-import edu.snu.tempest.operator.window.time.TimeWindowOutputHandler;
-import edu.snu.tempest.operator.window.time.Timescale;
+import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
+import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutputHandler;
+import edu.snu.tempest.operator.window.timescale.Timescale;
 
 import javax.inject.Inject;
 import java.util.Map;
@@ -27,15 +27,15 @@ import java.util.Queue;
 /**
  * An output handler for test.
  */
-public final class TestOutputHandler implements TimeWindowOutputHandler<Map<Integer, Long>> {
+public final class TestOutputHandler implements TimescaleWindowOutputHandler<Map<Integer, Long>> {
   private final Map<Timescale,
-      Queue<TimeWindowOutput<Map<Integer, Long>>>> results;
+      Queue<TimescaleWindowOutput<Map<Integer, Long>>>> results;
   private final Monitor monitor;
   private int count = 0;
 
   @Inject
   public TestOutputHandler(final Monitor monitor,
-                           final Map<Timescale, Queue<TimeWindowOutput<Map<Integer, Long>>>> results) {
+                           final Map<Timescale, Queue<TimescaleWindowOutput<Map<Integer, Long>>>> results) {
     this.monitor = monitor;
     this.results = results;
   }
@@ -45,10 +45,10 @@ public final class TestOutputHandler implements TimeWindowOutputHandler<Map<Inte
    * @param windowOutput a mts window output
    */
   @Override
-  public void onNext(final TimeWindowOutput<Map<Integer, Long>> windowOutput) {
+  public void onNext(final TimescaleWindowOutput<Map<Integer, Long>> windowOutput) {
     if (count < 2) {
       if (windowOutput.fullyProcessed) {
-        final Queue<TimeWindowOutput<Map<Integer, Long>>> outputs = this.results.get(windowOutput.timescale);
+        final Queue<TimescaleWindowOutput<Map<Integer, Long>>> outputs = this.results.get(windowOutput.timescale);
         System.out.println(windowOutput);
         outputs.add(windowOutput);
       }

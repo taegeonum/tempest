@@ -18,8 +18,8 @@ package edu.snu.tempest.example;
 import edu.snu.tempest.operator.window.WindowOperator;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
-import edu.snu.tempest.operator.window.time.*;
-import edu.snu.tempest.signal.window.time.TimescaleSignal;
+import edu.snu.tempest.operator.window.timescale.*;
+import edu.snu.tempest.signal.window.timescale.TimescaleSignal;
 import edu.snu.tempest.signal.SignalSenderStage;
 import edu.snu.tempest.signal.impl.ZkSignalSenderStage;
 import org.apache.reef.tang.Configuration;
@@ -108,14 +108,14 @@ public final class MTSWindowOperatorExample {
     StageManager.instance().close();
   }
 
-  public static final class TestHandler implements TimeWindowOutputHandler<Integer> {
+  public static final class TestHandler implements TimescaleWindowOutputHandler<Integer> {
 
     @Inject
     private TestHandler() {
     }
 
     @Override
-    public void onNext(final TimeWindowOutput<Integer> output) {
+    public void onNext(final TimescaleWindowOutput<Integer> output) {
       System.out.println(output);
     }
   }
