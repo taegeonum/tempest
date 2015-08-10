@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * CachingRatePolicy caches outputs according to the caching rate.
  * Also, it does not cache outputs of a timescale which has largest window size
- * because outputs of larges window size cannot be used for outputs of lower window size.
+ * because outputs of largest window size cannot be used for outputs of smaller window size.
  */
 public final class CachingRatePolicy implements CachingPolicy {
 
@@ -90,8 +90,9 @@ public final class CachingRatePolicy implements CachingPolicy {
     }
 
     // cachingPeriod is a function of cachingRate.
-    // if the cachingRate is zero, then cachingPeriod is infinite.
-    // if the cachingRate is one, then cachingPeriod is windowSize.
+    // cachingPeriod = windowSize / cachingRate
+    // if the cachingRate is zero, then cachingPeriod is infinite and no data is cached.
+    // if the cachingRate is one, then cachingPeriod is windowSize and the result is cached every windowSize.
     final double cachingPeriod = ts.windowSize / cachingRate;
     if ((endTime - latestCachingTime) >= cachingPeriod
         && ts.windowSize < this.largestWindowSize.get()) {

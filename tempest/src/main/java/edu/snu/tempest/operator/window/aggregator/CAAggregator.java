@@ -21,12 +21,14 @@ package edu.snu.tempest.operator.window.aggregator;
 public interface CAAggregator<I, V> extends Aggregator<V, V> {
   /**
    * Create a new bucket for incremental aggregation.
+   * This bucket can be used for incremental aggregate to save the aggregated results.
    * @return a bucket for incremental aggregation.
    */
   V init();
 
   /**
    * Incrementally aggregate the new data into the bucket.
+   *
    * @param bucket a bucket for incremental aggregation.
    * @param newVal new value
    */

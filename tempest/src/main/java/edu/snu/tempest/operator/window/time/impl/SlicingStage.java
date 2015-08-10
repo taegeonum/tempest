@@ -51,7 +51,7 @@ final class SlicingStage<I> implements Stage {
   private final ScheduledExecutorService executor;
 
   /**
-   * Shutdonw timeout.
+   * Shutdown timeout.
    */
   private final long shutdownTimeout = WakeParameters.EXECUTOR_SHUTDOWN_TIMEOUT;
 

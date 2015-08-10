@@ -246,7 +246,7 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
 
   /**
    * It creates the list of next slice time.
-   * This method is based on "On-the-Fly Sharing " paper.
+   * This method is based on "On-the-Fly Sharing for Streamed Aggregation" paper.
    * Similar to initializeWindowState function
    */
   private void addSlicedWindowNodeAndEdge() {

@@ -39,7 +39,7 @@ public interface OutputLookupTable<V> {
    * @param endTime end time of the output
    * @return an output
    * @throws NotFoundException throws NotFoundException
-   * when it cannot find and output ranging from startTime to endTime.
+   * when it cannot find an output ranging from startTime to endTime.
    */
   V lookup(long startTime, long endTime) throws NotFoundException;
 
@@ -48,7 +48,7 @@ public interface OutputLookupTable<V> {
    * @param startTime start time of the outputs
    * @return outputs which start at the startTime.
    * @throws NotFoundException throws NotFoundException
-   * when it cannot find and output starting at startTime.
+   * when it cannot find an output starting at startTime.
    */
   ConcurrentSkipListMap<Long, V> lookup(long startTime) throws NotFoundException;
 
@@ -61,7 +61,7 @@ public interface OutputLookupTable<V> {
    * @param endTime maximum end time
    * @return TimeAndValue this contains value and time information.
    * @throws NotFoundException throws NotFoundException
-   * when it cannot find and output ranging from startTime to endTime.
+   * when it cannot find an output ranging from startTime to endTime.
    */
   WindowTimeAndOutput<V> lookupLargestSizeOutput(long startTime, long endTime) throws NotFoundException;
 

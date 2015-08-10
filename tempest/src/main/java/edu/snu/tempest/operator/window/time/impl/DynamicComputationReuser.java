@@ -84,7 +84,7 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
 
   /**
    * Initialize next slice time.
-   * This method is based on "On-the-Fly Sharing " paper.
+   * This method is based on "On-the-Fly Sharing for Streamed Aggregation" paper.
    * Similar to initializeWindowState function
    */
   private void initializeWindowState(final long startTime, final List<Timescale> timescales) {
@@ -96,7 +96,7 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
 
   /**
    * It returns a next slice time for producing partial results.
-   * Similar to advanceWindowGetNextEdge function in the "On-the-Fly ..." paper.
+   * Similar to advanceWindowGetNextEdge function in the "On-the-Fly Sharing for Streamed Aggregation" paper.
    */
   @Override
   public long nextSliceTime() {
@@ -129,7 +129,7 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
   }
 
   /**
-   * Produces a final output by doing computation reuse..
+   * Produces a final output by doing computation reuse.
    * It saves the final result and reuses it for other timescales' final aggregation
    * @param startTime start time of the output
    * @param endTime end time of the output
@@ -229,7 +229,7 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
 
   /**
    * Add next slice time into sliceQueue.
-   * Similar to addEdges function in the "On-the-Fly ... " paper.
+   * Similar to addEdges function in the "On-the-Fly Sharing for Streamed Aggregation" paper.
    */
   private void addSlices(final long startTime, final Timescale ts) {
     final long pairedB = ts.windowSize % ts.intervalSize;

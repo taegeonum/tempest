@@ -18,8 +18,8 @@ package edu.snu.tempest.operator.window.time.impl;
 import java.util.Comparator;
 
 /**
- * An overlapping window operator which has small size of window
- * is executed before another OWOs having large size of window.
+ * An overlapping window operator which has small sized window
+ * is executed before another OWO with a large sized window.
  */
 final class OWOComparator implements Comparator<OverlappingWindowOperator> {
 

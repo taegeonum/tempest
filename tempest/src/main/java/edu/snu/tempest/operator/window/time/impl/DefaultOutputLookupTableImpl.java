@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
- * It saves timescale outputs into Table.
+ * It holds timescale outputs for computation reuse.
  */
 final class DefaultOutputLookupTableImpl<V> implements OutputLookupTable<V> {
   private static final Logger LOG = Logger.getLogger(DefaultOutputLookupTableImpl.class.getName());
@@ -57,7 +57,7 @@ final class DefaultOutputLookupTableImpl<V> implements OutputLookupTable<V> {
    * @param startTime start time of the output
    * @param endTime end time of the output
    * @return an output
-   * @throws NotFoundException when it cannot find and output ranging from startTime to endTime.
+   * @throws NotFoundException when it cannot find an output ranging from startTime to endTime.
    */
   public V lookup(final long startTime, final long endTime) throws NotFoundException {
     final V entry;

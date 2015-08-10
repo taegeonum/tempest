@@ -35,7 +35,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * A stage for trigger overlapping window operators, which execute final aggregation.
+ * A stage that triggers overlapping window operators, which execute final aggregation.
  */
 final class OverlappingWindowStage implements EStage<Long> {
   private static final Logger LOG = Logger.getLogger(OverlappingWindowStage.class.getCanonicalName());
@@ -66,7 +66,7 @@ final class OverlappingWindowStage implements EStage<Long> {
   private final long shutdownTimeout = WakeParameters.EXECUTOR_SHUTDOWN_TIMEOUT;
 
   /**
-   * subscription handler.
+   * Subscription handler.
    */
   private final OWOSubscriptionHandler subscriptionHandler;
 

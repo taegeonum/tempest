@@ -23,7 +23,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * It triggers final aggregation every its interval.
+ * It triggers final aggregation every interval.
  */
 final class DefaultOverlappingWindowOperator<V> implements OverlappingWindowOperator {
   private static final Logger LOG = Logger.getLogger(DefaultOverlappingWindowOperator.class.getName());

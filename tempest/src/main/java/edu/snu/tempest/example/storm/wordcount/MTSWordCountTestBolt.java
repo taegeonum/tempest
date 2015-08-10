@@ -111,7 +111,7 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
 
   /**
    * MTSWordCountTestBolt.
-   * It aggregateds word and calculates counts.
+   * It aggregates word and calculates counts.
    * @param pathPrefix a path of log directory.
    * @param timescales an initial timescales.
    * @param operatorType a type of operator
