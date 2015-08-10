@@ -53,6 +53,7 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
 
   /**
    * A bucket for incremental aggregation.
+   * It saves aggregated results for partial aggregation.
    */
   private V bucket;
 
