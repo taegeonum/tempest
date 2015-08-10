@@ -32,13 +32,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Stage that triggers a sliced window operator/overlapping window operators periodically.
+ * Stage that slices partial aggregation and saves the sliced results into computation reuser.
+ * Also, it triggers overlapping window operators for final aggregation.
  *
- * It executes slicedWindowOperator and overlapping window operator stage.
  * @param <I> input
  */
-final class SlicedWindowStage<I> implements Stage {
-  private static final Logger LOG = Logger.getLogger(SlicedWindowStage.class.getName());
+final class SlicingStage<I> implements Stage {
+  private static final Logger LOG = Logger.getLogger(SlicingStage.class.getName());
 
   /**
    * Is this stage closed or not.
@@ -56,24 +56,25 @@ final class SlicedWindowStage<I> implements Stage {
   private final long shutdownTimeout = WakeParameters.EXECUTOR_SHUTDOWN_TIMEOUT;
 
   /**
-   * Constructs a timer stage.
+   * Constructs a slicing stage.
    *
    * @param slicedWindowOperator a sliced window operator
    * @param finalStage           a final aggregation stage
    * @param period               a period in milli-seconds
    */
   @Inject
-  public SlicedWindowStage(final SlicedWindowOperator<I> slicedWindowOperator,
-                           final OverlappingWindowStage finalStage,
-                           @Parameter(SlicedWindowTriggerPeriod.class) final long period) {
-    this.executor = Executors.newScheduledThreadPool(1, new DefaultThreadFactory(SlicedWindowStage.class.getName()));
+  public SlicingStage(final SlicedWindowOperator<I> slicedWindowOperator,
+                      final OverlappingWindowStage finalStage,
+                      @Parameter(SlicedWindowTriggerPeriod.class) final long period) {
+    this.executor = Executors.newScheduledThreadPool(1, new DefaultThreadFactory(SlicingStage.class.getName()));
     this.executor.scheduleAtFixedRate(new Runnable() {
       @Override
       public void run() {
         final long time = getCurrentTime();
-        LOG.log(Level.FINE, SlicedWindowStage.class.getName() + " trigger: " + time);
-        // Executes sliced window operator and final aggregation stage.
+        LOG.log(Level.FINE, SlicingStage.class.getName() + " trigger: " + time);
+        // slice partial aggregation and save the result into computation reuser.
         slicedWindowOperator.onNext(time);
+        // trigger final aggregation
         finalStage.onNext(time);
       }
     }, period, period, TimeUnit.MILLISECONDS);

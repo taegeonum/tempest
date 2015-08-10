@@ -52,7 +52,7 @@ public final class MTSOperatorImpl<I, V> implements WindowOperator<I> {
       final TimeWindowOutputHandler<V> outputHandler,
       final TimescaleParser tsParser,
       final SlicedWindowOperator<I> slicedWindowOperator,
-      final SlicedWindowStage<I> slicedWindowStage,
+      final SlicingStage<I> slicingStage,
       @Parameter(StartTime.class) final long startTime,
       @Parameter(MTSOperatorIdentifier.class) final String identifier,
       final SignalReceiverStage receiver) throws Exception {
@@ -72,7 +72,7 @@ public final class MTSOperatorImpl<I, V> implements WindowOperator<I> {
       final TimeWindowOutputHandler<V> outputHandler,
       final TimescaleParser tsParser,
       final SlicedWindowOperator<I> slicedWindowOperator,
-      final SlicedWindowStage<I> slicedWindowStage,
+      final SlicingStage<I> slicingStage,
       @Parameter(StartTime.class) final long startTime) throws Exception {
     this.slicedWindowOperator = slicedWindowOperator;
     // add overlapping window operators
