@@ -31,20 +31,20 @@ import java.util.logging.Logger;
 
 /**
  * StaticComputationReuserImpl Implementation.
- * It constructs RelationGraph at start time.
+ * It constructs dependency graph at start time.
  */
 public final class StaticComputationReuser<I, T> implements ComputationReuser<T> {
   private static final Logger LOG = Logger.getLogger(StaticComputationReuser.class.getName());
 
   /**
-   * A table containing RelationGraphNode for final output.
+   * A table containing DependencyGraphNode for final output.
    */
-  private final DefaultOutputLookupTableImpl<RelationGraphNode> table;
+  private final DefaultOutputLookupTableImpl<DependencyGraphNode> table;
 
   /**
-   * A table containing RelationGraphNode for partial output.
+   * A table containing DependencyGraphNode for partial output.
    */
-  private final DefaultOutputLookupTableImpl<RelationGraphNode> partialOutputTable;
+  private final DefaultOutputLookupTableImpl<DependencyGraphNode> partialOutputTable;
 
   /**
    * The list of timescale.
@@ -101,7 +101,7 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     this.startTime = startTime;
     LOG.log(Level.INFO, StaticComputationReuser.class + " started. PERIOD: " + period);
 
-    // create RelationGraph.
+    // create dependency graph.
     addSlicedWindowNodeAndEdge();
     addOverlappingWindowNodeAndEdge();
   }
@@ -140,7 +140,7 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     LOG.log(Level.FINE,
         "savePartialOutput: " + wStartTime + " - " + wEndTime +", " + start  + " - " + end);
 
-    RelationGraphNode node = null;
+    DependencyGraphNode node = null;
     try {
       node = partialOutputTable.lookup(start, end);
     } catch (final NotFoundException e) {
@@ -173,7 +173,7 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
       start -= period;
     }
 
-    RelationGraphNode node = null;
+    DependencyGraphNode node = null;
     try {
       node = table.lookup(start, end);
     } catch (final NotFoundException e) {
@@ -182,17 +182,41 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     }
 
     final List<T> list = new LinkedList<>();
-    for (final RelationGraphNode child : node.getDependencies()) {
+    for (final DependencyGraphNode child : node.getDependencies()) {
       if (child.getOutput() != null) {
         list.add(child.getOutput());
         child.decreaseRefCnt();
+      } else if (wStartTime < startTime && end <= child.start) {
+        // if there are no dependent outputs to use
+        // no need to wait for the child's output.
+        LOG.log(Level.FINE, "no wait. wStartTime: " + wStartTime + ", wEnd:" + wEndTime
+            + " child.start: " + child.start + "child.end: " + child.end);
+      } else {
+        // if there is a dependent output that could be used
+        // wait for the aggregation to finish.
+        LOG.log(Level.FINE, "wait. wStartTime: " + wStartTime + ", wEnd:" + wEndTime
+            + " child.start: " + child.start + "child.end: " + child.end);
+        synchronized (child) {
+          try {
+            child.wait();
+            final T out = child.getOutput();
+            list.add(out);
+            child.decreaseRefCnt();
+          } catch (final InterruptedException e) {
+            e.printStackTrace();
+          }
+        }
       }
     }
 
     final T output = finalAggregator.aggregate(list);
     // save the output
-    if (node.getRefCnt() != 0) {
+    if (node.getInitialRefCnt() != 0) {
       node.saveOutput(output);
+      synchronized (node) {
+        // after saving the output, notify the thread that is waiting for this output.
+        node.notifyAll();
+      }
     }
     LOG.log(Level.FINE, "finalAggregate: " + wStartTime + " - " + wEndTime + ", " + start + " - " + end
         + ", period: " + period + ", dep: " + node.getDependencies().size() + ", listLen: " + list.size());
@@ -273,7 +297,7 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     long wStartTime = 0;
     for (final long endTime : sliceQueue) {
       if (wStartTime != endTime) {
-        partialOutputTable.saveOutput(wStartTime, endTime, new RelationGraphNode(wStartTime, endTime));
+        partialOutputTable.saveOutput(wStartTime, endTime, new DependencyGraphNode(wStartTime, endTime));
         wStartTime = endTime;
       }
     }
@@ -283,17 +307,17 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
   /**
    * Find child nodes which are included in the range of [start-end].
    * For example, if the range is [0-10]
-   * it finds relation graph nodes which are included in the range of [0-10].
+   * it finds dependency graph nodes which are included in the range of [0-10].
    * @param start start time of the output
    * @param end end time of the output.
    * @return child nodes
    */
-  private List<RelationGraphNode> findChildNodes(final long start, final long end) {
-    final List<RelationGraphNode> childNodes = new LinkedList<>();
+  private List<DependencyGraphNode> findChildNodes(final long start, final long end) {
+    final List<DependencyGraphNode> childNodes = new LinkedList<>();
     // find child nodes.
     long st = start;
     while (st < end) {
-      WindowTimeAndOutput<RelationGraphNode> elem = null;
+      WindowTimeAndOutput<DependencyGraphNode> elem = null;
       try {
         elem = table.lookupLargestSizeOutput(st, end);
         if (st == elem.endTime) {
@@ -338,17 +362,17 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
   }
 
   /**
-   * Add RelationGraphNode and connect dependent nodes.
+   * Add DependencyGraphNode and connect dependent nodes.
    */
   private void addOverlappingWindowNodeAndEdge() {
     for (final Timescale timescale : timescales) {
       for (long time = timescale.intervalSize; time <= period; time += timescale.intervalSize) {
         // create vertex and add it to the table cell of (time, windowsize)
         final long start = time - timescale.windowSize;
-        final RelationGraphNode parent = new RelationGraphNode(start, time);
-        final List<RelationGraphNode> childNodes = findChildNodes(start, time);
+        final DependencyGraphNode parent = new DependencyGraphNode(start, time);
+        final List<DependencyGraphNode> childNodes = findChildNodes(start, time);
         LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies1: " + childNodes);
-        for (final RelationGraphNode elem : childNodes) {
+        for (final DependencyGraphNode elem : childNodes) {
           parent.addDependency(elem);
         }
         table.saveOutput(start, time, parent);
@@ -403,13 +427,13 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
   }
 
   /**
-   * RelationGraphNode.
+   * DependencyGraphNode.
    */
-  final class RelationGraphNode {
+  final class DependencyGraphNode {
     /**
      * A list of dependent nodes.
      */
-    private final List<RelationGraphNode> dependencies;
+    private final List<DependencyGraphNode> dependencies;
 
     /**
      * A reference count to be referenced by other nodes.
@@ -437,11 +461,11 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     public final long end;
 
     /**
-     * RelationGraphNode.
+     * DependencyGraphNode.
      * @param start the start time of the node.
      * @param end tbe end time of the node.
      */
-    public RelationGraphNode(final long start, final long end) {
+    public DependencyGraphNode(final long start, final long end) {
       this.dependencies = new LinkedList<>();
       this.refCnt = 0;
       this.start = start;
@@ -449,7 +473,7 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     }
 
     /**
-     * Decrease reference count of RelationGraphNode.
+     * Decrease reference count of DependencyGraphNode.
      * If the reference count is zero, then it removes the saved output
      * and resets the reference count to initial count
      * in order to reuse this node.
@@ -470,7 +494,7 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
      * Add dependent node.
      * @param n a dependent node
      */
-    public void addDependency(final RelationGraphNode n) {
+    public void addDependency(final DependencyGraphNode n) {
       if (n == null) {
         throw new NullPointerException();
       }
@@ -487,15 +511,15 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
      * Get number of parent nodes.
      * @return number of parent nodes.
      */
-    public int getRefCnt() {
-      return refCnt;
+    public int getInitialRefCnt() {
+      return initialRefCnt;
     }
 
     /**
      * Get child (dependent) nodes.
      * @return child nodes
      */
-    public List<RelationGraphNode> getDependencies() {
+    public List<DependencyGraphNode> getDependencies() {
       return dependencies;
     }
 
