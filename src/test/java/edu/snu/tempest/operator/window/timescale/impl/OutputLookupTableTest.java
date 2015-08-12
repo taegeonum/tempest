@@ -24,6 +24,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class OutputLookupTableTest {
 
@@ -36,6 +39,25 @@ public class OutputLookupTableTest {
     output.put(1, 10);
     table = new DefaultOutputLookupTableImpl<>();
     table.saveOutput(0, 10, output);
+  }
+
+  @Test
+  public void saveOutputWithMultipleThreads() throws NotFoundException, InterruptedException {
+    final ExecutorService executor = Executors.newFixedThreadPool(10);
+    for (int i = 0; i < 100; i++) {
+      final int index = i;
+      executor.submit(new Runnable() {
+        @Override
+        public void run() {
+          table.saveOutput(index, index+1, new HashMap<Integer, Integer>());
+        }
+      });
+    }
+    executor.awaitTermination(10, TimeUnit.SECONDS);
+    executor.shutdown();
+    for (int i = 0; i < 100; i++) {
+      table.lookup(i, i+1);
+    }
   }
 
   /**

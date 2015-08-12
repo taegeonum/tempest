@@ -152,6 +152,7 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
   }
 
   /**
+   * FIXME: Support multiple threads for final aggregation. ISSUE#39
    * Aggregates partial outputs and produces a final output.
    * Dependent outputs can be aggregated into final output.
    * The dependency information is statically constructed at start time.
