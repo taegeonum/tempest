@@ -50,7 +50,7 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
   /**
    * A table for saving outputs.
    */
-  private final DefaultOutputLookupTableImpl<T> table;
+  private final DefaultOutputLookupTableImpl<DependencyGraphNode> table;
 
   /**
    * An output cleaner removing stale outputs.
@@ -126,11 +126,10 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
    */
   @Override
   public void savePartialOutput(final long startTime, final long endTime, final T output) {
-    table.saveOutput(startTime, endTime, output);
+    table.saveOutput(startTime, endTime, new DependencyGraphNode(output));
   }
 
   /**
-   * TODO: #38 We need to improve final aggregation when there are multiple threads.
    * Produces a final output by doing computation reuse.
    * It saves the final result and reuses it for other timescales' final aggregation
    * @param startTime start time of the output
@@ -141,6 +140,7 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
   @Override
   public T finalAggregate(final long startTime, final long endTime, final Timescale ts) {
     final long aggStartTime = System.nanoTime();
+    final boolean cache = cachingPolicy.cache(startTime, endTime, ts);
     final List<T> dependentOutputs = new LinkedList<>();
     // lookup dependencies
     long start = startTime;
@@ -148,7 +148,7 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
 
     // fetch dependent outputs
     while(start < endTime) {
-      final WindowTimeAndOutput<T> elem;
+      final WindowTimeAndOutput<DependencyGraphNode> elem;
       try {
         elem = table.lookupLargestSizeOutput(start, endTime);
         LOG.log(Level.FINE, ts + " Lookup : (" + start + ", " + endTime + ")");
@@ -156,12 +156,24 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
           isFullyProcessed = false;
           break;
         } else {
-          dependentOutputs.add(elem.output);
+          final DependencyGraphNode dependentNode = elem.output;
+          synchronized (dependentNode) {
+            // if there is a dependent output that could be used
+            // wait for the aggregation to finish.
+            LOG.log(Level.FINE, "Wait:  (" + start + ", " + endTime + ")");
+            if (dependentNode.output == null) {
+              dependentNode.wait();
+            }
+            LOG.log(Level.FINE, "Awake:  (" + start + ", " + endTime + ")");
+          }
+          dependentOutputs.add(dependentNode.output);
           start = elem.endTime;
         }
-      } catch (NotFoundException e) {
+      } catch (final NotFoundException e) {
         start += 1;
         isFullyProcessed = false;
+      } catch (final InterruptedException e) {
+        e.printStackTrace();
       }
     }
 
@@ -171,16 +183,27 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
           + "It only happens when the timescale is recently added");
     }
 
+    // add a node into table before doing final aggregation.
+    // If other threads look up this node, they should wait until the final aggregation is finished.
+    final DependencyGraphNode outputNode = new DependencyGraphNode();
+    if (cache) {
+      table.saveOutput(startTime, endTime, outputNode);
+    }
+
     // aggregates dependent outputs
     final T finalResult = finalAggregator.aggregate(dependentOutputs);
     LOG.log(Level.FINE, "AGG TIME OF " + ts + ": "
         + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - aggStartTime)
         + " at " + endTime + ", dependent size: " + dependentOutputs.size());
 
-    if (cachingPolicy.cache(startTime, endTime, ts)) {
+    if (cache) {
       LOG.log(Level.FINE, "Saves output of : " + ts +
           "[" + startTime + "-" + endTime + "]");
-      table.saveOutput(startTime, endTime, finalResult);
+      synchronized (outputNode) {
+        // after saving the output, notify the thread that is waiting for this output.
+        outputNode.output = finalResult;
+        outputNode.notifyAll();
+      }
     }
 
     // remove stale outputs.
@@ -266,6 +289,20 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
       } else {
         return 0;
       }
+    }
+  }
+
+  /**
+   * DependencyGraphNode which contains output.
+   */
+  final class DependencyGraphNode  {
+    T output;
+
+    public DependencyGraphNode() {
+    }
+
+    public DependencyGraphNode(final T output) {
+      this.output = output;
     }
   }
 }
