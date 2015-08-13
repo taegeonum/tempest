@@ -16,6 +16,7 @@
 package edu.snu.tempest.operator.window.timescale.impl;
 
 import edu.snu.tempest.operator.window.timescale.parameter.SlicedWindowTriggerPeriod;
+import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
 import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.wake.Stage;
 import org.apache.reef.wake.WakeParameters;
@@ -56,6 +57,11 @@ final class SlicingStage<I> implements Stage {
   private final long shutdownTimeout = WakeParameters.EXECUTOR_SHUTDOWN_TIMEOUT;
 
   /**
+   * Previous triggered time.
+   */
+  private long prevTriggeredTime;
+
+  /**
    * Constructs a slicing stage.
    *
    * @param slicedWindowOperator a sliced window operator
@@ -63,19 +69,28 @@ final class SlicingStage<I> implements Stage {
    * @param period               a period in milli-seconds
    */
   @Inject
-  public SlicingStage(final SlicedWindowOperator<I> slicedWindowOperator,
+  private SlicingStage(final SlicedWindowOperator<I> slicedWindowOperator,
                       final OverlappingWindowStage finalStage,
-                      @Parameter(SlicedWindowTriggerPeriod.class) final long period) {
+                      @Parameter(SlicedWindowTriggerPeriod.class) final long period,
+                      @Parameter(StartTime.class) final long startTime) {
     this.executor = Executors.newScheduledThreadPool(1, new DefaultThreadFactory(SlicingStage.class.getName()));
+    this.prevTriggeredTime = startTime;
     this.executor.scheduleAtFixedRate(new Runnable() {
       @Override
       public void run() {
         final long time = getCurrentTime();
-        LOG.log(Level.FINE, SlicingStage.class.getName() + " trigger: " + time);
-        // slice partial aggregation and save the result into computation reuser.
-        slicedWindowOperator.onNext(time);
-        // trigger final aggregation
-        finalStage.onNext(time);
+        // Do not trigger if current time was already triggered
+        // This prevents duplicated trigger.
+        if (prevTriggeredTime < time) {
+          LOG.log(Level.FINE, SlicingStage.class.getName() + " trigger: " + time);
+          for (long triggerTime = prevTriggeredTime + 1; triggerTime <= time; triggerTime++) {
+            // slice partial aggregation and save the result into computation reuser.
+            slicedWindowOperator.onNext(triggerTime);
+            // trigger final aggregation
+            finalStage.onNext(triggerTime);
+          }
+          prevTriggeredTime = time;
+        }
       }
     }, period, period, TimeUnit.MILLISECONDS);
     StageManager.instance().register(this);
