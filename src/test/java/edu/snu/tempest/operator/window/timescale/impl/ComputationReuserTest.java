@@ -159,12 +159,12 @@ public class ComputationReuserTest {
     jcb.bindImplementation(KeyExtractor.class, IntegerExtractor.class);
     jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(timescales));
 
-    // The computaton reuser does CountByKey operation.
     jcb.bindImplementation(CAAggregator.class, CountByKeyAggregator.class);
     jcb.bindImplementation(Aggregator.class, CountByKeyAggregator.class);
     jcb.bindNamedParameter(StartTime.class, Long.toString(startTime));
 
     final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
+    // The computaton reuser does CountByKey operation for the timescales: [w=4,i=2] [w=8,i=4]
     final ComputationReuser<Map<Integer, Long>> computationReuser =
         injector.getInstance(ComputationReuser.class);
 
