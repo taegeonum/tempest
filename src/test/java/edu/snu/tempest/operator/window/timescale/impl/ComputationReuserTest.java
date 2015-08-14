@@ -142,6 +142,10 @@ public class ComputationReuserTest {
 
   /**
    * Multi-threaded final aggregation test.
+   * This test runs final aggregation in multiple threads and checks the generated outputs.
+   * It calculates two timescales' final aggregation: [w=4, i=2] and [w=8, i=4]
+   * Even though the final aggregation of [w=4, i=2] is delayed,
+   * the final aggregation of [w=8, i=4] should be executed well.
    */
   public void multiThreadedFinalAggregation(final Configuration conf)
       throws InjectionException, InterruptedException {
@@ -156,13 +160,17 @@ public class ComputationReuserTest {
     jcb.bindNamedParameter(CachingRate.class, Integer.toString(1));
     jcb.bindImplementation(KeyExtractor.class, IntegerExtractor.class);
     jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(timescales));
+
     jcb.bindImplementation(CAAggregator.class, CountByKeyAggregator.class);
     jcb.bindImplementation(Aggregator.class, CountByKeyAggregator.class);
     jcb.bindNamedParameter(StartTime.class, Long.toString(startTime));
 
     final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
+    // The computaton reuser does CountByKey operation for the timescales: [w=4,i=2] [w=8,i=4]
     final ComputationReuser<Map<Integer, Long>> computationReuser =
         injector.getInstance(ComputationReuser.class);
+
+    // partial outputs for the computation reuser
     final Map<Integer, Long> partialOutput1 = new HashMap<>();
     partialOutput1.put(1, 10L); partialOutput1.put(2, 15L);
 
@@ -181,10 +189,11 @@ public class ComputationReuserTest {
     final Queue<Boolean> check = new ConcurrentLinkedQueue<>();
 
     // multi-threaded final aggregation.
+    // [0-2] final aggregation
+    // it waits 2 seconds in order to delay the final aggregation
     executor.submit(new Runnable() {
       @Override
       public void run() {
-        // [w=4, i=2] final aggregation at time 2
         try {
           Thread.sleep(2000);
         } catch (final InterruptedException e) {
@@ -195,11 +204,12 @@ public class ComputationReuserTest {
       }
     });
 
+    // [0-4] final aggregation
+    // it waits 2 seconds in order to delay the final aggregation
     computationReuser.savePartialOutput(2, 4, partialOutput2);
     executor.submit(new Runnable() {
       @Override
       public void run() {
-        // [w=4, i=2] final aggregation at time 4
         try {
           Thread.sleep(2000);
         } catch (final InterruptedException e) {
@@ -210,16 +220,20 @@ public class ComputationReuserTest {
       }
     });
 
+    // [0-4] final aggregation
+    // it can reuse the above final aggregation. [0-2]
+    // it should aggregate expected outputs even though the above final aggregation is delayed.
     executor.submit(new Runnable() {
       @Override
       public void run() {
-        // [w=8, i=4] final aggregation at time 4
         final Map<Integer, Long> result3 = computationReuser.finalAggregate(-4, 4, ts2);
         check.add(MTSTestUtils.merge(partialOutput1, partialOutput2).equals(result3));
       }
     });
 
     Thread.sleep(2000);
+    // [2-6] final aggregation
+    // it waits 2 seconds in order to delay the final aggregation
     computationReuser.savePartialOutput(4, 6, partialOutput3);
     executor.submit(new Runnable() {
       @Override
@@ -229,13 +243,14 @@ public class ComputationReuserTest {
         } catch (final InterruptedException e) {
           e.printStackTrace();
         }
-        // [w=4, i=2] final aggregation at time 6
         final Map<Integer, Long> result4 = computationReuser.finalAggregate(2, 6, ts1);
         check.add(MTSTestUtils.merge(partialOutput2, partialOutput3).equals(result4));
       }
     });
 
     Thread.sleep(2000);
+    // [4-8] final aggregation
+    // it waits 2 seconds in order to delay the final aggregation
     computationReuser.savePartialOutput(6, 8, partialOutput4);
     executor.submit(new Runnable() {
       @Override
@@ -245,16 +260,17 @@ public class ComputationReuserTest {
         } catch (final InterruptedException e) {
           e.printStackTrace();
         }
-        // [w=4, i=2] final aggregation at time 8
         final Map<Integer, Long> result5 = computationReuser.finalAggregate(4, 8, ts1);
         check.add(MTSTestUtils.merge(partialOutput3, partialOutput4).equals(result5));
       }
     });
 
+    // [0-8] final aggregation
+    // it can reuse the above final aggregation. ([0-4], [4-8] <- it is delayed)
+    // it should aggregate expected outputs even though the above final aggregation is delayed.
     executor.submit(new Runnable() {
       @Override
       public void run() {
-        // [w=8, i=4] final aggregation at time 8
         final Map<Integer, Long> result6 = computationReuser.finalAggregate(0, 8, ts2);
         check.add(MTSTestUtils.merge(partialOutput1, partialOutput2,
             partialOutput3, partialOutput4).equals(result6));

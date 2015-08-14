@@ -41,22 +41,39 @@ public class OutputLookupTableTest {
     table.saveOutput(0, 10, output);
   }
 
+  /**
+   * Save outputs in multiple threads and check whether the outputs are saved well.
+   * Multiple threads save outputs into an output lookup table.
+   * After that, checks whether the saved outputs are same as what the multiple threads saved.
+   */
   @Test
   public void saveOutputWithMultipleThreads() throws NotFoundException, InterruptedException {
+    final DefaultOutputLookupTableImpl<Map<Integer, Integer>> lookupTable = new DefaultOutputLookupTableImpl<>();
     final ExecutorService executor = Executors.newFixedThreadPool(10);
-    for (int i = 0; i < 100; i++) {
-      final int index = i;
-      executor.submit(new Runnable() {
-        @Override
-        public void run() {
-          table.saveOutput(index, index+1, new HashMap<Integer, Integer>());
-        }
-      });
+    for (int startTime = 0; startTime < 100; startTime++) {
+      final int start = startTime;
+      for (int endTime = startTime + 1; endTime < startTime + 100; endTime++) {
+        final int end = endTime;
+        executor.submit(new Runnable() {
+          @Override
+          public void run() {
+            final Map<Integer, Integer> o = new HashMap<Integer, Integer>();
+            o.put(start, end);
+            lookupTable.saveOutput(start, end, o);
+          }
+        });
+      }
     }
+
     executor.awaitTermination(10, TimeUnit.SECONDS);
     executor.shutdown();
-    for (int i = 0; i < 100; i++) {
-      table.lookup(i, i+1);
+    for (int startTime = 0; startTime < 100; startTime++) {
+      for (int endTime = startTime + 1; endTime < startTime + 100; endTime++) {
+        final Map<Integer, Integer> o = lookupTable.lookup(startTime, endTime);
+        final Map<Integer, Integer> expected = new HashMap<>();
+        expected.put(startTime, endTime);
+        Assert.assertEquals(expected, o);
+      }
     }
   }
 

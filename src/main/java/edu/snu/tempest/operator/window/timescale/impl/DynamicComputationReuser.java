@@ -130,8 +130,7 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
   }
 
   /**
-   * TODO: Current DynamicComputationReuser already supports multi-threaded final aggregation.
-   * TODO: ISSUE#40 is about an optimization of multi-threaded aggregation. Do we need to implement this?
+   * TODO: #38 We need to improve final aggregation when there are multiple threads.
    * Produces a final output by doing computation reuse.
    * It saves the final result and reuses it for other timescales' final aggregation
    * @param startTime start time of the output
