@@ -143,7 +143,10 @@ public class ComputationReuserTest {
 
   /**
    * Multi-threaded final aggregation test.
-   * This test runs final aggregation in multiple threads and checks the generated outputs
+   * This test runs final aggregation in multiple threads and checks the generated outputs.
+   * It calculates two timescales' final aggregation: [w=4, i=2] and [w=8, i=4]
+   * Even though the final aggregation of [w=4, i=2] is delayed,
+   * the final aggregation of [w=8, i=4] should be executed well.
    */
   public void multiThreadedFinalAggregation(final Configuration conf)
       throws InjectionException, InterruptedException {

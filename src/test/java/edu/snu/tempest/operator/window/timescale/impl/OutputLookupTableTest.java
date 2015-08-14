@@ -43,6 +43,8 @@ public class OutputLookupTableTest {
 
   /**
    * Save outputs in multiple threads and check whether the outputs are saved well.
+   * Multiple threads save outputs into an output lookup table.
+   * After that, checks whether the saved outputs are same as what the multiple threads saved.
    */
   @Test
   public void saveOutputWithMultipleThreads() throws NotFoundException, InterruptedException {
