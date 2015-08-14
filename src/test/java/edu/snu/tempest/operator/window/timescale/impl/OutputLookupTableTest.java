@@ -24,6 +24,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class OutputLookupTableTest {
 
@@ -36,6 +39,42 @@ public class OutputLookupTableTest {
     output.put(1, 10);
     table = new DefaultOutputLookupTableImpl<>();
     table.saveOutput(0, 10, output);
+  }
+
+  /**
+   * Save outputs in multiple threads and check whether the outputs are saved well.
+   * Multiple threads save outputs into an output lookup table.
+   * After that, checks whether the saved outputs are same as what the multiple threads saved.
+   */
+  @Test
+  public void saveOutputWithMultipleThreads() throws NotFoundException, InterruptedException {
+    final DefaultOutputLookupTableImpl<Map<Integer, Integer>> lookupTable = new DefaultOutputLookupTableImpl<>();
+    final ExecutorService executor = Executors.newFixedThreadPool(10);
+    for (int startTime = 0; startTime < 100; startTime++) {
+      final int start = startTime;
+      for (int endTime = startTime + 1; endTime < startTime + 100; endTime++) {
+        final int end = endTime;
+        executor.submit(new Runnable() {
+          @Override
+          public void run() {
+            final Map<Integer, Integer> o = new HashMap<Integer, Integer>();
+            o.put(start, end);
+            lookupTable.saveOutput(start, end, o);
+          }
+        });
+      }
+    }
+
+    executor.awaitTermination(10, TimeUnit.SECONDS);
+    executor.shutdown();
+    for (int startTime = 0; startTime < 100; startTime++) {
+      for (int endTime = startTime + 1; endTime < startTime + 100; endTime++) {
+        final Map<Integer, Integer> o = lookupTable.lookup(startTime, endTime);
+        final Map<Integer, Integer> expected = new HashMap<>();
+        expected.put(startTime, endTime);
+        Assert.assertEquals(expected, o);
+      }
+    }
   }
 
   /**
