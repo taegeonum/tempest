@@ -183,20 +183,20 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
 
     final List<T> list = new LinkedList<>();
     for (final DependencyGraphNode child : node.getDependencies()) {
-      if (child.getOutput() != null) {
-        list.add(child.getOutput());
-        child.decreaseRefCnt();
-      } else if (wStartTime < startTime && end <= child.start) {
-        // if there are no dependent outputs to use
-        // no need to wait for the child's output.
-        LOG.log(Level.FINE, "no wait. wStartTime: " + wStartTime + ", wEnd:" + wEndTime
-            + " child.start: " + child.start + "child.end: " + child.end);
-      } else {
-        // if there is a dependent output that could be used
-        // wait for the aggregation to finish.
-        LOG.log(Level.FINE, "wait. wStartTime: " + wStartTime + ", wEnd:" + wEndTime
-            + " child.start: " + child.start + "child.end: " + child.end);
-        synchronized (child) {
+      synchronized (child) {
+        if (child.getOutput() != null) {
+          list.add(child.getOutput());
+          child.decreaseRefCnt();
+        } else if (wStartTime < startTime && end <= child.start) {
+          // if there are no dependent outputs to use
+          // no need to wait for the child's output.
+          LOG.log(Level.FINE, "no wait. wStartTime: " + wStartTime + ", wEnd:" + wEndTime
+              + " child.start: " + child.start + "child.end: " + child.end);
+        } else {
+          // if there is a dependent output that could be used
+          // wait for the aggregation to finish.
+          LOG.log(Level.FINE, "wait. wStartTime: " + wStartTime + ", wEnd:" + wEndTime
+              + " child.start: " + child.start + "child.end: " + child.end);
           try {
             child.wait();
             final T out = child.getOutput();
@@ -212,8 +212,8 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     final T output = finalAggregator.aggregate(list);
     // save the output
     if (node.getInitialRefCnt() != 0) {
-      node.saveOutput(output);
       synchronized (node) {
+        node.saveOutput(output);
         // after saving the output, notify the thread that is waiting for this output.
         node.notifyAll();
       }
