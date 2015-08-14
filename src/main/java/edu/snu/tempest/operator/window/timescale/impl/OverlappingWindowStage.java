@@ -76,7 +76,8 @@ final class OverlappingWindowStage implements EStage<Long> {
   @Inject
   private OverlappingWindowStage() {
     this.handlers = new PriorityQueue<>(10, new OWOComparator());
-    this.executor = Executors.newFixedThreadPool(1);
+    // TODO: #46 Parameterize the number of threads
+    this.executor = Executors.newFixedThreadPool(10);
     this.subscriptionHandler = new OWOSubscriptionHandler();
     StageManager.instance().register(this);
   }

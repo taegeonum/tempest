@@ -88,8 +88,7 @@ public class ComputationReuserTest {
     multiThreadedFinalAggregation(jcb.build());
   }
 
-  // TODO: #39 Need to improve static computation reuser for multiple threads.
-  //@Test
+  @Test
   public void staticComputationReuserMultiThreadAggregationTest() throws InjectionException, InterruptedException {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(ComputationReuser.class, StaticComputationReuser.class);
