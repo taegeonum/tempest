@@ -145,8 +145,12 @@ public class ComputationReuserTest {
    * Multi-threaded final aggregation test.
    * This test runs final aggregation in multiple threads and checks the generated outputs.
    * It calculates two timescales' final aggregation: [w=4, i=2] and [w=8, i=4]
-   * Even though the final aggregation of [w=4, i=2] is delayed,
-   * the final aggregation of [w=8, i=4] should be executed well.
+   *
+   * The final aggregation of [w=8, i=4] can reuse the results of [w=4, i=2].
+   * When the final aggregation of [w=4, i=2] is delayed,
+   * the final aggregation of [w=8, i=4] should be the same as the result of when [w=4, i=2] was not delayed.
+   * This test compares the final aggregation of [w=8, i=4] when [w=4, i=2] was delayed
+   * to the result when it was not delayed
    */
   public void multiThreadedFinalAggregation(final Configuration conf)
       throws InjectionException, InterruptedException {
