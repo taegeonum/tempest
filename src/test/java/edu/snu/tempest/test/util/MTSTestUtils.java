@@ -17,6 +17,7 @@ package edu.snu.tempest.test.util;
 
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -36,6 +37,25 @@ public final class MTSTestUtils {
 
     for (final Map<Integer, Long> map2 : maps) {
       for (final Map.Entry<Integer, Long> entry : map2.entrySet()) {
+        Long oldVal = result.get(entry.getKey());
+        if (oldVal == null) {
+          oldVal = 0L;
+        }
+        result.put(entry.getKey(), oldVal + entry.getValue());
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Merge map.
+   * @param maps maps
+   * @return merged map
+   */
+  public static Map<Integer, Long> merge(final List<Map<Integer, Long>> maps) {
+    final Map<Integer, Long> result = new HashMap<>();
+    for (final Map<Integer, Long> map : maps) {
+      for (final Map.Entry<Integer, Long> entry : map.entrySet()) {
         Long oldVal = result.get(entry.getKey());
         if (oldVal == null) {
           oldVal = 0L;
