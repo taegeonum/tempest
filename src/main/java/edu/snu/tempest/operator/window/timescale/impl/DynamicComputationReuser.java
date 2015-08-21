@@ -85,7 +85,7 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
     this.cleaner = new DefaultOutputCleaner(tsParser.timescales, table, startTime);
     this.cachingPolicy = cachingPolicy;
     // TODO: #46 Parameterize the number of threads.
-    this.parallelAggregator = new ParallelTreeAggregator<>(8, finalAggregator);
+    this.parallelAggregator = new ParallelTreeAggregator<>(8, 8 * 2, finalAggregator);
     initializeWindowState(startTime, tsParser.timescales);
   }
 

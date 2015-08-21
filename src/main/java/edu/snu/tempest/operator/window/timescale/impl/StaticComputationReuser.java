@@ -105,7 +105,7 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     this.period = calculatePeriod(timescales);
     this.startTime = startTime;
     // TODO: #46 Parameterize the number of threads.
-    this.parallelAggregator = new ParallelTreeAggregator<>(8, finalAggregator);
+    this.parallelAggregator = new ParallelTreeAggregator<>(8, 8 * 2, finalAggregator);
     LOG.log(Level.INFO, StaticComputationReuser.class + " started. PERIOD: " + period);
 
     // create dependency graph.
