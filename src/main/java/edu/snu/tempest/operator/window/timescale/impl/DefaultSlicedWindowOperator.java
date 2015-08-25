@@ -42,6 +42,11 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
   private final ComputationReuser<V> computationReuser;
 
   /**
+   * Next slice time provider.
+   */
+  private final NextSliceTimeProvider nextSliceTimeProvider;
+
+  /**
    * Previous slice time.
    */
   private long prevSliceTime;
@@ -72,12 +77,14 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
   private DefaultSlicedWindowOperator(
       final CAAggregator<I, V> aggregator,
       final ComputationReuser<V> computationReuser,
+      final NextSliceTimeProvider nextSliceTimeProvider,
       @Parameter(StartTime.class) final Long startTime) {
     this.aggregator = aggregator;
     this.computationReuser = computationReuser;
+    this.nextSliceTimeProvider = nextSliceTimeProvider;
     this.bucket = aggregator.init();
     prevSliceTime = startTime;
-    nextSliceTime = computationReuser.nextSliceTime();
+    nextSliceTime = nextSliceTimeProvider.nextSliceTime();
   }
 
   /**
@@ -88,7 +95,7 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
   public synchronized void onNext(final Long currTime) {
     while (nextSliceTime < currTime) {
       prevSliceTime = nextSliceTime;
-      nextSliceTime = computationReuser.nextSliceTime();
+      nextSliceTime = nextSliceTimeProvider.nextSliceTime();
     }
     LOG.log(Level.FINE, "SlicedWindow tickTime " + currTime + ", nextSlice: " + nextSliceTime);
 
@@ -102,7 +109,7 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
         computationReuser.savePartialOutput(prevSliceTime, nextSliceTime, partialAggregation);
       }
       prevSliceTime = nextSliceTime;
-      nextSliceTime = computationReuser.nextSliceTime();
+      nextSliceTime = nextSliceTimeProvider.nextSliceTime();
     }
   }
 

@@ -69,17 +69,6 @@ public class ComputationReuserTest {
     computationReuserTest(staticComputationReuserConfig());
   }
 
-
-  @Test
-  public void staticComputationReuserNextSliceTimeTest() throws InjectionException {
-    nextSliceTimeTest(dynamicComputationReuserConfig());
-  }
-
-  @Test
-  public void dynamiComputationReusercNextSliceTimeTest() throws InjectionException {
-    nextSliceTimeTest(staticComputationReuserConfig());
-  }
-
   @Test
   public void dynamicComputationReuserMultiThreadAggregationTest() throws InjectionException, InterruptedException {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
@@ -117,27 +106,6 @@ public class ComputationReuserTest {
     jcb.bindImplementation(Aggregator.class, CountByKeyAggregator.class);
     jcb.bindImplementation(ComputationReuser.class, StaticComputationReuser.class);
     return jcb.build();
-  }
-
-  /**
-   * Test next slice time.
-   */
-  public void nextSliceTimeTest(final Configuration conf) throws InjectionException {
-    final Injector injector = Tang.Factory.getTang().newInjector(conf);
-    final ComputationReuser<Map<Integer, Long>> computationReuser =
-        injector.getInstance(ComputationReuser.class);
-
-    final long period = 12L;
-    for (int i = 0; i < 5; i++) {
-      Assert.assertEquals(2L + period * i, computationReuser.nextSliceTime());
-      Assert.assertEquals(3L + period * i, computationReuser.nextSliceTime());
-      Assert.assertEquals(4L + period * i, computationReuser.nextSliceTime());
-      Assert.assertEquals(6L + period * i, computationReuser.nextSliceTime());
-      Assert.assertEquals(8L + period * i, computationReuser.nextSliceTime());
-      Assert.assertEquals(9L + period * i, computationReuser.nextSliceTime());
-      Assert.assertEquals(10L + period * i, computationReuser.nextSliceTime());
-      Assert.assertEquals(12L + period * i, computationReuser.nextSliceTime());
-    }
   }
 
   /**
