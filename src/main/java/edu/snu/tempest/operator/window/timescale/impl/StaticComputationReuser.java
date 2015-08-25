@@ -82,6 +82,11 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
   private long prevSliceTime = 0;
 
   /**
+   * Parallel tree aggregator.
+   */
+  private final ParallelTreeAggregator<I, T> parallelAggregator;
+
+  /**
    * StaticComputationReuserImpl Implementation.
    * @param tsParser timescale parser
    * @param finalAggregator a final aggregator
@@ -99,6 +104,8 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     this.finalAggregator = finalAggregator;
     this.period = calculatePeriod(timescales);
     this.startTime = startTime;
+    // TODO: #46 Parameterize the number of threads.
+    this.parallelAggregator = new ParallelTreeAggregator<>(8, 8 * 2, finalAggregator);
     LOG.log(Level.INFO, StaticComputationReuser.class + " started. PERIOD: " + period);
 
     // create dependency graph.
@@ -181,11 +188,11 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
       throw new RuntimeException(e);
     }
 
-    final List<T> list = new LinkedList<>();
+    final List<T> dependentOutputs = new LinkedList<>();
     for (final DependencyGraphNode child : node.getDependencies()) {
       synchronized (child) {
         if (child.getOutput() != null) {
-          list.add(child.getOutput());
+          dependentOutputs.add(child.getOutput());
           child.decreaseRefCnt();
         } else if (wStartTime < startTime && end <= child.start) {
           // if there are no dependent outputs to use
@@ -200,7 +207,7 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
           try {
             child.wait();
             final T out = child.getOutput();
-            list.add(out);
+            dependentOutputs.add(out);
             child.decreaseRefCnt();
           } catch (final InterruptedException e) {
             e.printStackTrace();
@@ -209,18 +216,19 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
       }
     }
 
-    final T output = finalAggregator.aggregate(list);
+    // aggregates dependent outputs
+    final T finalResult = parallelAggregator.doParallelAggregation(dependentOutputs);
     // save the output
     if (node.getInitialRefCnt() != 0) {
       synchronized (node) {
-        node.saveOutput(output);
+        node.saveOutput(finalResult);
         // after saving the output, notify the thread that is waiting for this output.
         node.notifyAll();
       }
     }
     LOG.log(Level.FINE, "finalAggregate: " + wStartTime + " - " + wEndTime + ", " + start + " - " + end
-        + ", period: " + period + ", dep: " + node.getDependencies().size() + ", listLen: " + list.size());
-    return output;
+        + ", period: " + period + ", dep: " + node.getDependencies().size() + ", listLen: " + dependentOutputs.size());
+    return finalResult;
   }
 
   @Override

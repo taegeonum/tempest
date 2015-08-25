@@ -24,7 +24,7 @@ import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -63,6 +63,11 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
   private final CachingPolicy cachingPolicy;
 
   /**
+   * Parallel tree aggregator.
+   */
+  private final ParallelTreeAggregator<I, T> parallelAggregator;
+
+  /**
    * DynamicComputationReuser.
    * @param tsParser timescale parser
    * @param finalAggregator an aggregator for final aggregation.
@@ -79,6 +84,8 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
     this.table = new DefaultOutputLookupTableImpl<>();
     this.cleaner = new DefaultOutputCleaner(tsParser.timescales, table, startTime);
     this.cachingPolicy = cachingPolicy;
+    // TODO: #46 Parameterize the number of threads.
+    this.parallelAggregator = new ParallelTreeAggregator<>(8, 8 * 2, finalAggregator);
     initializeWindowState(startTime, tsParser.timescales);
   }
 
@@ -191,7 +198,8 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
     }
 
     // aggregates dependent outputs
-    final T finalResult = finalAggregator.aggregate(dependentOutputs);
+    final T finalResult = parallelAggregator.doParallelAggregation(dependentOutputs);
+
     LOG.log(Level.FINE, "AGG TIME OF " + ts + ": "
         + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - aggStartTime)
         + " at " + endTime + ", dependent size: " + dependentOutputs.size());
@@ -200,7 +208,6 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
       LOG.log(Level.FINE, "Saves output of : " + ts +
           "[" + startTime + "-" + endTime + "]");
       synchronized (outputNode) {
-        // after saving the output, notify the thread that is waiting for this output.
         outputNode.output = finalResult;
         outputNode.notifyAll();
       }
