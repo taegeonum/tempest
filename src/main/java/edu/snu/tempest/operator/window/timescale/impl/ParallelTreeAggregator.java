@@ -11,7 +11,7 @@ import java.util.logging.Logger;
 /**
  * This class does parallel tree aggregation for final aggregation.
  */
-final class ParallelTreeAggregator<I, T> {
+final class ParallelTreeAggregator<I, T> implements AutoCloseable {
   private static final Logger LOG = Logger.getLogger(ParallelTreeAggregator.class.getCanonicalName());
 
   /**
@@ -30,6 +30,11 @@ final class ParallelTreeAggregator<I, T> {
   private final int sequentialThreshold;
 
   /**
+   * A fork join pool executing parallel aggregation.
+   */
+  private final ForkJoinPool pool;
+
+  /**
    * ParallelTreeAggregator for final aggregation.
    * @param numOfParallelThreads the number of threads
    * @param sequentialThreshold the minimum size which triggers parallel aggregation
@@ -41,6 +46,7 @@ final class ParallelTreeAggregator<I, T> {
     this.numOfParallelThreads = numOfParallelThreads;
     this.sequentialThreshold = sequentialThreshold;
     this.finalAggregator = finalAggregator;
+    this.pool = new ForkJoinPool(numOfParallelThreads);
   }
 
   /**
@@ -50,7 +56,6 @@ final class ParallelTreeAggregator<I, T> {
    */
   public T doParallelAggregation(final List<T> dependentOutputs) {
     // aggregates dependent outputs
-    final ForkJoinPool pool = new ForkJoinPool(numOfParallelThreads);
     final T finalResult;
     // do parallel two-level tree aggregation if dependent size is large enough.
     if (dependentOutputs.size() >= sequentialThreshold) {
@@ -58,8 +63,12 @@ final class ParallelTreeAggregator<I, T> {
     } else {
       finalResult = finalAggregator.aggregate(dependentOutputs);
     }
-    pool.shutdown();
     return finalResult;
+  }
+
+  @Override
+  public void close() throws Exception {
+    pool.shutdown();
   }
 
   final class Aggregate extends RecursiveTask<T> {
