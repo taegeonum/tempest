@@ -13,13 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.tempest.operator.window;
+package edu.snu.tempest.operator.join;
 
-import edu.snu.tempest.operator.Operator;
+import java.util.Collection;
 
 /**
- * Output handler for windowing.
- * @param <V> output
+ * Join function.
  */
-public interface WindowOutputHandler<I, V> extends Operator<I, V> {
+public interface JoinFunc<K, O> {
+
+  /**
+   * Join the inputs.
+   * @param key join key
+   * @param inputs inputs for join
+   * @return output of join
+   */
+  O join(K key, Collection<IdentifierAndValue> inputs);
 }

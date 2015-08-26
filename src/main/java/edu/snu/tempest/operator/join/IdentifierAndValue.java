@@ -13,13 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.tempest.operator.window;
-
-import edu.snu.tempest.operator.Operator;
+package edu.snu.tempest.operator.join;
 
 /**
- * Output handler for windowing.
- * @param <V> output
+ * A wrapper class for join identifier and value.
  */
-public interface WindowOutputHandler<I, V> extends Operator<I, V> {
+public final class IdentifierAndValue<V> {
+
+  /**
+   * An identifier of join input.
+   */
+  public final String identifier;
+
+  /**
+   * Value of join input.
+   */
+  public final V value;
+
+  /**
+   * Identifier and value for join.
+   * @param identifier an identifier
+   * @param value a value
+   */
+  public IdentifierAndValue(final String identifier,
+                            final V value) {
+    this.identifier = identifier;
+    this.value = value;
+  }
 }

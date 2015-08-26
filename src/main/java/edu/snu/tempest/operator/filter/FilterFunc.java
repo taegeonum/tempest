@@ -13,13 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.tempest.operator.window;
-
-import edu.snu.tempest.operator.Operator;
+package edu.snu.tempest.operator.filter;
 
 /**
- * Output handler for windowing.
- * @param <V> output
+ * Filter function.
+ * @param <I> input
  */
-public interface WindowOutputHandler<I, V> extends Operator<I, V> {
+public interface FilterFunc<I> {
+
+  /**
+   * Filter this input or not.
+   * @param input an input
+   * @return true if this input should be filtered else false
+   */
+  boolean filter(I input);
 }

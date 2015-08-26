@@ -33,12 +33,12 @@ import java.util.logging.Logger;
  * Timescale signal handler for dynamic multi-time scale.
  * It handles dynamic timescale addition/deletion and changes the behavior of the mts operator.
  */
-final class TimescaleSignalHandler<V> implements EventHandler<TimescaleSignal> {
+final class TimescaleSignalHandler<I, O> implements EventHandler<TimescaleSignal> {
   private static final Logger LOG = Logger.getLogger(TimescaleSignalHandler.class.getName());
 
   private final OverlappingWindowStage owoStage;
-  private final ComputationReuser<V> computationReuser;
-  private final TimescaleWindowOutputHandler<V> outputHandler;
+  private final ComputationReuser<I> computationReuser;
+  private final TimescaleWindowOutputHandler<I, O> outputHandler;
   private final Map<Timescale, Subscription<OverlappingWindowOperator>> subscriptions;
 
   /**
@@ -51,8 +51,8 @@ final class TimescaleSignalHandler<V> implements EventHandler<TimescaleSignal> {
    */
   public TimescaleSignalHandler(
       final OverlappingWindowStage owoStage,
-      final ComputationReuser<V> computationReuser,
-      final TimescaleWindowOutputHandler<V> outputHandler,
+      final ComputationReuser<I> computationReuser,
+      final TimescaleWindowOutputHandler<I, O> outputHandler,
       final TimescaleParser tsParser,
       @Parameter(StartTime.class) final long startTime) {
     this.owoStage = owoStage;
@@ -61,7 +61,7 @@ final class TimescaleSignalHandler<V> implements EventHandler<TimescaleSignal> {
     this.subscriptions = new HashMap<>();
     // add overlapping window operators
     for (final Timescale timescale : tsParser.timescales) {
-      final OverlappingWindowOperator owo = new DefaultOverlappingWindowOperator<V>(
+      final OverlappingWindowOperator owo = new DefaultOverlappingWindowOperator<I, O>(
           timescale, computationReuser, outputHandler, startTime);
       final Subscription<OverlappingWindowOperator> ss = this.owoStage.subscribe(owo);
       subscriptions.put(ss.getToken().getTimescale(), ss);

@@ -13,13 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.tempest.operator.window;
-
-import edu.snu.tempest.operator.Operator;
+package edu.snu.tempest.operator.join;
 
 /**
- * Output handler for windowing.
- * @param <V> output
+ * Determine join condition whether ready to join or not.
  */
-public interface WindowOutputHandler<I, V> extends Operator<I, V> {
+public interface JoinCondition<K> {
+
+  /**
+   * Decides join condition whether ready to join or not.
+   * @param joinInput a join input
+   * @return ready to join or not
+   */
+  boolean readyToJoin(K key, IdentifierAndValue joinInput);
+
+  /**
+   * Reset to initial condition.
+   */
+  void reset(K key);
 }

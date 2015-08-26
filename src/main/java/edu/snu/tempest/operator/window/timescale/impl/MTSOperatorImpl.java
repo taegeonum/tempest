@@ -49,7 +49,7 @@ public final class MTSOperatorImpl<I, V> implements WindowOperator<I> {
   private MTSOperatorImpl(
       final OverlappingWindowStage owoStage,
       final ComputationReuser<V> computationReuser,
-      final TimescaleWindowOutputHandler<V> outputHandler,
+      final TimescaleWindowOutputHandler<V, V> outputHandler,
       final TimescaleParser tsParser,
       final SlicedWindowOperator<I> slicedWindowOperator,
       final SlicingStage<I> slicingStage,
@@ -57,7 +57,7 @@ public final class MTSOperatorImpl<I, V> implements WindowOperator<I> {
       @Parameter(MTSOperatorIdentifier.class) final String identifier,
       final SignalReceiverStage receiver) throws Exception {
     // register timescale signal handler
-    receiver.registerHandler(identifier, new TimescaleSignalHandler<V>(
+    receiver.registerHandler(identifier, new TimescaleSignalHandler<>(
         owoStage, computationReuser, outputHandler, tsParser, startTime));
     this.slicedWindowOperator = slicedWindowOperator;
   }
@@ -69,7 +69,7 @@ public final class MTSOperatorImpl<I, V> implements WindowOperator<I> {
   private MTSOperatorImpl(
       final OverlappingWindowStage owoStage,
       final ComputationReuser<V> computationReuser,
-      final TimescaleWindowOutputHandler<V> outputHandler,
+      final TimescaleWindowOutputHandler<V, V> outputHandler,
       final TimescaleParser tsParser,
       final SlicedWindowOperator<I> slicedWindowOperator,
       final SlicingStage<I> slicingStage,
@@ -77,7 +77,7 @@ public final class MTSOperatorImpl<I, V> implements WindowOperator<I> {
     this.slicedWindowOperator = slicedWindowOperator;
     // add overlapping window operators
     for (final Timescale timescale : tsParser.timescales) {
-      final OverlappingWindowOperator owo = new DefaultOverlappingWindowOperator<V>(
+      final OverlappingWindowOperator owo = new DefaultOverlappingWindowOperator<V, V>(
           timescale, computationReuser, outputHandler, startTime);
       owoStage.subscribe(owo);
     }
