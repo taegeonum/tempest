@@ -108,8 +108,7 @@ public final class StaticNextSliceTimeProvider implements NextSliceTimeProvider 
   public void onTimescaleAddition(final Timescale ts, final long addTime) {
     throw new RuntimeException("Not supported");
   }
-
-
+  
   @Override
   public void onTimescaleDeletion(final Timescale ts, final long deleteTime) {
     throw new RuntimeException("Not supported");
