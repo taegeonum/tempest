@@ -251,7 +251,7 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
   }
 
   /**
-   * When timescale is added create a new dependencyGraph
+   * Create new dependencyGraph whe ntimescale is added.
    * @param ts timescale to be added.
    * @param addTime the time when timescale is added.
    */
