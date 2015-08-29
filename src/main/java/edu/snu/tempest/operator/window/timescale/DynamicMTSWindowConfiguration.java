@@ -48,6 +48,7 @@ public final class DynamicMTSWindowConfiguration extends TimescaleWindowBaseConf
   public static final ConfigurationModule CONF = new DynamicMTSWindowConfiguration()
       .merge(TimescaleWindowBaseConfiguration.CONF)
       .bindImplementation(ComputationReuser.class, DynamicComputationReuser.class)
+      .bindImplementation(NextSliceTimeProvider.class, DynamicNextSliceTimeProvider.class)
       .bindNamedParameter(CachingRate.class, CACHING_RATE)
       .bindNamedParameter(MTSOperatorIdentifier.class, OPERATOR_IDENTIFIER)
       .bindNamedParameter(ZkMTSParameters.ZkServerAddress.class, ZK_SERVER_ADDRESS)
