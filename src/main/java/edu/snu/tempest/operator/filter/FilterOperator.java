@@ -45,6 +45,10 @@ public final class FilterOperator<I> implements Operator<I, I> {
     this.filterFunc = filterFunc;
   }
 
+  /**
+   * Filters the input value.
+   * @param val input value
+   */
   @Override
   public void execute(final I val) {
     if (!filterFunc.filter(val)) {

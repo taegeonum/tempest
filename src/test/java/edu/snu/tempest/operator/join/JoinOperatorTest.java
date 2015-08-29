@@ -26,6 +26,9 @@ import java.util.*;
 
 public final class JoinOperatorTest {
 
+  private static final String STRING_INPUT_IDENTIFIER = "string_input";
+  private static final String INTEGER_INPUT_IDENTIFIER = "number";
+
   /**
    * Test join operator.
    * It joins string and integer value, and repeat the string by the integer value times.
@@ -54,8 +57,8 @@ public final class JoinOperatorTest {
     });
 
     for (int i = 0; i < 10; i++) {
-      joinOperator.execute(new TestStringJoinInput(keys[i], keys[i]));
-      joinOperator.execute(new TestIntegerJoinInput(keys[i], intVals[i]));
+      joinOperator.execute(new TestJoinInput<>(STRING_INPUT_IDENTIFIER, keys[i], keys[i]));
+      joinOperator.execute(new TestJoinInput<>(INTEGER_INPUT_IDENTIFIER, keys[i], intVals[i]));
     }
 
     int i = 0;
@@ -75,22 +78,25 @@ public final class JoinOperatorTest {
   }
 
   /**
-   * String input.
+   * Join input.
    */
-  class TestStringJoinInput implements JoinInput<String> {
+  class TestJoinInput<V> implements JoinInput<String> {
 
+    private final String identifier;
     private final String key;
-    private final String input;
+    private final V input;
 
-    public TestStringJoinInput(final String key,
-                         final String input) {
+    public TestJoinInput(final String identifier,
+                         final String key,
+                         final V input) {
+      this.identifier = identifier;
       this.key = key;
       this.input = input;
     }
 
     @Override
     public String getIdentifier() {
-      return "string_input";
+      return identifier;
     }
 
     @Override
@@ -99,41 +105,10 @@ public final class JoinOperatorTest {
     }
 
     @Override
-    public String getValue() {
+    public V getValue() {
       return input;
     }
   }
-
-  /**
-   * Repeat number input.
-   */
-  class TestIntegerJoinInput implements JoinInput<String> {
-
-    private final String key;
-    private final int input;
-
-    public TestIntegerJoinInput(final String key,
-                                final int input) {
-      this.key = key;
-      this.input = input;
-    }
-
-    @Override
-    public String getIdentifier() {
-      return "number";
-    }
-
-    @Override
-    public String getJoinKey() {
-      return key;
-    }
-
-    @Override
-    public Integer getValue() {
-      return input;
-    }
-  }
-
 
   /**
    * Join the string and integer
@@ -141,14 +116,14 @@ public final class JoinOperatorTest {
    */
   class TestJoinFunc implements JoinFunc<String, String> {
     @Override
-    public String join(final String key, final Collection<IdentifierAndValue> joinInputs) {
+    public String join(final String key, final Collection<JoinTarget> joinTargets) {
       String stringInput = null;
       int repeat = 0;
-      for (final IdentifierAndValue joinInput : joinInputs) {
-        if (joinInput.identifier.equals("string_input")) {
-          stringInput = (String)joinInput.value;
-        } else if (joinInput.identifier.equals("number")) {
-          repeat = (Integer)joinInput.value;
+      for (final JoinTarget joinTarget : joinTargets) {
+        if (joinTarget.identifier.equals("string_input")) {
+          stringInput = (String)joinTarget.value;
+        } else if (joinTarget.identifier.equals("number")) {
+          repeat = (Integer)joinTarget.value;
         }
       }
       return stringRepeat(stringInput, repeat);
@@ -159,7 +134,7 @@ public final class JoinOperatorTest {
     private final Map<String, Integer> keyAndCount = new HashMap<>();
 
     @Override
-    public boolean readyToJoin(final String key, final IdentifierAndValue joinInput) {
+    public boolean readyToJoin(final String key, final JoinTarget joinInput) {
       Integer count = keyAndCount.get(key);
       if (count == null) {
         count = 1;

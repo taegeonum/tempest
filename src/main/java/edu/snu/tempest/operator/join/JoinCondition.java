@@ -21,11 +21,11 @@ package edu.snu.tempest.operator.join;
 public interface JoinCondition<K> {
 
   /**
-   * Decides join condition whether ready to join or not.
-   * @param joinInput a join input
+   * Decides the condition to join.
+   * @param joinTarget a target of join
    * @return ready to join or not
    */
-  boolean readyToJoin(K key, IdentifierAndValue joinInput);
+  boolean readyToJoin(K key, JoinTarget joinTarget);
 
   /**
    * Reset to initial condition.

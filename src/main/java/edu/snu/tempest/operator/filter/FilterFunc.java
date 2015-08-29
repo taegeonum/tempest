@@ -22,9 +22,9 @@ package edu.snu.tempest.operator.filter;
 public interface FilterFunc<I> {
 
   /**
-   * Filter this input or not.
+   * Whether to filter this input or not.
    * @param input an input
-   * @return true if this input should be filtered else false
+   * @return true if this input should be filtered. Otherwise return false.
    */
   boolean filter(I input);
 }
