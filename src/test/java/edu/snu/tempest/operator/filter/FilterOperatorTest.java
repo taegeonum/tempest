@@ -34,8 +34,8 @@ public final class FilterOperatorTest {
    */
   @Test
   public void testFilterOperator() throws InjectionException {
-    final String[] inputs = {"aa", "bbb", "cc", "dddd", "eee", "faaa", "ggggaa", "aaeb", "ca"};
-    final String[] expectedOutput = {"bbb", "cc", "dddd", "eee", "faaa", "ggggaa", "ca"};
+    final String[] inputs = {"alpha", "bravo", "charlie", "delta", "application", "echo", "ally", "foxtrot"};
+    final String[] expectedOutput = {"bravo", "charlie", "delta", "echo", "foxtrot"};
     final List<String> expected = Arrays.asList(expectedOutput);
     final List<String> result = new LinkedList<>();
 
