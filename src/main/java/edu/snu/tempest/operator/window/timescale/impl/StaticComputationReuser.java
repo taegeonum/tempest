@@ -19,6 +19,7 @@ import edu.snu.tempest.operator.common.NotFoundException;
 import edu.snu.tempest.operator.window.aggregator.CAAggregator;
 import edu.snu.tempest.operator.window.timescale.Timescale;
 import edu.snu.tempest.operator.window.timescale.TimescaleParser;
+import edu.snu.tempest.operator.window.timescale.parameter.NumThreads;
 import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
 import org.apache.reef.tang.annotations.Parameter;
 
@@ -86,7 +87,8 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
   private StaticComputationReuser(
       final TimescaleParser tsParser,
       final CAAggregator<I, T> finalAggregator,
-      @Parameter(StartTime.class) final long startTime) {
+      @Parameter(StartTime.class) final long startTime,
+      @Parameter(NumThreads.class) final int numThreads) {
     this.sliceQueue = new LinkedList<>();
     this.table = new DefaultOutputLookupTableImpl<>();
     this.partialOutputTable = new DefaultOutputLookupTableImpl<>();
@@ -94,8 +96,7 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     this.finalAggregator = finalAggregator;
     this.period = calculatePeriod(timescales);
     this.startTime = startTime;
-    // TODO: #46 Parameterize the number of threads.
-    this.parallelAggregator = new ParallelTreeAggregator<>(8, 8 * 2, finalAggregator);
+    this.parallelAggregator = new ParallelTreeAggregator<>(numThreads, numThreads * 2, finalAggregator);
     LOG.log(Level.INFO, StaticComputationReuser.class + " started. PERIOD: " + period);
 
     // create dependency graph.

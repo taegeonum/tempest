@@ -19,6 +19,7 @@ import edu.snu.tempest.operator.common.NotFoundException;
 import edu.snu.tempest.operator.window.aggregator.CAAggregator;
 import edu.snu.tempest.operator.window.timescale.Timescale;
 import edu.snu.tempest.operator.window.timescale.TimescaleParser;
+import edu.snu.tempest.operator.window.timescale.parameter.NumThreads;
 import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
 import org.apache.reef.tang.annotations.Parameter;
 
@@ -73,13 +74,13 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
   private DynamicComputationReuser(final TimescaleParser tsParser,
                                    final CAAggregator<I, T> finalAggregator,
                                    final CachingPolicy cachingPolicy,
-                                   @Parameter(StartTime.class) final long startTime) {
+                                   @Parameter(StartTime.class) final long startTime,
+                                   @Parameter(NumThreads.class) final int numThreads) {
     this.finalAggregator = finalAggregator;
     this.table = new DefaultOutputLookupTableImpl<>();
     this.cleaner = new DefaultOutputCleaner(tsParser.timescales, table, startTime);
     this.cachingPolicy = cachingPolicy;
-    // TODO: #46 Parameterize the number of threads.
-    this.parallelAggregator = new ParallelTreeAggregator<>(8, 8 * 2, finalAggregator);
+    this.parallelAggregator = new ParallelTreeAggregator<>(numThreads, numThreads * 2, finalAggregator);
   }
 
   /**
