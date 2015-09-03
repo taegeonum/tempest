@@ -39,6 +39,7 @@ import static org.mockito.Mockito.when;
 
 public class DefaultSlicedWindowOperatorTest {
   ComputationReuser<Map<Integer, Long>> computationReuser;
+  NextSliceTimeProvider nextSliceTimeProvider;
   List<Timescale> timescales;
   IntegerRef counter;
   Injector injector;
@@ -47,7 +48,8 @@ public class DefaultSlicedWindowOperatorTest {
   @Before
   public void initialize() throws InjectionException {
     computationReuser = mock(ComputationReuser.class);
-    when(computationReuser.nextSliceTime()).thenReturn(1L, 3L, 4L, 6L, 7L, 9L);
+    nextSliceTimeProvider = mock(NextSliceTimeProvider.class);
+    when(nextSliceTimeProvider.nextSliceTime()).thenReturn(1L, 3L, 4L, 6L, 7L, 9L);
     timescales = new LinkedList<>();
     counter = new IntegerRef(0);
     timescales.add(new Timescale(5, 3));
@@ -57,6 +59,7 @@ public class DefaultSlicedWindowOperatorTest {
     jcb.bindNamedParameter(StartTime.class, Long.toString(0));
     injector = Tang.Factory.getTang().newInjector(jcb.build());
     injector.bindVolatileInstance(ComputationReuser.class, computationReuser);
+    injector.bindVolatileInstance(NextSliceTimeProvider.class, nextSliceTimeProvider);
   }
 
   /**

@@ -72,16 +72,6 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
   private final List<Long> sliceQueue;
 
   /**
-   * An index for looking up sliceQueue.
-   */
-  private int index = 0;
-
-  /**
-   * A previous slice time.
-   */
-  private long prevSliceTime = 0;
-
-  /**
    * Parallel tree aggregator.
    */
   private final ParallelTreeAggregator<I, T> parallelAggregator;
@@ -111,21 +101,6 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     // create dependency graph.
     addSlicedWindowNodeAndEdge();
     addOverlappingWindowNodeAndEdge();
-  }
-
-  /**
-   * Gets next slice time for slicing input and creating partial outputs.
-   * This can be used for slice time to create partial results of incremental aggregation.
-   * SlicedWindowOperator can use this to slice input.
-   */
-  @Override
-  public synchronized long nextSliceTime() {
-    long sliceTime = adjustNextSliceTime();
-    while (prevSliceTime == sliceTime) {
-      sliceTime = adjustNextSliceTime();
-    }
-    prevSliceTime = sliceTime;
-    return sliceTime;
   }
 
   /**
@@ -239,14 +214,6 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
   @Override
   public void onTimescaleDeletion(final Timescale timescale, final long deleteTime) {
     throw new RuntimeException("Not supported");
-  }
-
-  /**
-   * Adjust next slice time.
-   */
-  private long adjustNextSliceTime() {
-    return startTime + (index / sliceQueue.size()) * period
-        + sliceQueue.get((index++) % sliceQueue.size());
   }
 
   /**
