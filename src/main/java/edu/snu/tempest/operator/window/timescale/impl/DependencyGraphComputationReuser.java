@@ -25,13 +25,14 @@ import org.apache.reef.tang.annotations.Parameter;
 import javax.inject.Inject;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * DependencyGraphComputationReuser.
  *
- * It saves final aggregation outputs according to the dependencyGraph that is drawn.
+ * It saves final aggregation outputs according to the reference count of the current dependencyGraph.
  * If the node is not going to be accessed, it deletes the node.
  */
 public final class DependencyGraphComputationReuser<I, T> implements ComputationReuser<T> {
@@ -70,7 +71,7 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
   /**
    * Dependency graph.
    */
-  private DependencyGraph dependencyGraph;
+  private AtomicReference<DependencyGraph> dependencyGraph;
 
   /**
    * The list of timescale.
@@ -78,11 +79,11 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
   private List<Timescale> timescales;
 
   /**
-   * FinalComputationReuser.
+   * DependencyGraphComputationReuser constructor.
    * @param tsParser timescale parser
    * @param finalAggregator an aggregator for final aggregation.
    * @param cachingPolicy a caching policy for output caching
-   * @param startTime an initial start time of the OTFMTSOperator.
+   * @param startTime an initial start time of the operator.
    */
   @Inject
   private DependencyGraphComputationReuser(final TimescaleParser tsParser,
@@ -100,7 +101,7 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
     initializeWindowState(startTime, timescales);
 
     //Create new dependencyGraph.
-    this.dependencyGraph = new DependencyGraph(timescales, startTime);
+    this.dependencyGraph = new AtomicReference<>(new DependencyGraph(timescales, startTime));
   }
 
   /**
@@ -169,11 +170,10 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
     // lookup dependencies
     long start = startTime;
     boolean isFullyProcessed = true;
-    LOG.log(Level.INFO, "11111. start : " + startTime + " end : " + endTime);
+    LOG.log(Level.INFO, "start : " + startTime + " end : " + endTime);
 
     // fetch dependent outputs
     while(start < endTime) {
-
       final WindowTimeAndOutput<TableNode> elem;
       try {
         //lookup largest output in the dynamic table.
@@ -194,7 +194,6 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
             if (dependentNode.output == null) {
               dependentNode.wait();
             }
-
             LOG.log(Level.FINE, "Awake:  (" + start + ", " + endTime + ")");
           }
           //add the output so it can be aggregated.
@@ -219,7 +218,7 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
     }
 
     //lookup the node in the dynamicTable. If its refCount is >0, save the output with the same refCount.
-    int refCount = dependencyGraph.searchRefCount(endTime-ts.windowSize, endTime);
+    int refCount = dependencyGraph.get().getNodeRefCount(endTime - ts.windowSize, endTime);
     T finalResult;
     if (refCount > 0) {
       final TableNode outputNode = new TableNode(null, refCount);
@@ -246,12 +245,11 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
 
     // remove stale outputs.
     cleaner.onNext(endTime);
-
     return finalResult;
   }
 
   /**
-   * Create new dependencyGraph whe ntimescale is added.
+   * Create new dependencyGraph when timescale is added.
    * @param ts timescale to be added.
    * @param addTime the time when timescale is added.
    */
@@ -263,7 +261,7 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
     //Add the new timescale.
     timescales.add(ts);
     //Create new dependencyGraph.
-    this.dependencyGraph = new DependencyGraph(timescales, addTime);
+    this.dependencyGraph = new AtomicReference<>(new DependencyGraph(timescales, addTime));
 
     // Add slices
     synchronized (sliceQueue) {
@@ -297,7 +295,7 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
     //remove timescale.
     timescales.remove(ts);
     //Create new dependencyGraph
-    this.dependencyGraph = new DependencyGraph(timescales, deleteTime);
+    this.dependencyGraph = new AtomicReference<>(new DependencyGraph(timescales, deleteTime));
   }
 
   /**
@@ -343,9 +341,7 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
   /**
    * Nodes that go in the dynamicTable.
    */
-
   final class TableNode {
-
     private T output;
     private int refCount;
 
@@ -371,4 +367,3 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
   }
 
 }
-

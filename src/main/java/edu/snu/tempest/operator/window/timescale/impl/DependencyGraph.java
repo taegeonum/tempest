@@ -18,9 +18,6 @@ package edu.snu.tempest.operator.window.timescale.impl;
 
 import edu.snu.tempest.operator.common.NotFoundException;
 import edu.snu.tempest.operator.window.timescale.Timescale;
-import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
-import org.apache.reef.tang.annotations.Parameter;
-
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -64,7 +61,12 @@ public class DependencyGraph {
    */
   private final List<Long> sliceQueue;
 
-  public DependencyGraph(final List<Timescale> timescales, @Parameter(StartTime.class) final long startTime){
+  /**
+   * DependencyGraph constructor. This first builds the dependency graph.
+   * @param timescales the timescales that are added
+   * @param startTime the initial start time of when the graph is built.
+   */
+  public DependencyGraph(final List<Timescale> timescales, final long startTime){
     this.sliceQueue = new LinkedList<>();
     this.table = new DefaultOutputLookupTableImpl<>();
     this.partialOutputTable = new DefaultOutputLookupTableImpl<>();
@@ -80,7 +82,7 @@ public class DependencyGraph {
   /**
    * Searches for the Node that corresponds to wStartTime and wEndTime.
    */
-  public int searchRefCount(final long wStartTime, final long wEndTime){
+  public int getNodeRefCount(final long wStartTime, final long wEndTime){
     long start = adjStartTime(wStartTime);
     final long end = adjEndTime(wEndTime);
 
@@ -249,15 +251,15 @@ public class DependencyGraph {
    * period = c * lcm ( i_{1}, i_{2}, ..., i_{k} ) ( i_{k} is interval of k-th timescale)
    * c is natural number which satisfies period >= largest_window_size
    */
-  public static long calculatePeriod(final List<Timescale> timescales) {
-    long period = 0;
+  private long calculatePeriod(final List<Timescale> timescalesList) {
+    long newPeriod = 0;
     long largestWindowSize = 0;
 
-    for (final Timescale ts : timescales) {
-      if (period == 0) {
-        period = ts.intervalSize;
+    for (final Timescale ts : timescalesList) {
+      if (newPeriod == 0) {
+        newPeriod = ts.intervalSize;
       } else {
-        period = lcm(period, ts.intervalSize);
+        newPeriod = lcm(newPeriod, ts.intervalSize);
       }
       // find largest window size
       if (largestWindowSize < ts.windowSize) {
@@ -265,15 +267,15 @@ public class DependencyGraph {
       }
     }
 
-    if (period < largestWindowSize) {
-      final long div = largestWindowSize / period;
-      if (largestWindowSize % period == 0) {
-        period *= div;
+    if (newPeriod < largestWindowSize) {
+      final long div = largestWindowSize / newPeriod;
+      if (largestWindowSize % newPeriod == 0) {
+        newPeriod *= div;
       } else {
-        period *= (div+1);
+        newPeriod *= (div+1);
       }
     }
-    return period;
+    return newPeriod;
   }
 
   private static long gcd(long a, long b) {
@@ -322,23 +324,6 @@ public class DependencyGraph {
       this.refCnt = 0;
       this.start = start;
       this.end = end;
-    }
-
-    /**
-     * Decrease reference count of DependencyGraphNode.
-     * If the reference count is zero, then it removes the saved output
-     * and resets the reference count to initial count
-     * in order to reuse this node.
-     */
-    public synchronized void decreaseRefCnt() {
-      if (refCnt > 0) {
-        refCnt--;
-        if (refCnt == 0) {
-          // Remove output
-          LOG.log(Level.FINE, "Release: [" + start + "-" + end + "]");
-          refCnt = initialRefCnt;
-        }
-      }
     }
 
     /**
