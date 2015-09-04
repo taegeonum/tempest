@@ -54,7 +54,7 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
   private final DefaultOutputCleaner cleaner;
 
   /**
-   * The time when the operator is launched
+   * The time when the operator is launched.
    */
   private final long launchTime;
 
