@@ -73,7 +73,7 @@ public class ComputationReuserTest {
   public void dynamicComputationReuserMultiThreadAggregationTest() throws InjectionException, InterruptedException {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(CachingPolicy.class, CachingRatePolicy.class);
-    jcb.bindImplementation(ComputationReuser.class, DependencyGraphComputationReuser.class);
+    jcb.bindImplementation(ComputationReuser.class, DynamicComputationReuser.class);
     multiThreadedFinalAggregation(jcb.build());
   }
 
@@ -93,7 +93,7 @@ public class ComputationReuserTest {
     jcb.bindNamedParameter(StartTime.class, Long.toString(startTime));
     jcb.bindImplementation(CAAggregator.class, CountByKeyAggregator.class);
     jcb.bindImplementation(Aggregator.class, CountByKeyAggregator.class);
-    jcb.bindImplementation(ComputationReuser.class, DependencyGraphComputationReuser.class);
+    jcb.bindImplementation(ComputationReuser.class, DynamicComputationReuser.class);
     return jcb.build();
   }
 

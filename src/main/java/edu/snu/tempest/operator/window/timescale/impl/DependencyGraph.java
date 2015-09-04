@@ -98,7 +98,7 @@ public class DependencyGraph {
       e.printStackTrace();
       throw new RuntimeException(e);
     }
-    return node.initialRefCnt;
+    return node.refCnt;
   }
 
   /**
@@ -301,11 +301,6 @@ public class DependencyGraph {
     private int refCnt;
 
     /**
-     * An initial reference count.
-     */
-    private int initialRefCnt;
-
-    /**
      * The start time of the node.
      */
     public final long start;
@@ -339,7 +334,6 @@ public class DependencyGraph {
 
     private void increaseRefCnt() {
       refCnt++;
-      initialRefCnt = refCnt;
     }
 
     public String toString() {

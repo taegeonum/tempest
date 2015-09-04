@@ -118,7 +118,7 @@ final class DefaultOutputLookupTableImpl<V> implements OutputLookupTable<V> {
    * @param startTime start time of the output
    * @param endTime end time of the output
    */
-  public void deleteOutputs(final long startTime, final long endTime){
+  public void deleteOutput(final long startTime, final long endTime){
     ConcurrentSkipListMap<Long, V> row = table.get(startTime);
     if (row != null){
       row.remove(endTime);

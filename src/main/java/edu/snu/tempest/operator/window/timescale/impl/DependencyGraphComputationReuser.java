@@ -54,9 +54,9 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
   private final DefaultOutputCleaner cleaner;
 
   /**
-   * A caching policy to determine output caching.
+   * A start time of the operator.
    */
-  private final CachingPolicy cachingPolicy;
+  private final long startTime;
 
   /**
    * Parallel tree aggregator.
@@ -88,8 +88,8 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
     this.finalAggregator = finalAggregator;
     this.dynamicTable = new DefaultOutputLookupTableImpl<>();
     this.timescales = tsParser.timescales;
+    this.startTime = startTime;
     this.cleaner = new DefaultOutputCleaner(timescales, dynamicTable, startTime);
-    this.cachingPolicy = cachingPolicy;
     // TODO: #46 Parameterize the number of threads.
     this.parallelAggregator = new ParallelTreeAggregator<>(8, 8 * 2, finalAggregator);
 
@@ -215,7 +215,7 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
     //Add the new timescale.
     timescales.add(ts);
     //Create new dependencyGraph.
-    this.dependencyGraph = new AtomicReference<>(new DependencyGraph(timescales, addTime));
+    this.dependencyGraph = new AtomicReference<>(new DependencyGraph(timescales, startTime));
   }
 
   /**
@@ -227,12 +227,11 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
   public void onTimescaleDeletion(final Timescale ts, final long deleteTime) {
     LOG.log(Level.INFO, "removeTimescale " + ts);
     cleaner.onTimescaleDeletion(ts, deleteTime);
-    cachingPolicy.onTimescaleDeletion(ts, deleteTime);
 
     //remove timescale.
     timescales.remove(ts);
     //Create new dependencyGraph
-    this.dependencyGraph = new AtomicReference<>(new DependencyGraph(timescales, deleteTime));
+    this.dependencyGraph = new AtomicReference<>(new DependencyGraph(timescales, startTime));
   }
 
   /**
@@ -257,7 +256,7 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
       if (refCount > 0) {
         refCount--;
         if (refCount == 0) {
-          dynamicTable.deleteOutputs(startTime, endTime);
+          dynamicTable.deleteOutput(startTime, endTime);
         }
       }
     }
