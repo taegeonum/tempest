@@ -54,9 +54,9 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
   private final DefaultOutputCleaner cleaner;
 
   /**
-   * A start time of the operator.
+   * The time when the operator is launched
    */
-  private final long startTime;
+  private final long launchTime;
 
   /**
    * Parallel tree aggregator.
@@ -83,18 +83,17 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
   @Inject
   private DependencyGraphComputationReuser(final TimescaleParser tsParser,
                                    final CAAggregator<I, T> finalAggregator,
-                                   final CachingPolicy cachingPolicy,
-                                   @Parameter(StartTime.class) final long startTime) {
+                                   @Parameter(StartTime.class) final long launchTime) {
     this.finalAggregator = finalAggregator;
     this.dynamicTable = new DefaultOutputLookupTableImpl<>();
     this.timescales = tsParser.timescales;
-    this.startTime = startTime;
-    this.cleaner = new DefaultOutputCleaner(timescales, dynamicTable, startTime);
+    this.launchTime = launchTime;
+    this.cleaner = new DefaultOutputCleaner(timescales, dynamicTable, launchTime);
     // TODO: #46 Parameterize the number of threads.
     this.parallelAggregator = new ParallelTreeAggregator<>(8, 8 * 2, finalAggregator);
 
     //Create new dependencyGraph.
-    this.dependencyGraph = new AtomicReference<>(new DependencyGraph(timescales, startTime));
+    this.dependencyGraph = new AtomicReference<>(new DependencyGraph(timescales, launchTime));
   }
 
   /**
@@ -215,7 +214,7 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
     //Add the new timescale.
     timescales.add(ts);
     //Create new dependencyGraph.
-    this.dependencyGraph = new AtomicReference<>(new DependencyGraph(timescales, startTime));
+    this.dependencyGraph = new AtomicReference<>(new DependencyGraph(timescales, launchTime));
   }
 
   /**
@@ -231,7 +230,7 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
     //remove timescale.
     timescales.remove(ts);
     //Create new dependencyGraph
-    this.dependencyGraph = new AtomicReference<>(new DependencyGraph(timescales, startTime));
+    this.dependencyGraph = new AtomicReference<>(new DependencyGraph(timescales, launchTime));
   }
 
   /**
