@@ -18,6 +18,8 @@ package edu.snu.tempest.operator.window.timescale.impl;
 import edu.snu.tempest.operator.common.DefaultSubscription;
 import edu.snu.tempest.operator.common.Subscription;
 import edu.snu.tempest.operator.common.SubscriptionHandler;
+import edu.snu.tempest.operator.window.timescale.parameter.NumThreads;
+import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.wake.EStage;
 import org.apache.reef.wake.WakeParameters;
 import org.apache.reef.wake.impl.StageManager;
@@ -74,10 +76,9 @@ final class OverlappingWindowStage implements EStage<Long> {
    * Overlapping window stage for doing final aggregation.
    */
   @Inject
-  private OverlappingWindowStage() {
+  private OverlappingWindowStage(@Parameter(NumThreads.class) final int numThreads) {
     this.handlers = new PriorityQueue<>(10, new OWOComparator());
-    // TODO: #46 Parameterize the number of threads
-    this.executor = Executors.newFixedThreadPool(10);
+    this.executor = Executors.newFixedThreadPool(numThreads);
     this.subscriptionHandler = new OWOSubscriptionHandler();
     StageManager.instance().register(this);
   }
