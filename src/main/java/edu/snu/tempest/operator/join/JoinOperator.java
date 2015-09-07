@@ -26,13 +26,14 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * Join operator which joins inputs.
+ * This class collects JoinInput by key and executes join function.
  */
 public final class JoinOperator<K, O> implements Operator<JoinInput<K>, O> {
 
   /**
    * Join function.
    */
-  private final JoinFunc<K, O> joinFunc;
+  private final JoinFunction<K, O> joinFunc;
 
   /**
    * Join condition.
@@ -54,7 +55,7 @@ public final class JoinOperator<K, O> implements Operator<JoinInput<K>, O> {
    * @param joinFunc a join function
    */
   @Inject
-  private JoinOperator(final JoinFunc<K, O> joinFunc,
+  private JoinOperator(final JoinFunction<K, O> joinFunc,
                        final JoinCondition<K> joinCondition) {
     this.joinFunc = joinFunc;
     this.joinCondition = joinCondition;

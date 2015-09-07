@@ -40,8 +40,8 @@ public final class MapOperatorTest {
     final AtomicReference<List<String>> result = new AtomicReference<>();
 
     final Injector injector = Tang.Factory.getTang().newInjector();
-    final TestSplitMapFunc mapFunc = new TestSplitMapFunc();
-    injector.bindVolatileInstance(MapFunc.class, mapFunc);
+    final TestSplitMapFunction mapFunc = new TestSplitMapFunction();
+    injector.bindVolatileInstance(MapFunction.class, mapFunc);
     final MapOperator<String, List<String>> mapOperator = injector.getInstance(MapOperator.class);
     mapOperator.prepare(new OutputEmitter<List<String>>() {
       @Override
@@ -54,7 +54,7 @@ public final class MapOperatorTest {
     Assert.assertEquals(expected, result.get());
   }
 
-  class TestSplitMapFunc implements MapFunc<String, List<String>> {
+  class TestSplitMapFunction implements MapFunction<String, List<String>> {
 
     @Override
     public List<String> map(final String input) {

@@ -46,7 +46,7 @@ public final class JoinOperatorTest {
     }
 
     final Injector injector = Tang.Factory.getTang().newInjector();
-    injector.bindVolatileInstance(JoinFunc.class, new TestJoinFunc());
+    injector.bindVolatileInstance(JoinFunction.class, new TestJoinFunction());
     injector.bindVolatileInstance(JoinCondition.class, new TestJoinCondition());
     final JoinOperator<String, String> joinOperator = injector.getInstance(JoinOperator.class);
     joinOperator.prepare(new OutputEmitter<String>() {
@@ -114,7 +114,7 @@ public final class JoinOperatorTest {
    * Join the string and integer
    * and repeat the string.
    */
-  class TestJoinFunc implements JoinFunc<String, String> {
+  class TestJoinFunction implements JoinFunction<String, String> {
     @Override
     public String join(final String key, final Collection<JoinTarget> joinTargets) {
       String stringInput = null;

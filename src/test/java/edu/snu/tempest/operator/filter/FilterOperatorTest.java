@@ -40,8 +40,8 @@ public final class FilterOperatorTest {
     final List<String> result = new LinkedList<>();
 
     final Injector injector = Tang.Factory.getTang().newInjector();
-    final TestFilterFunc filterFunc = new TestFilterFunc();
-    injector.bindVolatileInstance(FilterFunc.class, filterFunc);
+    final TestFilterFunction filterFunc = new TestFilterFunction();
+    injector.bindVolatileInstance(FilterFunction.class, filterFunc);
     final FilterOperator<String> filterOperator = injector.getInstance(FilterOperator.class);
     filterOperator.prepare(new OutputEmitter<String>() {
       @Override
@@ -56,7 +56,7 @@ public final class FilterOperatorTest {
     Assert.assertEquals(expected, result);
   }
 
-  class TestFilterFunc implements FilterFunc<String> {
+  class TestFilterFunction implements FilterFunction<String> {
 
     @Override
     public boolean filter(final String input) {

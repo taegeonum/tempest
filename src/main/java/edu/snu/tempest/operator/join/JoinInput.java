@@ -17,11 +17,14 @@ package edu.snu.tempest.operator.join;
 
 /**
  * An input for join operation.
+ * This class contains key, identifier and value.
+ * JoinOperator joins the input by key.
  */
 public interface JoinInput<K> {
 
   /**
    * Gets identifier of join input.
+   * Different inputs have different identifiers.
    * @return an identifier
    */
   String getIdentifier();

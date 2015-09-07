@@ -29,7 +29,7 @@ public final class FilterOperator<I> implements Operator<I, I> {
   /**
    * Filter function.
    */
-  private final FilterFunc<I> filterFunc;
+  private final FilterFunction<I> filterFunc;
 
   /**
    * Next operator.
@@ -41,7 +41,7 @@ public final class FilterOperator<I> implements Operator<I, I> {
    * @param filterFunc a filter function
    */
   @Inject
-  private FilterOperator(final FilterFunc<I> filterFunc) {
+  private FilterOperator(final FilterFunction<I> filterFunc) {
     this.filterFunc = filterFunc;
   }
 

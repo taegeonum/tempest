@@ -20,7 +20,7 @@ import java.util.Collection;
 /**
  * Join function.
  */
-public interface JoinFunc<K, O> {
+public interface JoinFunction<K, O> {
 
   /**
    * Join the inputs.

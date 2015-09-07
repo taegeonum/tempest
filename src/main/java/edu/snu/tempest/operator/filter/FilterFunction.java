@@ -19,7 +19,7 @@ package edu.snu.tempest.operator.filter;
  * Filter function.
  * @param <I> input
  */
-public interface FilterFunc<I> {
+public interface FilterFunction<I> {
 
   /**
    * Whether to filter this input or not.

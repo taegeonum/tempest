@@ -30,7 +30,7 @@ public final class MapOperator<I, O> implements Operator<I, O> {
   /**
    * Map function.
    */
-  private final MapFunc<I, O> mapFunc;
+  private final MapFunction<I, O> mapFunc;
 
   /**
    * Next operator.
@@ -42,7 +42,7 @@ public final class MapOperator<I, O> implements Operator<I, O> {
    * @param mapFunc a map function
    */
   @Inject
-  private MapOperator(final MapFunc<I, O> mapFunc) {
+  private MapOperator(final MapFunction<I, O> mapFunc) {
     this.mapFunc = mapFunc;
   }
 

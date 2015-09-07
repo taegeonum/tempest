@@ -19,7 +19,7 @@ package edu.snu.tempest.operator.map;
  * Map function.
  * @param <I> input
  */
-public interface MapFunc<I, O> {
+public interface MapFunction<I, O> {
 
   /**
    * Map this input.
