@@ -19,6 +19,7 @@ import edu.snu.tempest.operator.common.NotFoundException;
 import edu.snu.tempest.operator.window.aggregator.CAAggregator;
 import edu.snu.tempest.operator.window.timescale.Timescale;
 import edu.snu.tempest.operator.window.timescale.TimescaleParser;
+import edu.snu.tempest.operator.window.timescale.parameter.NumThreads;
 import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
 import org.apache.reef.tang.annotations.Parameter;
 
@@ -36,7 +37,7 @@ import java.util.logging.Logger;
  * If the node is not going to be accessed, it deletes the node.
  */
 public final class DependencyGraphComputationReuser<I, T> implements ComputationReuser<T> {
-  private static final Logger LOG = Logger.getLogger(DynamicComputationReuser.class.getName());
+  private static final Logger LOG = Logger.getLogger(DependencyGraphComputationReuser.class.getName());
 
   /**
    * Final aggregator.
@@ -81,14 +82,14 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
   @Inject
   private DependencyGraphComputationReuser(final TimescaleParser tsParser,
                                            final CAAggregator<I, T> finalAggregator,
-                                           @Parameter(StartTime.class) final long launchTime) {
+                                           @Parameter(StartTime.class) final long launchTime,
+                                           @Parameter(NumThreads.class) final int numThreads) {
     this.finalAggregator = finalAggregator;
     this.dynamicTable = new DefaultOutputLookupTableImpl<>();
     this.timescales = tsParser.timescales;
     this.launchTime = launchTime;
     this.cleaner = new DefaultOutputCleaner(timescales, dynamicTable, launchTime);
-    // TODO: #46 Parameterize the number of threads.
-    this.parallelAggregator = new ParallelTreeAggregator<>(8, 8 * 2, finalAggregator);
+    this.parallelAggregator = new ParallelTreeAggregator<>(numThreads, numThreads * 2, finalAggregator);
 
     //Create new dependencyGraph.
     this.dependencyGraph = new AtomicReference<>(new DependencyGraph(timescales, launchTime));
