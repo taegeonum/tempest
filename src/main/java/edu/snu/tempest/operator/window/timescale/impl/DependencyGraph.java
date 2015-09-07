@@ -27,7 +27,7 @@ import java.util.logging.Logger;
 /**
  * DependencyGraph shows which nodes are related to each other. This is used so that unnecessary outputs are not saved.
  */
-public class DependencyGraph {
+public final class DependencyGraph {
 
   private static final Logger LOG = Logger.getLogger(StaticComputationReuser.class.getName());
 

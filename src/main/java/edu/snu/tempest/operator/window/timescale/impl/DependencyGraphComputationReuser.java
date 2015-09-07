@@ -77,13 +77,11 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
    * DependencyGraphComputationReuser constructor.
    * @param tsParser timescale parser
    * @param finalAggregator an aggregator for final aggregation.
-   * @param cachingPolicy a caching policy for output caching
-   * @param startTime an initial start time of the operator.
    */
   @Inject
   private DependencyGraphComputationReuser(final TimescaleParser tsParser,
-                                   final CAAggregator<I, T> finalAggregator,
-                                   @Parameter(StartTime.class) final long launchTime) {
+                                           final CAAggregator<I, T> finalAggregator,
+                                           @Parameter(StartTime.class) final long launchTime) {
     this.finalAggregator = finalAggregator;
     this.dynamicTable = new DefaultOutputLookupTableImpl<>();
     this.timescales = tsParser.timescales;
@@ -123,10 +121,10 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
     // lookup dependencies
     long start = startTime;
     boolean isFullyProcessed = true;
-    LOG.log(Level.INFO, "start : " + startTime + " end : " + endTime);
+    LOG.log(Level.FINE, "start : " + startTime + " end : " + endTime);
 
     // fetch dependent outputs
-    while(start < endTime) {
+    while (start < endTime) {
       final WindowTimeAndOutput<TableNode> elem;
       try {
         //lookup largest output in the dynamic table.
@@ -242,7 +240,7 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
 
     public TableNode(T output, int refCount){
       this.output = output;
-      this.refCount=refCount;
+      this.refCount = refCount;
     }
 
     /**
