@@ -21,9 +21,10 @@ import edu.snu.tempest.operator.window.timescale.parameter.CachingRate;
 import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;
+import java.security.InvalidParameterException;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -46,16 +47,14 @@ public final class CachingRatePolicy implements CachingPolicy {
   private AtomicLong largestWindowSize;
 
   /**
-   * Contains a map of timescale and latest caching time of an output of the timescale.
-   * This decides to cache or not to cache an output
-   * with this information.
-   */
-  private final ConcurrentHashMap<Timescale, Long> latestCachingTimeMap;
-
-  /**
-   * CachingRate decides the amount of finalAggregation to save.
+   * CachingRate decides the amount of finalAggregation to be saved.
    */
   private final double cachingRate;
+
+  /**
+   * Random value to decide output caching.
+   */
+  private final Random random;
 
   /**
    * CachingRatePolicy caches outputs according to the caching rate.
@@ -65,10 +64,14 @@ public final class CachingRatePolicy implements CachingPolicy {
   @Inject
   private CachingRatePolicy(final TimescaleParser tsParser,
                             @Parameter(CachingRate.class) final double cachingRate) {
+    if (cachingRate < 0 || cachingRate > 1) {
+      throw new InvalidParameterException(
+          "CachingRate should be greater or equal than 0 and smaller or equal than 1: " + cachingRate);
+    }
     this.timescales = new LinkedList<>(tsParser.timescales);
     this.cachingRate = cachingRate;
-    this.latestCachingTimeMap = new ConcurrentHashMap<>();
     this.largestWindowSize = new AtomicLong(findLargestWindowSize());
+    this.random = new Random();
   }
 
   /**
@@ -80,26 +83,11 @@ public final class CachingRatePolicy implements CachingPolicy {
    */
   @Override
   public boolean cache(final long startTime, final long endTime, final Timescale ts) {
-    Long latestCachingTime = latestCachingTimeMap.get(ts);
-    if (latestCachingTime == null) {
-      latestCachingTime = 0L;
-    }
-
-    if (cachingRate == 0) {
+    if (ts.windowSize == this.largestWindowSize.get()) {
+      // do not save largest window output
       return false;
-    }
-
-    // cachingPeriod is a function of cachingRate.
-    // cachingPeriod = windowSize / cachingRate
-    // if the cachingRate is zero, then cachingPeriod is infinite and no data is cached.
-    // if the cachingRate is one, then cachingPeriod is windowSize and the result is cached every windowSize.
-    final double cachingPeriod = ts.windowSize / cachingRate;
-    if ((endTime - latestCachingTime) >= cachingPeriod
-        && ts.windowSize < this.largestWindowSize.get()) {
-      latestCachingTimeMap.put(ts, endTime);
-      return true;
     } else {
-      return false;
+      return random.nextDouble() < cachingRate;
     }
   }
 

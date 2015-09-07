@@ -19,5 +19,5 @@ import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 
 @NamedParameter(doc = "caching rate for saving outputs in dynamic mts operator.",
-    short_name="caching_rate", default_value = "1.0")
+    short_name="caching_rate", default_value = "0.5")
 public final class CachingRate implements Name<Double> {}
