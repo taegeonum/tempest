@@ -16,18 +16,19 @@
 package edu.snu.tempest.operator.join;
 
 /**
- * A wrapper class for join identifier and value.
- * A join target is an object that is a subject of join.
+ * This class contains identifier and value of JoinInput.
+ * Identifier shows the type of input.
+ * Value is real data of JoinInput.
  */
-public final class JoinTarget<V> {
+public final class IdentifierAndValue<V> {
 
   /**
-   * An identifier of join input.
+   * An identifier of JoinInput.
    */
   public final String identifier;
 
   /**
-   * Value of join input.
+   * Value of JoinInput.
    */
   public final V value;
 
@@ -36,8 +37,8 @@ public final class JoinTarget<V> {
    * @param identifier an identifier
    * @param value a value
    */
-  public JoinTarget(final String identifier,
-                    final V value) {
+  public IdentifierAndValue(final String identifier,
+                            final V value) {
     this.identifier = identifier;
     this.value = value;
   }
