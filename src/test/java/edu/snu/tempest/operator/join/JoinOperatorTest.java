@@ -116,14 +116,14 @@ public final class JoinOperatorTest {
    */
   class TestJoinFunction implements JoinFunction<String, String> {
     @Override
-    public String join(final String key, final Collection<JoinTarget> joinTargets) {
+    public String join(final String key, final Collection<IdentifierAndValue> identifierAndValues) {
       String stringInput = null;
       int repeat = 0;
-      for (final JoinTarget joinTarget : joinTargets) {
-        if (joinTarget.identifier.equals("string_input")) {
-          stringInput = (String)joinTarget.value;
-        } else if (joinTarget.identifier.equals("number")) {
-          repeat = (Integer)joinTarget.value;
+      for (final IdentifierAndValue identifierAndValue : identifierAndValues) {
+        if (identifierAndValue.identifier.equals("string_input")) {
+          stringInput = (String) identifierAndValue.value;
+        } else if (identifierAndValue.identifier.equals("number")) {
+          repeat = (Integer) identifierAndValue.value;
         }
       }
       return stringRepeat(stringInput, repeat);
@@ -134,7 +134,7 @@ public final class JoinOperatorTest {
     private final Map<String, Integer> keyAndCount = new HashMap<>();
 
     @Override
-    public boolean readyToJoin(final String key, final JoinTarget joinInput) {
+    public boolean readyToJoin(final String key, final IdentifierAndValue joinInput) {
       Integer count = keyAndCount.get(key);
       if (count == null) {
         count = 1;

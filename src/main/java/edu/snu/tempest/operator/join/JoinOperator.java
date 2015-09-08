@@ -48,7 +48,7 @@ public final class JoinOperator<K, O> implements Operator<JoinInput<K>, O> {
   /**
    * A map for containing join inputs.
    */
-  private final ConcurrentMap<K, List<JoinTarget>> joinInputMap;
+  private final ConcurrentMap<K, List<IdentifierAndValue>> joinInputMap;
 
   /**
    * Join operator.
@@ -69,14 +69,14 @@ public final class JoinOperator<K, O> implements Operator<JoinInput<K>, O> {
   @Override
   public void execute(final JoinInput<K> val) {
     final K key = val.getJoinKey();
-    List<JoinTarget> inputs = joinInputMap.get(key);
+    List<IdentifierAndValue> inputs = joinInputMap.get(key);
     if (inputs == null) {
-      joinInputMap.putIfAbsent(key, new LinkedList<JoinTarget>());
+      joinInputMap.putIfAbsent(key, new LinkedList<IdentifierAndValue>());
       inputs = joinInputMap.get(key);
     }
 
     synchronized (inputs) {
-      final JoinTarget idAndVal = new JoinTarget(val.getIdentifier(), val.getValue());
+      final IdentifierAndValue idAndVal = new IdentifierAndValue(val.getIdentifier(), val.getValue());
       inputs.add(idAndVal);
       if (joinCondition.readyToJoin(key, idAndVal)) {
         // join the aggregated inputs and flush

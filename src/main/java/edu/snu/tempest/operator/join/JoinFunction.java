@@ -25,8 +25,8 @@ public interface JoinFunction<K, O> {
   /**
    * Join the inputs.
    * @param key join key
-   * @param targets targets for join
+   * @param identifierAndValues identifier and values of join input
    * @return output of join
    */
-  O join(K key, Collection<JoinTarget> targets);
+  O join(K key, Collection<IdentifierAndValue> identifierAndValues);
 }

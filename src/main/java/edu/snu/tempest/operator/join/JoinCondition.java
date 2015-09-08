@@ -22,10 +22,10 @@ public interface JoinCondition<K> {
 
   /**
    * Decides the condition to join.
-   * @param joinTarget a target of join
+   * @param identifierAndValue an identifier and value of join input
    * @return ready to join or not
    */
-  boolean readyToJoin(K key, JoinTarget joinTarget);
+  boolean readyToJoin(K key, IdentifierAndValue identifierAndValue);
 
   /**
    * Reset to initial condition.

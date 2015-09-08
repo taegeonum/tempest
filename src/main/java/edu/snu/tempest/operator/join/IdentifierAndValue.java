@@ -33,7 +33,7 @@ public final class IdentifierAndValue<V> {
   public final V value;
 
   /**
-   * A target for join.
+   * Identifier and value of JoinInput.
    * @param identifier an identifier
    * @param value a value
    */
