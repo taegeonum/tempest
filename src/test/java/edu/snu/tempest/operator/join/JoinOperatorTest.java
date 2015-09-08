@@ -17,6 +17,7 @@ package edu.snu.tempest.operator.join;
 
 import edu.snu.tempest.operator.OutputEmitter;
 import org.apache.reef.tang.Injector;
+import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.exceptions.InjectionException;
 import org.junit.Assert;
@@ -45,9 +46,10 @@ public final class JoinOperatorTest {
       expectedJoinOutputs.add(stringRepeat(keys[i], intVals[i]));
     }
 
-    final Injector injector = Tang.Factory.getTang().newInjector();
+    final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
+    jcb.bindImplementation(JoinCondition.class, TwoInputJoinCondition.class);
+    final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
     injector.bindVolatileInstance(JoinFunction.class, new TestJoinFunction());
-    injector.bindVolatileInstance(JoinCondition.class, new TestJoinCondition());
     final JoinOperator<String, String> joinOperator = injector.getInstance(JoinOperator.class);
     joinOperator.prepare(new OutputEmitter<String>() {
       @Override
@@ -115,6 +117,14 @@ public final class JoinOperatorTest {
    * and repeat the string.
    */
   class TestJoinFunction implements JoinFunction<String, String> {
+
+    /**
+     * This class joins the string and integer.
+     * identifierAndValues always contain two elements: string input and integer input
+     * @param key join key
+     * @param identifierAndValues identifier and values of join input
+     * @return
+     */
     @Override
     public String join(final String key, final Collection<IdentifierAndValue> identifierAndValues) {
       String stringInput = null;
@@ -127,27 +137,6 @@ public final class JoinOperatorTest {
         }
       }
       return stringRepeat(stringInput, repeat);
-    }
-  }
-
-  class TestJoinCondition implements JoinCondition<String> {
-    private final Map<String, Integer> keyAndCount = new HashMap<>();
-
-    @Override
-    public boolean readyToJoin(final String key, final IdentifierAndValue joinInput) {
-      Integer count = keyAndCount.get(key);
-      if (count == null) {
-        count = 1;
-      } else {
-        count++;
-      }
-      keyAndCount.put(key, count);
-      return count == 2;
-    }
-
-    @Override
-    public void reset(final String key) {
-      keyAndCount.put(key, 0);
     }
   }
 }
