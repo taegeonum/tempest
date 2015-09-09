@@ -38,7 +38,7 @@ public final class DefaultOverlappingWindowOperatorTest {
     map.put(1, 1);
     final Timescale ts = new Timescale(5, 3);
     final ComputationReuser<Map<Integer, Integer>> computationReuser = mock(ComputationReuser.class);
-    final TimescaleWindowOutputHandler<Map<Integer, Integer>> outputHandler =
+    final TimescaleWindowOutputHandler<Map<Integer, Integer>, Map<Integer, Integer>> outputHandler =
         mock(TimescaleWindowOutputHandler.class);
     final OverlappingWindowOperator operator = new DefaultOverlappingWindowOperator<>(
         ts, computationReuser, outputHandler, 0L);

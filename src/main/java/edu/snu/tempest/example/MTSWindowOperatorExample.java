@@ -15,6 +15,7 @@
  */
 package edu.snu.tempest.example;
 
+import edu.snu.tempest.operator.OutputEmitter;
 import edu.snu.tempest.operator.window.WindowOperator;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
@@ -108,15 +109,21 @@ public final class MTSWindowOperatorExample {
     StageManager.instance().close();
   }
 
-  public static final class TestHandler implements TimescaleWindowOutputHandler<Integer> {
+  public static final class TestHandler implements TimescaleWindowOutputHandler<Integer, Integer> {
 
     @Inject
     private TestHandler() {
     }
 
     @Override
-    public void onNext(final TimescaleWindowOutput<Integer> output) {
-      System.out.println(output);
+    public void execute(final TimescaleWindowOutput<Integer> val) {
+      System.out.println(val);
+
+    }
+
+    @Override
+    public void prepare(final OutputEmitter<TimescaleWindowOutput<Integer>> outputEmitter) {
+
     }
   }
 }

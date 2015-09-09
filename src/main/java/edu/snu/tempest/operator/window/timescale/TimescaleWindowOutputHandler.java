@@ -20,5 +20,6 @@ import edu.snu.tempest.operator.window.WindowOutputHandler;
 /**
  * A handler for timescale window outputs.
  */
-public interface TimescaleWindowOutputHandler<V> extends WindowOutputHandler<TimescaleWindowOutput<V>> {
+public interface TimescaleWindowOutputHandler<I, O> extends
+    WindowOutputHandler<TimescaleWindowOutput<I>, TimescaleWindowOutput<O>> {
 }

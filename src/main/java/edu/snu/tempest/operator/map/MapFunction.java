@@ -13,13 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.tempest.operator.window;
-
-import edu.snu.tempest.operator.Operator;
+package edu.snu.tempest.operator.map;
 
 /**
- * Output handler for windowing.
- * @param <V> output
+ * Map function.
+ * @param <I> input
  */
-public interface WindowOutputHandler<I, V> extends Operator<I, V> {
+public interface MapFunction<I, O> {
+
+  /**
+   * Map this input.
+   * @param input an input
+   * @return an output which is transformed by this map function
+   */
+  O map(I input);
 }

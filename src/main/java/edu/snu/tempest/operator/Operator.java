@@ -13,13 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.tempest.operator.window;
-
-import edu.snu.tempest.operator.Operator;
+package edu.snu.tempest.operator;
 
 /**
- * Output handler for windowing.
- * @param <V> output
+ * Operator interface.
  */
-public interface WindowOutputHandler<I, V> extends Operator<I, V> {
+public interface Operator<I, V> {
+  /**
+   * It receives input from this function.
+   * @param val input value
+   */
+  void execute(final I val);
+
+  /**
+   * This function is called before execute.
+   * The operator should emit the processed input to output emitter.
+   * @param outputEmitter an output emitter
+   */
+  void prepare(OutputEmitter<V> outputEmitter);
 }
