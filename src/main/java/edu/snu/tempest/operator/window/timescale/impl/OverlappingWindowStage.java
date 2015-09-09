@@ -39,7 +39,7 @@ import java.util.logging.Logger;
 /**
  * A stage that triggers overlapping window operators, which execute final aggregation.
  */
-final class OverlappingWindowStage implements EStage<Long> {
+final class OverlappingWindowStage<V> implements EStage<Long> {
   private static final Logger LOG = Logger.getLogger(OverlappingWindowStage.class.getCanonicalName());
 
   /**
@@ -55,7 +55,7 @@ final class OverlappingWindowStage implements EStage<Long> {
   /**
    * A priority queue ordering event handlers.
    */
-  private final PriorityQueue<OverlappingWindowOperator> handlers;
+  private final PriorityQueue<OverlappingWindowOperator<V>> handlers;
 
   /**
    * A read/write lock for queue.
@@ -98,11 +98,11 @@ final class OverlappingWindowStage implements EStage<Long> {
   @Override
   public void onNext(final Long time) {
     lock.readLock().lock();
-    for (final OverlappingWindowOperator owo : handlers) {
+    for (final OverlappingWindowOperator<V> owo : handlers) {
       executor.submit(new Runnable() {
         @Override
         public void run() {
-          owo.onNext(time);
+          owo.execute(time);
         }
       });
     }
@@ -115,7 +115,7 @@ final class OverlappingWindowStage implements EStage<Long> {
    * @param handler an overlapping window operator
    * @return a subscription for unsubscribe
    */
-  public Subscription<OverlappingWindowOperator> subscribe(final OverlappingWindowOperator handler) {
+  public Subscription<OverlappingWindowOperator<V>> subscribe(final OverlappingWindowOperator<V> handler) {
     LOG.log(Level.FINE, "Subscribe " + handler);
     lock.writeLock().lock();
     handlers.add(handler);
@@ -126,13 +126,13 @@ final class OverlappingWindowStage implements EStage<Long> {
   /**
    * Subscription handler for unsubscribe overlaping window operators.
    */
-  class OWOSubscriptionHandler implements SubscriptionHandler<OverlappingWindowOperator> {
+  class OWOSubscriptionHandler implements SubscriptionHandler<OverlappingWindowOperator<V>> {
     /**
      * Unsubscribe the subscription.
      * @param subscription a subscription
      */
     @Override
-    public void unsubscribe(final Subscription<OverlappingWindowOperator> subscription) {
+    public void unsubscribe(final Subscription<OverlappingWindowOperator<V>> subscription) {
       LOG.log(Level.FINE, "Unsubscribe " + subscription.getToken());
       OverlappingWindowStage.this.lock.writeLock().lock();
       OverlappingWindowStage.this.handlers.remove(subscription.getToken());

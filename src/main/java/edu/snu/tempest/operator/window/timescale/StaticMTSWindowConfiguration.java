@@ -15,10 +15,7 @@
  */
 package edu.snu.tempest.operator.window.timescale;
 
-import edu.snu.tempest.operator.window.timescale.impl.ComputationReuser;
-import edu.snu.tempest.operator.window.timescale.impl.NextSliceTimeProvider;
-import edu.snu.tempest.operator.window.timescale.impl.StaticComputationReuser;
-import edu.snu.tempest.operator.window.timescale.impl.StaticNextSliceTimeProvider;
+import edu.snu.tempest.operator.window.timescale.impl.*;
 import org.apache.reef.tang.formats.ConfigurationModule;
 
 /**
@@ -30,5 +27,6 @@ public final class StaticMTSWindowConfiguration extends TimescaleWindowBaseConfi
       .merge(TimescaleWindowBaseConfiguration.CONF)
       .bindImplementation(ComputationReuser.class, StaticComputationReuser.class)
       .bindImplementation(NextSliceTimeProvider.class, StaticNextSliceTimeProvider.class)
+      .bindImplementation(TimescaleWindowOperator.class, StaticMTSOperatorImpl.class)
       .build();
 }

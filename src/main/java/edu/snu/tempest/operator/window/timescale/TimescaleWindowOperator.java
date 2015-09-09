@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.tempest.operator.window;
+package edu.snu.tempest.operator.window.timescale;
 
 import edu.snu.tempest.operator.Operator;
 
 /**
- * Output handler for windowing.
- * @param <V> output
+ * TimescaleWindowOperator interface.
+ * It receives input and produces window output every interval.
  */
-public interface WindowOutputHandler<I, V> extends Operator<I, V> {
+public interface TimescaleWindowOperator<I, V> extends Operator<I, TimescaleWindowOutput<V>> {
 }

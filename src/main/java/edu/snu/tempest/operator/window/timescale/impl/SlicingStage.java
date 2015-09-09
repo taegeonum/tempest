@@ -38,7 +38,7 @@ import java.util.logging.Logger;
  *
  * @param <I> input
  */
-final class SlicingStage<I> implements Stage {
+final class SlicingStage<I, V> implements Stage {
   private static final Logger LOG = Logger.getLogger(SlicingStage.class.getName());
 
   /**
@@ -65,14 +65,12 @@ final class SlicingStage<I> implements Stage {
    * Constructs a slicing stage.
    *
    * @param slicedWindowOperator a sliced window operator
-   * @param finalStage           a final aggregation stage
    * @param period               a period in milli-seconds
    */
   @Inject
-  private SlicingStage(final SlicedWindowOperator<I> slicedWindowOperator,
-                      final OverlappingWindowStage finalStage,
-                      @Parameter(SlicedWindowTriggerPeriod.class) final long period,
-                      @Parameter(StartTime.class) final long startTime) {
+  private SlicingStage(final SlicedWindowOperator<I, V> slicedWindowOperator,
+                       @Parameter(SlicedWindowTriggerPeriod.class) final long period,
+                       @Parameter(StartTime.class) final long startTime) {
     this.executor = Executors.newScheduledThreadPool(1, new DefaultThreadFactory(SlicingStage.class.getName()));
     this.prevTriggeredTime = startTime;
     this.executor.scheduleAtFixedRate(new Runnable() {
@@ -85,9 +83,7 @@ final class SlicingStage<I> implements Stage {
           LOG.log(Level.FINE, SlicingStage.class.getName() + " trigger: " + time);
           for (long triggerTime = prevTriggeredTime + 1; triggerTime <= time; triggerTime++) {
             // slice partial aggregation and save the result into computation reuser.
-            slicedWindowOperator.onNext(triggerTime);
-            // trigger final aggregation
-            finalStage.onNext(triggerTime);
+            slicedWindowOperator.slice(triggerTime);
           }
           prevTriggeredTime = time;
         }

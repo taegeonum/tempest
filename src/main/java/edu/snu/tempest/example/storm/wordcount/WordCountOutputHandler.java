@@ -17,8 +17,8 @@ package edu.snu.tempest.example.storm.wordcount;
 
 import edu.snu.tempest.example.util.writer.OutputWriter;
 import edu.snu.tempest.operator.OutputEmitter;
+import edu.snu.tempest.operator.window.timescale.TimeWindowNextOperator;
 import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
-import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutputHandler;
 import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 import org.apache.reef.tang.annotations.Parameter;
@@ -32,7 +32,7 @@ import java.util.logging.Logger;
 /**
  * Output handler for word count example.
  */
-final class WordCountOutputHandler implements TimescaleWindowOutputHandler<Map<String, Long>, Map<String, Long>> {
+final class WordCountOutputHandler implements TimeWindowNextOperator<Map<String, Long>, Map<String, Long>> {
   private static final Logger LOG = Logger.getLogger(WordCountOutputHandler.class.getName());
 
   @NamedParameter(doc = "logging path for test")

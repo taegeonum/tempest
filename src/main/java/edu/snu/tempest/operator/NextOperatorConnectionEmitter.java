@@ -13,15 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.tempest.operator.window;
+package edu.snu.tempest.operator;
 
 /**
- * WindowOperator interface.
+ * An output emitter connecting next operator.
+ * It sends emitted data to next operator.
  */
-public interface WindowOperator<I> {
+public final class NextOperatorConnectionEmitter<V> implements OutputEmitter<V> {
+
   /**
-   * It receives input from this function.
-   * @param val input value
+   * Next operator which receives emitted data.
    */
-  void execute(final I val);
+  private final Operator<V, ?> nextOperator;
+
+  /**
+   * An output emitter connection next operator.
+   * It emits received input to next operator.
+   * @param nextOperator
+   */
+  public NextOperatorConnectionEmitter(final Operator<V, ?> nextOperator) {
+    this.nextOperator = nextOperator;
+  }
+
+  @Override
+  public void emit(final V input) {
+    nextOperator.execute(input);
+  }
 }
