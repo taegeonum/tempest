@@ -28,14 +28,14 @@ public interface DynamicMTSWindowOperator<I, V> extends TimescaleWindowOperator<
   /**
    * Receive timescale to be added.
    * @param ts timescale to be added.
-   * @param addTime the time when timescale is added. TimeUnit is second.
+   * @param addTime the time when timescale is added. Time unit is in seconds.
    */
   void onTimescaleAddition(Timescale ts, long addTime);
 
   /**
    * Receive timescale to be deleted.
    * @param ts timescale to be deleted.
-   * @param deleteTime the time when timescale is deleted. TimeUnit is second.
+   * @param deleteTime the time when timescale is deleted. Time unit is in seconds.
    */
   void onTimescaleDeletion(Timescale ts, long deleteTime);
 }

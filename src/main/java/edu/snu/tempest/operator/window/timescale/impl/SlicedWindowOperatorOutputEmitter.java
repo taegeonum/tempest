@@ -52,7 +52,7 @@ final class SlicedWindowOperatorOutputEmitter<V> implements OutputEmitter<Partia
 
   /**
    * Save partial output into computation reuser
-   * and triggers overlapping window operators.
+   * and trigger overlapping window operators.
    * @param output a partial output
    */
   @Override

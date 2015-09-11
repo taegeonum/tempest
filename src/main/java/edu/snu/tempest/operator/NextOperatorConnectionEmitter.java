@@ -16,27 +16,27 @@
 package edu.snu.tempest.operator;
 
 /**
- * An output emitter connecting next operator.
+ * An output emitter connecting previous operator to next operator.
  * It sends emitted data to next operator.
  */
-public final class NextOperatorConnectionEmitter<V> implements OutputEmitter<V> {
+public final class NextOperatorConnectionEmitter<I, O> implements OutputEmitter<I> {
 
   /**
    * Next operator which receives emitted data.
    */
-  private final Operator<V, ?> nextOperator;
+  private final Operator<I, O> nextOperator;
 
   /**
-   * An output emitter connection next operator.
+   * An output emitter connecting previous to next operator.
    * It emits received input to next operator.
    * @param nextOperator
    */
-  public NextOperatorConnectionEmitter(final Operator<V, ?> nextOperator) {
+  public NextOperatorConnectionEmitter(final Operator<I, O> nextOperator) {
     this.nextOperator = nextOperator;
   }
 
   @Override
-  public void emit(final V input) {
+  public void emit(final I input) {
     nextOperator.execute(input);
   }
 }
