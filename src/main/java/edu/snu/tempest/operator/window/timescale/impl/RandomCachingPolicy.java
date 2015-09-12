@@ -17,7 +17,7 @@ package edu.snu.tempest.operator.window.timescale.impl;
 
 import edu.snu.tempest.operator.window.timescale.Timescale;
 import edu.snu.tempest.operator.window.timescale.TimescaleParser;
-import edu.snu.tempest.operator.window.timescale.parameter.CachingRate;
+import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
 import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;
@@ -28,11 +28,11 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * CachingRatePolicy caches outputs according to the caching rate.
+ * RandomCachingPolicy caches outputs according to the caching probability.
  * Also, it does not cache outputs of a timescale which has largest window size
  * because outputs of largest window size cannot be used for outputs of smaller window size.
  */
-public final class CachingRatePolicy implements CachingPolicy {
+public final class RandomCachingPolicy implements CachingPolicy {
 
   /**
    * An initial timescales.
@@ -47,9 +47,9 @@ public final class CachingRatePolicy implements CachingPolicy {
   private AtomicLong largestWindowSize;
 
   /**
-   * CachingRate decides the amount of finalAggregation to be saved.
+   * CachingProb decides the amount of finalAggregation to be saved.
    */
-  private final double cachingRate;
+  private final double cachingProb;
 
   /**
    * Random value to decide output caching.
@@ -57,19 +57,19 @@ public final class CachingRatePolicy implements CachingPolicy {
   private final Random random;
 
   /**
-   * CachingRatePolicy caches outputs according to the caching rate.
+   * RandomCachingPolicy caches outputs according to the caching probability.
    * @param tsParser timescale parser.
-   * @param cachingRate a caching rate. cachingPeriod is a function of cachingRate.
+   * @param cachingProb a caching probability.
    */
   @Inject
-  private CachingRatePolicy(final TimescaleParser tsParser,
-                            @Parameter(CachingRate.class) final double cachingRate) {
-    if (cachingRate < 0 || cachingRate > 1) {
+  private RandomCachingPolicy(final TimescaleParser tsParser,
+                              @Parameter(CachingProb.class) final double cachingProb) {
+    if (cachingProb < 0 || cachingProb > 1) {
       throw new InvalidParameterException(
-          "CachingRate should be greater or equal than 0 and smaller or equal than 1: " + cachingRate);
+          "CachingProb should be greater or equal than 0 and smaller or equal than 1: " + cachingProb);
     }
     this.timescales = new LinkedList<>(tsParser.timescales);
-    this.cachingRate = cachingRate;
+    this.cachingProb = cachingProb;
     this.largestWindowSize = new AtomicLong(findLargestWindowSize());
     this.random = new Random();
   }
@@ -87,7 +87,7 @@ public final class CachingRatePolicy implements CachingPolicy {
       // do not save largest window output
       return false;
     } else {
-      return random.nextDouble() < cachingRate;
+      return random.nextDouble() < cachingProb;
     }
   }
 

@@ -16,7 +16,7 @@
 package edu.snu.tempest.operator.window.timescale;
 
 import edu.snu.tempest.operator.window.timescale.impl.*;
-import edu.snu.tempest.operator.window.timescale.parameter.CachingRate;
+import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
 import edu.snu.tempest.operator.window.timescale.parameter.MTSOperatorIdentifier;
 import edu.snu.tempest.signal.impl.ZkMTSParameters;
 import edu.snu.tempest.signal.window.timescale.TimescaleSignalDecoder;
@@ -49,11 +49,11 @@ public final class DynamicMTSWindowConfiguration extends TimescaleWindowBaseConf
       .merge(TimescaleWindowBaseConfiguration.CONF)
       .bindImplementation(ComputationReuser.class, DynamicComputationReuser.class)
       .bindImplementation(NextSliceTimeProvider.class, DynamicNextSliceTimeProvider.class)
-      .bindNamedParameter(CachingRate.class, CACHING_RATE)
+      .bindNamedParameter(CachingProb.class, CACHING_RATE)
       .bindNamedParameter(MTSOperatorIdentifier.class, OPERATOR_IDENTIFIER)
       .bindNamedParameter(ZkMTSParameters.ZkServerAddress.class, ZK_SERVER_ADDRESS)
       .bindNamedParameter(ZkMTSParameters.ZkSignalDecoder.class, TimescaleSignalDecoder.class)
       .bindNamedParameter(ZkMTSParameters.ZkSignalEncoder.class, TimescaleSignalEncoder.class)
-      .bindImplementation(CachingPolicy.class, CachingRatePolicy.class)
+      .bindImplementation(CachingPolicy.class, RandomCachingPolicy.class)
       .build();
 }
