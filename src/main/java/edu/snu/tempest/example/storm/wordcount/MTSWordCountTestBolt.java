@@ -191,7 +191,7 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
           .set(DynamicMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(timescales))
           .set(DynamicMTSWindowConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
           .set(DynamicMTSWindowConfiguration.OUTPUT_HANDLER, WordCountOutputHandler.class)
-          .set(DynamicMTSWindowConfiguration.CACHING_RATE, cachingProb)
+          .set(DynamicMTSWindowConfiguration.CACHING_PROB, cachingProb)
           .set(DynamicMTSWindowConfiguration.OPERATOR_IDENTIFIER, "mts-wcbolt")
           .set(DynamicMTSWindowConfiguration.ZK_SERVER_ADDRESS, address)
           .build();

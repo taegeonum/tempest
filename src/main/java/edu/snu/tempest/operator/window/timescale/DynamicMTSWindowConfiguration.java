@@ -31,9 +31,9 @@ import org.apache.reef.tang.formats.RequiredParameter;
 public final class DynamicMTSWindowConfiguration extends TimescaleWindowBaseConfiguration {
 
   /**
-   * A caching rate for dynamic mts operator.
+   * A caching probability for random caching policy.
    */
-  public static final OptionalParameter<Double> CACHING_RATE = new OptionalParameter<>();
+  public static final OptionalParameter<Double> CACHING_PROB = new OptionalParameter<>();
 
   /**
    * Operator identifier for dynamic mts operator.
@@ -49,7 +49,7 @@ public final class DynamicMTSWindowConfiguration extends TimescaleWindowBaseConf
       .merge(TimescaleWindowBaseConfiguration.CONF)
       .bindImplementation(ComputationReuser.class, DynamicComputationReuser.class)
       .bindImplementation(NextSliceTimeProvider.class, DynamicNextSliceTimeProvider.class)
-      .bindNamedParameter(CachingProb.class, CACHING_RATE)
+      .bindNamedParameter(CachingProb.class, CACHING_PROB)
       .bindNamedParameter(MTSOperatorIdentifier.class, OPERATOR_IDENTIFIER)
       .bindNamedParameter(ZkMTSParameters.ZkServerAddress.class, ZK_SERVER_ADDRESS)
       .bindNamedParameter(ZkMTSParameters.ZkSignalDecoder.class, TimescaleSignalDecoder.class)
