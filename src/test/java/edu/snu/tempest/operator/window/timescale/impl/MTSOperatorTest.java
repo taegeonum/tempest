@@ -16,7 +16,7 @@
 package edu.snu.tempest.operator.window.timescale.impl;
 
 
-import edu.snu.tempest.operator.NextOperatorConnectionEmitter;
+import edu.snu.tempest.operator.OperatorConnector;
 import edu.snu.tempest.operator.Operator;
 import edu.snu.tempest.operator.window.timescale.TimeWindowNextOperator;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
@@ -109,7 +109,7 @@ public class MTSOperatorTest {
         operator = injector.getInstance(Operator.class);
     final TimeWindowNextOperator<Map<Integer, Long>, Map<Integer, Long>>
         tsOutputHandler = injector.getInstance(TestOutputHandler.class);
-    operator.prepare(new NextOperatorConnectionEmitter<>(tsOutputHandler));
+    operator.prepare(new OperatorConnector<>(tsOutputHandler));
     executor.submit(new Runnable() {
       @Override
       public void run() {
