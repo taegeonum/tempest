@@ -18,7 +18,7 @@ package edu.snu.tempest.operator.window.timescale.impl;
 
 import edu.snu.tempest.operator.OperatorConnector;
 import edu.snu.tempest.operator.Operator;
-import edu.snu.tempest.operator.window.timescale.TimeWindowNextOperator;
+import edu.snu.tempest.operator.window.timescale.TimeWindowOutputHandler;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.timescale.DynamicMTSWindowConfiguration;
@@ -107,7 +107,7 @@ public class MTSOperatorTest {
 
     final Operator<Integer, TimescaleWindowOutput<Map<Integer, Long>>>
         operator = injector.getInstance(Operator.class);
-    final TimeWindowNextOperator<Map<Integer, Long>, Map<Integer, Long>>
+    final TimeWindowOutputHandler<Map<Integer, Long>, Map<Integer, Long>>
         tsOutputHandler = injector.getInstance(TestOutputHandler.class);
     operator.prepare(new OperatorConnector<>(tsOutputHandler));
     executor.submit(new Runnable() {

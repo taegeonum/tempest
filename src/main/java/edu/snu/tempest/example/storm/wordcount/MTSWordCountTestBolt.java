@@ -23,7 +23,7 @@ import backtype.storm.tuple.Tuple;
 import edu.snu.tempest.example.util.writer.LocalOutputWriter;
 import edu.snu.tempest.example.util.writer.OutputWriter;
 import edu.snu.tempest.operator.OperatorConnector;
-import edu.snu.tempest.operator.window.timescale.TimeWindowNextOperator;
+import edu.snu.tempest.operator.window.timescale.TimeWindowOutputHandler;
 import edu.snu.tempest.operator.window.aggregator.CAAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
@@ -225,7 +225,7 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
     ij.bindVolatileParameter(WordCountOutputHandler.PathPrefix.class, pathPrefix);
     try {
       operator = ij.getInstance(TimescaleWindowOperator.class);
-      final TimeWindowNextOperator<Map<String, Long>, Map<String, Long>>
+      final TimeWindowOutputHandler<Map<String, Long>, Map<String, Long>>
           handler = ij.getInstance(WordCountOutputHandler.class);
       operator.prepare(new OperatorConnector<>(handler));
     } catch (InjectionException e) {
