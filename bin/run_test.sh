@@ -19,7 +19,7 @@
 # parameter: a file path containing test parameters
 
 SELF_JAR='./target/tempest-0.11-SNAPSHOT.jar'
-TARGET_CLASS='edu.snu.tempest.example.storm.wordcount.MTSWordCountTestTopology'
+TARGET_CLASS='evaluation.example.wordcount.MTSWordCountTestTopology'
 
 CMD="java -cp ::$SELF_JAR $LOCAL_RUNTIME_TMP $LOGGING_CONFIG $TARGET_CLASS `cat $1`"
 echo $CMD

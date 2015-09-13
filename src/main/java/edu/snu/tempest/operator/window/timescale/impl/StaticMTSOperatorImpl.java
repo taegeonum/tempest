@@ -63,6 +63,8 @@ public final class StaticMTSOperatorImpl<I, V> implements TimescaleWindowOperato
    */
   private final long startTime;
 
+  private final SlicingStage<I, V> slicingStage;
+
   /**
    * Creates static MTS window operator.
    * @param slicingStage a slicing stage which triggers slice of partial result
@@ -89,6 +91,7 @@ public final class StaticMTSOperatorImpl<I, V> implements TimescaleWindowOperato
     this.tsParser = tsParser;
     this.startTime = startTime;
     this.owoStage = owoStage;
+    this.slicingStage = slicingStage;
   }
 
   /**
@@ -115,5 +118,11 @@ public final class StaticMTSOperatorImpl<I, V> implements TimescaleWindowOperato
       owo.prepare(emitter);
       this.owoStage.subscribe(owo);
     }
+  }
+
+  @Override
+  public void close() throws Exception {
+    slicingStage.close();
+    owoStage.close();
   }
 }

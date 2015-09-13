@@ -122,15 +122,24 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     LOG.log(Level.FINE,
         "savePartialOutput: " + wStartTime + " - " + wEndTime +", " + start  + " - " + end);
 
-    DependencyGraphNode node = null;
     try {
-      node = partialOutputTable.lookup(start, end);
+      final DependencyGraphNode node = partialOutputTable.lookup(start, end);
+      final T nodeOutput = node.getOutput();
+      if (nodeOutput != null) {
+        synchronized (nodeOutput) {
+          while (node.getOutput() != null) {
+            LOG.log(Level.FINE, "Partial Wait: " + wStartTime + "-" + wEndTime);
+            nodeOutput.wait();
+          }
+        }
+      }
+      node.saveOutput(output);
     } catch (final NotFoundException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
     }
-
-    node.saveOutput(output);
   }
 
   /**
@@ -148,12 +157,12 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
 
     long start = adjStartTime(wStartTime);
     final long end = adjEndTime(wEndTime);
-    LOG.log(Level.FINE, "final aggregate: [" + start+ "-" + end +"]");
 
     // reuse!
     if (start >= end) {
       start -= period;
     }
+    LOG.log(Level.FINE, "final aggregate: [" + start+ "-" + end +"]");
 
     DependencyGraphNode node = null;
     try {
@@ -167,8 +176,10 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     for (final DependencyGraphNode child : node.getDependencies()) {
       synchronized (child) {
         if (child.getOutput() != null) {
-          dependentOutputs.add(child.getOutput());
-          child.decreaseRefCnt();
+          if (!(wStartTime < startTime && end <= child.start)) {
+            dependentOutputs.add(child.getOutput());
+            child.decreaseRefCnt();
+          }
         } else if (wStartTime < startTime && end <= child.start) {
           // if there are no dependent outputs to use
           // no need to wait for the child's output.
@@ -459,7 +470,11 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
         if (refCnt == 0) {
           // Remove output
           LOG.log(Level.FINE, "Release: [" + start + "-" + end + "]");
-          output = null;
+          final T prevOutput = output;
+          synchronized (prevOutput) {
+            output = null;
+            prevOutput.notifyAll();
+          }
           refCnt = initialRefCnt;
         }
       }

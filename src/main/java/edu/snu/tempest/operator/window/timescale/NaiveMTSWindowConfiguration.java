@@ -15,11 +15,18 @@
  */
 package edu.snu.tempest.operator.window.timescale;
 
-import edu.snu.tempest.operator.Operator;
+import edu.snu.tempest.operator.window.timescale.impl.*;
+import org.apache.reef.tang.formats.ConfigurationModule;
 
 /**
- * TimescaleWindowOperator interface.
- * It receives input and produces window output every interval.
+ * A helper class for static MTS window configuration.
  */
-public interface TimescaleWindowOperator<I, V> extends Operator<I, TimescaleWindowOutput<V>>, AutoCloseable {
+public final class NaiveMTSWindowConfiguration extends TimescaleWindowBaseConfiguration {
+
+  public static final ConfigurationModule CONF = new NaiveMTSWindowConfiguration()
+      .merge(TimescaleWindowBaseConfiguration.CONF)
+      .bindImplementation(ComputationReuser.class, StaticComputationReuser.class)
+      .bindImplementation(NextSliceTimeProvider.class, StaticNextSliceTimeProvider.class)
+      .bindImplementation(TimescaleWindowOperator.class, NaiveMTSOperator.class)
+      .build();
 }

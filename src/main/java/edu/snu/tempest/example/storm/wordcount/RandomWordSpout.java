@@ -30,7 +30,7 @@ import java.util.logging.Logger;
 /**
  * Sends randomly selected words continuously.
  */
-final class RandomWordSpout extends BaseRichSpout {
+public final class RandomWordSpout extends BaseRichSpout {
   private static final Logger LOG = Logger.getLogger(RandomWordSpout.class.getName());
 
   private SpoutOutputCollector collector;

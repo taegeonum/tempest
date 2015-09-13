@@ -31,7 +31,7 @@ import java.util.logging.Logger;
 /**
  * Sends randomly selected words which have zipfian distribution continuously.
  */
-final class ZipfianWordSpout extends BaseRichSpout {
+public final class ZipfianWordSpout extends BaseRichSpout {
   private static final Logger LOG = Logger.getLogger(ZipfianWordSpout.class.getName());
   private static final int NUM_OF_WORDS = 15 * 15 * 15 * 15;
   private static final double ZIPF_CONSTANT = 1.4;

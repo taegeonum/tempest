@@ -77,6 +77,8 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
    */
   private final NextSliceTimeProvider sliceTimeProvider;
 
+  private final SlicingStage<I, V> slicingStage;
+
   /**
    * Creates dynamic MTS window operator.
    * @param slicingStage a slicing stage which triggers slice of partial result
@@ -107,6 +109,7 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
     this.subscriptions = new HashMap<>();
     this.tsParser = tsParser;
     this.startTime = startTime;
+    this.slicingStage = slicingStage;
   }
 
   /**
@@ -176,5 +179,11 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
       this.computationReuser.onTimescaleDeletion(timescale, deleteTime);
       ss.unsubscribe();
     }
+  }
+
+  @Override
+  public void close() throws Exception {
+    slicingStage.close();
+    owoStage.close();
   }
 }
