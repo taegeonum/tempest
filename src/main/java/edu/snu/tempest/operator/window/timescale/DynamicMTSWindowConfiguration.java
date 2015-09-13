@@ -17,13 +17,8 @@ package edu.snu.tempest.operator.window.timescale;
 
 import edu.snu.tempest.operator.window.timescale.impl.*;
 import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
-import edu.snu.tempest.operator.window.timescale.parameter.MTSOperatorIdentifier;
-import edu.snu.tempest.signal.impl.ZkMTSParameters;
-import edu.snu.tempest.signal.window.timescale.TimescaleSignalDecoder;
-import edu.snu.tempest.signal.window.timescale.TimescaleSignalEncoder;
 import org.apache.reef.tang.formats.ConfigurationModule;
 import org.apache.reef.tang.formats.OptionalParameter;
-import org.apache.reef.tang.formats.RequiredParameter;
 
 /**
  * A helper class for dynamic MTS window configuration.
@@ -35,25 +30,13 @@ public final class DynamicMTSWindowConfiguration extends TimescaleWindowBaseConf
    */
   public static final OptionalParameter<Double> CACHING_PROB = new OptionalParameter<>();
 
-  /**
-   * Operator identifier for dynamic mts operator.
-   */
-  public static final RequiredParameter<String> OPERATOR_IDENTIFIER = new RequiredParameter<>();
-
-  /**
-   * Zookeeper address for sending timescale signal.
-   */
-  public static final RequiredParameter<String> ZK_SERVER_ADDRESS = new RequiredParameter<>();
-
   public static final ConfigurationModule CONF = new DynamicMTSWindowConfiguration()
       .merge(TimescaleWindowBaseConfiguration.CONF)
       .bindImplementation(ComputationReuser.class, DynamicComputationReuser.class)
       .bindImplementation(NextSliceTimeProvider.class, DynamicNextSliceTimeProvider.class)
       .bindNamedParameter(CachingProb.class, CACHING_PROB)
-      .bindNamedParameter(MTSOperatorIdentifier.class, OPERATOR_IDENTIFIER)
-      .bindNamedParameter(ZkMTSParameters.ZkServerAddress.class, ZK_SERVER_ADDRESS)
-      .bindNamedParameter(ZkMTSParameters.ZkSignalDecoder.class, TimescaleSignalDecoder.class)
-      .bindNamedParameter(ZkMTSParameters.ZkSignalEncoder.class, TimescaleSignalEncoder.class)
       .bindImplementation(CachingPolicy.class, RandomCachingPolicy.class)
+      .bindImplementation(TimescaleWindowOperator.class, DynamicMTSOperatorImpl.class)
+      .bindImplementation(DynamicMTSWindowOperator.class, DynamicMTSOperatorImpl.class)
       .build();
 }

@@ -16,9 +16,7 @@
 
 package edu.snu.tempest.operator.window.timescale;
 
-import edu.snu.tempest.operator.window.WindowOperator;
 import edu.snu.tempest.operator.window.aggregator.CAAggregator;
-import edu.snu.tempest.operator.window.timescale.impl.MTSOperatorImpl;
 import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
 import edu.snu.tempest.operator.window.timescale.parameter.TimescaleString;
 import org.apache.reef.tang.formats.ConfigurationModule;
@@ -41,10 +39,6 @@ public class TimescaleWindowBaseConfiguration extends ConfigurationModuleBuilder
    */
   public static final RequiredImpl<CAAggregator> CA_AGGREGATOR = new RequiredImpl<>();
 
-  /**
-   * An output handler.
-   */
-  public static final RequiredImpl<TimescaleWindowOutputHandler> OUTPUT_HANDLER = new RequiredImpl<>();
 
   /**
    * Initial timescales.
@@ -54,8 +48,6 @@ public class TimescaleWindowBaseConfiguration extends ConfigurationModuleBuilder
   public static final ConfigurationModule CONF = new TimescaleWindowBaseConfiguration()
       .bindNamedParameter(StartTime.class, START_TIME)
       .bindNamedParameter(TimescaleString.class, INITIAL_TIMESCALES)
-      .bindImplementation(TimescaleWindowOutputHandler.class, OUTPUT_HANDLER)
       .bindImplementation(CAAggregator.class, CA_AGGREGATOR)
-      .bindImplementation(WindowOperator.class, MTSOperatorImpl.class)
       .build();
 }

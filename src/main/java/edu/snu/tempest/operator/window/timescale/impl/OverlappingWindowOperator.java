@@ -15,8 +15,9 @@
  */
 package edu.snu.tempest.operator.window.timescale.impl;
 
+import edu.snu.tempest.operator.Operator;
 import edu.snu.tempest.operator.window.timescale.Timescale;
-import org.apache.reef.wake.EventHandler;
+import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
 
 
 /**
@@ -25,7 +26,7 @@ import org.apache.reef.wake.EventHandler;
  * For example, if a timescale is [w=10s, i=3s],
  * then OWO produces an output with 10 seconds window size every 3 seconds.
  */
-public interface OverlappingWindowOperator extends EventHandler<Long> {
+public interface OverlappingWindowOperator<V> extends Operator<Long, TimescaleWindowOutput<V>> {
   /**
    * Return a timescale related to this overlapping window operator.
    * @return timescale.

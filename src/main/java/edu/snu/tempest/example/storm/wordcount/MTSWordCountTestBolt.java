@@ -22,12 +22,18 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
 import edu.snu.tempest.example.util.writer.LocalOutputWriter;
 import edu.snu.tempest.example.util.writer.OutputWriter;
-import edu.snu.tempest.operator.window.WindowOperator;
+import edu.snu.tempest.operator.OperatorConnector;
+import edu.snu.tempest.operator.window.timescale.TimeWindowOutputHandler;
 import edu.snu.tempest.operator.window.aggregator.CAAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.timescale.*;
+<<<<<<< HEAD
 import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
+=======
+import edu.snu.tempest.operator.window.timescale.impl.TimescaleParser;
+import edu.snu.tempest.operator.window.timescale.parameter.CachingRate;
+>>>>>>> ISSUE-71
 import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
 import edu.snu.tempest.util.Profiler;
 import org.apache.reef.tang.Configuration;
@@ -92,7 +98,7 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
   /**
    * Window Operator.
    */
-  private WindowOperator<Tuple> operator;
+  private TimescaleWindowOperator<Tuple, Map<String, Long>> operator;
 
   /**
    * Scheduled executor for logging.
@@ -190,10 +196,14 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
           .set(DynamicMTSWindowConfiguration.START_TIME, startTime)
           .set(DynamicMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(timescales))
           .set(DynamicMTSWindowConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+<<<<<<< HEAD
           .set(DynamicMTSWindowConfiguration.OUTPUT_HANDLER, WordCountOutputHandler.class)
           .set(DynamicMTSWindowConfiguration.CACHING_PROB, cachingProb)
           .set(DynamicMTSWindowConfiguration.OPERATOR_IDENTIFIER, "mts-wcbolt")
           .set(DynamicMTSWindowConfiguration.ZK_SERVER_ADDRESS, address)
+=======
+          .set(DynamicMTSWindowConfiguration.CACHING_RATE, cachingRate)
+>>>>>>> ISSUE-71
           .build();
     } else if (operatorType.equals("naive")) {
       final int index = paramTopologyContext.getThisTaskIndex();
@@ -202,14 +212,12 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
       operatorConf = StaticMTSWindowConfiguration.CONF
           .set(StaticMTSWindowConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
           .set(StaticMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(tsList))
-          .set(StaticMTSWindowConfiguration.OUTPUT_HANDLER, WordCountOutputHandler.class)
           .set(StaticMTSWindowConfiguration.START_TIME, startTime)
           .build();
     } else if (operatorType.equals("static_mts")) {
       operatorConf = StaticMTSWindowConfiguration.CONF
           .set(StaticMTSWindowConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
           .set(StaticMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(timescales))
-          .set(StaticMTSWindowConfiguration.OUTPUT_HANDLER, WordCountOutputHandler.class)
           .set(StaticMTSWindowConfiguration.START_TIME, startTime)
           .build();
     } else {
@@ -227,7 +235,10 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
     ij.bindVolatileInstance(OutputWriter.class, writer);
     ij.bindVolatileParameter(WordCountOutputHandler.PathPrefix.class, pathPrefix);
     try {
-      operator = ij.getInstance(WindowOperator.class);
+      operator = ij.getInstance(TimescaleWindowOperator.class);
+      final TimeWindowOutputHandler<Map<String, Long>, Map<String, Long>>
+          handler = ij.getInstance(WordCountOutputHandler.class);
+      operator.prepare(new OperatorConnector<>(handler));
     } catch (InjectionException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
