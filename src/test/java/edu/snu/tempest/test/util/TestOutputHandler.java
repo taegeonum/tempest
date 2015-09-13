@@ -17,9 +17,9 @@ package edu.snu.tempest.test.util;
 
 
 import edu.snu.tempest.operator.OutputEmitter;
-import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
-import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutputHandler;
+import edu.snu.tempest.operator.window.timescale.TimeWindowOutputHandler;
 import edu.snu.tempest.operator.window.timescale.Timescale;
+import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
 
 import javax.inject.Inject;
 import java.util.Map;
@@ -29,7 +29,7 @@ import java.util.Queue;
  * An output handler for test.
  */
 public final class TestOutputHandler implements
-    TimescaleWindowOutputHandler<Map<Integer, Long>, Map<Integer, Long>> {
+    TimeWindowOutputHandler<Map<Integer, Long>, Map<Integer, Long>> {
   private final Map<Timescale,
       Queue<TimescaleWindowOutput<Map<Integer, Long>>>> results;
   private final Monitor monitor;

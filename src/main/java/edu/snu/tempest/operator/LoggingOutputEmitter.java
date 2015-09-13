@@ -13,13 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.tempest.operator.window.timescale;
+package edu.snu.tempest.operator;
 
-import edu.snu.tempest.operator.window.WindowOutputHandler;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
- * A handler for timescale window outputs.
+ * An output emitter logging emitted outputs.
  */
-public interface TimescaleWindowOutputHandler<I, O> extends
-    WindowOutputHandler<TimescaleWindowOutput<I>, TimescaleWindowOutput<O>> {
+public final class LoggingOutputEmitter<V> implements OutputEmitter<V> {
+  private static final Logger LOG = Logger.getLogger(LoggingOutputEmitter.class.getName());
+
+  /**
+   * An output emitter logging emitted outputs.
+   */
+  public LoggingOutputEmitter() {
+  }
+
+  @Override
+  public void emit(final V input) {
+    LOG.log(Level.INFO, input.toString());
+  }
 }

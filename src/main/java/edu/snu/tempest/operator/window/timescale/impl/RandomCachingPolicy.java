@@ -16,7 +16,6 @@
 package edu.snu.tempest.operator.window.timescale.impl;
 
 import edu.snu.tempest.operator.window.timescale.Timescale;
-import edu.snu.tempest.operator.window.timescale.TimescaleParser;
 import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
 import org.apache.reef.tang.annotations.Parameter;
 

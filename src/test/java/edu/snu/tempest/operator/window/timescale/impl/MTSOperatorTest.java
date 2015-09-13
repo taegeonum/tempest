@@ -16,10 +16,15 @@
 package edu.snu.tempest.operator.window.timescale.impl;
 
 
-import edu.snu.tempest.operator.window.WindowOperator;
+import edu.snu.tempest.operator.OperatorConnector;
+import edu.snu.tempest.operator.Operator;
+import edu.snu.tempest.operator.window.timescale.TimeWindowOutputHandler;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
-import edu.snu.tempest.operator.window.timescale.*;
+import edu.snu.tempest.operator.window.timescale.DynamicMTSWindowConfiguration;
+import edu.snu.tempest.operator.window.timescale.StaticMTSWindowConfiguration;
+import edu.snu.tempest.operator.window.timescale.Timescale;
+import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
 import edu.snu.tempest.test.util.IntegerExtractor;
 import edu.snu.tempest.test.util.MTSTestUtils;
 import edu.snu.tempest.test.util.Monitor;
@@ -58,24 +63,24 @@ public class MTSOperatorTest {
 
   @Test
   public void dynamicMTSOperationTest() throws Exception {
-    multipleTimescaleAggregationTest(DynamicMTSWindowConfiguration.CONF
+    final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
+    jcb.bindImplementation(Operator.class, DynamicMTSOperatorImpl.class);
+    multipleTimescaleAggregationTest(Configurations.merge(jcb.build(), DynamicMTSWindowConfiguration.CONF
         .set(DynamicMTSWindowConfiguration.START_TIME, startTime)
         .set(DynamicMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(timescales))
         .set(DynamicMTSWindowConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-        .set(DynamicMTSWindowConfiguration.OUTPUT_HANDLER, TestOutputHandler.class)
-        .set(DynamicMTSWindowConfiguration.OPERATOR_IDENTIFIER, "test")
-        .set(DynamicMTSWindowConfiguration.ZK_SERVER_ADDRESS, "localhost:2181")
-        .build());
+        .build()));
   }
 
   @Test
   public void staticMTSOperationTest() throws Exception {
-    multipleTimescaleAggregationTest(StaticMTSWindowConfiguration.CONF
+    final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
+    jcb.bindImplementation(Operator.class, StaticMTSOperatorImpl.class);
+    multipleTimescaleAggregationTest(Configurations.merge(jcb.build(), StaticMTSWindowConfiguration.CONF
         .set(StaticMTSWindowConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(StaticMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(timescales))
-        .set(StaticMTSWindowConfiguration.OUTPUT_HANDLER, TestOutputHandler.class)
         .set(StaticMTSWindowConfiguration.START_TIME, startTime)
-        .build());
+        .build()));
   }
 
   /**
@@ -100,7 +105,11 @@ public class MTSOperatorTest {
     injector.bindVolatileInstance(Monitor.class, monitor);
     injector.bindVolatileInstance(Map.class, results);
 
-    final WindowOperator<Integer> operator = injector.getInstance(WindowOperator.class);
+    final Operator<Integer, TimescaleWindowOutput<Map<Integer, Long>>>
+        operator = injector.getInstance(Operator.class);
+    final TimeWindowOutputHandler<Map<Integer, Long>, Map<Integer, Long>>
+        tsOutputHandler = injector.getInstance(TestOutputHandler.class);
+    operator.prepare(new OperatorConnector<>(tsOutputHandler));
     executor.submit(new Runnable() {
       @Override
       public void run() {

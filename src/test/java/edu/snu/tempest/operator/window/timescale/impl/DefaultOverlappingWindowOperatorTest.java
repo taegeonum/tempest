@@ -15,8 +15,8 @@
  */
 package edu.snu.tempest.operator.window.timescale.impl;
 
+import edu.snu.tempest.operator.LoggingOutputEmitter;
 import edu.snu.tempest.operator.common.NotFoundException;
-import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutputHandler;
 import edu.snu.tempest.operator.window.timescale.Timescale;
 import org.junit.Test;
 
@@ -38,13 +38,12 @@ public final class DefaultOverlappingWindowOperatorTest {
     map.put(1, 1);
     final Timescale ts = new Timescale(5, 3);
     final ComputationReuser<Map<Integer, Integer>> computationReuser = mock(ComputationReuser.class);
-    final TimescaleWindowOutputHandler<Map<Integer, Integer>, Map<Integer, Integer>> outputHandler =
-        mock(TimescaleWindowOutputHandler.class);
     final OverlappingWindowOperator operator = new DefaultOverlappingWindowOperator<>(
-        ts, computationReuser, outputHandler, 0L);
-    operator.onNext(3L);
+        ts, computationReuser, 0L);
+    operator.prepare(new LoggingOutputEmitter());
+    operator.execute(3L);
     verify(computationReuser).finalAggregate(-2, 3, ts);
-    operator.onNext(6L);
+    operator.execute(6L);
     verify(computationReuser).finalAggregate(1, 6, ts);
   }
 }
