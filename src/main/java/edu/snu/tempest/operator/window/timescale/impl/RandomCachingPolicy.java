@@ -16,21 +16,22 @@
 package edu.snu.tempest.operator.window.timescale.impl;
 
 import edu.snu.tempest.operator.window.timescale.Timescale;
-import edu.snu.tempest.operator.window.timescale.parameter.CachingRate;
+import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
 import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;
+import java.security.InvalidParameterException;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * CachingRatePolicy caches outputs according to the caching rate.
+ * RandomCachingPolicy caches outputs according to the caching probability.
  * Also, it does not cache outputs of a timescale which has largest window size
  * because outputs of largest window size cannot be used for outputs of smaller window size.
  */
-public final class CachingRatePolicy implements CachingPolicy {
+public final class RandomCachingPolicy implements CachingPolicy {
 
   /**
    * An initial timescales.
@@ -45,29 +46,31 @@ public final class CachingRatePolicy implements CachingPolicy {
   private AtomicLong largestWindowSize;
 
   /**
-   * Contains a map of timescale and latest caching time of an output of the timescale.
-   * This decides to cache or not to cache an output
-   * with this information.
+   * CachingProb decides the amount of finalAggregation to be saved.
    */
-  private final ConcurrentHashMap<Timescale, Long> latestCachingTimeMap;
+  private final double cachingProb;
 
   /**
-   * CachingRate decides the amount of finalAggregation to save.
+   * Random value to decide output caching.
    */
-  private final double cachingRate;
+  private final Random random;
 
   /**
-   * CachingRatePolicy caches outputs according to the caching rate.
+   * RandomCachingPolicy caches outputs according to the caching probability.
    * @param tsParser timescale parser.
-   * @param cachingRate a caching rate. cachingPeriod is a function of cachingRate.
+   * @param cachingProb a caching probability.
    */
   @Inject
-  private CachingRatePolicy(final TimescaleParser tsParser,
-                            @Parameter(CachingRate.class) final double cachingRate) {
+  private RandomCachingPolicy(final TimescaleParser tsParser,
+                              @Parameter(CachingProb.class) final double cachingProb) {
+    if (cachingProb < 0 || cachingProb > 1) {
+      throw new InvalidParameterException(
+          "CachingProb should be greater or equal than 0 and smaller or equal than 1: " + cachingProb);
+    }
     this.timescales = new LinkedList<>(tsParser.timescales);
-    this.cachingRate = cachingRate;
-    this.latestCachingTimeMap = new ConcurrentHashMap<>();
+    this.cachingProb = cachingProb;
     this.largestWindowSize = new AtomicLong(findLargestWindowSize());
+    this.random = new Random();
   }
 
   /**
@@ -79,26 +82,11 @@ public final class CachingRatePolicy implements CachingPolicy {
    */
   @Override
   public boolean cache(final long startTime, final long endTime, final Timescale ts) {
-    Long latestCachingTime = latestCachingTimeMap.get(ts);
-    if (latestCachingTime == null) {
-      latestCachingTime = 0L;
-    }
-
-    if (cachingRate == 0) {
+    if (ts.windowSize == this.largestWindowSize.get()) {
+      // do not save largest window output
       return false;
-    }
-
-    // cachingPeriod is a function of cachingRate.
-    // cachingPeriod = windowSize / cachingRate
-    // if the cachingRate is zero, then cachingPeriod is infinite and no data is cached.
-    // if the cachingRate is one, then cachingPeriod is windowSize and the result is cached every windowSize.
-    final double cachingPeriod = ts.windowSize / cachingRate;
-    if ((endTime - latestCachingTime) >= cachingPeriod
-        && ts.windowSize < this.largestWindowSize.get()) {
-      latestCachingTimeMap.put(ts, endTime);
-      return true;
     } else {
-      return false;
+      return random.nextDouble() < cachingProb;
     }
   }
 

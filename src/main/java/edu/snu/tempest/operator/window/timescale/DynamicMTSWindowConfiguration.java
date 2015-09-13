@@ -16,7 +16,7 @@
 package edu.snu.tempest.operator.window.timescale;
 
 import edu.snu.tempest.operator.window.timescale.impl.*;
-import edu.snu.tempest.operator.window.timescale.parameter.CachingRate;
+import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
 import org.apache.reef.tang.formats.ConfigurationModule;
 import org.apache.reef.tang.formats.OptionalParameter;
 
@@ -26,16 +26,16 @@ import org.apache.reef.tang.formats.OptionalParameter;
 public final class DynamicMTSWindowConfiguration extends TimescaleWindowBaseConfiguration {
 
   /**
-   * A caching rate for dynamic mts operator.
+   * A caching probability for random caching policy.
    */
-  public static final OptionalParameter<Double> CACHING_RATE = new OptionalParameter<>();
+  public static final OptionalParameter<Double> CACHING_PROB = new OptionalParameter<>();
 
   public static final ConfigurationModule CONF = new DynamicMTSWindowConfiguration()
       .merge(TimescaleWindowBaseConfiguration.CONF)
       .bindImplementation(ComputationReuser.class, DynamicComputationReuser.class)
       .bindImplementation(NextSliceTimeProvider.class, DynamicNextSliceTimeProvider.class)
-      .bindNamedParameter(CachingRate.class, CACHING_RATE)
-      .bindImplementation(CachingPolicy.class, CachingRatePolicy.class)
+      .bindNamedParameter(CachingProb.class, CACHING_PROB)
+      .bindImplementation(CachingPolicy.class, RandomCachingPolicy.class)
       .bindImplementation(TimescaleWindowOperator.class, DynamicMTSOperatorImpl.class)
       .bindImplementation(DynamicMTSWindowOperator.class, DynamicMTSOperatorImpl.class)
       .build();

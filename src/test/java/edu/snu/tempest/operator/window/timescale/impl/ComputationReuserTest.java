@@ -20,7 +20,7 @@ import edu.snu.tempest.operator.window.aggregator.CAAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.timescale.Timescale;
-import edu.snu.tempest.operator.window.timescale.parameter.CachingRate;
+import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
 import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
 import edu.snu.tempest.operator.window.timescale.parameter.TimescaleString;
 import edu.snu.tempest.test.util.IntegerExtractor;
@@ -71,7 +71,7 @@ public class ComputationReuserTest {
   @Test
   public void dynamicComputationReuserMultiThreadAggregationTest() throws InjectionException, InterruptedException {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
-    jcb.bindImplementation(CachingPolicy.class, CachingRatePolicy.class);
+    jcb.bindImplementation(CachingPolicy.class, RandomCachingPolicy.class);
     jcb.bindImplementation(ComputationReuser.class, DynamicComputationReuser.class);
     multiThreadedFinalAggregation(jcb.build());
   }
@@ -85,10 +85,10 @@ public class ComputationReuserTest {
 
   private Configuration dynamicComputationReuserConfig() {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
-    jcb.bindNamedParameter(CachingRate.class, Integer.toString(1));
+    jcb.bindNamedParameter(CachingProb.class, Integer.toString(1));
     jcb.bindImplementation(KeyExtractor.class, IntegerExtractor.class);
     jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(timescales));
-    jcb.bindImplementation(CachingPolicy.class, CachingRatePolicy.class);
+    jcb.bindImplementation(CachingPolicy.class, RandomCachingPolicy.class);
     jcb.bindNamedParameter(StartTime.class, Long.toString(startTime));
     jcb.bindImplementation(CAAggregator.class, CountByKeyAggregator.class);
     jcb.bindImplementation(Aggregator.class, CountByKeyAggregator.class);
@@ -128,7 +128,7 @@ public class ComputationReuserTest {
 
     final ExecutorService executor = Executors.newFixedThreadPool(10);
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder(conf);
-    jcb.bindNamedParameter(CachingRate.class, Integer.toString(1));
+    jcb.bindNamedParameter(CachingProb.class, Integer.toString(1));
     jcb.bindImplementation(KeyExtractor.class, IntegerExtractor.class);
     jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(timescales));
 

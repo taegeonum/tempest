@@ -29,7 +29,7 @@ import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.timescale.*;
 import edu.snu.tempest.operator.window.timescale.impl.TimescaleParser;
-import edu.snu.tempest.operator.window.timescale.parameter.CachingRate;
+import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
 import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
 import edu.snu.tempest.util.Profiler;
 import org.apache.reef.tang.Configuration;
@@ -82,9 +82,9 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
   private final String operatorType;
 
   /**
-   * Caching rate for dynamic mts operator.
+   * Caching prob for dynamic mts operator.
    */
-  private final double cachingRate;
+  private final double cachingProb;
 
   /**
    * Zookeeper address.
@@ -118,20 +118,20 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
    * @param timescales an initial timescales.
    * @param operatorType a type of operator
    * @param address a zookeeper address for receiving timescale addition/deletion.
-   * @param cachingRate a caching rate for dynamic MTS operator.
+   * @param cachingProb a caching prob for dynamic MTS operator.
    * @param startTime an initial start time.
    */
   public MTSWordCountTestBolt(final String pathPrefix,
                               final List<Timescale> timescales,
                               final String operatorType,
                               final String address,
-                              final double cachingRate,
+                              final double cachingProb,
                               final long startTime) {
     this.pathPrefix = pathPrefix;
     this.timescales = timescales;
     this.operatorType = operatorType;
     this.address = address;
-    this.cachingRate = cachingRate;
+    this.cachingProb = cachingProb;
     this.startTime = startTime;
   }
   
@@ -183,7 +183,7 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
     // create MTS operator
     final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
     cb.bindImplementation(CAAggregator.class, CountByKeyAggregator.class);
-    cb.bindNamedParameter(CachingRate.class, cachingRate + "");
+    cb.bindNamedParameter(CachingProb.class, cachingProb + "");
     cb.bindNamedParameter(StartTime.class, this.startTime + "");
 
     final Configuration operatorConf;
@@ -192,7 +192,7 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
           .set(DynamicMTSWindowConfiguration.START_TIME, startTime)
           .set(DynamicMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(timescales))
           .set(DynamicMTSWindowConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-          .set(DynamicMTSWindowConfiguration.CACHING_RATE, cachingRate)
+          .set(DynamicMTSWindowConfiguration.CACHING_PROB, cachingProb)
           .build();
     } else if (operatorType.equals("naive")) {
       final int index = paramTopologyContext.getThisTaskIndex();
