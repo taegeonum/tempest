@@ -28,12 +28,8 @@ import edu.snu.tempest.operator.window.aggregator.CAAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.timescale.*;
-<<<<<<< HEAD
 import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
-=======
 import edu.snu.tempest.operator.window.timescale.impl.TimescaleParser;
-import edu.snu.tempest.operator.window.timescale.parameter.CachingRate;
->>>>>>> ISSUE-71
 import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
 import edu.snu.tempest.util.Profiler;
 import org.apache.reef.tang.Configuration;
@@ -196,14 +192,7 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
           .set(DynamicMTSWindowConfiguration.START_TIME, startTime)
           .set(DynamicMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(timescales))
           .set(DynamicMTSWindowConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-<<<<<<< HEAD
-          .set(DynamicMTSWindowConfiguration.OUTPUT_HANDLER, WordCountOutputHandler.class)
           .set(DynamicMTSWindowConfiguration.CACHING_PROB, cachingProb)
-          .set(DynamicMTSWindowConfiguration.OPERATOR_IDENTIFIER, "mts-wcbolt")
-          .set(DynamicMTSWindowConfiguration.ZK_SERVER_ADDRESS, address)
-=======
-          .set(DynamicMTSWindowConfiguration.CACHING_RATE, cachingRate)
->>>>>>> ISSUE-71
           .build();
     } else if (operatorType.equals("naive")) {
       final int index = paramTopologyContext.getThisTaskIndex();

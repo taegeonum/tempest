@@ -144,6 +144,8 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
   @Override
   public void onTimescaleAddition(final Timescale timescale, final long addTime) {
     LOG.log(Level.INFO, DynamicMTSOperatorImpl.class.getName() + " addTimescale: " + timescale);
+    // adjust add time
+
     //1. change slice time.
     this.sliceTimeProvider.onTimescaleAddition(timescale, addTime);
 
