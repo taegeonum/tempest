@@ -18,6 +18,6 @@ package edu.snu.tempest.operator.window.timescale.parameter;
 import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 
-@NamedParameter(doc = "caching rate for saving outputs in dynamic mts operator.",
-    short_name="caching_rate", default_value = "1.0")
-public final class CachingRate implements Name<Double> {}
+@NamedParameter(doc = "caching probability for saving outputs in dynamic mts operator.",
+    short_name="caching_prob", default_value = "0.5")
+public final class CachingProb implements Name<Double> {}

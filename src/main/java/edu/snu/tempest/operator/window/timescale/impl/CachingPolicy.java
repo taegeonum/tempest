@@ -22,7 +22,7 @@ import org.apache.reef.tang.annotations.DefaultImplementation;
 /**
  * CachingPolicy for caching multi-time scale outputs.
  */
-@DefaultImplementation(CachingRatePolicy.class)
+@DefaultImplementation(RandomCachingPolicy.class)
 public interface CachingPolicy {
   /**
    * Decide to cache or not the output of ts ranging from startTime to endTime.
