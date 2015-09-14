@@ -39,4 +39,8 @@ public final class OperatorConnector<I, O> implements OutputEmitter<I> {
   public void emit(final I prevOutput) {
     nextOperator.execute(prevOutput);
   }
+
+  @Override
+  public void close() throws Exception {
+  }
 }

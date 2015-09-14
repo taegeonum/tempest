@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package evaluation.example.wordcount;
+package evaluation.example.topk;
 
 import backtype.storm.Config;
 import backtype.storm.generated.StormTopology;
@@ -48,10 +48,10 @@ import java.util.logging.Logger;
  * WordCountTest topology.
  * This can run naive, static-mts, and dynamic-mts operators.
  */
-final class MTSWordCountTestTopology {
-  private static final Logger LOG = Logger.getLogger(MTSWordCountTestTopology.class.getName());
+final class TopkTestTopology {
+  private static final Logger LOG = Logger.getLogger(TopkTestTopology.class.getName());
 
-  private MTSWordCountTestTopology() {
+  private TopkTestTopology() {
   }
 
   /**
@@ -115,8 +115,8 @@ final class MTSWordCountTestTopology {
     writer.close();
 
     // set spout
-    builder.setSpout("wcspout", spout, test.numSpouts);
-    final BaseRichBolt bolt = new MTSWordCountTestBolt(
+    builder.setSpout("topkspout", spout, test.numSpouts);
+    final BaseRichBolt bolt = new TopkBolt(
         logDir + testName,
         timescales,
         test.operatorName,
@@ -124,7 +124,7 @@ final class MTSWordCountTestTopology {
         TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()));
 
     // set bolt
-    builder.setBolt("wcbolt", bolt, numBolts).fieldsGrouping("wcspout", new Fields("word"));
+    builder.setBolt("topkbolt", bolt, numBolts).fieldsGrouping("topkspout", new Fields("word"));
 
     final StormTopology topology = builder.createTopology();
     StormRunner.runTopologyLocally(topology, topologyName, conf, test.totalTime);

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package evaluation.example.wordcount;
+package evaluation.example.topk;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -23,11 +23,13 @@ import backtype.storm.tuple.Tuple;
 import edu.snu.tempest.example.util.writer.LocalOutputWriter;
 import edu.snu.tempest.example.util.writer.OutputWriter;
 import edu.snu.tempest.operator.OperatorConnector;
+import edu.snu.tempest.operator.OperatorDispatcher;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.timescale.TimeWindowOutputHandler;
 import edu.snu.tempest.operator.window.timescale.Timescale;
 import edu.snu.tempest.operator.window.timescale.TimescaleWindowOperator;
+import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
 import evaluation.example.common.MTSOperatorProvider;
 import evaluation.example.common.OutputLogger;
 import evaluation.example.common.ResourceLogger;
@@ -39,18 +41,20 @@ import org.apache.reef.tang.exceptions.InjectionException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 /**
  * MTSWordCountTestBolt.
  * It creates MTS operator and aggregates word and calculates counts.
  */
-final class MTSWordCountTestBolt extends BaseRichBolt {
+final class TopkBolt extends BaseRichBolt {
   /**
    * WordCount bolt using MTSOperator.
    */
   private static final long serialVersionUID = 1298716785871980572L;
-  private static final Logger LOG = Logger.getLogger(MTSWordCountTestBolt.class.getName());
+  private static final Logger LOG = Logger.getLogger(TopkBolt.class.getName());
 
   /**
    * Log directory.
@@ -85,6 +89,8 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
 
   private ResourceLogger resourceLogger;
 
+  private ExecutorService executor;
+
   /**
    * MTSWordCountTestBolt.
    * It aggregates word and calculates counts.
@@ -94,11 +100,11 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
    * @param cachingProb a caching prob for dynamic MTS operator.
    * @param startTime an initial start time.
    */
-  public MTSWordCountTestBolt(final String pathPrefix,
-                              final List<Timescale> timescales,
-                              final String operatorType,
-                              final double cachingProb,
-                              final long startTime) {
+  public TopkBolt(final String pathPrefix,
+                  final List<Timescale> timescales,
+                  final String operatorType,
+                  final double cachingProb,
+                  final long startTime) {
     this.pathPrefix = pathPrefix;
     this.timescales = timescales;
     this.operatorType = operatorType;
@@ -120,6 +126,8 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
   @Override
   public void prepare(final Map conf, final TopologyContext paramTopologyContext,
                       final OutputCollector paramOutputCollector) {
+    executor = Executors.newFixedThreadPool(timescales.size());
+
     // logging resource
     resourceLogger = new ResourceLogger(pathPrefix);
 
@@ -143,8 +151,11 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
     ij.bindVolatileParameter(OutputLogger.PathPrefix.class, pathPrefix);
     try {
       final TimeWindowOutputHandler<Map<String, Long>, Map<String, Long>>
-          handler = ij.getInstance(OutputLogger.class);
-      operator.prepare(new OperatorConnector<>(handler));
+          topKOperator = ij.getInstance(TopKOperator.class);
+      operator.prepare(new OperatorDispatcher<>(topKOperator, new DefaultKeyExtractor()));
+      final TimeWindowOutputHandler<Map<String, Long>, Map<String, Long>>
+          outputLogger = ij.getInstance(OutputLogger.class);
+      topKOperator.prepare(new OperatorConnector<>(outputLogger));
     } catch (InjectionException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
@@ -161,6 +172,15 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
     } catch (Exception e) {
       e.printStackTrace();
       throw new RuntimeException(e);
+    }
+  }
+
+  class DefaultKeyExtractor implements
+      OperatorDispatcher.KeyExtractor<TimescaleWindowOutput<Map<String, Long>>, Timescale> {
+
+    @Override
+    public Timescale getKey(final TimescaleWindowOutput<Map<String, Long>> output) {
+      return output.timescale;
     }
   }
 }

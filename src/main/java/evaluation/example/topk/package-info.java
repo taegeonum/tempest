@@ -13,29 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.tempest.operator;
-
-import java.util.logging.Logger;
-import java.util.logging.Level;
-
 /**
- * An output emitter logging emitted outputs.
+ * A package for MTS wordcount example on Storm.
  */
-public final class LoggingOutputEmitter<V> implements OutputEmitter<V> {
-  private static final Logger LOG = Logger.getLogger(LoggingOutputEmitter.class.getName());
-
-  /**
-   * An output emitter logging emitted outputs.
-   */
-  public LoggingOutputEmitter() {
-  }
-
-  @Override
-  public void emit(final V input) {
-    LOG.log(Level.INFO, input.toString());
-  }
-
-  @Override
-  public void close() throws Exception {
-  }
-}
+package evaluation.example.topk;

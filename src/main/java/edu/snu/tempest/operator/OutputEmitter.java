@@ -15,10 +15,12 @@
  */
 package edu.snu.tempest.operator;
 
+import org.apache.reef.wake.Stage;
+
 /**
  * Output Emitter which retrieves outputs from operators.
  */
-public interface OutputEmitter<V> {
+public interface OutputEmitter<V> extends Stage {
 
   /**
    * Emit output to a following operator.

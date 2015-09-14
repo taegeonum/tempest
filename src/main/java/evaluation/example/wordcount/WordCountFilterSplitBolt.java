@@ -41,6 +41,10 @@ public class WordCountFilterSplitBolt extends BaseRichBolt {
       operator.prepare(new OperatorConnector<>(splitOperator));
       splitOperator.prepare(new OutputEmitter<String>() {
         @Override
+        public void close() throws Exception {
+        }
+
+        @Override
         public void emit(final String output) {
           outputCollector.emit(new Values(output));
         }

@@ -15,18 +15,10 @@
  */
 package evaluation.example.common;
 
-import backtype.storm.tuple.Tuple;
 import edu.snu.tempest.operator.window.aggregator.CAAggregator;
-import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
-import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.timescale.*;
 import edu.snu.tempest.operator.window.timescale.impl.TimescaleParser;
-import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
-import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
-import org.apache.reef.tang.Configuration;
-import org.apache.reef.tang.Injector;
-import org.apache.reef.tang.JavaConfigurationBuilder;
-import org.apache.reef.tang.Tang;
+import org.apache.reef.tang.*;
 import org.apache.reef.tang.exceptions.InjectionException;
 
 import java.util.List;
@@ -51,36 +43,33 @@ public final class MTSOperatorProvider<I, V> {
   public MTSOperatorProvider(final List<Timescale> timescales,
                              final String operatorType,
                              final double cachingProb,
+                             final Class<? extends CAAggregator> aggregator,
+                             final Configuration conf,
                              final long startTime) {
     // create MTS operator
-    final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
-    cb.bindImplementation(CAAggregator.class, CountByKeyAggregator.class);
-    cb.bindNamedParameter(CachingProb.class, cachingProb + "");
-    cb.bindNamedParameter(StartTime.class, startTime + "");
-
     final Configuration operatorConf;
     if (operatorType.equals("dynamic_random")) {
       operatorConf = DynamicMTSWindowConfiguration.CONF
           .set(DynamicMTSWindowConfiguration.START_TIME, startTime)
           .set(DynamicMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(timescales))
-          .set(DynamicMTSWindowConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+          .set(DynamicMTSWindowConfiguration.CA_AGGREGATOR, aggregator)
           .set(DynamicMTSWindowConfiguration.CACHING_PROB, cachingProb)
           .build();
     } else if (operatorType.equals("dynamic_dg")) {
       operatorConf = DynamicDGWindowConfiguration.CONF
           .set(DynamicMTSWindowConfiguration.START_TIME, startTime)
           .set(DynamicMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(timescales))
-          .set(DynamicMTSWindowConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+          .set(DynamicMTSWindowConfiguration.CA_AGGREGATOR, aggregator)
           .build();
     } else if (operatorType.equals("naive")) {
       operatorConf = NaiveMTSWindowConfiguration.CONF
-          .set(NaiveMTSWindowConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+          .set(NaiveMTSWindowConfiguration.CA_AGGREGATOR, aggregator)
           .set(NaiveMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(timescales))
           .set(NaiveMTSWindowConfiguration.START_TIME, startTime)
           .build();
     } else if (operatorType.equals("static_mts")) {
       operatorConf = StaticMTSWindowConfiguration.CONF
-          .set(StaticMTSWindowConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+          .set(StaticMTSWindowConfiguration.CA_AGGREGATOR, aggregator)
           .set(StaticMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(timescales))
           .set(StaticMTSWindowConfiguration.START_TIME, startTime)
           .build();
@@ -88,14 +77,7 @@ public final class MTSOperatorProvider<I, V> {
       throw new RuntimeException("Operator exception: " + operator);
     }
 
-    final Injector ij = Tang.Factory.getTang().newInjector(operatorConf);
-    ij.bindVolatileInstance(KeyExtractor.class,
-        new KeyExtractor<Tuple, String>() {
-          @Override
-          public String getKey(final Tuple tuple) {
-            return tuple.getString(0);
-          }
-        });
+    final Injector ij = Tang.Factory.getTang().newInjector(Configurations.merge(operatorConf, conf));
     try {
       operator = ij.getInstance(TimescaleWindowOperator.class);
     } catch (InjectionException e) {

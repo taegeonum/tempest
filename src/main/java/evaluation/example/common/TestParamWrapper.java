@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package evaluation.example.wordcount;
+package evaluation.example.common;
 
 import edu.snu.tempest.example.storm.parameter.*;
 import edu.snu.tempest.operator.window.timescale.Timescale;
@@ -28,7 +28,7 @@ import java.util.List;
 /**
  * Class for parsing parameters for test.
  */
-final class WordCountTestUtil {
+public final class TestParamWrapper {
   public final int numSpouts;
   public final String testName;
   public final String logDir;
@@ -39,14 +39,14 @@ final class WordCountTestUtil {
   public final List<Timescale> timescales;
   
   @Inject
-  private WordCountTestUtil(@Parameter(NumSpouts.class) final int numSpouts,
-                            @Parameter(TestName.class) final String testName,
-                            @Parameter(LogDir.class) final String logDir,
-                            @Parameter(CachingProb.class) final double cachingProb,
-                            @Parameter(TotalTime.class) final int totalTime,
-                            @Parameter(OperatorType.class) final String operator,
-                            @Parameter(InputType.class) final String inputType,
-                            @Parameter(TimescaleString.class) final String timescaleParameter) {
+  private TestParamWrapper(@Parameter(NumSpouts.class) final int numSpouts,
+                           @Parameter(TestName.class) final String testName,
+                           @Parameter(LogDir.class) final String logDir,
+                           @Parameter(CachingProb.class) final double cachingProb,
+                           @Parameter(TotalTime.class) final int totalTime,
+                           @Parameter(OperatorType.class) final String operator,
+                           @Parameter(InputType.class) final String inputType,
+                           @Parameter(TimescaleString.class) final String timescaleParameter) {
     this.numSpouts = numSpouts;
     this.testName = testName;
     this.logDir = logDir;

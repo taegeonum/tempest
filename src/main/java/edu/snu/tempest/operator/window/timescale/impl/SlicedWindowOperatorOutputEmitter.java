@@ -62,4 +62,8 @@ final class SlicedWindowOperatorOutputEmitter<V> implements OutputEmitter<Partia
     // trigger overlapping window operators for final aggregation
     owoStage.onNext(output.windowEndTime);
   }
+
+  @Override
+  public void close() throws Exception {
+  }
 }
