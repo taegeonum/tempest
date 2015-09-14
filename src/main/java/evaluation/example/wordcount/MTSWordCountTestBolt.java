@@ -121,7 +121,7 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
 
     // create MTS operator
     final MTSOperatorProvider<Tuple, Map<String, Long>> operatorProvider =
-        new MTSOperatorProvider<>(pathPrefix, timescales, operatorType, cachingProb, startTime);
+        new MTSOperatorProvider<>(timescales, operatorType, cachingProb, startTime);
     operator = operatorProvider.getMTSOperator();
 
     final Injector ij = Tang.Factory.getTang().newInjector();

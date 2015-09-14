@@ -108,7 +108,7 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
     final List<T> dependentOutputs = new LinkedList<>();
     // lookup dependencies
     long start = startTime;
-    boolean isFullyProcessed = true;
+    boolean isFullyProcessed = endTime - startTime == ts.windowSize;
 
     // fetch dependent outputs
     while(start < endTime) {
@@ -134,8 +134,7 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
           start = elem.endTime;
         }
       } catch (final NotFoundException e) {
-        start += 1;
-        isFullyProcessed = false;
+        throw new RuntimeException(e);
       } catch (final InterruptedException e) {
         e.printStackTrace();
       }

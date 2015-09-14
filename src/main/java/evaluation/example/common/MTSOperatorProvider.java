@@ -48,11 +48,10 @@ public final class MTSOperatorProvider<I, V> {
    */
   private TimescaleWindowOperator<I, V> operator;
 
-  public MTSOperatorProvider(final String pathPrefix,
-                              final List<Timescale> timescales,
-                              final String operatorType,
-                              final double cachingProb,
-                              final long startTime) {
+  public MTSOperatorProvider(final List<Timescale> timescales,
+                             final String operatorType,
+                             final double cachingProb,
+                             final long startTime) {
     // create MTS operator
     final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
     cb.bindImplementation(CAAggregator.class, CountByKeyAggregator.class);
@@ -60,12 +59,18 @@ public final class MTSOperatorProvider<I, V> {
     cb.bindNamedParameter(StartTime.class, startTime + "");
 
     final Configuration operatorConf;
-    if (operatorType.equals("dynamic_mts")) {
+    if (operatorType.equals("dynamic_random")) {
       operatorConf = DynamicMTSWindowConfiguration.CONF
           .set(DynamicMTSWindowConfiguration.START_TIME, startTime)
           .set(DynamicMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(timescales))
           .set(DynamicMTSWindowConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
           .set(DynamicMTSWindowConfiguration.CACHING_PROB, cachingProb)
+          .build();
+    } else if (operatorType.equals("dynamic_dg")) {
+      operatorConf = DynamicDGWindowConfiguration.CONF
+          .set(DynamicMTSWindowConfiguration.START_TIME, startTime)
+          .set(DynamicMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(timescales))
+          .set(DynamicMTSWindowConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
           .build();
     } else if (operatorType.equals("naive")) {
       operatorConf = NaiveMTSWindowConfiguration.CONF

@@ -87,13 +87,13 @@ final class DefaultOverlappingWindowOperator<I> implements OverlappingWindowOper
     if (((currTime - startTime) % timescale.intervalSize) == 0) {
       LOG.log(Level.FINE, "OverlappingWindowOperator final aggregation: " + currTime + ", timescale: " + timescale);
       final long endTime = currTime;
-      final long start = endTime - timescale.windowSize;
+      final long start = Math.max(startTime, endTime - timescale.windowSize);
       try {
-        final boolean fullyProcessed = this.startTime <= start;
+        final boolean fullyProcessed = this.startTime <= endTime - timescale.windowSize;
         final I finalResult = computationReuser.finalAggregate(start, currTime, timescale);
         // send the result to output emitter
         emitter.emit(new TimescaleWindowOutput<>(
-            timescale, finalResult, start, currTime, fullyProcessed));
+            timescale, finalResult, endTime - timescale.windowSize, currTime, fullyProcessed));
       } catch (final Exception e) {
         throw new RuntimeException(e);
       }

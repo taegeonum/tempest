@@ -155,7 +155,8 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
   public T finalAggregate(final long wStartTime, final long wEndTime, final Timescale ts) {
     LOG.log(Level.FINE, "Lookup " + wStartTime + ", " + wEndTime);
 
-    long start = adjStartTime(wStartTime);
+    final long lookupStartTime = wEndTime - ts.windowSize;
+    long start = adjStartTime(lookupStartTime);
     final long end = adjEndTime(wEndTime);
 
     // reuse!
@@ -176,19 +177,19 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     for (final DependencyGraphNode child : node.getDependencies()) {
       synchronized (child) {
         if (child.getOutput() != null) {
-          if (!(wStartTime < startTime && end <= child.start)) {
+          if (!(lookupStartTime < startTime && end <= child.start)) {
             dependentOutputs.add(child.getOutput());
             child.decreaseRefCnt();
           }
-        } else if (wStartTime < startTime && end <= child.start) {
+        } else if (lookupStartTime < startTime && end <= child.start) {
           // if there are no dependent outputs to use
           // no need to wait for the child's output.
-          LOG.log(Level.FINE, "no wait. wStartTime: " + wStartTime + ", wEnd:" + wEndTime
+          LOG.log(Level.FINE, "no wait. wStartTime: " + lookupStartTime + ", wEnd:" + wEndTime
               + " child.start: " + child.start + "child.end: " + child.end);
         } else {
           // if there is a dependent output that could be used
           // wait for the aggregation to finish.
-          LOG.log(Level.FINE, "wait. wStartTime: " + wStartTime + ", wEnd:" + wEndTime
+          LOG.log(Level.FINE, "wait. wStartTime: " + lookupStartTime + ", wEnd:" + wEndTime
               + " child.start: " + child.start + "child.end: " + child.end);
           try {
             child.wait();
