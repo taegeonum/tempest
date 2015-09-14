@@ -16,9 +16,14 @@
 package edu.snu.tempest.operator.window.timescale.impl;
 
 import edu.snu.tempest.operator.OutputEmitter;
-import edu.snu.tempest.operator.window.timescale.*;
+import edu.snu.tempest.operator.window.timescale.Timescale;
+import edu.snu.tempest.operator.window.timescale.TimescaleWindowOperator;
+import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
 import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
+import org.apache.reef.tang.Injector;
+import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.annotations.Parameter;
+import org.apache.reef.tang.exceptions.InjectionException;
 
 import javax.inject.Inject;
 import java.util.logging.Level;
@@ -63,7 +68,7 @@ public final class StaticMTSOperatorImpl<I, V> implements TimescaleWindowOperato
    */
   private final long startTime;
 
-  private final SlicingStage<I, V> slicingStage;
+  private SlicingStage<I, V> slicingStage;
 
   /**
    * Creates static MTS window operator.
@@ -78,7 +83,6 @@ public final class StaticMTSOperatorImpl<I, V> implements TimescaleWindowOperato
    */
   @Inject
   private StaticMTSOperatorImpl(
-      final SlicingStage<I, V> slicingStage,
       final OverlappingWindowStage<V> owoStage,
       final ComputationReuser<V> computationReuser,
       final TimescaleParser tsParser,
@@ -91,7 +95,6 @@ public final class StaticMTSOperatorImpl<I, V> implements TimescaleWindowOperato
     this.tsParser = tsParser;
     this.startTime = startTime;
     this.owoStage = owoStage;
-    this.slicingStage = slicingStage;
   }
 
   /**
@@ -112,6 +115,15 @@ public final class StaticMTSOperatorImpl<I, V> implements TimescaleWindowOperato
   public void prepare(final OutputEmitter<TimescaleWindowOutput<V>> outputEmitter) {
     this.emitter = outputEmitter;
     // add overlapping window operators
+    final Injector injector = Tang.Factory.getTang().newInjector();
+    injector.bindVolatileInstance(SlicedWindowOperator.class, slicedWindowOperator);
+    injector.bindVolatileParameter(StartTime.class, startTime);
+    try {
+      slicingStage = injector.getInstance(SlicingStage.class);
+    } catch (InjectionException e) {
+      e.printStackTrace();
+      throw new RuntimeException(e);
+    }
     for (final Timescale timescale : tsParser.timescales) {
       final OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperator<>(
           timescale, computationReuser, startTime);

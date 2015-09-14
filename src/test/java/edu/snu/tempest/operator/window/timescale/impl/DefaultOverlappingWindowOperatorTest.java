@@ -42,7 +42,7 @@ public final class DefaultOverlappingWindowOperatorTest {
         ts, computationReuser, 0L);
     operator.prepare(new LoggingOutputEmitter());
     operator.execute(3L);
-    verify(computationReuser).finalAggregate(-2, 3, ts);
+    verify(computationReuser).finalAggregate(0, 3, ts);
     operator.execute(6L);
     verify(computationReuser).finalAggregate(1, 6, ts);
   }

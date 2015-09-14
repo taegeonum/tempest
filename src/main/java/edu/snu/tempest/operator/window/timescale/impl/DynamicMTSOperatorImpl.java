@@ -19,7 +19,10 @@ import edu.snu.tempest.operator.OutputEmitter;
 import edu.snu.tempest.operator.common.Subscription;
 import edu.snu.tempest.operator.window.timescale.*;
 import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
+import org.apache.reef.tang.Injector;
+import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.annotations.Parameter;
+import org.apache.reef.tang.exceptions.InjectionException;
 
 import javax.inject.Inject;
 import java.util.HashMap;
@@ -77,7 +80,7 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
    */
   private final NextSliceTimeProvider sliceTimeProvider;
 
-  private final SlicingStage<I, V> slicingStage;
+  private SlicingStage<I, V> slicingStage;
 
   /**
    * Creates dynamic MTS window operator.
@@ -93,7 +96,6 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
    */
   @Inject
   private DynamicMTSOperatorImpl(
-      final SlicingStage<I, V> slicingStage,
       final OverlappingWindowStage<V> owoStage,
       final ComputationReuser<V> computationReuser,
       final TimescaleParser tsParser,
@@ -109,7 +111,6 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
     this.subscriptions = new HashMap<>();
     this.tsParser = tsParser;
     this.startTime = startTime;
-    this.slicingStage = slicingStage;
   }
 
   /**
@@ -129,6 +130,15 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
   @Override
   public void prepare(final OutputEmitter<TimescaleWindowOutput<V>> outputEmitter) {
     this.emitter = outputEmitter;
+    final Injector injector = Tang.Factory.getTang().newInjector();
+    injector.bindVolatileInstance(SlicedWindowOperator.class, slicedWindowOperator);
+    injector.bindVolatileParameter(StartTime.class, startTime);
+    try {
+      slicingStage = injector.getInstance(SlicingStage.class);
+    } catch (InjectionException e) {
+      e.printStackTrace();
+      throw new RuntimeException(e);
+    }
     // add overlapping window operators
     for (final Timescale timescale : tsParser.timescales) {
       final OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperator<>(

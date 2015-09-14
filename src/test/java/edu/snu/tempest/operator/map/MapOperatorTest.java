@@ -45,6 +45,11 @@ public final class MapOperatorTest {
     final MapOperator<String, List<String>> mapOperator = injector.getInstance(MapOperator.class);
     mapOperator.prepare(new OutputEmitter<List<String>>() {
       @Override
+      public void close() throws Exception {
+
+      }
+
+      @Override
       public void emit(final List<String> output) {
         result.set(output);
       }

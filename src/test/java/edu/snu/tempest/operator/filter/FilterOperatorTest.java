@@ -45,6 +45,11 @@ public final class FilterOperatorTest {
     final FilterOperator<String> filterOperator = injector.getInstance(FilterOperator.class);
     filterOperator.prepare(new OutputEmitter<String>() {
       @Override
+      public void close() throws Exception {
+        
+      }
+
+      @Override
       public void emit(final String output) {
         result.add(output);
       }

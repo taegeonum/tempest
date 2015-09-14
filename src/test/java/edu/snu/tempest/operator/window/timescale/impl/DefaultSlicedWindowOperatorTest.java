@@ -70,6 +70,11 @@ public class DefaultSlicedWindowOperatorTest {
         injector.getInstance(DefaultSlicedWindowOperator.class);
     operator.prepare(new OutputEmitter<PartialTimeWindowOutput<Map<Integer, Long>>>() {
       @Override
+      public void close() throws Exception {
+
+      }
+
+      @Override
       public void emit(final PartialTimeWindowOutput<Map<Integer, Long>> output) {
         queue.add(output);
       }

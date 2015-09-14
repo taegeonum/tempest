@@ -134,7 +134,8 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
           start = elem.endTime;
         }
       } catch (final NotFoundException e) {
-        throw new RuntimeException(e);
+        start += 1;
+        isFullyProcessed = false;
       } catch (final InterruptedException e) {
         e.printStackTrace();
       }
