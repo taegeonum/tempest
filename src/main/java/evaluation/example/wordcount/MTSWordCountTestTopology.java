@@ -29,6 +29,7 @@ import edu.snu.tempest.example.util.writer.LocalOutputWriter;
 import edu.snu.tempest.example.util.writer.OutputWriter;
 import edu.snu.tempest.operator.window.timescale.Timescale;
 import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
+import edu.snu.tempest.operator.window.timescale.parameter.NumThreads;
 import edu.snu.tempest.operator.window.timescale.parameter.TimescaleString;
 import evaluation.example.common.TestParamWrapper;
 import evaluation.example.common.WikiDataSpout;
@@ -72,6 +73,7 @@ final class MTSWordCountTestTopology {
         .registerShortNameOfClass(InputType.class)
         .registerShortNameOfClass(NumBolts.class)
         .registerShortNameOfClass(InputInterval.class)
+        .registerShortNameOfClass(NumThreads.class)
         .processCommandLine(args);
 
     return cl.getBuilder().build();
@@ -95,6 +97,7 @@ final class MTSWordCountTestTopology {
     final String inputType = injector.getNamedInstance(InputType.class);
     final int numBolts = injector.getNamedInstance(NumBolts.class);
     final double inputInterval = injector.getNamedInstance(InputInterval.class);
+    final int numThreads = injector.getNamedInstance(NumThreads.class);
 
     final TopologyBuilder builder = new TopologyBuilder();
     BaseRichSpout spout = null;
@@ -121,6 +124,7 @@ final class MTSWordCountTestTopology {
         timescales,
         test.operatorName,
         cachingProb,
+        numThreads,
         TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()));
 
     // set bolt

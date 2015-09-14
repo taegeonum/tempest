@@ -30,6 +30,7 @@ import edu.snu.tempest.operator.window.timescale.TimeWindowOutputHandler;
 import edu.snu.tempest.operator.window.timescale.Timescale;
 import edu.snu.tempest.operator.window.timescale.TimescaleWindowOperator;
 import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
+import edu.snu.tempest.operator.window.timescale.parameter.NumThreads;
 import evaluation.example.common.MTSOperatorProvider;
 import evaluation.example.common.OutputLogger;
 import evaluation.example.common.ResourceLogger;
@@ -90,6 +91,7 @@ final class TopkBolt extends BaseRichBolt {
   private ResourceLogger resourceLogger;
 
   private ExecutorService executor;
+  private final int numThreads;
 
   /**
    * MTSWordCountTestBolt.
@@ -104,12 +106,14 @@ final class TopkBolt extends BaseRichBolt {
                   final List<Timescale> timescales,
                   final String operatorType,
                   final double cachingProb,
+                  final int numThreads,
                   final long startTime) {
     this.pathPrefix = pathPrefix;
     this.timescales = timescales;
     this.operatorType = operatorType;
     this.cachingProb = cachingProb;
     this.startTime = startTime;
+    this.numThreads = numThreads;
   }
   
   @Override
@@ -134,6 +138,7 @@ final class TopkBolt extends BaseRichBolt {
     // create MTS operator
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, StringKeyExtractor.class);
+    jcb.bindNamedParameter(NumThreads.class, numThreads + "");
     final MTSOperatorProvider<Tuple, Map<String, Long>> operatorProvider =
         new MTSOperatorProvider<>(timescales, operatorType, cachingProb,
             CountByKeyAggregator.class, jcb.build(), startTime);
