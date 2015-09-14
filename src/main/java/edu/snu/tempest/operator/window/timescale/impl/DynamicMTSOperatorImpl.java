@@ -144,15 +144,18 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
   @Override
   public void onTimescaleAddition(final Timescale timescale, final long addTime) {
     LOG.log(Level.INFO, DynamicMTSOperatorImpl.class.getName() + " addTimescale: " + timescale);
+    //Make as if the new timescale is added at adjTime.
+    final long adjTime = addTime - ((addTime - startTime) % timescale.intervalSize);
+
     //1. change slice time.
-    this.sliceTimeProvider.onTimescaleAddition(timescale, addTime);
+    this.sliceTimeProvider.onTimescaleAddition(timescale, adjTime);
 
     //2. add timescale to computationReuser.
-    this.computationReuser.onTimescaleAddition(timescale, addTime);
+    this.computationReuser.onTimescaleAddition(timescale, adjTime);
 
     //3. add overlapping window operator
     final OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperator<>(
-        timescale, computationReuser, addTime);
+        timescale, computationReuser, adjTime);
     owo.prepare(emitter);
     final Subscription<OverlappingWindowOperator<V>> ss = this.owoStage.subscribe(owo);
     subscriptions.put(ss.getToken().getTimescale(), ss);
