@@ -16,8 +16,9 @@
 package edu.snu.tempest.example.storm.wordcount;
 
 import edu.snu.tempest.example.util.writer.OutputWriter;
+import edu.snu.tempest.operator.OutputEmitter;
+import edu.snu.tempest.operator.window.timescale.TimeWindowOutputHandler;
 import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
-import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutputHandler;
 import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 import org.apache.reef.tang.annotations.Parameter;
@@ -31,7 +32,7 @@ import java.util.logging.Logger;
 /**
  * Output handler for word count example.
  */
-final class WordCountOutputHandler implements TimescaleWindowOutputHandler<Map<String, Long>> {
+final class WordCountOutputHandler implements TimeWindowOutputHandler<Map<String, Long>, Map<String, Long>> {
   private static final Logger LOG = Logger.getLogger(WordCountOutputHandler.class.getName());
 
   @NamedParameter(doc = "logging path for test")
@@ -63,7 +64,7 @@ final class WordCountOutputHandler implements TimescaleWindowOutputHandler<Map<S
    * @param output an output
    */
   @Override
-  public void onNext(final TimescaleWindowOutput<Map<String, Long>> output) {
+  public void execute(final TimescaleWindowOutput<Map<String, Long>> output) {
     long count = 0;
     // calculate total count for logging
     for (final Map.Entry<String, Long> entry : output.output.entrySet()) {
@@ -80,5 +81,10 @@ final class WordCountOutputHandler implements TimescaleWindowOutputHandler<Map<S
     }
     LOG.log(Level.INFO, "output of ts" + output.timescale + ": "
         + output.startTime + "-" + output.endTime + ", count: " + count);
+  }
+
+  @Override
+  public void prepare(final OutputEmitter<TimescaleWindowOutput<Map<String, Long>>> outputEmitter) {
+    // end of operation
   }
 }

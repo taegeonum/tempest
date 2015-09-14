@@ -16,9 +16,10 @@
 package edu.snu.tempest.test.util;
 
 
-import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
-import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutputHandler;
+import edu.snu.tempest.operator.OutputEmitter;
+import edu.snu.tempest.operator.window.timescale.TimeWindowOutputHandler;
 import edu.snu.tempest.operator.window.timescale.Timescale;
+import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
 
 import javax.inject.Inject;
 import java.util.Map;
@@ -27,7 +28,8 @@ import java.util.Queue;
 /**
  * An output handler for test.
  */
-public final class TestOutputHandler implements TimescaleWindowOutputHandler<Map<Integer, Long>> {
+public final class TestOutputHandler implements
+    TimeWindowOutputHandler<Map<Integer, Long>, Map<Integer, Long>> {
   private final Map<Timescale,
       Queue<TimescaleWindowOutput<Map<Integer, Long>>>> results;
   private final Monitor monitor;
@@ -45,7 +47,7 @@ public final class TestOutputHandler implements TimescaleWindowOutputHandler<Map
    * @param windowOutput a mts window output
    */
   @Override
-  public void onNext(final TimescaleWindowOutput<Map<Integer, Long>> windowOutput) {
+  public void execute(final TimescaleWindowOutput<Map<Integer, Long>> windowOutput) {
     if (count < 2) {
       if (windowOutput.fullyProcessed) {
         final Queue<TimescaleWindowOutput<Map<Integer, Long>>> outputs = this.results.get(windowOutput.timescale);
@@ -59,5 +61,10 @@ public final class TestOutputHandler implements TimescaleWindowOutputHandler<Map
     if (windowOutput.timescale.windowSize == 8) {
       count++;
     }
+  }
+
+  @Override
+  public void prepare(final OutputEmitter<TimescaleWindowOutput<Map<Integer, Long>>> outputEmitter) {
+
   }
 }

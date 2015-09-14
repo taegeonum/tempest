@@ -15,6 +15,7 @@
  */
 package edu.snu.tempest.operator.window.timescale.impl;
 
+import edu.snu.tempest.operator.OutputEmitter;
 import edu.snu.tempest.operator.window.aggregator.CAAggregator;
 import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
 import org.apache.reef.tang.annotations.Parameter;
@@ -28,7 +29,7 @@ import java.util.logging.Logger;
  * @param <I> input
  * @param <V> aggregated result
  */
-final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I> {
+final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I, V> {
   private static final Logger LOG = Logger.getLogger(DefaultSlicedWindowOperator.class.getName());
 
   /**
@@ -36,10 +37,7 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
    */
   private final CAAggregator<I, V> aggregator;
 
-  /**
-   * A computation reuser for saving partial results.
-   */
-  private final ComputationReuser<V> computationReuser;
+  private OutputEmitter<PartialTimeWindowOutput<V>> emitter;
 
   /**
    * Next slice time provider.
@@ -68,19 +66,16 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
   private final Object sync = new Object();
 
   /**
-   * DynamicSlicedWindowOperatorImpl.
+   * DefaultSlicedWindowOperatorImpl.
    * @param aggregator an aggregator for incremental aggregation
-   * @param computationReuser a computation reuser for partial results.
    * @param startTime a start time of the mts operator
    */
   @Inject
   private DefaultSlicedWindowOperator(
       final CAAggregator<I, V> aggregator,
-      final ComputationReuser<V> computationReuser,
       final NextSliceTimeProvider nextSliceTimeProvider,
       @Parameter(StartTime.class) final Long startTime) {
     this.aggregator = aggregator;
-    this.computationReuser = computationReuser;
     this.nextSliceTimeProvider = nextSliceTimeProvider;
     this.bucket = aggregator.init();
     prevSliceTime = startTime;
@@ -88,11 +83,11 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
   }
 
   /**
-   * It creates a new bucket every next slice time to slice the incrementally aggregated data.
+   * It slices current aggregated results and send them to output emitter.
    * @param currTime current time
    */
   @Override
-  public synchronized void onNext(final Long currTime) {
+  public synchronized void slice(final long currTime) {
     while (nextSliceTime < currTime) {
       prevSliceTime = nextSliceTime;
       nextSliceTime = nextSliceTimeProvider.nextSliceTime();
@@ -105,8 +100,8 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
       synchronized (sync) {
         final V partialAggregation = bucket;
         bucket = aggregator.init();
-        // saves output to computation reuser
-        computationReuser.savePartialOutput(prevSliceTime, nextSliceTime, partialAggregation);
+        // emit partial result to emitter.
+        emitter.emit(new PartialTimeWindowOutput<V>(prevSliceTime, nextSliceTime, partialAggregation));
       }
       prevSliceTime = nextSliceTime;
       nextSliceTime = nextSliceTimeProvider.nextSliceTime();
@@ -125,4 +120,8 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I>
     }
   }
 
+  @Override
+  public void prepare(final OutputEmitter<PartialTimeWindowOutput<V>> outputEmitter) {
+    emitter = outputEmitter;
+  }
 }

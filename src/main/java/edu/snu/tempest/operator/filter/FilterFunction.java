@@ -13,20 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.tempest.operator.window.timescale.impl;
-
-import edu.snu.tempest.operator.Operator;
-import org.apache.reef.tang.annotations.DefaultImplementation;
+package edu.snu.tempest.operator.filter;
 
 /**
- * Sliced window operator.
- * It chops input stream and aggregates the input using Aggregator.
+ * Filter function.
+ * @param <I> input
  */
-@DefaultImplementation(DefaultSlicedWindowOperator.class)
-public interface SlicedWindowOperator<I, V> extends Operator<I, PartialTimeWindowOutput<V>> {
+public interface FilterFunction<I> {
+
   /**
-   * Slice current partial aggregation.
-   * @param sliceTime slice time
+   * Whether to filter this input or not.
+   * @param input an input
+   * @return true if this input should be filtered. Otherwise return false.
    */
-  void slice(long sliceTime);
+  boolean filter(I input);
 }

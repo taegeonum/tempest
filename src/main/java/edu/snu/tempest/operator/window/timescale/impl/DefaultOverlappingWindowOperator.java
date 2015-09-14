@@ -15,17 +15,18 @@
  */
 package edu.snu.tempest.operator.window.timescale.impl;
 
-import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
-import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutputHandler;
+import edu.snu.tempest.operator.OutputEmitter;
 import edu.snu.tempest.operator.window.timescale.Timescale;
+import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * It triggers final aggregation every interval.
+ * This operator executes final aggregation every interval.
+ * It receives current time and triggers final aggregation.
  */
-final class DefaultOverlappingWindowOperator<V> implements OverlappingWindowOperator {
+final class DefaultOverlappingWindowOperator<I> implements OverlappingWindowOperator<I> {
   private static final Logger LOG = Logger.getLogger(DefaultOverlappingWindowOperator.class.getName());
 
   /**
@@ -36,12 +37,12 @@ final class DefaultOverlappingWindowOperator<V> implements OverlappingWindowOper
   /**
    * A computation reuser for creating window outputs.
    */
-  private final ComputationReuser<V> computationReuser;
+  private final ComputationReuser<I> computationReuser;
 
   /**
    * An output handler for window output.
    */
-  private final TimescaleWindowOutputHandler<V> outputHandler;
+  private OutputEmitter<TimescaleWindowOutput<I>> emitter;
 
   /**
    * An initial start time of the window operator.
@@ -52,40 +53,14 @@ final class DefaultOverlappingWindowOperator<V> implements OverlappingWindowOper
    * Default overlapping window operator.
    * @param timescale a timescale
    * @param computationReuser a computation reuser for final aggregation
-   * @param outputHandler an output handler
    * @param startTime an initial start time
    */
   public DefaultOverlappingWindowOperator(final Timescale timescale,
-                                          final ComputationReuser<V> computationReuser,
-                                          final TimescaleWindowOutputHandler<V> outputHandler,
+                                          final ComputationReuser<I> computationReuser,
                                           final long startTime) {
     this.timescale = timescale;
     this.computationReuser = computationReuser;
-    this.outputHandler = outputHandler;
     this.startTime = startTime;
-  }
-
-  /**
-   * If elapsed time is multiple of the interval
-   * then this operator executes final aggregation by using a computation reuser.
-   * @param currTime current time
-   */
-  public synchronized void onNext(final Long currTime) {
-    LOG.log(Level.FINE, "OverlappingWindowOperator triggered: " + currTime + ", timescale: " + timescale
-        + ", " + (currTime - startTime) % timescale.intervalSize);
-    if (((currTime - startTime) % timescale.intervalSize) == 0) {
-      LOG.log(Level.FINE, "OverlappingWindowOperator final aggregation: " + currTime + ", timescale: " + timescale);
-      final long endTime = currTime;
-      final long start = endTime - timescale.windowSize;
-      try {
-        final boolean fullyProcessed = this.startTime <= start;
-        final V finalResult = computationReuser.finalAggregate(start, currTime, timescale);
-        // send the result
-        outputHandler.onNext(new TimescaleWindowOutput<>(timescale, finalResult, start, currTime, fullyProcessed));
-      } catch (final Exception e) {
-        throw new RuntimeException(e);
-      }
-    }
   }
 
   /**
@@ -95,7 +70,7 @@ final class DefaultOverlappingWindowOperator<V> implements OverlappingWindowOper
   public Timescale getTimescale() {
     return timescale;
   }
-  
+
   @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder();
@@ -103,5 +78,30 @@ final class DefaultOverlappingWindowOperator<V> implements OverlappingWindowOper
     sb.append(timescale);
     sb.append("]");
     return sb.toString();
+  }
+
+  @Override
+  public void execute(final Long currTime) {
+    LOG.log(Level.FINE, "OverlappingWindowOperator triggered: " + currTime + ", timescale: " + timescale
+        + ", " + (currTime - startTime) % timescale.intervalSize);
+    if (((currTime - startTime) % timescale.intervalSize) == 0) {
+      LOG.log(Level.FINE, "OverlappingWindowOperator final aggregation: " + currTime + ", timescale: " + timescale);
+      final long endTime = currTime;
+      final long start = endTime - timescale.windowSize;
+      try {
+        final boolean fullyProcessed = this.startTime <= start;
+        final I finalResult = computationReuser.finalAggregate(start, currTime, timescale);
+        // send the result to output emitter
+        emitter.emit(new TimescaleWindowOutput<>(
+            timescale, finalResult, start, currTime, fullyProcessed));
+      } catch (final Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
+  @Override
+  public void prepare(final OutputEmitter<TimescaleWindowOutput<I>> outputEmitter) {
+    emitter = outputEmitter;
   }
 }

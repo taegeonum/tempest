@@ -16,7 +16,7 @@
 package edu.snu.tempest.example.util;
 
 import edu.snu.tempest.operator.window.timescale.Timescale;
-import edu.snu.tempest.operator.window.timescale.TimescaleParser;
+import edu.snu.tempest.operator.window.timescale.impl.TimescaleParser;
 import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.exceptions.InjectionException;

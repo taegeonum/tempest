@@ -13,20 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.tempest.operator.window.timescale.impl;
+package edu.snu.tempest.operator.window.timescale.parameter;
 
-import edu.snu.tempest.operator.Operator;
-import org.apache.reef.tang.annotations.DefaultImplementation;
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
 
-/**
- * Sliced window operator.
- * It chops input stream and aggregates the input using Aggregator.
- */
-@DefaultImplementation(DefaultSlicedWindowOperator.class)
-public interface SlicedWindowOperator<I, V> extends Operator<I, PartialTimeWindowOutput<V>> {
-  /**
-   * Slice current partial aggregation.
-   * @param sliceTime slice time
-   */
-  void slice(long sliceTime);
-}
+@NamedParameter(doc = "caching probability for saving outputs in dynamic mts operator.",
+    short_name="caching_prob", default_value = "0.5")
+public final class CachingProb implements Name<Double> {}

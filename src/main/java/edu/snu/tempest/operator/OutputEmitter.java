@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.tempest.operator.window;
-
-import org.apache.reef.wake.EventHandler;
+package edu.snu.tempest.operator;
 
 /**
- * Output handler for windowing.
- * @param <V> output
+ * Output Emitter which retrieves outputs from operators.
  */
-public interface WindowOutputHandler<V> extends EventHandler<V> {
+public interface OutputEmitter<V> {
+
+  /**
+   * Emit output to a following operator.
+   * @param output an output
+   */
+  void emit(V output);
 }

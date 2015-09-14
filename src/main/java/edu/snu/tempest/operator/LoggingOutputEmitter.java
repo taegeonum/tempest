@@ -13,20 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.tempest.operator.window.timescale.impl;
+package edu.snu.tempest.operator;
 
-import edu.snu.tempest.operator.Operator;
-import org.apache.reef.tang.annotations.DefaultImplementation;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
- * Sliced window operator.
- * It chops input stream and aggregates the input using Aggregator.
+ * An output emitter logging emitted outputs.
  */
-@DefaultImplementation(DefaultSlicedWindowOperator.class)
-public interface SlicedWindowOperator<I, V> extends Operator<I, PartialTimeWindowOutput<V>> {
+public final class LoggingOutputEmitter<V> implements OutputEmitter<V> {
+  private static final Logger LOG = Logger.getLogger(LoggingOutputEmitter.class.getName());
+
   /**
-   * Slice current partial aggregation.
-   * @param sliceTime slice time
+   * An output emitter logging emitted outputs.
    */
-  void slice(long sliceTime);
+  public LoggingOutputEmitter() {
+  }
+
+  @Override
+  public void emit(final V input) {
+    LOG.log(Level.INFO, input.toString());
+  }
 }

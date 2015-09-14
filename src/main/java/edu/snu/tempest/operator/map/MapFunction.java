@@ -13,15 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.tempest.operator.window;
+package edu.snu.tempest.operator.map;
 
 /**
- * WindowOperator interface.
+ * Map function.
+ * @param <I> input
  */
-public interface WindowOperator<I> {
+public interface MapFunction<I, O> {
+
   /**
-   * It receives input from this function.
-   * @param val input value
+   * Map this input.
+   * @param input an input
+   * @return an output which is transformed by this map function
    */
-  void execute(final I val);
+  O map(I input);
 }

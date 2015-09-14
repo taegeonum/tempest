@@ -26,7 +26,7 @@ import edu.snu.tempest.example.storm.util.StormRunner;
 import edu.snu.tempest.example.util.writer.LocalOutputWriter;
 import edu.snu.tempest.example.util.writer.OutputWriter;
 import edu.snu.tempest.operator.window.timescale.Timescale;
-import edu.snu.tempest.operator.window.timescale.parameter.CachingRate;
+import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
 import edu.snu.tempest.operator.window.timescale.parameter.TimescaleString;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
@@ -60,7 +60,7 @@ final class MTSWordCountTestTopology {
     final CommandLine cl = new CommandLine(cb)
         .registerShortNameOfClass(TestName.class)
         .registerShortNameOfClass(LogDir.class)
-        .registerShortNameOfClass(CachingRate.class)
+        .registerShortNameOfClass(CachingProb.class)
         .registerShortNameOfClass(TimescaleString.class)
         .registerShortNameOfClass(NumSpouts.class)
         .registerShortNameOfClass(TotalTime.class)
@@ -86,7 +86,7 @@ final class MTSWordCountTestTopology {
     final WordCountTestUtil test = injector.getInstance(WordCountTestUtil.class);
     final String testName = injector.getNamedInstance(TestName.class);
     final String logDir = injector.getNamedInstance(LogDir.class);
-    final double cachingRate = injector.getNamedInstance(CachingRate.class);
+    final double cachingProb = injector.getNamedInstance(CachingProb.class);
     final String operator = injector.getNamedInstance(OperatorType.class);
     final String topologyName = operator + "_WC_TOPOLOGY";
     final String inputType = injector.getNamedInstance(InputType.class);
@@ -104,7 +104,7 @@ final class MTSWordCountTestTopology {
     final OutputWriter writer = injector.getInstance(LocalOutputWriter.class);
     final List<Timescale> timescales = test.timescales;
     // For logging initial configuration.
-    writer.write(logDir + testName + "/conf", test.print() + "\n" + "saving: " + cachingRate);
+    writer.write(logDir + testName + "/conf", test.print() + "\n" + "saving: " + cachingProb);
     writer.write(logDir + testName + "/initialTime", System.currentTimeMillis()+"");
     writer.write(logDir + testName + "/largestTimescale", timescales.get(timescales.size()-1)+"");
     writer.close();
@@ -116,7 +116,7 @@ final class MTSWordCountTestTopology {
         timescales,
         test.operatorName,
         "localhost:2181",
-        cachingRate,
+        cachingProb,
         TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()));
 
     // set bolt

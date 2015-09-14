@@ -17,8 +17,7 @@ package edu.snu.tempest.operator.window.timescale.impl;
 
 
 import edu.snu.tempest.operator.window.timescale.Timescale;
-import edu.snu.tempest.operator.window.timescale.TimescaleParser;
-import edu.snu.tempest.operator.window.timescale.parameter.CachingRate;
+import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
 import edu.snu.tempest.operator.window.timescale.parameter.TimescaleString;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
@@ -30,24 +29,24 @@ import org.junit.Test;
 import java.util.LinkedList;
 import java.util.List;
 
-public class CachingRatePolicyTest {
+public class RandomCachingPolicyTest {
 
   /**
-   * CachingPolicy which has 0 cachingRate should not save all outputs.
+   * CachingPolicy which has 0 cachingProb should not save all outputs.
    */
   @Test
-  public void cachingRateZeroTest() throws InjectionException {
+  public void cachingProbZeroTest() throws InjectionException {
     final List<Timescale> timescales = new LinkedList<>();
     timescales.add(new Timescale(4, 2));
     timescales.add(new Timescale(6, 4));
     timescales.add(new Timescale(10, 5));
 
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
-    jcb.bindNamedParameter(CachingRate.class, Integer.toString(0));
+    jcb.bindNamedParameter(CachingProb.class, Integer.toString(0));
     jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(timescales));
     final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
 
-    final CachingPolicy policy = injector.getInstance(CachingRatePolicy.class);
+    final CachingPolicy policy = injector.getInstance(RandomCachingPolicy.class);
     for (int endTime = 10; endTime < 1000; endTime++) {
       for (final Timescale ts : timescales) {
         final int startTime = endTime - 10;
@@ -58,10 +57,10 @@ public class CachingRatePolicyTest {
   }
 
   /**
-   * CachingPolicy which has 1 cachingRate should save outputs every window size interval.
+   * CachingPolicy which has 1 cachingProb should save all of the outputs.
    */
   @Test
-  public void cachingRateOneTest() throws InjectionException {
+  public void cachingProbOneTest() throws InjectionException {
     final List<Timescale> timescales = new LinkedList<>();
     timescales.add(new Timescale(4, 2));
     timescales.add(new Timescale(6, 4));
@@ -71,11 +70,11 @@ public class CachingRatePolicyTest {
     long ts2CachingTime = 4;
 
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
-    jcb.bindNamedParameter(CachingRate.class, Integer.toString(0));
+    jcb.bindNamedParameter(CachingProb.class, Integer.toString(0));
     jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(timescales));
     final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
 
-    final CachingPolicy policy = injector.getInstance(CachingRatePolicy.class);
+    final CachingPolicy policy = injector.getInstance(RandomCachingPolicy.class);
     for (int endTime = 10; endTime < 1000; endTime++) {
       for (final Timescale ts : timescales) {
         final int startTime = endTime - 10;

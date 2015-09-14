@@ -15,21 +15,21 @@
  */
 package edu.snu.tempest.example;
 
-import edu.snu.tempest.operator.window.WindowOperator;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
-import edu.snu.tempest.operator.window.timescale.*;
-import edu.snu.tempest.signal.window.timescale.TimescaleSignal;
-import edu.snu.tempest.signal.SignalSenderStage;
-import edu.snu.tempest.signal.impl.ZkSignalSenderStage;
+import edu.snu.tempest.operator.window.timescale.DynamicMTSWindowConfiguration;
+import edu.snu.tempest.operator.window.timescale.DynamicMTSWindowOperator;
+import edu.snu.tempest.operator.window.timescale.Timescale;
+import edu.snu.tempest.operator.window.timescale.impl.TimescaleParser;
+import edu.snu.tempest.operator.LoggingOutputEmitter;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.wake.impl.StageManager;
 
-import javax.inject.Inject;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -53,17 +53,10 @@ public final class MTSWindowOperatorExample {
     list.add(ts);
     final long startTime = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
 
-    // configure zookeeper setting.
-    final String identifier = "mts-test";
-    final String address = "localhost:2181";
-
     final Configuration operatorConf = DynamicMTSWindowConfiguration.CONF
         .set(DynamicMTSWindowConfiguration.START_TIME, startTime)
         .set(DynamicMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(list))
         .set(DynamicMTSWindowConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-        .set(DynamicMTSWindowConfiguration.OUTPUT_HANDLER, TestHandler.class)
-        .set(DynamicMTSWindowConfiguration.OPERATOR_IDENTIFIER, identifier)
-        .set(DynamicMTSWindowConfiguration.ZK_SERVER_ADDRESS, address)
         .build();
 
     final Injector ij = Tang.Factory.getTang().newInjector(operatorConf);
@@ -73,15 +66,15 @@ public final class MTSWindowOperatorExample {
         return input;
       }
     });
-    final WindowOperator<Integer> operator = ij.getInstance(WindowOperator.class);
-    final SignalSenderStage<TimescaleSignal> sender = ij.getInstance(ZkSignalSenderStage.class);
-
+    final DynamicMTSWindowOperator<Integer, Map<Integer, Integer>> operator =
+        ij.getInstance(DynamicMTSWindowOperator.class);
+    operator.prepare(new LoggingOutputEmitter());
     // add input
     executor.submit(new Runnable() {
       @Override
       public void run() {
         final Random rand = new Random();
-        for (int i = 0; i < 25000; i++) {
+        for (int i = 0; i < 10000; i++) {
           operator.execute(Math.abs(rand.nextInt() % 5));
           try {
             Thread.sleep(10);
@@ -93,30 +86,14 @@ public final class MTSWindowOperatorExample {
     });
 
     // add timescales to the MTS operator
-    Thread.sleep(3000);
-    sender.sendSignal(identifier, new TimescaleSignal(10, 5,
-        TimescaleSignal.ADDITION, TimeUnit.NANOSECONDS.toSeconds(System.nanoTime())));
-    Thread.sleep(4000);
-    sender.sendSignal(identifier, new TimescaleSignal(20, 8,
-        TimescaleSignal.ADDITION, TimeUnit.NANOSECONDS.toSeconds(System.nanoTime())));
-    Thread.sleep(5000);
-    sender.sendSignal(identifier, new TimescaleSignal(15, 7,
-        TimescaleSignal.ADDITION, TimeUnit.NANOSECONDS.toSeconds(System.nanoTime())));
+    Thread.sleep(6000);
+    operator.onTimescaleAddition(new Timescale(10, 5), TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()));
+    Thread.sleep(10000);
+    operator.onTimescaleAddition(new Timescale(20, 8), TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()));
+    Thread.sleep(10000);
+    operator.onTimescaleAddition(new Timescale(15, 7), TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()));
     executor.shutdown();
     executor.awaitTermination(30, TimeUnit.SECONDS);
-    sender.close();
     StageManager.instance().close();
-  }
-
-  public static final class TestHandler implements TimescaleWindowOutputHandler<Integer> {
-
-    @Inject
-    private TestHandler() {
-    }
-
-    @Override
-    public void onNext(final TimescaleWindowOutput<Integer> output) {
-      System.out.println(output);
-    }
   }
 }

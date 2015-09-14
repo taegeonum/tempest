@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.tempest.operator.window.timescale.parameter;
+package edu.snu.tempest.operator.window.timescale;
 
-import org.apache.reef.tang.annotations.Name;
-import org.apache.reef.tang.annotations.NamedParameter;
+import edu.snu.tempest.operator.Operator;
 
-@NamedParameter(doc = "caching rate for saving outputs in dynamic mts operator.",
-    short_name="caching_rate", default_value = "1.0")
-public final class CachingRate implements Name<Double> {}
+/**
+ * TimescaleWindowOperator interface.
+ * It receives input and produces window output every interval.
+ */
+public interface TimescaleWindowOperator<I, V> extends Operator<I, TimescaleWindowOutput<V>> {
+}

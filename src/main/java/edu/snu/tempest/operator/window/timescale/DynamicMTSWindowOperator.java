@@ -13,37 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package edu.snu.tempest.operator.window.timescale;
 
-package edu.snu.tempest.operator.window.timescale.impl;
-
-import edu.snu.tempest.operator.window.timescale.Timescale;
+import edu.snu.tempest.operator.window.timescale.impl.DynamicMTSOperatorImpl;
 import org.apache.reef.tang.annotations.DefaultImplementation;
 
 /**
- * CachingPolicy for caching multi-time scale outputs.
+ * Dynamic multi-time scale WindowOperator interface.
+ * It receives input and produces window output every interval.
  */
-@DefaultImplementation(RandomCachingPolicy.class)
-public interface CachingPolicy {
-  /**
-   * Decide to cache or not the output of ts ranging from startTime to endTime.
-   * @param startTime start time of the output
-   * @param endTime end time of the output
-   * @param ts the timescale of the output
-   * @return cache or not
-   */
-  boolean cache(long startTime, long endTime, Timescale ts);
+@DefaultImplementation(DynamicMTSOperatorImpl.class)
+public interface DynamicMTSWindowOperator<I, V> extends TimescaleWindowOperator<I, V> {
 
   /**
    * Receive timescale to be added.
    * @param ts timescale to be added.
-   * @param addTime the time when timescale is added.
+   * @param addTime the time when timescale is added. Time unit is in seconds.
    */
   void onTimescaleAddition(Timescale ts, long addTime);
 
   /**
    * Receive timescale to be deleted.
    * @param ts timescale to be deleted.
-   * @param deleteTime the time when timescale is deleted.
+   * @param deleteTime the time when timescale is deleted. Time unit is in seconds.
    */
   void onTimescaleDeletion(Timescale ts, long deleteTime);
 }

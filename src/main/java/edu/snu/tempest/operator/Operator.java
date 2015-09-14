@@ -13,12 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.tempest.operator.window.timescale;
-
-import edu.snu.tempest.operator.window.WindowOutputHandler;
+package edu.snu.tempest.operator;
 
 /**
- * A handler for timescale window outputs.
+ * Operator interface.
  */
-public interface TimescaleWindowOutputHandler<V> extends WindowOutputHandler<TimescaleWindowOutput<V>> {
+public interface Operator<I, V> {
+  /**
+   * It receives input from this function.
+   * @param val input value
+   */
+  void execute(final I val);
+
+  /**
+   * This function is called before execute.
+   * The operator should emit the processed input to output emitter.
+   * @param outputEmitter an output emitter
+   */
+  void prepare(OutputEmitter<V> outputEmitter);
 }
