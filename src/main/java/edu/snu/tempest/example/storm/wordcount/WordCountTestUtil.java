@@ -17,8 +17,8 @@ package edu.snu.tempest.example.storm.wordcount;
 
 import edu.snu.tempest.example.storm.parameter.*;
 import edu.snu.tempest.operator.window.timescale.Timescale;
-import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
 import edu.snu.tempest.operator.window.timescale.impl.TimescaleParser;
+import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
 import edu.snu.tempest.operator.window.timescale.parameter.TimescaleString;
 import org.apache.reef.tang.annotations.Parameter;
 
