@@ -132,10 +132,15 @@ final class MTSWordCountTestTopology {
         numThreads,
         TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()));
 
-    // set filter bolt
-    builder.setBolt("wcFilterBolt", new SplitFilterBolt(), numSplitBolt).shuffleGrouping("wcspout");
-    // set mts bolt
-    builder.setBolt("wcbolt", bolt, numBolts).fieldsGrouping("wcFilterBolt", new Fields("word"));
+    if (inputType.compareTo("wiki") == 0) {
+      // set filter bolt
+      builder.setBolt("wcFilterBolt", new SplitFilterBolt(), numSplitBolt).shuffleGrouping("wcspout");
+      // set mts bolt
+      builder.setBolt("wcbolt", bolt, numBolts).fieldsGrouping("wcFilterBolt", new Fields("word"));
+    } else {
+      builder.setBolt("wcbolt", bolt, numBolts).fieldsGrouping("wcspout", new Fields("word"));
+    }
+
 
     final StormTopology topology = builder.createTopology();
     StormRunner.runTopologyLocally(topology, topologyName, conf, test.totalTime);
