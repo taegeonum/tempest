@@ -31,6 +31,7 @@ import edu.snu.tempest.operator.window.timescale.Timescale;
 import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
 import edu.snu.tempest.operator.window.timescale.parameter.NumThreads;
 import edu.snu.tempest.operator.window.timescale.parameter.TimescaleString;
+import evaluation.example.common.SplitFilterBolt;
 import evaluation.example.common.TestParamWrapper;
 import evaluation.example.common.WikiDataSpout;
 import org.apache.reef.tang.Configuration;
@@ -75,6 +76,7 @@ final class TopkTestTopology {
         .registerShortNameOfClass(InputInterval.class)
         .registerShortNameOfClass(NumThreads.class)
         .registerShortNameOfClass(WikiDataSpout.InputPath.class)
+        .registerShortNameOfClass(SplitFilterBolt.NumSplitBolt.class)
         .processCommandLine(args);
 
     return cl.getBuilder().build();
@@ -100,6 +102,7 @@ final class TopkTestTopology {
     final double inputInterval = injector.getNamedInstance(InputInterval.class);
     final int numThreads = injector.getNamedInstance(NumThreads.class);
     final String inputPath = injector.getNamedInstance(WikiDataSpout.InputPath.class);
+    final int numSplitBolt = injector.getNamedInstance(SplitFilterBolt.NumSplitBolt.class);
 
     final TopologyBuilder builder = new TopologyBuilder();
     BaseRichSpout spout = null;

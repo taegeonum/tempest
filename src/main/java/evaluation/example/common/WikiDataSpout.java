@@ -32,7 +32,7 @@ import java.util.Scanner;
 
 public final class WikiDataSpout extends BaseRichSpout {
 
-  private final int inputInterval;
+  private final double inputInterval;
 
   @NamedParameter(short_name = "input_path")
   public final static class InputPath implements Name<String> {}
@@ -47,7 +47,7 @@ public final class WikiDataSpout extends BaseRichSpout {
 
   public WikiDataSpout(final double inputInterval,
                        final String inputPath) {
-    this.inputInterval = (int)inputInterval;
+    this.inputInterval = inputInterval;
     this.inputPath = inputPath;
   }
 
@@ -77,22 +77,35 @@ public final class WikiDataSpout extends BaseRichSpout {
 
   @Override
   public void nextTuple() {
-    Utils.sleep(inputInterval);
-    if (sc.hasNextLine()) {
-      collector.emit(new Values(sc.nextLine()));
-    } else {
-      sc.close();
+    double point = inputInterval - ((int)inputInterval);
+    long num = (long)inputInterval;
 
-      try {
-        sc = new Scanner(inputFile);
-      } catch (FileNotFoundException e) {
-        throw new RuntimeException(e);
-      }
+    int repeated = 1;
+    if (point > 0) {
+      num += 1;
+      repeated = (int)(1.0 / point);
+    }
 
+    for (int i = 0; i < repeated; i++){
       if (sc.hasNextLine()) {
         collector.emit(new Values(sc.nextLine()));
+      } else {
+        sc.close();
+
+        try {
+          sc = new Scanner(inputFile);
+        } catch (FileNotFoundException e) {
+          throw new RuntimeException(e);
+        }
+
+        if (sc.hasNextLine()) {
+          collector.emit(new Values(sc.nextLine()));
+        }
       }
     }
+
+    Utils.sleep(num);
+
   }
 
   @Override

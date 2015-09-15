@@ -76,6 +76,7 @@ final class MTSWordCountTestTopology {
         .registerShortNameOfClass(InputInterval.class)
         .registerShortNameOfClass(NumThreads.class)
         .registerShortNameOfClass(WikiDataSpout.InputPath.class)
+        .registerShortNameOfClass(SplitFilterBolt.NumSplitBolt.class)
         .processCommandLine(args);
 
     return cl.getBuilder().build();
@@ -101,6 +102,7 @@ final class MTSWordCountTestTopology {
     final double inputInterval = injector.getNamedInstance(InputInterval.class);
     final int numThreads = injector.getNamedInstance(NumThreads.class);
     final String inputPath = injector.getNamedInstance(WikiDataSpout.InputPath.class);
+    final int numSplitBolt = injector.getNamedInstance(SplitFilterBolt.NumSplitBolt.class);
 
     final TopologyBuilder builder = new TopologyBuilder();
     BaseRichSpout spout = null;
@@ -131,7 +133,7 @@ final class MTSWordCountTestTopology {
         TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()));
 
     // set filter bolt
-    builder.setBolt("wcFilterBolt", new SplitFilterBolt(), test.numSpouts).shuffleGrouping("wcspout");
+    builder.setBolt("wcFilterBolt", new SplitFilterBolt(), numSplitBolt).shuffleGrouping("wcspout");
     // set mts bolt
     builder.setBolt("wcbolt", bolt, numBolts).fieldsGrouping("wcFilterBolt", new Fields("word"));
 

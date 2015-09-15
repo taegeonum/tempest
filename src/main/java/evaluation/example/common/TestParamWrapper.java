@@ -37,7 +37,8 @@ public final class TestParamWrapper {
   public final String operatorName;
   public final String inputType;
   public final List<Timescale> timescales;
-  
+  public final double inputInterval;
+
   @Inject
   private TestParamWrapper(@Parameter(NumSpouts.class) final int numSpouts,
                            @Parameter(TestName.class) final String testName,
@@ -46,6 +47,7 @@ public final class TestParamWrapper {
                            @Parameter(TotalTime.class) final int totalTime,
                            @Parameter(OperatorType.class) final String operator,
                            @Parameter(InputType.class) final String inputType,
+                           @Parameter(InputInterval.class) final double inputInterval,
                            @Parameter(TimescaleString.class) final String timescaleParameter) {
     this.numSpouts = numSpouts;
     this.testName = testName;
@@ -55,6 +57,7 @@ public final class TestParamWrapper {
     this.timescales = TimescaleParser.parseFromString(timescaleParameter);
     this.operatorName = operator;
     this.inputType = inputType;
+    this.inputInterval = inputInterval;
   }
   
   public String print() {
@@ -66,6 +69,7 @@ public final class TestParamWrapper {
         + "CACHING_PROB: " + cachingProb + "\n"
         + "NUM_TIMESCALES: " + timescales.size() + "\n"
         + "INPUT_TYPE: " + inputType + "\n"
+        + "INPUT_RATE: " + (1000.0 / inputInterval) * numSpouts + "\n"
         + "OPERATOR: " + operatorName);
     return sb.toString();
   }

@@ -30,6 +30,8 @@ import edu.snu.tempest.operator.filter.FilterOperator;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
 import org.apache.reef.tang.exceptions.InjectionException;
 
 import java.util.Map;
@@ -37,6 +39,9 @@ import java.util.Map;
 public final class SplitFilterBolt extends BaseRichBolt {
 
   private Operator<String, String> splitOperator;
+
+  @NamedParameter(short_name="num_split_bolt", default_value="20")
+  public static final class NumSplitBolt implements Name<Integer> {}
 
   public SplitFilterBolt() {
   }
