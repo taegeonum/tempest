@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -88,11 +87,6 @@ final class OverlappingWindowStage<V> implements EStage<Long> {
     if (closed.compareAndSet(false, true)) {
       for (final ExecutorService executor : executors) {
         executor.shutdown();
-        if (!executor.awaitTermination(shutdownTimeout, TimeUnit.MILLISECONDS)) {
-          LOG.log(Level.WARNING, "Executor did not terminate in " + shutdownTimeout + "ms.");
-          final List<Runnable> droppedRunnables = executor.shutdownNow();
-          LOG.log(Level.WARNING, "Executor dropped " + droppedRunnables.size() + " tasks.");
-        }
       }
     }
   }
