@@ -74,6 +74,7 @@ final class TopkTestTopology {
         .registerShortNameOfClass(NumBolts.class)
         .registerShortNameOfClass(InputInterval.class)
         .registerShortNameOfClass(NumThreads.class)
+        .registerShortNameOfClass(WikiDataSpout.InputPath.class)
         .processCommandLine(args);
 
     return cl.getBuilder().build();
@@ -98,6 +99,7 @@ final class TopkTestTopology {
     final int numBolts = injector.getNamedInstance(NumBolts.class);
     final double inputInterval = injector.getNamedInstance(InputInterval.class);
     final int numThreads = injector.getNamedInstance(NumThreads.class);
+    final String inputPath = injector.getNamedInstance(WikiDataSpout.InputPath.class);
 
     final TopologyBuilder builder = new TopologyBuilder();
     BaseRichSpout spout = null;
@@ -106,7 +108,7 @@ final class TopkTestTopology {
     } else if (inputType.compareTo("zipfian") == 0) {
       spout = new ZipfianWordSpout(inputInterval);
     } else if (inputType.compareTo("wiki") == 0) {
-      spout = new WikiDataSpout(inputInterval);
+      spout = new WikiDataSpout(inputInterval, inputPath);
     }
     
     final OutputWriter writer = injector.getInstance(LocalOutputWriter.class);
