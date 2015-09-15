@@ -31,6 +31,7 @@ import edu.snu.tempest.operator.window.timescale.Timescale;
 import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
 import edu.snu.tempest.operator.window.timescale.parameter.NumThreads;
 import edu.snu.tempest.operator.window.timescale.parameter.TimescaleString;
+import evaluation.example.common.SplitFilterBolt;
 import evaluation.example.common.TestParamWrapper;
 import evaluation.example.common.WikiDataSpout;
 import org.apache.reef.tang.Configuration;
@@ -127,8 +128,10 @@ final class MTSWordCountTestTopology {
         numThreads,
         TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()));
 
-    // set bolt
-    builder.setBolt("wcbolt", bolt, numBolts).fieldsGrouping("wcspout", new Fields("word"));
+    // set filter bolt
+    builder.setBolt("wcFilterBolt", new SplitFilterBolt(), test.numSpouts).shuffleGrouping("wcspout");
+    // set mts bolt
+    builder.setBolt("wcbolt", bolt, numBolts).fieldsGrouping("wcFilterBolt", new Fields("word"));
 
     final StormTopology topology = builder.createTopology();
     StormRunner.runTopologyLocally(topology, topologyName, conf, test.totalTime);
