@@ -23,8 +23,9 @@ import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
 import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -104,18 +105,22 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
   @Override
   public T finalAggregate(final long startTime, final long endTime, final Timescale ts) {
     final long aggStartTime = System.nanoTime();
-    final boolean cache = cachingPolicy.cache(startTime, endTime, ts);
     final List<T> dependentOutputs = new LinkedList<>();
     // lookup dependencies
     long start = startTime;
     boolean isFullyProcessed = true;
 
     // fetch dependent outputs
-    while(start < endTime) {
-      final WindowTimeAndOutput<DependencyGraphNode> elem;
+    while (start < endTime) {
+      LOG.log(Level.FINE, ts + " Lookup : (" + start + ", " + endTime + ")");
+      WindowTimeAndOutput<DependencyGraphNode> elem;
       try {
         elem = table.lookupLargestSizeOutput(start, endTime);
-        LOG.log(Level.FINE, ts + " Lookup : (" + start + ", " + endTime + ")");
+        if ((start == startTime && elem.endTime == endTime) && elem.output.output == null) {
+          // prevents self reference
+          elem = table.lookupLargestSizeOutput(start, endTime-1);
+        }
+
         if (start == elem.endTime) {
           isFullyProcessed = false;
           break;
@@ -147,32 +152,47 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
           + "It only happens when the timescale is recently added");
     }
 
-    // add a node into table before doing final aggregation.
-    // If other threads look up this node, they should wait until the final aggregation is finished.
-    final DependencyGraphNode outputNode = new DependencyGraphNode();
-    if (cache) {
-      table.saveOutput(startTime, endTime, outputNode);
-    }
-
     // aggregates dependent outputs
+    LOG.log(Level.FINE, "Dependent outputs of [" + startTime + "-" + endTime + "]: " + dependentOutputs);
     final T finalResult = parallelAggregator.doParallelAggregation(dependentOutputs);
 
     LOG.log(Level.FINE, "AGG TIME OF " + ts + ": "
         + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - aggStartTime)
         + " at " + endTime + ", dependent size: " + dependentOutputs.size());
 
-    if (cache) {
+    try {
+      final DependencyGraphNode outputNode = table.lookup(startTime, endTime);
       LOG.log(Level.FINE, "Saves output of : " + ts +
           "[" + startTime + "-" + endTime + "]");
       synchronized (outputNode) {
         outputNode.output = finalResult;
         outputNode.notifyAll();
       }
+    } catch (final NotFoundException e) {
+      // do nothing
     }
 
     // remove stale outputs.
     cleaner.onNext(endTime);
     return finalResult;
+  }
+
+  @Override
+  public void saveOutputInformation(final long startTime, final long endTime, final Timescale ts) {
+    final boolean cache = cachingPolicy.cache(startTime, endTime, ts);
+    // add a node into table before doing final aggregation.
+    // If other threads look up this node, they should wait until the final aggregation is finished.
+    if (cache) {
+      try {
+        // if exists, do not save. It can occur when partial outputs have same start and end time.
+        // Ex. windowSize = 2, interval = 2
+        table.lookup(startTime, endTime);
+      } catch (final NotFoundException e) {
+        // if does not exist, save.
+        final DependencyGraphNode outputNode = new DependencyGraphNode();
+        table.saveOutput(startTime, endTime, outputNode);
+      }
+    }
   }
 
   /**

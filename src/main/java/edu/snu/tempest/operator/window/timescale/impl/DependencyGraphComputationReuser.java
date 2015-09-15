@@ -23,8 +23,8 @@ import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
 import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -125,10 +125,13 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
 
     // fetch dependent outputs
     while (start < endTime) {
-      final WindowTimeAndOutput<TableNode> elem;
+      WindowTimeAndOutput<TableNode> elem;
       try {
-        //lookup largest output in the dynamic table.
         elem = dynamicTable.lookupLargestSizeOutput(start, endTime);
+        if ((start == startTime && elem.endTime == endTime) && elem.output.output == null) {
+          // prevents self reference
+          elem = dynamicTable.lookupLargestSizeOutput(start, endTime-1);
+        }
 
         LOG.log(Level.FINE, ts + " Lookup : (" + start + ", " + endTime + ")");
         if (start == elem.endTime) {
@@ -168,35 +171,40 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
               + "It only happens when the timescale is recently added" + startTime);
     }
 
-    //lookup the node in the dynamicTable. If its refCount is >0, save the output with the same refCount.
-    int refCount = dependencyGraph.get().getNodeRefCount(endTime - ts.windowSize, endTime);
-    T finalResult;
-    if (refCount > 0) {
-      final TableNode outputNode = new TableNode(null, refCount);
-      dynamicTable.saveOutput(startTime, endTime, outputNode);
-      //aggregate
-      finalResult = parallelAggregator.doParallelAggregation(dependentOutputs);
-
-      LOG.log(Level.FINE, "finalResult: " + finalResult);
-      LOG.log(Level.FINE, "AGG TIME OF " + ts + ": "
-              + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - aggStartTime)
-              + " at " + endTime + ", dependent size: " + dependentOutputs.size());
-
-      //Notify waiting threads.
-      LOG.log(Level.FINE, "refCount : " + refCount);
+    final T finalResult = parallelAggregator.doParallelAggregation(dependentOutputs);
+    try {
+      final TableNode outputNode = dynamicTable.lookup(startTime, endTime);
       LOG.log(Level.FINE, "Saves output of : " + ts +
               "[" + startTime + "-" + endTime + "]");
+      //Notify waiting threads if outputNode exists
       synchronized (outputNode) {
         outputNode.output = finalResult;
         outputNode.notifyAll();
       }
-    } else {
-      finalResult = parallelAggregator.doParallelAggregation(dependentOutputs);
+    } catch (final NotFoundException e) {
+      // do nothing if outputNode does not exist
     }
 
     // remove stale outputs.
     cleaner.onNext(endTime);
     return finalResult;
+  }
+
+  @Override
+  public void saveOutputInformation(final long startTime, final long endTime, final Timescale ts) {
+    //lookup the node in the dynamicTable. If its refCount is > 0, save the output with the same refCount.
+    final int refCount = dependencyGraph.get().getNodeRefCount(endTime - ts.windowSize, endTime);
+    if (refCount > 0) {
+      try {
+        // if exists, do not save. It can occur when partial outputs have same start and end time.
+        // Ex. windowSize = 2, interval = 2
+        dynamicTable.lookup(startTime, endTime);
+      } catch (final NotFoundException e) {
+        // if does not exist, save.
+        final TableNode outputNode = new TableNode(null, refCount);
+        dynamicTable.saveOutput(startTime, endTime, outputNode);
+      }
+    }
   }
 
   /**

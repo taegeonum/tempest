@@ -80,6 +80,10 @@ final class DefaultOverlappingWindowOperator<I> implements OverlappingWindowOper
     return sb.toString();
   }
 
+  /**
+   * Executes final aggregation every interval.
+   * @param currTime
+   */
   @Override
   public void execute(final Long currTime) {
     LOG.log(Level.FINE, "OverlappingWindowOperator triggered: " + currTime + ", timescale: " + timescale
@@ -97,6 +101,19 @@ final class DefaultOverlappingWindowOperator<I> implements OverlappingWindowOper
       } catch (final Exception e) {
         throw new RuntimeException(e);
       }
+    }
+  }
+
+  /**
+   * Saves output information before executing final aggregation.
+   * This function should be called before .onNext(time)
+   * @param currTime current time
+   */
+  public void saveOutputInformation(final Long currTime) {
+    if (((currTime - startTime) % timescale.intervalSize) == 0) {
+      final long endTime = currTime;
+      final long start = endTime - timescale.windowSize;
+      computationReuser.saveOutputInformation(start, currTime, timescale);
     }
   }
 
