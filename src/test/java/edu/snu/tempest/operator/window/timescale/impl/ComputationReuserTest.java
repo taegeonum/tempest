@@ -64,6 +64,11 @@ public class ComputationReuserTest {
   }
 
   @Test
+  public void dynamicDependencyGraphComputationReuserFinalAggregateTest() throws InjectionException {
+    computationReuserTest(dynamicDependencyGraphComputationReuserConfig());
+  }
+
+  @Test
   public void staticComputationReuserFinalAggregateTest() throws InjectionException {
     computationReuserTest(staticComputationReuserConfig());
   }
@@ -77,10 +82,29 @@ public class ComputationReuserTest {
   }
 
   @Test
+  public void dynamicDependencyGraphComputationReuserMultiThreadAggregationTest()
+      throws InjectionException, InterruptedException {
+    final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
+    jcb.bindImplementation(ComputationReuser.class, DependencyGraphComputationReuser.class);
+    multiThreadedFinalAggregation(jcb.build());
+  }
+
+  @Test
   public void staticComputationReuserMultiThreadAggregationTest() throws InjectionException, InterruptedException {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(ComputationReuser.class, StaticComputationReuser.class);
     multiThreadedFinalAggregation(jcb.build());
+  }
+
+  private Configuration dynamicDependencyGraphComputationReuserConfig() {
+    final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
+    jcb.bindImplementation(KeyExtractor.class, IntegerExtractor.class);
+    jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(timescales));
+    jcb.bindNamedParameter(StartTime.class, Long.toString(startTime));
+    jcb.bindImplementation(CAAggregator.class, CountByKeyAggregator.class);
+    jcb.bindImplementation(Aggregator.class, CountByKeyAggregator.class);
+    jcb.bindImplementation(ComputationReuser.class, DependencyGraphComputationReuser.class);
+    return jcb.build();
   }
 
   private Configuration dynamicComputationReuserConfig() {
@@ -162,6 +186,7 @@ public class ComputationReuserTest {
     // multi-threaded final aggregation.
     // [0-2] final aggregation
     // it waits 2 seconds in order to delay the final aggregation
+    computationReuser.saveOutputInformation(-2, 2, ts1);
     executor.submit(new Runnable() {
       @Override
       public void run() {
@@ -178,6 +203,7 @@ public class ComputationReuserTest {
     // [0-4] final aggregation
     // it waits 2 seconds in order to delay the final aggregation
     computationReuser.savePartialOutput(2, 4, partialOutput2);
+    computationReuser.saveOutputInformation(0, 4, ts1);
     executor.submit(new Runnable() {
       @Override
       public void run() {
@@ -194,6 +220,7 @@ public class ComputationReuserTest {
     // [0-4] final aggregation
     // it can reuse the above final aggregation. [0-2]
     // it should aggregate expected outputs even though the above final aggregation is delayed.
+    computationReuser.saveOutputInformation(-4, 4, ts2);
     executor.submit(new Runnable() {
       @Override
       public void run() {
@@ -206,6 +233,7 @@ public class ComputationReuserTest {
     // [2-6] final aggregation
     // it waits 2 seconds in order to delay the final aggregation
     computationReuser.savePartialOutput(4, 6, partialOutput3);
+    computationReuser.saveOutputInformation(2, 6, ts1);
     executor.submit(new Runnable() {
       @Override
       public void run() {
@@ -223,6 +251,7 @@ public class ComputationReuserTest {
     // [4-8] final aggregation
     // it waits 2 seconds in order to delay the final aggregation
     computationReuser.savePartialOutput(6, 8, partialOutput4);
+    computationReuser.saveOutputInformation(4, 8, ts1);
     executor.submit(new Runnable() {
       @Override
       public void run() {
@@ -239,6 +268,7 @@ public class ComputationReuserTest {
     // [0-8] final aggregation
     // it can reuse the above final aggregation. ([0-4], [4-8] <- it is delayed)
     // it should aggregate expected outputs even though the above final aggregation is delayed.
+    computationReuser.saveOutputInformation(0, 8, ts2);
     executor.submit(new Runnable() {
       @Override
       public void run() {
@@ -299,60 +329,73 @@ public class ComputationReuserTest {
 
     computationReuser.savePartialOutput(0, 2, partialOutput1);
     // [w=4, i=2] final aggregation at time 2
+    computationReuser.saveOutputInformation(-2, 2, ts1);
     final Map<Integer, Long> result1 = computationReuser.finalAggregate(-2, 2, ts1);
     Assert.assertEquals(partialOutput1, result1);
 
     computationReuser.savePartialOutput(2, 3, partialOutput2);
     // [w=6, i=3] final aggregation at time 3
+    computationReuser.saveOutputInformation(-3, 3, ts2);
     final Map<Integer, Long> result2 = computationReuser.finalAggregate(-3, 3, ts2);
     Assert.assertEquals(MTSTestUtils.merge(partialOutput1, partialOutput2), result2);
 
     computationReuser.savePartialOutput(3, 4, partialOutput3);
     // [w=4, i=2] final aggregation at time 4
+    computationReuser.saveOutputInformation(0, 4, ts1);
     final Map<Integer, Long> result3 = computationReuser.finalAggregate(0, 4, ts1);
     Assert.assertEquals(MTSTestUtils.merge(partialOutput1, partialOutput2, partialOutput3), result3);
     // [w=10, i=4] final aggregation at time 4
+    computationReuser.saveOutputInformation(-6, 4, ts3);
     final Map<Integer, Long> result4 = computationReuser.finalAggregate(-6, 4, ts3);
     Assert.assertEquals(MTSTestUtils.merge(partialOutput1, partialOutput2, partialOutput3), result4);
 
     computationReuser.savePartialOutput(4, 6, partialOutput4);
     // [w=4, i=2] final aggregation at time 6
+    computationReuser.saveOutputInformation(2, 6, ts1);
     final Map<Integer, Long> result5 = computationReuser.finalAggregate(2, 6, ts1);
     Assert.assertEquals(MTSTestUtils.merge(partialOutput2, partialOutput3, partialOutput4), result5);
     // [w=6, i=3] final aggregation at time 6
+    computationReuser.saveOutputInformation(0, 6, ts2);
     final Map<Integer, Long> result6 = computationReuser.finalAggregate(0, 6, ts2);
     Assert.assertEquals(MTSTestUtils.merge(partialOutput1,
         partialOutput2, partialOutput3, partialOutput4), result6);
 
     computationReuser.savePartialOutput(6, 8, partialOutput5);
     // [w=4, i=2] final aggregation at time 8
+    computationReuser.saveOutputInformation(4, 8, ts1);
     final Map<Integer, Long> result7 = computationReuser.finalAggregate(4, 8, ts1);
     Assert.assertEquals(MTSTestUtils.merge(partialOutput4, partialOutput5), result7);
     // [w=10, i=4] final aggregation at time 8
+    computationReuser.saveOutputInformation(-2, 8, ts3);
     final Map<Integer, Long> result8 = computationReuser.finalAggregate(-2, 8, ts3);
     Assert.assertEquals(MTSTestUtils.merge(partialOutput1,
         partialOutput2, partialOutput3, partialOutput4, partialOutput5), result8);
 
     computationReuser.savePartialOutput(8, 9, partialOutput6);
     // [w=6, i=3] final aggregation at time 9
+    computationReuser.saveOutputInformation(3, 9, ts2);
     final Map<Integer, Long> result9 = computationReuser.finalAggregate(3, 9, ts2);
     Assert.assertEquals(MTSTestUtils.merge(partialOutput3, partialOutput4,
         partialOutput5, partialOutput6), result9);
 
     computationReuser.savePartialOutput(9, 10, partialOutput7);
     // [w=4, i=2] final aggregation at time 10
+    computationReuser.saveOutputInformation(6, 10, ts1);
     final Map<Integer, Long> result10 = computationReuser.finalAggregate(6, 10, ts1);
     Assert.assertEquals(MTSTestUtils.merge(partialOutput5, partialOutput6, partialOutput7), result10);
 
     computationReuser.savePartialOutput(10, 12, partialOutput8);
     // [w=4, i=2] final aggregation at time 12
+    computationReuser.saveOutputInformation(8, 12, ts1);
     final Map<Integer, Long> result11 = computationReuser.finalAggregate(8, 12, ts1);
     Assert.assertEquals(MTSTestUtils.merge(partialOutput6, partialOutput7, partialOutput8), result11);
     // [w=6, i=3] final aggregation at time 12
+    computationReuser.saveOutputInformation(6, 12, ts2);
     final Map<Integer, Long> result12 = computationReuser.finalAggregate(6, 12, ts2);
     Assert.assertEquals(MTSTestUtils.merge(partialOutput5,
         partialOutput6, partialOutput7, partialOutput8), result12);
     // [w=10, i=4] final aggregation at time 12
+    computationReuser.saveOutputInformation(2, 12, ts3);
     final Map<Integer, Long> result13 = computationReuser.finalAggregate(2, 12, ts3);
     Assert.assertEquals(MTSTestUtils.merge(partialOutput2,
         partialOutput3, partialOutput4, partialOutput5,
@@ -360,20 +403,24 @@ public class ComputationReuserTest {
 
     computationReuser.savePartialOutput(12, 14, partialOutput9);
     // [w=4, i=2] final aggregation at time 14
+    computationReuser.saveOutputInformation(10, 14, ts1);
     final Map<Integer, Long> result14 = computationReuser.finalAggregate(10, 14, ts1);
     Assert.assertEquals(MTSTestUtils.merge(partialOutput8, partialOutput9), result14);
 
     computationReuser.savePartialOutput(14, 15, partialOutput10);
     // [w=6, i=3] final aggregation at time 15
+    computationReuser.saveOutputInformation(9, 15, ts2);
     final Map<Integer, Long> result15 = computationReuser.finalAggregate(9, 15, ts2);
     Assert.assertEquals(MTSTestUtils.merge(partialOutput7, partialOutput8,
         partialOutput9, partialOutput10), result15);
 
     computationReuser.savePartialOutput(15, 16, partialOutput11);
     // [w=4, i=2] final aggregation at time 16
+    computationReuser.saveOutputInformation(12, 16, ts1);
     final Map<Integer, Long> result16 = computationReuser.finalAggregate(12, 16, ts1);
     Assert.assertEquals(MTSTestUtils.merge(partialOutput9, partialOutput10, partialOutput11), result16);
     // [w=10, i=4] final aggregation at time 16
+    computationReuser.saveOutputInformation(6, 16, ts3);
     final Map<Integer, Long> result17 = computationReuser.finalAggregate(6, 16, ts3);
     Assert.assertEquals(MTSTestUtils.merge(partialOutput5, partialOutput6, partialOutput7,
         partialOutput8, partialOutput9, partialOutput10, partialOutput11), result17);

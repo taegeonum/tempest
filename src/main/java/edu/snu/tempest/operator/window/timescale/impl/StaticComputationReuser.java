@@ -219,6 +219,12 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
   }
 
   @Override
+  public void saveOutputInformation(final long wStartTime, final long wEndTime, final Timescale ts) {
+    // do nothing
+    // static computation reuser statically saves output information.
+  }
+
+  @Override
   public void onTimescaleAddition(final Timescale timescale, final long addTime) {
     throw new RuntimeException("Not supported");
   }

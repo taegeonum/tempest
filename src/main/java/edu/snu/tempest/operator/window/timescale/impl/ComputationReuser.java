@@ -41,6 +41,15 @@ public interface ComputationReuser<T> {
   T finalAggregate(long startTime, long endTime, Timescale ts);
 
   /**
+   * Save output information to track dependencies between outputs.
+   * This function should be called before finalAggregate.
+   * @param startTime start time of the output
+   * @param endTime end time of the output
+   * @param ts timescale
+   */
+  void saveOutputInformation(long startTime, long endTime, Timescale ts);
+
+  /**
    * Receive timescale to be added.
    * @param ts timescale to be added.
    * @param addTime the time when timescale is added.

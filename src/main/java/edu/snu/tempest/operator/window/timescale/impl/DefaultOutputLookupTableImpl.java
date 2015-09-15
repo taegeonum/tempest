@@ -66,6 +66,10 @@ final class DefaultOutputLookupTableImpl<V> implements OutputLookupTable<V> {
     } catch (final Exception e) {
       throw new NotFoundException("Cannot find element: at (" + startTime + ", " + endTime + ")");
     }
+
+    if (entry == null) {
+      throw new NotFoundException("Cannot find element: at (" + startTime + ", " + endTime + ")");
+    }
     return entry;
   }
 

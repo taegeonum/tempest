@@ -101,6 +101,11 @@ final class OverlappingWindowStage<V> implements EStage<Long> {
   public void onNext(final Long time) {
     lock.readLock().lock();
     int i = 0;
+    // save output information before final aggregation.
+    for (final OverlappingWindowOperator owo : handlers) {
+      owo.saveOutputInformation(time);
+    }
+    // do final aggregation
     for (final OverlappingWindowOperator<V> owo : handlers) {
       executors.get(i).submit(new Runnable() {
         @Override

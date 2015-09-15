@@ -29,7 +29,15 @@ import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
 public interface OverlappingWindowOperator<V> extends Operator<Long, TimescaleWindowOutput<V>> {
   /**
    * Return a timescale related to this overlapping window operator.
+   *
    * @return timescale.
    */
   Timescale getTimescale();
+
+  /**
+   * Saves output information before executing final aggregation.
+   * This function should be called before .onNext(time)
+   * @param currTime current time
+   */
+  void saveOutputInformation(final Long currTime);
 }
