@@ -200,7 +200,9 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
         // if exists, do not save. It can occur when partial outputs have same start and end time.
         // Ex. windowSize = 2, interval = 2
         final TableNode outputNode = dynamicTable.lookup(startTime, endTime);
-        outputNode.refCount.addAndGet(refCount);
+        if (outputNode.refCount.get() > 0) {
+          outputNode.refCount.addAndGet(refCount);
+        }
       } catch (final NotFoundException e) {
         // if does not exist, save.
         final TableNode outputNode = new TableNode(null, refCount);
