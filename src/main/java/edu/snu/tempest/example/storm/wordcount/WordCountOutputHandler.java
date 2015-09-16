@@ -67,7 +67,7 @@ final class WordCountOutputHandler implements TimeWindowOutputHandler<Map<String
   public void execute(final TimescaleWindowOutput<Map<String, Long>> output) {
     long count = 0;
     // calculate total count for logging
-    for (final Map.Entry<String, Long> entry : output.output.entrySet()) {
+    for (final Map.Entry<String, Long> entry : output.output.result.entrySet()) {
       count += entry.getValue();
     }
 

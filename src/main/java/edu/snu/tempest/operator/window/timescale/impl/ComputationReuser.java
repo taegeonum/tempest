@@ -38,7 +38,7 @@ public interface ComputationReuser<T> {
    * @param ts timescale
    * @return an aggregated output ranging from startTime to endTime.
    */
-  T finalAggregate(long startTime, long endTime, Timescale ts);
+  DepOutputAndResult<T> finalAggregate(long startTime, long endTime, Timescale ts);
 
   /**
    * Save output information to track dependencies between outputs.

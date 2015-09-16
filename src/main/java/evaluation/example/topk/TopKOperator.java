@@ -3,6 +3,7 @@ package evaluation.example.topk;
 import edu.snu.tempest.operator.OutputEmitter;
 import edu.snu.tempest.operator.window.timescale.TimeWindowOutputHandler;
 import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
+import edu.snu.tempest.operator.window.timescale.impl.DepOutputAndResult;
 
 import javax.inject.Inject;
 import java.util.Comparator;
@@ -25,7 +26,7 @@ public final class TopKOperator implements TimeWindowOutputHandler<Map<String, L
   @Override
   public void execute(final TimescaleWindowOutput<Map<String, Long>> val) {
     // find top-k
-    final Map<String, Long> output = val.output;
+    final Map<String, Long> output = val.output.result;
     final TreeMap<String, Long> sortedMap = new TreeMap<>(new ValueComparator(output));
     sortedMap.putAll(output);
 
@@ -37,7 +38,8 @@ public final class TopKOperator implements TimeWindowOutputHandler<Map<String, L
 
     LOG.log(Level.INFO, topk.toString());
     emitter.emit(new TimescaleWindowOutput<Map<String, Long>>(
-        val.timescale, topk, val.startTime, val.endTime, val.fullyProcessed));
+        val.timescale, new DepOutputAndResult<Map<String, Long>>(val.output.numDepOutputs, topk)
+        , val.startTime, val.endTime, val.fullyProcessed));
   }
 
   @Override

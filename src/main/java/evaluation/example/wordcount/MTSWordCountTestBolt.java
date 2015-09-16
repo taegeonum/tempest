@@ -23,6 +23,7 @@ import backtype.storm.tuple.Tuple;
 import edu.snu.tempest.example.util.writer.LocalOutputWriter;
 import edu.snu.tempest.example.util.writer.OutputWriter;
 import edu.snu.tempest.operator.OperatorConnector;
+import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.timescale.TimeWindowOutputHandler;
 import edu.snu.tempest.operator.window.timescale.Timescale;
@@ -73,7 +74,7 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
   /**
    * Window Operator.
    */
-  private TimescaleWindowOperator<Tuple, ComputationOutput<Map<String, Long>>> operator;
+  private TimescaleWindowOperator<Tuple, Map<String, Long>> operator;
 
   /**
    * Start time.
@@ -127,9 +128,9 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, StringKeyExtractor.class);
     jcb.bindNamedParameter(NumThreads.class, numThreads+"");
-    final MTSOperatorProvider<Tuple, ComputationOutput<Map<String, Long>>> operatorProvider =
+    final MTSOperatorProvider<Tuple, Map<String, Long>> operatorProvider =
         new MTSOperatorProvider<>(timescales, operatorType, cachingProb,
-            CompAggregator.class, jcb.build(), startTime);
+            CountByKeyAggregator.class, jcb.build(), startTime);
     operator = operatorProvider.getMTSOperator();
 
     final Injector ij = Tang.Factory.getTang().newInjector();
@@ -143,7 +144,7 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
     ij.bindVolatileInstance(OutputWriter.class, writer);
     ij.bindVolatileParameter(OutputLogger.PathPrefix.class, pathPrefix);
     try {
-      final TimeWindowOutputHandler<ComputationOutput<Map<String, Long>>, Map<String, Long>>
+      final TimeWindowOutputHandler<Map<String, Long>, Map<String, Long>>
           handler = ij.getInstance(OutputLogger.class);
       operator.prepare(new OperatorConnector<>(handler));
     } catch (InjectionException e) {

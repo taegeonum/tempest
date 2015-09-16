@@ -103,7 +103,7 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
    * @return an aggregated output ranging from startTime to endTime.
    */
   @Override
-  public T finalAggregate(final long startTime, final long endTime, final Timescale ts) {
+  public DepOutputAndResult<T> finalAggregate(final long startTime, final long endTime, final Timescale ts) {
     final long aggStartTime = System.nanoTime();
     final List<T> dependentOutputs = new LinkedList<>();
     // lookup dependencies
@@ -174,7 +174,7 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
 
     // remove stale outputs.
     cleaner.onNext(endTime);
-    return finalResult;
+    return new DepOutputAndResult<>(dependentOutputs.size(), finalResult);
   }
 
   @Override

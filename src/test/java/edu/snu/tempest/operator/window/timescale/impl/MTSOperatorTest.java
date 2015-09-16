@@ -131,15 +131,18 @@ public class MTSOperatorTest {
       final TimescaleWindowOutput<Map<Integer, Long>> ts3Output = results.get(ts3).poll();
       final TimescaleWindowOutput<Map<Integer, Long>> ts2Output1 = results.get(ts2).poll();
       final TimescaleWindowOutput<Map<Integer, Long>> ts2Output2 = results.get(ts2).poll();
-      Assert.assertEquals(MTSTestUtils.merge(ts2Output1.output, ts2Output2.output), ts3Output.output);
+      Assert.assertEquals(MTSTestUtils.merge(ts2Output1.output.result, ts2Output2.output.result),
+          ts3Output.output.result);
 
       final TimescaleWindowOutput<Map<Integer, Long>> ts1Output1 = results.get(ts1).poll();
       final TimescaleWindowOutput<Map<Integer, Long>> ts1Output2 = results.get(ts1).poll();
-      Assert.assertEquals(MTSTestUtils.merge(ts1Output1.output, ts1Output2.output), ts2Output1.output);
+      Assert.assertEquals(MTSTestUtils.merge(ts1Output1.output.result, ts1Output2.output.result),
+          ts2Output1.output.result);
 
       final TimescaleWindowOutput<Map<Integer, Long>> ts1Output3 = results.get(ts1).poll();
       final TimescaleWindowOutput<Map<Integer, Long>> ts1Output4 = results.get(ts1).poll();
-      Assert.assertEquals(MTSTestUtils.merge(ts1Output3.output, ts1Output4.output), ts2Output2.output);
+      Assert.assertEquals(MTSTestUtils.merge(ts1Output3.output.result, ts1Output4.output.result),
+          ts2Output2.output.result);
     }
   }
 }

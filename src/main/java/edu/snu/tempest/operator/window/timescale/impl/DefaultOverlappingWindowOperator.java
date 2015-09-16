@@ -94,7 +94,7 @@ final class DefaultOverlappingWindowOperator<I> implements OverlappingWindowOper
       final long start = Math.max(startTime, endTime - timescale.windowSize);
       try {
         final boolean fullyProcessed = this.startTime <= endTime - timescale.windowSize;
-        final I finalResult = computationReuser.finalAggregate(start, currTime, timescale);
+        final DepOutputAndResult<I> finalResult = computationReuser.finalAggregate(start, currTime, timescale);
         // send the result to output emitter
         emitter.emit(new TimescaleWindowOutput<>(
             timescale, finalResult, endTime - timescale.windowSize, currTime, fullyProcessed));

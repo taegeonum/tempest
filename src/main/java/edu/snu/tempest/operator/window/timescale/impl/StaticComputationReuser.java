@@ -152,7 +152,7 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
    * @return an aggregated output ranging from startTime to endTime.
    */
   @Override
-  public T finalAggregate(final long wStartTime, final long wEndTime, final Timescale ts) {
+  public DepOutputAndResult<T> finalAggregate(final long wStartTime, final long wEndTime, final Timescale ts) {
     LOG.log(Level.FINE, "Lookup " + wStartTime + ", " + wEndTime);
 
     final long lookupStartTime = wEndTime - ts.windowSize;
@@ -215,7 +215,7 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     }
     LOG.log(Level.FINE, "finalAggregate: " + wStartTime + " - " + wEndTime + ", " + start + " - " + end
         + ", period: " + period + ", dep: " + node.getDependencies().size() + ", listLen: " + dependentOutputs.size());
-    return finalResult;
+    return new DepOutputAndResult<>(dependentOutputs.size(), finalResult);
   }
 
   @Override
