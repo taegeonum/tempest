@@ -161,7 +161,8 @@ final class MTSWordCountTestDynamicBolt extends BaseRichBolt {
             try {
               Thread.sleep(TimeUnit.SECONDS.toMillis(tsAddInterval));
               final long time = System.currentTimeMillis();
-              tsOperator.onTimescaleAddition(addTs, TimeUnit.MILLISECONDS.toSeconds(time));
+              final long nanoTime = System.nanoTime();
+              tsOperator.onTimescaleAddition(addTs, TimeUnit.NANOSECONDS.toSeconds(nanoTime));
               final long endTime = System.currentTimeMillis();
               final long elapsed = endTime - time;
               writer.writeLine(pathPrefix + "/tsAddTime", time + "\t" + elapsed + "\t" + addTs);
