@@ -25,6 +25,7 @@ import org.apache.reef.tang.annotations.Parameter;
 import javax.inject.Inject;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -198,7 +199,8 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
       try {
         // if exists, do not save. It can occur when partial outputs have same start and end time.
         // Ex. windowSize = 2, interval = 2
-        dynamicTable.lookup(startTime, endTime);
+        final TableNode outputNode = dynamicTable.lookup(startTime, endTime);
+        outputNode.refCount.addAndGet(refCount);
       } catch (final NotFoundException e) {
         // if does not exist, save.
         final TableNode outputNode = new TableNode(null, refCount);
@@ -244,11 +246,11 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
    */
   final class TableNode {
     private T output;
-    private int refCount;
+    private AtomicInteger refCount;
 
     public TableNode(T output, int refCount){
       this.output = output;
-      this.refCount = refCount;
+      this.refCount = new AtomicInteger(refCount);
     }
 
     /**
@@ -258,9 +260,8 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
      * in order to reuse this node.
      */
     public synchronized void decreaseRefCnt(final long startTime, final long endTime) {
-      if (refCount > 0) {
-        refCount--;
-        if (refCount == 0) {
+      if (refCount.get() > 0) {
+        if (refCount.decrementAndGet() == 0) {
           dynamicTable.deleteOutput(startTime, endTime);
         }
       }
