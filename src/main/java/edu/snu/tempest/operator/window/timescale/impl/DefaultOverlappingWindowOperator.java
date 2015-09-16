@@ -112,7 +112,7 @@ final class DefaultOverlappingWindowOperator<I> implements OverlappingWindowOper
   public void saveOutputInformation(final Long currTime) {
     if (((currTime - startTime) % timescale.intervalSize) == 0) {
       final long endTime = currTime;
-      final long start = endTime - timescale.windowSize;
+      final long start = Math.max(startTime, endTime - timescale.windowSize);
       computationReuser.saveOutputInformation(start, currTime, timescale);
     }
   }
