@@ -32,7 +32,7 @@ import java.util.logging.Logger;
 /**
  * Output handler for word count example.
  */
-public final class OutputLogger<I> implements TimeWindowOutputHandler<Map<I, Long>, Map<I, Long>> {
+public final class OutputLogger<I> implements TimeWindowOutputHandler<ComputationOutput<Map<I, Long>>, Map<I, Long>> {
   private static final Logger LOG = Logger.getLogger(OutputLogger.class.getName());
 
   @NamedParameter(doc = "logging path for test")
@@ -64,17 +64,17 @@ public final class OutputLogger<I> implements TimeWindowOutputHandler<Map<I, Lon
    * @param output an output
    */
   @Override
-  public void execute(final TimescaleWindowOutput<Map<I, Long>> output) {
+  public void execute(final TimescaleWindowOutput<ComputationOutput<Map<I, Long>>> output) {
     long count = 0;
     // calculate total count for logging
-    for (final Map.Entry<I, Long> entry : output.output.entrySet()) {
+    for (final Map.Entry<I, Long> entry : output.output.output.entrySet()) {
       count += entry.getValue();
     }
 
     try {
       writer.writeLine(pathPrefix + "/" + output.timescale.windowSize
           + "-" + output.timescale.intervalSize, (System.currentTimeMillis()) + "\t"
-          + count);
+          + count + "\t" + output.output.computation + "\t" + output.output.dependentOutputs);
     } catch (final IOException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
