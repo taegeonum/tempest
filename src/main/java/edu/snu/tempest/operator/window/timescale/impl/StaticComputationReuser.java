@@ -24,6 +24,7 @@ import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
@@ -173,39 +174,49 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
       throw new RuntimeException(e);
     }
 
-    final List<T> dependentOutputs = new LinkedList<>();
+    final List<DependencyGraphNode> actualChildren = new LinkedList<>();
     for (final DependencyGraphNode child : node.getDependencies()) {
-      synchronized (child) {
-        if (child.getOutput() != null) {
-          if (!(lookupStartTime < startTime && end <= child.start)) {
-            dependentOutputs.add(child.getOutput());
-            child.decreaseRefCnt();
-          }
-        } else if (lookupStartTime < startTime && end <= child.start) {
-          // if there are no dependent outputs to use
-          // no need to wait for the child's output.
-          LOG.log(Level.FINE, "no wait. wStartTime: " + lookupStartTime + ", wEnd:" + wEndTime
-              + " child.start: " + child.start + "child.end: " + child.end);
-        } else {
-          // if there is a dependent output that could be used
-          // wait for the aggregation to finish.
-          LOG.log(Level.FINE, "wait. wStartTime: " + lookupStartTime + ", wEnd:" + wEndTime
-              + " child.start: " + child.start + "child.end: " + child.end);
-          try {
-            child.wait();
-            final T out = child.getOutput();
-            dependentOutputs.add(out);
-            child.decreaseRefCnt();
-          } catch (final InterruptedException e) {
-            e.printStackTrace();
-          }
-        }
+      if (lookupStartTime < startTime && end <= child.start) {
+        // if there are no dependent outputs to use
+        // no need to wait for the child's output.
+        LOG.log(Level.FINE, "no wait. wStartTime: " + lookupStartTime + ", wEnd:" + wEndTime
+            + " child.start: " + child.start + "child.end: " + child.end);
+      } else {
+        actualChildren.add(child);
       }
     }
 
     // aggregates dependent outputs
-    final T finalResult = parallelAggregator.doParallelAggregation(dependentOutputs);
+    int i = 0;
+    List<T> dependentOutputs = new LinkedList<>();
+    while (!actualChildren.isEmpty()) {
+      final Iterator<DependencyGraphNode> iterator = actualChildren.iterator();
+      while (iterator.hasNext()) {
+        final DependencyGraphNode child = iterator.next();
+        if (child.getOutput() != null) {
+          dependentOutputs.add(child.getOutput());
+          child.decreaseRefCnt();
+          iterator.remove();
+        }
+      }
+
+      if (dependentOutputs.size() == 1 && !actualChildren.isEmpty()) {
+        try {
+          Thread.sleep(10 * i);
+          i++;
+        } catch (final InterruptedException e) {
+          e.printStackTrace();
+        }
+      } else {
+        final List<T> dependents = dependentOutputs;
+        dependentOutputs = new LinkedList<>();
+        final T result = parallelAggregator.doParallelAggregation(dependents);
+        dependentOutputs.add(result);
+      }
+    }
+
     // save the output
+    final T finalResult = dependentOutputs.get(0);
     if (node.getInitialRefCnt() != 0) {
       synchronized (node) {
         node.saveOutput(finalResult);
