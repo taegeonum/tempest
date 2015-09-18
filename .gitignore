@@ -33,3 +33,4 @@ target
 *.txt
 *~HEAD*
 log/*
+*-latency

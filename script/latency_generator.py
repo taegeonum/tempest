@@ -5,7 +5,6 @@ import re
 
 parser = argparse.ArgumentParser(description='num thread, timescale and computation reuse')
 parser.add_argument('directory', type=str)
-parser.add_argument('percentile', type=int)
 
 args = parser.parse_args()
 pattern = re.compile("[0-9]+-[0-9]+-latency")
@@ -29,7 +28,7 @@ def parse_file(file_path):
     
   f.close()
 
-def parse_directory(directory, percentile):
+def parse_directory(directory):
   onlyfiles = [ f for f in listdir(directory) if isfile(join(directory,f)) and pattern.match(f)]
   for f in onlyfiles:
     parse_file(join(directory,f))
@@ -37,8 +36,8 @@ def parse_directory(directory, percentile):
   # calculate 95 or 99 % latencies
   # sort
   latencies.sort()
-  last = int(percentile * 0.01 * len(latencies))
-  percentile_latency = latencies[last]
-  print str(percentile),"% latency: ", percentile_latency
+  latency_95 = int(0.95 * len(latencies))
+  latency_99 = int(0.99 * len(latencies))
+  print "95% latency: ", latencies[latency_95], "\n", "99% latency: ", latencies[latency_99]
 
-parse_directory(args.directory, args.percentile)
+parse_directory(args.directory)
