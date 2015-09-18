@@ -186,7 +186,7 @@ public class ComputationReuserTest {
     // multi-threaded final aggregation.
     // [0-2] final aggregation
     // it waits 2 seconds in order to delay the final aggregation
-    computationReuser.saveOutputInformation(-2, 2, ts1);
+    computationReuser.saveOutputInformation(0, 2, ts1);
     executor.submit(new Runnable() {
       @Override
       public void run() {
@@ -195,7 +195,7 @@ public class ComputationReuserTest {
         } catch (final InterruptedException e) {
           e.printStackTrace();
         }
-        final Map<Integer, Long> result1 = computationReuser.finalAggregate(-2, 2, ts1).result;
+        final Map<Integer, Long> result1 = computationReuser.finalAggregate(0, 2, ts1).result;
         check.add(partialOutput1.equals(result1));
       }
     });
@@ -220,11 +220,11 @@ public class ComputationReuserTest {
     // [0-4] final aggregation
     // it can reuse the above final aggregation. [0-2]
     // it should aggregate expected outputs even though the above final aggregation is delayed.
-    computationReuser.saveOutputInformation(-4, 4, ts2);
+    computationReuser.saveOutputInformation(0, 4, ts2);
     executor.submit(new Runnable() {
       @Override
       public void run() {
-        final Map<Integer, Long> result3 = computationReuser.finalAggregate(-4, 4, ts2).result;
+        final Map<Integer, Long> result3 = computationReuser.finalAggregate(0, 4, ts2).result;
         check.add(MTSTestUtils.merge(partialOutput1, partialOutput2).equals(result3));
       }
     });
@@ -329,14 +329,14 @@ public class ComputationReuserTest {
 
     computationReuser.savePartialOutput(0, 2, partialOutput1);
     // [w=4, i=2] final aggregation at time 2
-    computationReuser.saveOutputInformation(-2, 2, ts1);
-    final Map<Integer, Long> result1 = computationReuser.finalAggregate(-2, 2, ts1).result;
+    computationReuser.saveOutputInformation(0, 2, ts1);
+    final Map<Integer, Long> result1 = computationReuser.finalAggregate(0, 2, ts1).result;
     Assert.assertEquals(partialOutput1, result1);
 
     computationReuser.savePartialOutput(2, 3, partialOutput2);
     // [w=6, i=3] final aggregation at time 3
-    computationReuser.saveOutputInformation(-3, 3, ts2);
-    final Map<Integer, Long> result2 = computationReuser.finalAggregate(-3, 3, ts2).result;
+    computationReuser.saveOutputInformation(0, 3, ts2);
+    final Map<Integer, Long> result2 = computationReuser.finalAggregate(0, 3, ts2).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput1, partialOutput2), result2);
 
     computationReuser.savePartialOutput(3, 4, partialOutput3);
@@ -345,8 +345,8 @@ public class ComputationReuserTest {
     final Map<Integer, Long> result3 = computationReuser.finalAggregate(0, 4, ts1).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput1, partialOutput2, partialOutput3), result3);
     // [w=10, i=4] final aggregation at time 4
-    computationReuser.saveOutputInformation(-6, 4, ts3);
-    final Map<Integer, Long> result4 = computationReuser.finalAggregate(-6, 4, ts3).result;
+    computationReuser.saveOutputInformation(0, 4, ts3);
+    final Map<Integer, Long> result4 = computationReuser.finalAggregate(0, 4, ts3).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput1, partialOutput2, partialOutput3), result4);
 
     computationReuser.savePartialOutput(4, 6, partialOutput4);
@@ -366,8 +366,8 @@ public class ComputationReuserTest {
     final Map<Integer, Long> result7 = computationReuser.finalAggregate(4, 8, ts1).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput4, partialOutput5), result7);
     // [w=10, i=4] final aggregation at time 8
-    computationReuser.saveOutputInformation(-2, 8, ts3);
-    final Map<Integer, Long> result8 = computationReuser.finalAggregate(-2, 8, ts3).result;
+    computationReuser.saveOutputInformation(0, 8, ts3);
+    final Map<Integer, Long> result8 = computationReuser.finalAggregate(0, 8, ts3).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput1,
         partialOutput2, partialOutput3, partialOutput4, partialOutput5), result8);
 

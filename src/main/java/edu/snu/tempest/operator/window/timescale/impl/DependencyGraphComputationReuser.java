@@ -23,6 +23,7 @@ import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
 import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -104,7 +105,7 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
   @Override
   public void savePartialOutput(final long startTime, final long endTime, final T output) {
     //Save all partials to dynamicTable.
-    dynamicTable.saveOutput(startTime, endTime, new TableNode(output, -1));
+    dynamicTable.saveOutput(startTime, endTime, new TableNode(output, -1, startTime, endTime));
   }
 
   /**
@@ -118,13 +119,13 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
   @Override
   public DepOutputAndResult<T> finalAggregate(final long startTime, final long endTime, final Timescale ts) {
     final long aggStartTime = System.nanoTime();
-    final List<T> dependentOutputs = new LinkedList<>();
     // lookup dependencies
     long start = startTime;
     boolean isFullyProcessed = true;
     LOG.log(Level.FINE, "start : " + startTime + " end : " + endTime);
 
     // fetch dependent outputs
+    final List<TableNode> actualChildren = new LinkedList<>();
     while (start < endTime) {
       WindowTimeAndOutput<TableNode> elem;
       try {
@@ -142,27 +143,14 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
         } else {
           final TableNode dependentNode = elem.output;
           LOG.log(Level.FINE, "child of " + startTime + "-" + endTime + ":" + elem.startTime + "-" + elem.endTime);
-          synchronized (dependentNode) {
-            // if there is a dependent output that could be used
-            // wait for the aggregation to finish.
-            LOG.log(Level.FINE, "Wait:  (" + start + ", " + endTime + ")");
-            if (dependentNode.output == null) {
-              dependentNode.wait();
-            }
-            LOG.log(Level.FINE, "Awake:  (" + start + ", " + endTime + ")");
-          }
           //add the output so it can be aggregated.
-          dependentOutputs.add(dependentNode.output);
-          //since the output has been used, decrease its reference count. If it becomes 0, delete the node.
-          dependentNode.decreaseRefCnt(elem.startTime, elem.endTime);
+          actualChildren.add(dependentNode);
           start = elem.endTime;
         }
       } catch (final NotFoundException e) {
         //if not found, search from start+1 to endTime. The node will not be fully processed.
         start += 1;
         isFullyProcessed = false;
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
       }
     }
 
@@ -172,16 +160,43 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
               + "It only happens when the timescale is recently added" + startTime);
     }
 
-    final T finalResult = parallelAggregator.doParallelAggregation(dependentOutputs);
+    // aggregates dependent outputs
+    int i = 0;
+    List<T> dependentOutputs = new LinkedList<>();
+    while (!actualChildren.isEmpty()) {
+      final Iterator<TableNode> iterator = actualChildren.iterator();
+      while (iterator.hasNext()) {
+        final TableNode child = iterator.next();
+        if (child.output != null) {
+          dependentOutputs.add(child.output);
+          //since the output has been used, decrease its reference count. If it becomes 0, delete the node.
+          child.decreaseRefCnt();
+          iterator.remove();
+        }
+      }
+
+      if (dependentOutputs.size() == 1 && !actualChildren.isEmpty()) {
+        try {
+          Thread.sleep(10 * i);
+          i++;
+        } catch (final InterruptedException e) {
+          e.printStackTrace();
+        }
+      } else {
+        final List<T> dependents = dependentOutputs;
+        dependentOutputs = new LinkedList<>();
+        final T result = parallelAggregator.doParallelAggregation(dependents);
+        dependentOutputs.add(result);
+      }
+    }
+
+    final T finalResult = dependentOutputs.get(0);
     try {
       final TableNode outputNode = dynamicTable.lookup(startTime, endTime);
       LOG.log(Level.FINE, "Saves output of : " + ts +
-              "[" + startTime + "-" + endTime + "]");
+          "[" + startTime + "-" + endTime + "]");
       //Notify waiting threads if outputNode exists
-      synchronized (outputNode) {
-        outputNode.output = finalResult;
-        outputNode.notifyAll();
-      }
+      outputNode.output = finalResult;
     } catch (final NotFoundException e) {
       // do nothing if outputNode does not exist
     }
@@ -205,7 +220,7 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
         }
       } catch (final NotFoundException e) {
         // if does not exist, save.
-        final TableNode outputNode = new TableNode(null, refCount);
+        final TableNode outputNode = new TableNode(null, refCount, startTime, endTime);
         dynamicTable.saveOutput(startTime, endTime, outputNode);
       }
     }
@@ -249,10 +264,15 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
   final class TableNode {
     private T output;
     private AtomicInteger refCount;
+    private final long wStartTime;
+    private final long wEndTime;
 
-    public TableNode(T output, int refCount){
+    public TableNode(T output, int refCount, final long wStartTime,
+                     final long wEndTime){
       this.output = output;
       this.refCount = new AtomicInteger(refCount);
+      this.wStartTime = wStartTime;
+      this.wEndTime = wEndTime;
     }
 
     /**
@@ -261,10 +281,10 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
      * and resets the reference count to initial count
      * in order to reuse this node.
      */
-    public synchronized void decreaseRefCnt(final long startTime, final long endTime) {
+    public synchronized void decreaseRefCnt() {
       if (refCount.get() > 0) {
         if (refCount.decrementAndGet() == 0) {
-          dynamicTable.deleteOutput(startTime, endTime);
+          dynamicTable.deleteOutput(wStartTime, wEndTime);
         }
       }
     }

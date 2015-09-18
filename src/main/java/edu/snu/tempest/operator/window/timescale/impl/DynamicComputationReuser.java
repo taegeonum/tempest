@@ -23,9 +23,9 @@ import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
 import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -105,12 +105,12 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
   @Override
   public DepOutputAndResult<T> finalAggregate(final long startTime, final long endTime, final Timescale ts) {
     final long aggStartTime = System.nanoTime();
-    final List<T> dependentOutputs = new LinkedList<>();
     // lookup dependencies
     long start = startTime;
     boolean isFullyProcessed = endTime - startTime == ts.windowSize;
 
     // fetch dependent outputs
+    final List<DependencyGraphNode> actualChildren = new LinkedList<>();
     while (start < endTime) {
       LOG.log(Level.FINE, ts + " Lookup : (" + start + ", " + endTime + ")");
       WindowTimeAndOutput<DependencyGraphNode> elem;
@@ -126,23 +126,12 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
           break;
         } else {
           final DependencyGraphNode dependentNode = elem.output;
-          synchronized (dependentNode) {
-            // if there is a dependent output that could be used
-            // wait for the aggregation to finish.
-            LOG.log(Level.FINE, "Wait:  (" + start + ", " + endTime + ")");
-            if (dependentNode.output == null) {
-              dependentNode.wait();
-            }
-            LOG.log(Level.FINE, "Awake:  (" + start + ", " + endTime + ")");
-          }
-          dependentOutputs.add(dependentNode.output);
+          actualChildren.add(dependentNode);
           start = elem.endTime;
         }
       } catch (final NotFoundException e) {
         start += 1;
         isFullyProcessed = false;
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
       }
     }
 
@@ -153,21 +142,40 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
     }
 
     // aggregates dependent outputs
-    LOG.log(Level.FINE, "Dependent outputs of [" + startTime + "-" + endTime + "]: " + dependentOutputs);
-    final T finalResult = parallelAggregator.doParallelAggregation(dependentOutputs);
+    // aggregates dependent outputs
+    int i = 0;
+    List<T> dependentOutputs = new LinkedList<>();
+    while (!actualChildren.isEmpty()) {
+      final Iterator<DependencyGraphNode> iterator = actualChildren.iterator();
+      while (iterator.hasNext()) {
+        final DependencyGraphNode child = iterator.next();
+        if (child.output != null) {
+          dependentOutputs.add(child.output);
+          iterator.remove();
+        }
+      }
 
-    LOG.log(Level.FINE, "AGG TIME OF " + ts + ": "
-        + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - aggStartTime)
-        + " at " + endTime + ", dependent size: " + dependentOutputs.size());
+      if (dependentOutputs.size() == 1 && !actualChildren.isEmpty()) {
+        try {
+          Thread.sleep(10 * i);
+          i++;
+        } catch (final InterruptedException e) {
+          e.printStackTrace();
+        }
+      } else {
+        final List<T> dependents = dependentOutputs;
+        dependentOutputs = new LinkedList<>();
+        final T result = parallelAggregator.doParallelAggregation(dependents);
+        dependentOutputs.add(result);
+      }
+    }
 
+    final T finalResult = dependentOutputs.get(0);
     try {
       final DependencyGraphNode outputNode = table.lookup(startTime, endTime);
       LOG.log(Level.FINE, "Saves output of : " + ts +
           "[" + startTime + "-" + endTime + "]");
-      synchronized (outputNode) {
-        outputNode.output = finalResult;
-        outputNode.notifyAll();
-      }
+      outputNode.output = finalResult;
     } catch (final NotFoundException e) {
       // do nothing
     }
