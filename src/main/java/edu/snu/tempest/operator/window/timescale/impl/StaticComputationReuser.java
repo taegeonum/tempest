@@ -189,6 +189,7 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     // aggregates dependent outputs
     int i = 0;
     List<T> dependentOutputs = new LinkedList<>();
+    final int size = actualChildren.size();
     while (!actualChildren.isEmpty()) {
       final Iterator<DependencyGraphNode> iterator = actualChildren.iterator();
       while (iterator.hasNext()) {
@@ -226,7 +227,7 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     }
     LOG.log(Level.FINE, "finalAggregate: " + wStartTime + " - " + wEndTime + ", " + start + " - " + end
         + ", period: " + period + ", dep: " + node.getDependencies().size() + ", listLen: " + dependentOutputs.size());
-    return new DepOutputAndResult<>(dependentOutputs.size(), finalResult);
+    return new DepOutputAndResult<>(size, finalResult);
   }
 
   @Override

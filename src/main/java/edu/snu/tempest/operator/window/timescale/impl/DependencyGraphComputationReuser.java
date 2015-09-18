@@ -163,6 +163,7 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
     // aggregates dependent outputs
     int i = 0;
     List<T> dependentOutputs = new LinkedList<>();
+    final int size = actualChildren.size();
     while (!actualChildren.isEmpty()) {
       final Iterator<TableNode> iterator = actualChildren.iterator();
       while (iterator.hasNext()) {
@@ -203,7 +204,7 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
 
     // remove stale outputs.
     cleaner.onNext(endTime);
-    return new DepOutputAndResult<>(dependentOutputs.size(), finalResult);
+    return new DepOutputAndResult<>(size, finalResult);
   }
 
   @Override
