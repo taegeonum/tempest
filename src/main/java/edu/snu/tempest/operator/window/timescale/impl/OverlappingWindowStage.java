@@ -18,16 +18,18 @@ package edu.snu.tempest.operator.window.timescale.impl;
 import edu.snu.tempest.operator.common.DefaultSubscription;
 import edu.snu.tempest.operator.common.Subscription;
 import edu.snu.tempest.operator.common.SubscriptionHandler;
+import edu.snu.tempest.operator.window.timescale.parameter.NumThreads;
+import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.wake.EStage;
 import org.apache.reef.wake.WakeParameters;
 import org.apache.reef.wake.impl.StageManager;
 
 import javax.inject.Inject;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -48,13 +50,12 @@ final class OverlappingWindowStage<V> implements EStage<Long> {
   /**
    * An executor for overlapping window operators.
    */
+  private final ExecutorService executor;
 
   /**
    * A priority queue ordering event handlers.
    */
   private final PriorityQueue<OverlappingWindowOperator<V>> handlers;
-
-  private final List<ExecutorService> executors;
 
   /**
    * A read/write lock for queue.
@@ -75,9 +76,9 @@ final class OverlappingWindowStage<V> implements EStage<Long> {
    * Overlapping window stage for doing final aggregation.
    */
   @Inject
-  private OverlappingWindowStage() {
+  private OverlappingWindowStage(@Parameter(NumThreads.class) final int numThreads) {
     this.handlers = new PriorityQueue<>(10, new OWOComparator());
-    this.executors = new LinkedList<>();
+    this.executor = Executors.newFixedThreadPool(numThreads);
     this.subscriptionHandler = new OWOSubscriptionHandler();
     StageManager.instance().register(this);
   }
@@ -85,8 +86,11 @@ final class OverlappingWindowStage<V> implements EStage<Long> {
   @Override
   public void close() throws Exception {
     if (closed.compareAndSet(false, true)) {
-      for (final ExecutorService executor : executors) {
-        executor.shutdown();
+      executor.shutdown();
+      if (!executor.awaitTermination(shutdownTimeout, TimeUnit.MILLISECONDS)) {
+        LOG.log(Level.WARNING, "Executor did not terminate in " + shutdownTimeout + "ms.");
+        final List<Runnable> droppedRunnables = executor.shutdownNow();
+        LOG.log(Level.WARNING, "Executor dropped " + droppedRunnables.size() + " tasks.");
       }
     }
   }
@@ -94,20 +98,18 @@ final class OverlappingWindowStage<V> implements EStage<Long> {
   @Override
   public void onNext(final Long time) {
     lock.readLock().lock();
-    int i = 0;
     // save output information before final aggregation.
     for (final OverlappingWindowOperator owo : handlers) {
       owo.saveOutputInformation(time);
     }
     // do final aggregation
     for (final OverlappingWindowOperator<V> owo : handlers) {
-      executors.get(i).submit(new Runnable() {
+      executor.submit(new Runnable() {
         @Override
         public void run() {
           owo.execute(time);
         }
       });
-      i++;
     }
     lock.readLock().unlock();
   }
@@ -122,7 +124,6 @@ final class OverlappingWindowStage<V> implements EStage<Long> {
     LOG.log(Level.FINE, "Subscribe " + handler);
     lock.writeLock().lock();
     handlers.add(handler);
-    executors.add(Executors.newFixedThreadPool(1));
     lock.writeLock().unlock();
     return new DefaultSubscription<>(subscriptionHandler, handler);
   }
