@@ -22,8 +22,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.security.InvalidParameterException;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -37,6 +37,10 @@ public final class LocalOutputWriter implements OutputWriter {
    * A map of file writer.
    */
   private final ConcurrentMap<String, FileWriter> writerMap;
+
+  private ExecutorService executor;
+
+  private final AtomicBoolean started = new AtomicBoolean(false);
   
   @Inject
   private LocalOutputWriter() {
@@ -48,6 +52,7 @@ public final class LocalOutputWriter implements OutputWriter {
     for (final FileWriter writer : writerMap.values()) {
       writer.close();
     }
+    executor.shutdown();
   }
 
   /**
@@ -58,6 +63,12 @@ public final class LocalOutputWriter implements OutputWriter {
    */
   @Override
   public void write(final String path, final String str) throws IOException {
+    if (!started.get()) {
+      if (started.compareAndSet(false, true)) {
+        executor = Executors.newFixedThreadPool(15);
+      }
+    }
+
     if (path.length() == 0 || path == null) {
       throw new InvalidParameterException("The output path should not be null");
     }
@@ -70,10 +81,20 @@ public final class LocalOutputWriter implements OutputWriter {
       writer = writerMap.get(path);
     }
 
-    synchronized (writer) {
-      writer.write(str);
-      writer.flush();
-    }
+    final FileWriter fw = writer;
+    executor.submit(new Runnable() {
+      @Override
+      public void run() {
+        synchronized (fw) {
+          try {
+            fw.write(str);
+            fw.flush();
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        }
+      }
+    });
   }
 
   /**

@@ -8,7 +8,6 @@ parser.add_argument('directory', type=str)
 
 args = parser.parse_args()
 pattern = re.compile("[0-9]+-[0-9]+-latency")
-trim = 100
 
 latencies = []
 
@@ -20,11 +19,9 @@ def parse_file(file_path):
 
   i = 1
   for line in lines:
-    elapsed_time = i * interval
     i += 1
-    if elapsed_time >= trim:
-      latency = long(line.split("\t")[0])
-      latencies.append(latency)
+    latency = long(line.split("\t")[0])
+    latencies.append(latency)
     
   f.close()
 
