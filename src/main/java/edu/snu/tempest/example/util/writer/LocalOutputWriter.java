@@ -76,9 +76,14 @@ public final class LocalOutputWriter implements OutputWriter {
     FileWriter writer = writerMap.get(path);
 
     if (writer == null) {
-      createDirectory(path);
-      writerMap.putIfAbsent(path, new FileWriter(path));
-      writer = writerMap.get(path);
+      synchronized (writerMap) {
+        writer = writerMap.get(path);
+        if (writer == null) {
+          createDirectory(path);
+          writerMap.putIfAbsent(path, new FileWriter(path));
+          writer = writerMap.get(path);
+        }
+      }
     }
 
     final FileWriter fw = writer;
