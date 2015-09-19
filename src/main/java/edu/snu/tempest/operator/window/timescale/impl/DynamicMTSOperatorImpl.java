@@ -196,5 +196,6 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
   public void close() throws Exception {
     slicingStage.close();
     owoStage.close();
+    computationReuser.close();
   }
 }

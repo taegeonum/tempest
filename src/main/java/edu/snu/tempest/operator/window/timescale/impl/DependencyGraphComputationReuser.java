@@ -259,6 +259,11 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
     this.dependencyGraph = new AtomicReference<>(new DependencyGraph(timescales, launchTime));
   }
 
+  @Override
+  public void close() throws Exception {
+    parallelAggregator.close();
+  }
+
   /**
    * Nodes that go in the dynamicTable.
    */

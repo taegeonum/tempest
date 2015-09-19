@@ -38,6 +38,11 @@ def parse_file(directory):
 
   mem = open(join(directory,"memory"), 'r')
   mem_lines = mem.readlines()[start:end];
-  print "avg cpu: ", calculate_avg(cpu_lines), " avg_mem: ", calculate_avg(mem_lines)
+
+  # thp
+  thp = open(join(directory,"60-1"), 'r')
+  thp_lines = thp.readlines()[start:end]
+
+  print "avg cpu: ", calculate_avg(cpu_lines), " avg_mem: ", calculate_avg(mem_lines), " avg_thp: ", calculate_avg(thp_lines)/60
 
 parse_file(args.directory)

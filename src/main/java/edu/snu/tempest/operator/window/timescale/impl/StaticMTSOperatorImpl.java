@@ -136,5 +136,6 @@ public final class StaticMTSOperatorImpl<I, V> implements TimescaleWindowOperato
   public void close() throws Exception {
     slicingStage.close();
     owoStage.close();
+    computationReuser.close();
   }
 }

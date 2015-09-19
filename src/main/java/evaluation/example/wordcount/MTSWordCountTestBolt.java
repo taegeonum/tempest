@@ -84,6 +84,8 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
   private ResourceLogger resourceLogger;
   private final int numThreads;
 
+  private OutputWriter writer;
+
   /**
    * MTSWordCountTestBolt.
    * It aggregates word and calculates counts.
@@ -134,7 +136,6 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
     operator = operatorProvider.getMTSOperator();
 
     final Injector ij = Tang.Factory.getTang().newInjector();
-    final OutputWriter writer;
     try {
       writer = ij.getInstance(LocalOutputWriter.class);
     } catch (InjectionException e) {
@@ -160,6 +161,7 @@ final class MTSWordCountTestBolt extends BaseRichBolt {
     }
     try {
       operator.close();
+      writer.close();
     } catch (Exception e) {
       e.printStackTrace();
       throw new RuntimeException(e);

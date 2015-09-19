@@ -431,6 +431,11 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     return a * (b / gcd(a, b));
   }
 
+  @Override
+  public void close() throws Exception {
+    parallelAggregator.close();
+  }
+
   /**
    * DependencyGraphNode.
    */

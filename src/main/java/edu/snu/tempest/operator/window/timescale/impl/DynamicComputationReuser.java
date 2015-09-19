@@ -228,6 +228,11 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
     cachingPolicy.onTimescaleDeletion(ts, deleteTime);
   }
 
+  @Override
+  public void close() throws Exception {
+    parallelAggregator.close();
+  }
+
   /**
    * DependencyGraphNode which contains output.
    */
