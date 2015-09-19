@@ -144,5 +144,7 @@ final class MTSWordCountTestTopology {
 
     final StormTopology topology = builder.createTopology();
     StormRunner.runTopologyLocally(topology, topologyName, conf, test.totalTime);
+    System.out.println("@@@@@@@@@@@ END OF TOPOLOGY");
+    System.exit(0);
   }
 }
