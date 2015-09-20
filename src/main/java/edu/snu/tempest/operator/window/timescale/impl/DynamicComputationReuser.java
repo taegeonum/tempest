@@ -26,6 +26,7 @@ import javax.inject.Inject;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -91,6 +92,7 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
    */
   @Override
   public void savePartialOutput(final long startTime, final long endTime, final T output) {
+    //LOG.log(Level.INFO, "SAVE PARTIAL [" + startTime + "-" + endTime +"]");
     table.saveOutput(startTime, endTime, new DependencyGraphNode(output));
   }
 
@@ -109,6 +111,8 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
     long start = startTime;
     boolean isFullyProcessed = endTime - startTime == ts.windowSize;
 
+    // todo remove
+    //final List<WindowTimeAndOutput<DependencyGraphNode>> nodes = new LinkedList<>();
     // fetch dependent outputs
     final List<DependencyGraphNode> actualChildren = new LinkedList<>();
     while (start < endTime) {
@@ -116,7 +120,7 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
       WindowTimeAndOutput<DependencyGraphNode> elem;
       try {
         elem = table.lookupLargestSizeOutput(start, endTime);
-        if ((start == startTime && elem.endTime == endTime) && elem.output.output == null) {
+        if ((start == startTime && elem.endTime == endTime) && elem.output.output.get() == null) {
           // prevents self reference
           elem = table.lookupLargestSizeOutput(start, endTime-1);
         }
@@ -127,6 +131,7 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
         } else {
           final DependencyGraphNode dependentNode = elem.output;
           actualChildren.add(dependentNode);
+          //nodes.add(elem);
           start = elem.endTime;
         }
       } catch (final NotFoundException e) {
@@ -135,8 +140,11 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
       }
     }
 
+    // todo remove
+    //LOG.log(Level.INFO, "LOOKUP: [" + startTime + "-" + endTime + "]" + ", ts: " + ts + ", dependents: " + nodes);
+
     if (!isFullyProcessed) {
-      LOG.log(Level.WARNING, "The output of " + ts
+      LOG.log(Level.FINE, "The output of " + ts
           + " at " + endTime + " is not fully produced. "
           + "It only happens when the timescale is recently added");
     }
@@ -150,8 +158,8 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
       final Iterator<DependencyGraphNode> iterator = actualChildren.iterator();
       while (iterator.hasNext()) {
         final DependencyGraphNode child = iterator.next();
-        if (child.output != null) {
-          dependentOutputs.add(child.output);
+        if (child.output.get() != null) {
+          dependentOutputs.add(child.output.get());
           iterator.remove();
         }
       }
@@ -176,13 +184,13 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
       final DependencyGraphNode outputNode = table.lookup(startTime, endTime);
       LOG.log(Level.FINE, "Saves output of : " + ts +
           "[" + startTime + "-" + endTime + "]");
-      outputNode.output = finalResult;
+      outputNode.output.compareAndSet(null, finalResult);
     } catch (final NotFoundException e) {
       // do nothing
     }
 
     // remove stale outputs.
-    cleaner.onNext(endTime);
+    cleaner.onNext(endTime-60);
     return new DepOutputAndResult<>(size, finalResult);
   }
 
@@ -198,6 +206,7 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
         table.lookup(startTime, endTime);
       } catch (final NotFoundException e) {
         // if does not exist, save.
+        //LOG.log(Level.INFO, "CACHE [" + startTime + "-" + endTime +"], ts: " + ts);
         final DependencyGraphNode outputNode = new DependencyGraphNode();
         table.saveOutput(startTime, endTime, outputNode);
       }
@@ -237,13 +246,14 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
    * DependencyGraphNode which contains output.
    */
   final class DependencyGraphNode  {
-    T output;
+    AtomicReference<T> output;
 
     public DependencyGraphNode() {
+      this.output = new AtomicReference<>(null);
     }
 
     public DependencyGraphNode(final T output) {
-      this.output = output;
+      this.output = new AtomicReference<>(output);
     }
   }
 }

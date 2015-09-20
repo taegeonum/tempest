@@ -105,7 +105,7 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
   @Override
   public void savePartialOutput(final long startTime, final long endTime, final T output) {
     //Save all partials to dynamicTable.
-    dynamicTable.saveOutput(startTime, endTime, new TableNode(output, -1, startTime, endTime));
+    dynamicTable.saveOutput(startTime, endTime, new TableNode(output, -1, startTime, endTime, 0, 0));
   }
 
   /**
@@ -124,13 +124,15 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
     boolean isFullyProcessed = true;
     LOG.log(Level.FINE, "start : " + startTime + " end : " + endTime);
 
+    // todo remove
+    //final List<WindowTimeAndOutput<TableNode>> nodes = new LinkedList<>();
     // fetch dependent outputs
     final List<TableNode> actualChildren = new LinkedList<>();
     while (start < endTime) {
       WindowTimeAndOutput<TableNode> elem;
       try {
         elem = dynamicTable.lookupLargestSizeOutput(start, endTime);
-        if ((start == startTime && elem.endTime == endTime) && elem.output.output == null) {
+        if ((start == startTime && elem.endTime == endTime) && elem.output.output.get() == null) {
           // prevents self reference
           elem = dynamicTable.lookupLargestSizeOutput(start, endTime-1);
         }
@@ -145,6 +147,7 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
           LOG.log(Level.FINE, "child of " + startTime + "-" + endTime + ":" + elem.startTime + "-" + elem.endTime);
           //add the output so it can be aggregated.
           actualChildren.add(dependentNode);
+          //nodes.add(elem);
           start = elem.endTime;
         }
       } catch (final NotFoundException e) {
@@ -154,8 +157,11 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
       }
     }
 
+    // todo remove
+    //LOG.log(Level.INFO, "LOOKUP: [" + startTime + "-" + endTime + "]" + ", ts: " + ts + ", dependents: " + nodes);
+
     if (!isFullyProcessed) {
-      LOG.log(Level.WARNING, "The output of " + ts
+      LOG.log(Level.FINE, "The output of " + ts
               + " at " + endTime + " is not fully produced. "
               + "It only happens when the timescale is recently added" + startTime);
     }
@@ -168,8 +174,9 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
       final Iterator<TableNode> iterator = actualChildren.iterator();
       while (iterator.hasNext()) {
         final TableNode child = iterator.next();
-        if (child.output != null) {
-          dependentOutputs.add(child.output);
+        if (child.output.get() != null &&
+            !(child.windowSize == ts.windowSize && child.interval == ts.intervalSize)) {
+          dependentOutputs.add(child.output.get());
           //since the output has been used, decrease its reference count. If it becomes 0, delete the node.
           child.decreaseRefCnt();
           iterator.remove();
@@ -197,13 +204,13 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
       LOG.log(Level.FINE, "Saves output of : " + ts +
           "[" + startTime + "-" + endTime + "]");
       //Notify waiting threads if outputNode exists
-      outputNode.output = finalResult;
+      outputNode.output.compareAndSet(null, finalResult);
     } catch (final NotFoundException e) {
       // do nothing if outputNode does not exist
     }
 
     // remove stale outputs.
-    cleaner.onNext(endTime);
+    cleaner.onNext(endTime-60);
     return new DepOutputAndResult<>(size, finalResult);
   }
 
@@ -217,11 +224,14 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
         // Ex. windowSize = 2, interval = 2
         final TableNode outputNode = dynamicTable.lookup(startTime, endTime);
         if (outputNode.refCount.get() > 0) {
-          outputNode.refCount.addAndGet(refCount);
+          int cnt = outputNode.refCount.addAndGet(refCount);
+          //LOG.log(Level.INFO, "CACHE [" + startTime + "-" + endTime +"], **cnt: " + cnt +", ts: " + ts);
         }
       } catch (final NotFoundException e) {
         // if does not exist, save.
-        final TableNode outputNode = new TableNode(null, refCount, startTime, endTime);
+        //LOG.log(Level.INFO, "CACHE [" + startTime + "-" + endTime +"], cnt: + " + refCount + ", ts: " + ts);
+        final TableNode outputNode = new TableNode(null, refCount,
+            startTime, endTime, ts.windowSize, ts.intervalSize);
         dynamicTable.saveOutput(startTime, endTime, outputNode);
       }
     }
@@ -268,17 +278,23 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
    * Nodes that go in the dynamicTable.
    */
   final class TableNode {
-    private T output;
+    private final AtomicReference<T> output;
     private AtomicInteger refCount;
     private final long wStartTime;
     private final long wEndTime;
+    private final long windowSize;
+    private final long interval;
 
     public TableNode(T output, int refCount, final long wStartTime,
-                     final long wEndTime){
-      this.output = output;
+                     final long wEndTime,
+                     final long windowSize,
+                     final long interval){
+      this.output = new AtomicReference<>(output);
       this.refCount = new AtomicInteger(refCount);
       this.wStartTime = wStartTime;
       this.wEndTime = wEndTime;
+      this.windowSize = windowSize;
+      this.interval = interval;
     }
 
     /**
