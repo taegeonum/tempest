@@ -219,11 +219,8 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     // save the output
     final T finalResult = dependentOutputs.get(0);
     if (node.getInitialRefCnt() != 0) {
-      synchronized (node) {
         node.saveOutput(finalResult);
         // after saving the output, notify the thread that is waiting for this output.
-        node.notifyAll();
-      }
     }
     LOG.log(Level.FINE, "finalAggregate: " + wStartTime + " - " + wEndTime + ", " + start + " - " + end
         + ", period: " + period + ", dep: " + node.getDependencies().size() + ", listLen: " + dependentOutputs.size());
