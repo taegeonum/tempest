@@ -43,6 +43,10 @@ def parse_file(directory):
   thp = open(join(directory,"60-1"), 'r')
   thp_lines = thp.readlines()[start:end]
 
-  print "avg cpu: ", calculate_avg(cpu_lines), " avg_mem: ", calculate_avg(mem_lines), " avg_thp: ", calculate_avg(thp_lines)/60
+  # latency
+  ltc = open(join(directory, "total_latencies"), 'r')
+  ltc_lines = ltc.readlines()
+
+  print "avg cpu\t", calculate_avg(cpu_lines),"\n avg_mem: ", calculate_avg(mem_lines), "\n avg_thp: ", calculate_avg(thp_lines)/60, "\n avg_ltc: ", calculate_avg(ltc_lines)
 
 parse_file(args.directory)
