@@ -184,7 +184,10 @@ public final class DynamicComputationReuser<I, T> implements ComputationReuser<T
       final DependencyGraphNode outputNode = table.lookup(startTime, endTime);
       LOG.log(Level.FINE, "Saves output of : " + ts +
           "[" + startTime + "-" + endTime + "]");
-      outputNode.output.compareAndSet(null, finalResult);
+      //Notify waiting threads if outputNode exists
+      if (outputNode.output.get() == null) {
+        outputNode.output.compareAndSet(null, finalResult);
+      }
     } catch (final NotFoundException e) {
       // do nothing
     }
