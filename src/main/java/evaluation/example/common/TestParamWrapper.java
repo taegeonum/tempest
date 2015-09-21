@@ -20,6 +20,7 @@ import edu.snu.tempest.operator.window.timescale.Timescale;
 import edu.snu.tempest.operator.window.timescale.impl.TimescaleParser;
 import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
 import edu.snu.tempest.operator.window.timescale.parameter.TimescaleString;
+import evaluation.example.parameter.InputRate;
 import evaluation.example.parameter.NumOfKey;
 import evaluation.example.parameter.ZipfianConstant;
 import org.apache.reef.tang.annotations.Parameter;
@@ -42,6 +43,7 @@ public final class TestParamWrapper {
   public final double inputInterval;
   public final double zipfConst;
   public final long numKey;
+  public final long inputRate;
 
   @Inject
   private TestParamWrapper(@Parameter(NumSpouts.class) final int numSpouts,
@@ -54,7 +56,8 @@ public final class TestParamWrapper {
                            @Parameter(InputInterval.class) final double inputInterval,
                            @Parameter(TimescaleString.class) final String timescaleParameter,
                            @Parameter(ZipfianConstant.class) final double zipfConst,
-                           @Parameter(NumOfKey.class) final long numKey) {
+                           @Parameter(NumOfKey.class) final long numKey,
+                           @Parameter(InputRate.class) final long inputRate) {
     this.numSpouts = numSpouts;
     this.testName = testName;
     this.logDir = logDir;
@@ -66,6 +69,7 @@ public final class TestParamWrapper {
     this.inputInterval = inputInterval;
     this.zipfConst = zipfConst;
     this.numKey = numKey;
+    this.inputRate = inputRate;
   }
   
   public String print() {
@@ -79,7 +83,7 @@ public final class TestParamWrapper {
         + "NUM_KEY: " + numKey + "\n"
         + "ZIPF_CONST: " + zipfConst + "\n"
         + "INPUT_TYPE: " + inputType + "\n"
-        + "INPUT_RATE: " + (1000.0 / inputInterval) * numSpouts + "\n"
+        + "INPUT_RATE: " + inputRate * numSpouts + "\n"
         + "OPERATOR: " + operatorName);
     return sb.toString();
   }
