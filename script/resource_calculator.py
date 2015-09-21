@@ -29,7 +29,7 @@ def get_total_time(directory):
 
 def parse_file(directory):
   initial_time = get_initial_time(directory)
-  start = 100
+  start = 3000
   end = get_total_time(directory)
 
   # cpu
@@ -40,9 +40,13 @@ def parse_file(directory):
   mem_lines = mem.readlines()[start:end];
 
   # thp
-  thp = open(join(directory,"60-1"), 'r')
-  thp_lines = thp.readlines()[start:end]
+  thp = open(join(directory,"3600-60"), 'r')
+  thp_lines = thp.readlines()[start/60:end]
 
-  print "avg cpu: ", calculate_avg(cpu_lines), " avg_mem: ", calculate_avg(mem_lines), " avg_thp: ", calculate_avg(thp_lines)/60
+  # latency
+  ltc = open(join(directory, "total_latencies"), 'r')
+  ltc_lines = ltc.readlines()
+
+  print "avg cpu\t", calculate_avg(cpu_lines),"\n avg_mem: ", calculate_avg(mem_lines), "\n avg_thp: ", calculate_avg(thp_lines)/3600, "\n avg_ltc: ", calculate_avg(ltc_lines)
 
 parse_file(args.directory)

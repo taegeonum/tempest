@@ -189,7 +189,7 @@ public final class DependencyGraphComputationReuser<I, T> implements Computation
         } catch (final InterruptedException e) {
           e.printStackTrace();
         }
-      } else {
+      } else if (dependentOutputs.size() > 1) {
         final List<T> dependents = dependentOutputs;
         dependentOutputs = new LinkedList<>();
         final T result = parallelAggregator.doParallelAggregation(dependents);

@@ -24,7 +24,6 @@ import backtype.storm.tuple.Fields;
 import edu.snu.tempest.example.storm.parameter.*;
 import edu.snu.tempest.example.storm.util.StormRunner;
 import edu.snu.tempest.example.storm.wordcount.RandomWordSpout;
-import edu.snu.tempest.example.storm.wordcount.ZipfianWordSpout;
 import edu.snu.tempest.example.util.writer.LocalOutputWriter;
 import edu.snu.tempest.example.util.writer.OutputWriter;
 import edu.snu.tempest.operator.window.timescale.Timescale;
@@ -34,6 +33,9 @@ import edu.snu.tempest.operator.window.timescale.parameter.TimescaleString;
 import evaluation.example.common.SplitFilterBolt;
 import evaluation.example.common.TestParamWrapper;
 import evaluation.example.common.WikiDataSpout;
+import evaluation.example.common.ZipfianWordSpout;
+import evaluation.example.parameter.NumOfKey;
+import evaluation.example.parameter.ZipfianConstant;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
@@ -77,6 +79,8 @@ final class MTSWordCountTestTopology {
         .registerShortNameOfClass(NumThreads.class)
         .registerShortNameOfClass(WikiDataSpout.InputPath.class)
         .registerShortNameOfClass(SplitFilterBolt.NumSplitBolt.class)
+        .registerShortNameOfClass(NumOfKey.class)
+        .registerShortNameOfClass(ZipfianConstant.class)
         .processCommandLine(args);
 
     return cl.getBuilder().build();
@@ -103,13 +107,15 @@ final class MTSWordCountTestTopology {
     final int numThreads = injector.getNamedInstance(NumThreads.class);
     final String inputPath = injector.getNamedInstance(WikiDataSpout.InputPath.class);
     final int numSplitBolt = injector.getNamedInstance(SplitFilterBolt.NumSplitBolt.class);
+    final long numKey = injector.getNamedInstance(NumOfKey.class);
+    final double zipfConst = injector.getNamedInstance(ZipfianConstant.class);
 
     final TopologyBuilder builder = new TopologyBuilder();
     BaseRichSpout spout = null;
     if (inputType.compareTo("random") == 0) {
       spout = new RandomWordSpout(inputInterval);
     } else if (inputType.compareTo("zipfian") == 0) {
-      spout = new ZipfianWordSpout(inputInterval);
+      spout = new ZipfianWordSpout(inputInterval, numKey, zipfConst);
     } else if (inputType.compareTo("wiki") == 0) {
       spout = new WikiDataSpout(inputInterval, inputPath);
     }
