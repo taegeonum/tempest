@@ -6,7 +6,7 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
-import edu.snu.tempest.example.storm.parameter.InputInterval;
+import evaluation.example.parameter.InputRate;
 import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;
@@ -24,16 +24,16 @@ public final class ZipfianWordSpout extends BaseRichSpout {
   
   SpoutOutputCollector outputCollector;
   ZipfianGenerator rand;
-  private final int sendingInterval;
+  private final long inputRate;
 
   private final long numKey;
   private final double zipfConstant;
 
   @Inject
-  public ZipfianWordSpout(@Parameter(InputInterval.class) double sendingInterval,
+  public ZipfianWordSpout(@Parameter(InputRate.class) long inputRate,
                           final long numKey,
                           final double zipfConstant) {
-    this.sendingInterval = (int) sendingInterval;
+    this.inputRate = inputRate;
     this.numKey = numKey;
     this.zipfConstant = zipfConstant;
   }
@@ -48,11 +48,14 @@ public final class ZipfianWordSpout extends BaseRichSpout {
   @Override
   public void nextTuple() {
     try {
-      Thread.sleep(sendingInterval);
+      Thread.sleep(1);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
-    for (int i = 0; i < 5; i++) {
+
+    final int loop = (int)inputRate / 1000;
+
+    for (int i = 0; i < loop; i++) {
       outputCollector.emit(new Values(rand.nextString(), 1, System.currentTimeMillis()));
     }
   }

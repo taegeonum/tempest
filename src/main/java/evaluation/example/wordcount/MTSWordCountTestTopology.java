@@ -34,6 +34,7 @@ import evaluation.example.common.SplitFilterBolt;
 import evaluation.example.common.TestParamWrapper;
 import evaluation.example.common.WikiDataSpout;
 import evaluation.example.common.ZipfianWordSpout;
+import evaluation.example.parameter.InputRate;
 import evaluation.example.parameter.NumOfKey;
 import evaluation.example.parameter.ZipfianConstant;
 import org.apache.reef.tang.Configuration;
@@ -81,6 +82,7 @@ final class MTSWordCountTestTopology {
         .registerShortNameOfClass(SplitFilterBolt.NumSplitBolt.class)
         .registerShortNameOfClass(NumOfKey.class)
         .registerShortNameOfClass(ZipfianConstant.class)
+        .registerShortNameOfClass(InputRate.class)
         .processCommandLine(args);
 
     return cl.getBuilder().build();
@@ -109,13 +111,14 @@ final class MTSWordCountTestTopology {
     final int numSplitBolt = injector.getNamedInstance(SplitFilterBolt.NumSplitBolt.class);
     final long numKey = injector.getNamedInstance(NumOfKey.class);
     final double zipfConst = injector.getNamedInstance(ZipfianConstant.class);
+    final long inputRate = injector.getNamedInstance(InputRate.class);
 
     final TopologyBuilder builder = new TopologyBuilder();
     BaseRichSpout spout = null;
     if (inputType.compareTo("random") == 0) {
       spout = new RandomWordSpout(inputInterval);
     } else if (inputType.compareTo("zipfian") == 0) {
-      spout = new ZipfianWordSpout(inputInterval, numKey, zipfConst);
+      spout = new ZipfianWordSpout(inputRate, numKey, zipfConst);
     } else if (inputType.compareTo("wiki") == 0) {
       spout = new WikiDataSpout(inputInterval, inputPath);
     }

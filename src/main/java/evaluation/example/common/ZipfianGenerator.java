@@ -1,8 +1,7 @@
 package evaluation.example.common;
 
 
-
-
+import java.io.Serializable;
 
 /**
  * A generator of a zipfian distribution. It produces a sequence of items, such that some items are more popular than others, according
@@ -22,7 +21,7 @@ package evaluation.example.common;
  *
  * The algorithm used here is from "Quickly Generating Billion-Record Synthetic Databases", Jim Gray et al, SIGMOD 1994.
  */
-public class ZipfianGenerator extends IntegerGenerator
+public class ZipfianGenerator extends IntegerGenerator implements Serializable
 {
   public static final double ZIPFIAN_CONSTANT=0.99;
 
