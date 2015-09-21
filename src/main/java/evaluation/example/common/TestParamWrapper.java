@@ -20,6 +20,8 @@ import edu.snu.tempest.operator.window.timescale.Timescale;
 import edu.snu.tempest.operator.window.timescale.impl.TimescaleParser;
 import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
 import edu.snu.tempest.operator.window.timescale.parameter.TimescaleString;
+import evaluation.example.parameter.NumOfKey;
+import evaluation.example.parameter.ZipfianConstant;
 import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;
@@ -38,6 +40,8 @@ public final class TestParamWrapper {
   public final String inputType;
   public final List<Timescale> timescales;
   public final double inputInterval;
+  public final double zipfConst;
+  public final long numKey;
 
   @Inject
   private TestParamWrapper(@Parameter(NumSpouts.class) final int numSpouts,
@@ -48,7 +52,9 @@ public final class TestParamWrapper {
                            @Parameter(OperatorType.class) final String operator,
                            @Parameter(InputType.class) final String inputType,
                            @Parameter(InputInterval.class) final double inputInterval,
-                           @Parameter(TimescaleString.class) final String timescaleParameter) {
+                           @Parameter(TimescaleString.class) final String timescaleParameter,
+                           @Parameter(ZipfianConstant.class) final double zipfConst,
+                           @Parameter(NumOfKey.class) final long numKey) {
     this.numSpouts = numSpouts;
     this.testName = testName;
     this.logDir = logDir;
@@ -58,6 +64,8 @@ public final class TestParamWrapper {
     this.operatorName = operator;
     this.inputType = inputType;
     this.inputInterval = inputInterval;
+    this.zipfConst = zipfConst;
+    this.numKey = numKey;
   }
   
   public String print() {
@@ -68,6 +76,8 @@ public final class TestParamWrapper {
         + "START_TIME: " + System.currentTimeMillis() + "\n" 
         + "CACHING_PROB: " + cachingProb + "\n"
         + "NUM_TIMESCALES: " + timescales.size() + "\n"
+        + "NUM_KEY: " + numKey + "\n"
+        + "ZIPF_CONST: " + zipfConst + "\n"
         + "INPUT_TYPE: " + inputType + "\n"
         + "INPUT_RATE: " + (1000.0 / inputInterval) * numSpouts + "\n"
         + "OPERATOR: " + operatorName);
