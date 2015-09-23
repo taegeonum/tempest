@@ -151,10 +151,10 @@ final class TopkBolt extends BaseRichBolt {
     ij.bindVolatileInstance(OutputWriter.class, writer);
     ij.bindVolatileParameter(OutputLogger.PathPrefix.class, pathPrefix);
     try {
-      final TimeWindowOutputHandler<Map<String, Long>, List<Map.Entry<String, Long>>>
+      final TimeWindowOutputHandler<Map<String, Long>, TopkOutput>
           topKOperator = ij.getInstance(TopKOperator.class);
       operator.prepare(new OperatorDispatcher<>(topKOperator, numThreads));
-      final TimeWindowOutputHandler<List<Map.Entry<String, Long>>, List<Map.Entry<String, Long>>>
+      final TimeWindowOutputHandler<TopkOutput, List<Map.Entry<String, Long>>>
           outputLogger = ij.getInstance(TopKOutputLogger.class);
       topKOperator.prepare(new OperatorConnector<>(outputLogger));
     } catch (InjectionException e) {
