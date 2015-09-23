@@ -10,10 +10,10 @@ import java.util.*;
 import java.util.logging.Logger;
 
 public final class TopKOperator implements
-    TimeWindowOutputHandler<Map<String, Long>, List<Map.Entry<String, Long>>> {
+    TimeWindowOutputHandler<Map<String, Long>, TopkOutput> {
   private static final Logger LOG = Logger.getLogger(TopKOperator.class.getName());
 
-  private OutputEmitter<TimescaleWindowOutput<List<Map.Entry<String, Long>>>> emitter;
+  private OutputEmitter<TimescaleWindowOutput<TopkOutput>> emitter;
 
   @Inject
   public TopKOperator() {
@@ -24,7 +24,14 @@ public final class TopKOperator implements
   public void execute(final TimescaleWindowOutput<Map<String, Long>> val) {
     // find top-k
     final Map<String, Long> output = val.output.result;
-    final List<Map.Entry<String, Long>> sorted = new LinkedList<>(output.entrySet());
+    long totalCount = 0;
+    // get total count
+    final List<Map.Entry<String, Long>> sorted = new LinkedList<>();
+    for (final Map.Entry<String, Long> wc : output.entrySet()) {
+      sorted.add(wc);
+      totalCount += wc.getValue();
+    }
+
     Collections.sort(sorted, new Comparator<Map.Entry<String, Long>>() {
       @Override
       public int compare(final Map.Entry<String, Long> o1, final Map.Entry<String, Long> o2) {
@@ -35,12 +42,13 @@ public final class TopKOperator implements
     final List<Map.Entry<String, Long>> topk = sorted.subList(0, 10);
     //LOG.log(Level.INFO, topk.toString());
     emitter.emit(new TimescaleWindowOutput<>(
-        val.timescale, new DepOutputAndResult<>(val.output.numDepOutputs, topk)
+        val.timescale, new DepOutputAndResult<>(val.output.numDepOutputs,
+        new TopkOutput(totalCount, topk))
         , val.startTime, val.endTime, val.fullyProcessed));
   }
 
   @Override
-  public void prepare(final OutputEmitter<TimescaleWindowOutput<List<Map.Entry<String, Long>>>> outputEmitter) {
+  public void prepare(final OutputEmitter<TimescaleWindowOutput<TopkOutput>> outputEmitter) {
     emitter = outputEmitter;
   }
 

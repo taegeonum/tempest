@@ -33,7 +33,7 @@ import java.util.logging.Logger;
  * Output handler for word count example.
  */
 public final class TopKOutputLogger implements
-    TimeWindowOutputHandler<List<Map.Entry<String, Long>>, List<Map.Entry<String, Long>>> {
+    TimeWindowOutputHandler<TopkOutput, List<Map.Entry<String, Long>>> {
   private static final Logger LOG = Logger.getLogger(TopKOutputLogger.class.getName());
 
   /**
@@ -62,14 +62,9 @@ public final class TopKOutputLogger implements
    * @param output an output
    */
   @Override
-  public void execute(final TimescaleWindowOutput<List<Map.Entry<String, Long>>> output) {
-    long count = 0;
+  public void execute(final TimescaleWindowOutput<TopkOutput> output) {
     try {
-      // calculate total count for logging
-      for (final Map.Entry<String, Long> entry : output.output.result) {
-        count += entry.getValue();
-      }
-
+      final long count = output.output.result.count;
       try {
         writer.writeLine(pathPrefix + "/" + output.timescale.windowSize
             + "-" + output.timescale.intervalSize, (System.currentTimeMillis()) + "\t"
