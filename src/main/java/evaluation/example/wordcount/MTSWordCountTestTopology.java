@@ -90,7 +90,6 @@ final class MTSWordCountTestTopology {
   
   public static void main(String[] args) throws Exception {
     final Config conf = new Config();
-    conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS, "-Xms16384m -Xmx30000m");
     conf.put(Config.STORM_ZOOKEEPER_CONNECTION_TIMEOUT, 500000);
     conf.put(Config.STORM_ZOOKEEPER_SESSION_TIMEOUT, 500000);
     conf.put(Config.STORM_ZOOKEEPER_SESSION_TIMEOUT, 500000);

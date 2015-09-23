@@ -29,7 +29,6 @@ import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.timescale.TimeWindowOutputHandler;
 import edu.snu.tempest.operator.window.timescale.Timescale;
 import edu.snu.tempest.operator.window.timescale.TimescaleWindowOperator;
-import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
 import edu.snu.tempest.operator.window.timescale.parameter.NumThreads;
 import evaluation.example.common.MTSOperatorProvider;
 import evaluation.example.common.OutputLogger;
@@ -42,8 +41,6 @@ import org.apache.reef.tang.exceptions.InjectionException;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 /**
@@ -90,8 +87,9 @@ final class TopkBolt extends BaseRichBolt {
 
   private ResourceLogger resourceLogger;
 
-  private ExecutorService executor;
   private final int numThreads;
+
+  private OutputWriter writer;
 
   /**
    * MTSWordCountTestBolt.
@@ -130,7 +128,6 @@ final class TopkBolt extends BaseRichBolt {
   @Override
   public void prepare(final Map conf, final TopologyContext paramTopologyContext,
                       final OutputCollector paramOutputCollector) {
-    executor = Executors.newFixedThreadPool(timescales.size());
 
     // logging resource
     resourceLogger = new ResourceLogger(pathPrefix);
@@ -145,7 +142,6 @@ final class TopkBolt extends BaseRichBolt {
     operator = operatorProvider.getMTSOperator();
 
     final Injector ij = Tang.Factory.getTang().newInjector();
-    final OutputWriter writer;
     try {
       writer = ij.getInstance(LocalOutputWriter.class);
     } catch (InjectionException e) {
@@ -155,11 +151,11 @@ final class TopkBolt extends BaseRichBolt {
     ij.bindVolatileInstance(OutputWriter.class, writer);
     ij.bindVolatileParameter(OutputLogger.PathPrefix.class, pathPrefix);
     try {
-      final TimeWindowOutputHandler<Map<String, Long>, Map<String, Long>>
+      final TimeWindowOutputHandler<Map<String, Long>, List<Map.Entry<String, Long>>>
           topKOperator = ij.getInstance(TopKOperator.class);
-      operator.prepare(new OperatorDispatcher<>(topKOperator, new DefaultKeyExtractor()));
-      final TimeWindowOutputHandler<Map<String, Long>, Map<String, Long>>
-          outputLogger = ij.getInstance(OutputLogger.class);
+      operator.prepare(new OperatorDispatcher<>(topKOperator, numThreads));
+      final TimeWindowOutputHandler<List<Map.Entry<String, Long>>, List<Map.Entry<String, Long>>>
+          outputLogger = ij.getInstance(TopKOutputLogger.class);
       topKOperator.prepare(new OperatorConnector<>(outputLogger));
     } catch (InjectionException e) {
       e.printStackTrace();
@@ -174,18 +170,10 @@ final class TopkBolt extends BaseRichBolt {
     }
     try {
       operator.close();
+      writer.close();
     } catch (Exception e) {
       e.printStackTrace();
       throw new RuntimeException(e);
-    }
-  }
-
-  class DefaultKeyExtractor implements
-      OperatorDispatcher.KeyExtractor<TimescaleWindowOutput<Map<String, Long>>, Timescale> {
-
-    @Override
-    public Timescale getKey(final TimescaleWindowOutput<Map<String, Long>> output) {
-      return output.timescale;
     }
   }
 }

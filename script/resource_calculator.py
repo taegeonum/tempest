@@ -8,9 +8,13 @@ parser.add_argument('directory', type=str)
 
 args = parser.parse_args()
 
-def calculate_avg(arr):
+def sum_arr(arr):
   vals = map(lambda x: float(x.split("\t")[1].rstrip()), arr)
-  return reduce(lambda x,y: x+y, vals)/ len(vals)
+  vals = filter(lambda x: x > 0, vals)
+  return reduce(lambda x,y: x+y, vals)
+
+def calculate_avg(arr):
+  return sum_arr(arr)/ len(arr)
 
 def get_initial_time(directory):
   f = open(join(directory,"initialTime"), "r")
@@ -29,7 +33,7 @@ def get_total_time(directory):
 
 def parse_file(directory):
   initial_time = get_initial_time(directory)
-  start = 3000
+  start = 200
   end = get_total_time(directory)
 
   # cpu
@@ -40,13 +44,15 @@ def parse_file(directory):
   mem_lines = mem.readlines()[start:end];
 
   # thp
-  thp = open(join(directory,"3600-60"), 'r')
-  thp_lines = thp.readlines()[start/60:end]
+  thp = open(join(directory,"60-1"), 'r')
+  thp_lines = thp.readlines()[start:end]
+
+  avg_thp = sum_arr(thp_lines)/(60 * (end - start))
 
   # latency
-  ltc = open(join(directory, "total_latencies"), 'r')
-  ltc_lines = ltc.readlines()
+  #ltc = open(join(directory, "total_latencies"), 'r')
+  #ltc_lines = ltc.readlines()
 
-  print "avg cpu\t", calculate_avg(cpu_lines),"\n avg_mem: ", calculate_avg(mem_lines), "\n avg_thp: ", calculate_avg(thp_lines)/3600, "\n avg_ltc: ", calculate_avg(ltc_lines)
+  print "avg cpu\t", calculate_avg(cpu_lines),"\n avg_mem: ", calculate_avg(mem_lines), "\n avg_thp: ", avg_thp#, "\n avg_ltc: ", calculate_avg(ltc_lines)
 
 parse_file(args.directory)

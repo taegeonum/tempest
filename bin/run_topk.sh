@@ -21,7 +21,7 @@
 SELF_JAR='./target/tempest-0.11-SNAPSHOT.jar'
 TARGET_CLASS='evaluation.example.topk.TopkTestTopology'
 
-CMD="java -cp ::$SELF_JAR $LOCAL_RUNTIME_TMP $LOGGING_CONFIG $TARGET_CLASS `cat $1`"
+CMD="java -Xms32000m -Xmx56000m -cp ::$SELF_JAR $LOCAL_RUNTIME_TMP $LOGGING_CONFIG $TARGET_CLASS `cat $1`"
 echo $CMD
 $CMD
 

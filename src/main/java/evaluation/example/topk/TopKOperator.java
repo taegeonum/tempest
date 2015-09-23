@@ -6,17 +6,14 @@ import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
 import edu.snu.tempest.operator.window.timescale.impl.DepOutputAndResult;
 
 import javax.inject.Inject;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.logging.Logger;
-import java.util.logging.Level;
 
-public final class TopKOperator implements TimeWindowOutputHandler<Map<String, Long>, Map<String, Long>> {
+public final class TopKOperator implements
+    TimeWindowOutputHandler<Map<String, Long>, List<Map.Entry<String, Long>>> {
   private static final Logger LOG = Logger.getLogger(TopKOperator.class.getName());
 
-  private OutputEmitter<TimescaleWindowOutput<Map<String, Long>>> emitter;
+  private OutputEmitter<TimescaleWindowOutput<List<Map.Entry<String, Long>>>> emitter;
 
   @Inject
   public TopKOperator() {
@@ -27,23 +24,23 @@ public final class TopKOperator implements TimeWindowOutputHandler<Map<String, L
   public void execute(final TimescaleWindowOutput<Map<String, Long>> val) {
     // find top-k
     final Map<String, Long> output = val.output.result;
-    final TreeMap<String, Long> sortedMap = new TreeMap<>(new ValueComparator(output));
-    sortedMap.putAll(output);
+    final List<Map.Entry<String, Long>> sorted = new LinkedList<>(output.entrySet());
+    Collections.sort(sorted, new Comparator<Map.Entry<String, Long>>() {
+      @Override
+      public int compare(final Map.Entry<String, Long> o1, final Map.Entry<String, Long> o2) {
+        return o2.getValue().compareTo(o1.getValue());
+      }
+    });
 
-    final Map<String, Long> topk = new HashMap<>();
-    for (int i = 0; i < 10; i++) {
-      final Map.Entry<String, Long> entry = sortedMap.pollFirstEntry();
-      topk.put(entry.getKey(), entry.getValue());
-    }
-
-    LOG.log(Level.INFO, topk.toString());
-    emitter.emit(new TimescaleWindowOutput<Map<String, Long>>(
-        val.timescale, new DepOutputAndResult<Map<String, Long>>(val.output.numDepOutputs, topk)
+    final List<Map.Entry<String, Long>> topk = sorted.subList(0, 10);
+    //LOG.log(Level.INFO, topk.toString());
+    emitter.emit(new TimescaleWindowOutput<>(
+        val.timescale, new DepOutputAndResult<>(val.output.numDepOutputs, topk)
         , val.startTime, val.endTime, val.fullyProcessed));
   }
 
   @Override
-  public void prepare(final OutputEmitter<TimescaleWindowOutput<Map<String, Long>>> outputEmitter) {
+  public void prepare(final OutputEmitter<TimescaleWindowOutput<List<Map.Entry<String, Long>>>> outputEmitter) {
     emitter = outputEmitter;
   }
 

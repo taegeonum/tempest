@@ -24,7 +24,6 @@ import backtype.storm.tuple.Fields;
 import edu.snu.tempest.example.storm.parameter.*;
 import edu.snu.tempest.example.storm.util.StormRunner;
 import edu.snu.tempest.example.storm.wordcount.RandomWordSpout;
-import edu.snu.tempest.example.storm.wordcount.ZipfianWordSpout;
 import edu.snu.tempest.example.util.writer.LocalOutputWriter;
 import edu.snu.tempest.example.util.writer.OutputWriter;
 import edu.snu.tempest.operator.window.timescale.Timescale;
@@ -34,6 +33,9 @@ import edu.snu.tempest.operator.window.timescale.parameter.TimescaleString;
 import evaluation.example.common.SplitFilterBolt;
 import evaluation.example.common.TestParamWrapper;
 import evaluation.example.common.WikiDataSpout;
+import evaluation.example.parameter.InputRate;
+import evaluation.example.parameter.NumOfKey;
+import evaluation.example.parameter.ZipfianConstant;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
@@ -77,6 +79,9 @@ final class TopkTestTopology {
         .registerShortNameOfClass(NumThreads.class)
         .registerShortNameOfClass(WikiDataSpout.InputPath.class)
         .registerShortNameOfClass(SplitFilterBolt.NumSplitBolt.class)
+        .registerShortNameOfClass(NumOfKey.class)
+        .registerShortNameOfClass(ZipfianConstant.class)
+        .registerShortNameOfClass(InputRate.class)
         .processCommandLine(args);
 
     return cl.getBuilder().build();
@@ -96,20 +101,23 @@ final class TopkTestTopology {
     final String logDir = injector.getNamedInstance(LogDir.class);
     final double cachingProb = injector.getNamedInstance(CachingProb.class);
     final String operator = injector.getNamedInstance(OperatorType.class);
-    final String topologyName = operator + "_WC_TOPOLOGY";
+    final String topologyName = operator + "_TOPK_TOPOLOGY";
     final String inputType = injector.getNamedInstance(InputType.class);
     final int numBolts = injector.getNamedInstance(NumBolts.class);
     final double inputInterval = injector.getNamedInstance(InputInterval.class);
     final int numThreads = injector.getNamedInstance(NumThreads.class);
     final String inputPath = injector.getNamedInstance(WikiDataSpout.InputPath.class);
     final int numSplitBolt = injector.getNamedInstance(SplitFilterBolt.NumSplitBolt.class);
+    final long numKey = injector.getNamedInstance(NumOfKey.class);
+    final double zipfConst = injector.getNamedInstance(ZipfianConstant.class);
+    final long inputRate = injector.getNamedInstance(InputRate.class);
 
     final TopologyBuilder builder = new TopologyBuilder();
     BaseRichSpout spout = null;
     if (inputType.compareTo("random") == 0) {
       spout = new RandomWordSpout(inputInterval);
     } else if (inputType.compareTo("zipfian") == 0) {
-      spout = new ZipfianWordSpout(inputInterval);
+      spout = new evaluation.example.common.ZipfianWordSpout(inputRate, numKey, zipfConst);
     } else if (inputType.compareTo("wiki") == 0) {
       spout = new WikiDataSpout(inputInterval, inputPath);
     }
@@ -132,10 +140,20 @@ final class TopkTestTopology {
         numThreads,
         TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()));
 
+
+    if (inputType.compareTo("wiki") == 0) {
+      // set filter bolt
+      builder.setBolt("wcFilterBolt", new SplitFilterBolt(), numSplitBolt).shuffleGrouping("topkspout");
+      // set mts bolt
+      builder.setBolt("topkbolt", bolt, numBolts).fieldsGrouping("wcFilterBolt", new Fields("word"));
+    } else {
+      builder.setBolt("topkbolt", bolt, numBolts).fieldsGrouping("topkspout", new Fields("word"));
+    }
     // set bolt
-    builder.setBolt("topkbolt", bolt, numBolts).fieldsGrouping("topkspout", new Fields("word"));
 
     final StormTopology topology = builder.createTopology();
     StormRunner.runTopologyLocally(topology, topologyName, conf, test.totalTime);
+    System.out.println("@@@@@@@@@@@ END OF TOPOLOGY");
+    System.exit(0);
   }
 }
