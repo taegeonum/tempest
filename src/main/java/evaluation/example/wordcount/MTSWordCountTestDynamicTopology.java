@@ -81,6 +81,9 @@ final class MTSWordCountTestDynamicTopology {
         .registerShortNameOfClass(SplitFilterBolt.NumSplitBolt.class)
         .registerShortNameOfClass(AdditionalTimescale.class)
         .registerShortNameOfClass(TimescaleAddInterval.class)
+        .registerShortNameOfClass(NumOfKey.class)
+        .registerShortNameOfClass(ZipfianConstant.class)
+        .registerShortNameOfClass(InputRate.class)
         .processCommandLine(args);
 
     return cl.getBuilder().build();
