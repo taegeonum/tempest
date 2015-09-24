@@ -158,5 +158,6 @@ final class MTSWordCountTestDynamicTopology {
 
     final StormTopology topology = builder.createTopology();
     StormRunner.runTopologyLocally(topology, topologyName, conf, test.totalTime);
+    System.exit(0);
   }
 }
