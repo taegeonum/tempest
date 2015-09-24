@@ -2,6 +2,7 @@ package edu.snu.tempest.operator.window.timescale.impl;
 
 import edu.snu.tempest.operator.OutputEmitter;
 import edu.snu.tempest.operator.window.aggregator.CAAggregator;
+import edu.snu.tempest.operator.window.timescale.DynamicMTSWindowOperator;
 import edu.snu.tempest.operator.window.timescale.Timescale;
 import edu.snu.tempest.operator.window.timescale.TimescaleWindowOperator;
 import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
@@ -22,7 +23,7 @@ import java.util.concurrent.Executors;
 /**
  * Created by taegeonum on 9/13/15.
  */
-public final class NaiveMTSOperator<I, V> implements TimescaleWindowOperator<I, V> {
+public final class NaiveMTSOperator<I, V> implements DynamicMTSWindowOperator<I, V> {
 
   private final TimescaleParser tsParser;
 
@@ -34,6 +35,8 @@ public final class NaiveMTSOperator<I, V> implements TimescaleWindowOperator<I, 
   private OutputEmitter<TimescaleWindowOutput<V>> emitter;
 
   private final CAAggregator<I, V> aggregator;
+
+  private final Object sync = new Object();
 
   @Inject
   private NaiveMTSOperator(final TimescaleParser tsParser,
@@ -53,14 +56,16 @@ public final class NaiveMTSOperator<I, V> implements TimescaleWindowOperator<I, 
   @Override
   public void execute(final I val) {
     int i = 0;
-    for (final TimescaleWindowOperator<I, V> operator : operators) {
-      executors.get(i).submit(new Runnable() {
-        @Override
-        public void run() {
-          operator.execute(val);
-        }
-      });
-      i++;
+    synchronized (sync) {
+      for (final TimescaleWindowOperator<I, V> operator : operators) {
+        executors.get(i).submit(new Runnable() {
+          @Override
+          public void run() {
+            operator.execute(val);
+          }
+        });
+        i++;
+      }
     }
   }
 
@@ -103,5 +108,36 @@ public final class NaiveMTSOperator<I, V> implements TimescaleWindowOperator<I, 
       executors.get(i).shutdown();
       i++;
     }
+  }
+
+  @Override
+  public void onTimescaleAddition(final Timescale ts, final long addTime) {
+    final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
+    final List<Timescale> tsList = new LinkedList<>();
+    tsList.add(ts);
+    jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(tsList));
+    jcb.bindImplementation(ComputationReuser.class, StaticComputationReuser.class);
+    jcb.bindImplementation(NextSliceTimeProvider.class, StaticNextSliceTimeProvider.class);
+    jcb.bindImplementation(TimescaleWindowOperator.class, StaticMTSOperatorImpl.class);
+    jcb.bindNamedParameter(StartTime.class, addTime+"");
+
+    final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
+    injector.bindVolatileInstance(CAAggregator.class, aggregator);
+    try {
+      final TimescaleWindowOperator<I, V> operator = injector.getInstance(TimescaleWindowOperator.class);
+      synchronized (sync) {
+        operators.add(operator);
+        operator.prepare(emitter);
+        executors.add(Executors.newFixedThreadPool(1));
+      }
+    } catch (InjectionException e) {
+      e.printStackTrace();
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public void onTimescaleDeletion(final Timescale ts, final long deleteTime) {
+
   }
 }
