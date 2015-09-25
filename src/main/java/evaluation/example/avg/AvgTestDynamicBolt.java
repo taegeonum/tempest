@@ -23,10 +23,7 @@ import backtype.storm.tuple.Tuple;
 import edu.snu.tempest.example.util.writer.LocalOutputWriter;
 import edu.snu.tempest.example.util.writer.OutputWriter;
 import edu.snu.tempest.operator.OperatorConnector;
-import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
-import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
-import edu.snu.tempest.operator.window.aggregator.impl.SumAndCount;
-import edu.snu.tempest.operator.window.aggregator.impl.ValueExtractor;
+import edu.snu.tempest.operator.window.aggregator.impl.*;
 import edu.snu.tempest.operator.window.timescale.DynamicMTSWindowOperator;
 import edu.snu.tempest.operator.window.timescale.TimeWindowOutputHandler;
 import edu.snu.tempest.operator.window.timescale.Timescale;
@@ -148,7 +145,7 @@ final class AvgTestDynamicBolt extends BaseRichBolt {
     jcb.bindImplementation(ValueExtractor.class, SumAndCountValueExtractor.class);
     final MTSOperatorProvider<Tuple, Map<String, Long>> operatorProvider =
         new MTSOperatorProvider<>(timescales, operatorType, cachingProb,
-            CountByKeyAggregator.class, jcb.build(), startTime);
+            AvgByKeyAggregator.class, jcb.build(), startTime);
     operator = (DynamicMTSWindowOperator)operatorProvider.getMTSOperator();
     final DynamicMTSWindowOperator<Tuple, Map<String, SumAndCount>> tsOperator = operator;
     try {
