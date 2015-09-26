@@ -41,6 +41,7 @@ public final class InputGenerator {
         .registerShortNameOfClass(ZipfianConstant.class)
         .registerShortNameOfClass(NumSpouts.class)
         .registerShortNameOfClass(TotalTime.class)
+        .registerShortNameOfClass(InputFileGenPath.class)
         .processCommandLine(args);
 
     return cl.getBuilder().build();
