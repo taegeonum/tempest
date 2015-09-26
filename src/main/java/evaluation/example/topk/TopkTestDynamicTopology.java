@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package evaluation.example.avg;
+package evaluation.example.topk;
 
 import backtype.storm.Config;
 import backtype.storm.generated.StormTopology;
@@ -27,13 +27,15 @@ import edu.snu.tempest.example.storm.wordcount.RandomWordSpout;
 import edu.snu.tempest.example.util.writer.LocalOutputWriter;
 import edu.snu.tempest.example.util.writer.OutputWriter;
 import edu.snu.tempest.operator.window.timescale.Timescale;
+import edu.snu.tempest.operator.window.timescale.impl.TimescaleParser;
 import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
 import edu.snu.tempest.operator.window.timescale.parameter.NumThreads;
 import edu.snu.tempest.operator.window.timescale.parameter.TimescaleString;
-import evaluation.example.common.*;
-import evaluation.example.parameter.InputRate;
-import evaluation.example.parameter.NumOfKey;
-import evaluation.example.parameter.ZipfianConstant;
+import evaluation.example.common.SplitFilterBolt;
+import evaluation.example.common.TestParamWrapper;
+import evaluation.example.common.WikiDataSpout;
+import evaluation.example.common.ZipfianDataSpout;
+import evaluation.example.parameter.*;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
@@ -50,10 +52,10 @@ import java.util.logging.Logger;
  * WordCountTest topology.
  * This can run naive, static-mts, and dynamic-mts operators.
  */
-final class AvgTestTopology {
-  private static final Logger LOG = Logger.getLogger(AvgTestTopology.class.getName());
+final class TopkTestDynamicTopology {
+  private static final Logger LOG = Logger.getLogger(TopkTestDynamicTopology.class.getName());
 
-  private AvgTestTopology() {
+  private TopkTestDynamicTopology() {
   }
 
   /**
@@ -77,6 +79,8 @@ final class AvgTestTopology {
         .registerShortNameOfClass(NumThreads.class)
         .registerShortNameOfClass(WikiDataSpout.InputPath.class)
         .registerShortNameOfClass(SplitFilterBolt.NumSplitBolt.class)
+        .registerShortNameOfClass(AdditionalTimescale.class)
+        .registerShortNameOfClass(TimescaleAddInterval.class)
         .registerShortNameOfClass(NumOfKey.class)
         .registerShortNameOfClass(ZipfianConstant.class)
         .registerShortNameOfClass(InputRate.class)
@@ -87,6 +91,7 @@ final class AvgTestTopology {
   
   public static void main(String[] args) throws Exception {
     final Config conf = new Config();
+    conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS, "-Xms16384m -Xmx30000m");
     conf.put(Config.STORM_ZOOKEEPER_CONNECTION_TIMEOUT, 500000);
     conf.put(Config.STORM_ZOOKEEPER_SESSION_TIMEOUT, 500000);
     conf.put(Config.STORM_ZOOKEEPER_SESSION_TIMEOUT, 500000);
@@ -98,13 +103,15 @@ final class AvgTestTopology {
     final String logDir = injector.getNamedInstance(LogDir.class);
     final double cachingProb = injector.getNamedInstance(CachingProb.class);
     final String operator = injector.getNamedInstance(OperatorType.class);
-    final String topologyName = operator + "_AVG_TOPOLOGY";
+    final String topologyName = operator + "TOPK_DYNAMIC";
     final String inputType = injector.getNamedInstance(InputType.class);
     final int numBolts = injector.getNamedInstance(NumBolts.class);
     final double inputInterval = injector.getNamedInstance(InputInterval.class);
     final int numThreads = injector.getNamedInstance(NumThreads.class);
     final String inputPath = injector.getNamedInstance(WikiDataSpout.InputPath.class);
     final int numSplitBolt = injector.getNamedInstance(SplitFilterBolt.NumSplitBolt.class);
+    final String addTimescales = injector.getNamedInstance(AdditionalTimescale.class);
+    final int tsAddInterval = injector.getNamedInstance(TimescaleAddInterval.class);
     final long numKey = injector.getNamedInstance(NumOfKey.class);
     final double zipfConst = injector.getNamedInstance(ZipfianConstant.class);
     final long inputRate = injector.getNamedInstance(InputRate.class);
@@ -129,9 +136,11 @@ final class AvgTestTopology {
 
     // set spout
     builder.setSpout("wcspout", spout, test.numSpouts);
-    final BaseRichBolt bolt = new AvgTestBolt(
+    final BaseRichBolt bolt = new TopkTestDynamicBolt(
         logDir + testName,
         timescales,
+        TimescaleParser.parseFromString(addTimescales),
+        tsAddInterval,
         test.operatorName,
         cachingProb,
         numThreads,
@@ -149,7 +158,6 @@ final class AvgTestTopology {
 
     final StormTopology topology = builder.createTopology();
     StormRunner.runTopologyLocally(topology, topologyName, conf, test.totalTime);
-    System.out.println("@@@@@@@@@@@ END OF TOPOLOGY");
     System.exit(0);
   }
 }

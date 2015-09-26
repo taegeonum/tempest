@@ -31,10 +31,7 @@ import edu.snu.tempest.operator.window.timescale.impl.TimescaleParser;
 import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
 import edu.snu.tempest.operator.window.timescale.parameter.NumThreads;
 import edu.snu.tempest.operator.window.timescale.parameter.TimescaleString;
-import evaluation.example.common.SplitFilterBolt;
-import evaluation.example.common.TestParamWrapper;
-import evaluation.example.common.WikiDataSpout;
-import evaluation.example.common.ZipfianWordSpout;
+import evaluation.example.common.*;
 import evaluation.example.parameter.*;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
@@ -121,7 +118,7 @@ final class AvgTestDynamicTopology {
     if (inputType.compareTo("random") == 0) {
       spout = new RandomWordSpout(inputInterval);
     } else if (inputType.compareTo("zipfian") == 0) {
-      spout = new ZipfianWordSpout(inputRate, numKey, zipfConst);
+      spout = new ZipfianDataSpout(inputPath, inputRate);
     } else if (inputType.compareTo("wiki") == 0) {
       spout = new WikiDataSpout(inputInterval, inputPath);
     }

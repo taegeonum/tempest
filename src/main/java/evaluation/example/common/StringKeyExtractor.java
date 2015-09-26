@@ -17,6 +17,6 @@ public final class StringKeyExtractor implements KeyExtractor<Tuple, String> {
 
   @Override
   public String getKey(final Tuple input) {
-    return input.getString(0);
+    return input.getString(0).split("\t")[0];
   }
 }

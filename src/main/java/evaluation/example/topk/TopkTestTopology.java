@@ -33,6 +33,7 @@ import edu.snu.tempest.operator.window.timescale.parameter.TimescaleString;
 import evaluation.example.common.SplitFilterBolt;
 import evaluation.example.common.TestParamWrapper;
 import evaluation.example.common.WikiDataSpout;
+import evaluation.example.common.ZipfianDataSpout;
 import evaluation.example.parameter.InputRate;
 import evaluation.example.parameter.NumOfKey;
 import evaluation.example.parameter.ZipfianConstant;
@@ -117,7 +118,7 @@ final class TopkTestTopology {
     if (inputType.compareTo("random") == 0) {
       spout = new RandomWordSpout(inputInterval);
     } else if (inputType.compareTo("zipfian") == 0) {
-      spout = new evaluation.example.common.ZipfianWordSpout(inputRate, numKey, zipfConst);
+      spout = new ZipfianDataSpout(inputPath, inputRate);
     } else if (inputType.compareTo("wiki") == 0) {
       spout = new WikiDataSpout(inputInterval, inputPath);
     }
