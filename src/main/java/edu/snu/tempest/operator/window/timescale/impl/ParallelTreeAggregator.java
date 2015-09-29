@@ -32,7 +32,7 @@ final class ParallelTreeAggregator<I, T> implements AutoCloseable {
   /**
    * A fork join pool executing parallel aggregation.
    */
-  //private final ForkJoinPool pool;
+  private final ForkJoinPool pool;
 
   /**
    * ParallelTreeAggregator for final aggregation.
@@ -46,7 +46,7 @@ final class ParallelTreeAggregator<I, T> implements AutoCloseable {
     this.numOfParallelThreads = numOfParallelThreads;
     this.sequentialThreshold = sequentialThreshold;
     this.finalAggregator = finalAggregator;
-    //this.pool = new ForkJoinPool(numOfParallelThreads);
+    this.pool = new ForkJoinPool(numOfParallelThreads);
   }
 
   /**
@@ -65,13 +65,12 @@ final class ParallelTreeAggregator<I, T> implements AutoCloseable {
     } else {
       finalResult = finalAggregator.aggregate(dependentOutputs);
     }
-    pool.shutdown();
     return finalResult;
   }
 
   @Override
   public void close() throws Exception {
-    //pool.shutdown();
+    pool.shutdown();
   }
 
   final class Aggregate extends RecursiveTask<T> {
