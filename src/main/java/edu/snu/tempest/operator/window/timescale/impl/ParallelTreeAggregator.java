@@ -71,7 +71,7 @@ final class ParallelTreeAggregator<I, T> implements AutoCloseable {
 
   @Override
   public void close() throws Exception {
-    pool.shutdown();
+    //pool.shutdown();
   }
 
   final class Aggregate extends RecursiveTask<T> {
