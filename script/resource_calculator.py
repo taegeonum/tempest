@@ -104,8 +104,8 @@ def calculate_ltc_avg(arr):
 def parse_directory(directory):
   total_latencies = []
   initial_time = get_initial_time(directory)
-  start = 150 * 1000
   end = get_total_time(directory) * 1000
+  start = end/2
   onlyfiles = [ f for f in listdir(directory) if isfile(join(directory,f)) and pattern.match(f)]
   onlyfiles = sorted(onlyfiles, key=lambda x: int(x.split("-")[0]))
   for f in onlyfiles:
