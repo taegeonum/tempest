@@ -47,6 +47,7 @@ public final class ZipfianWordSpout extends BaseRichSpout {
 
   @Override
   public void nextTuple() {
+/*
     try {
       Thread.sleep(1);
     } catch (InterruptedException e) {
@@ -56,8 +57,9 @@ public final class ZipfianWordSpout extends BaseRichSpout {
     final int loop = (int)inputRate / 1000;
 
     for (int i = 0; i < loop; i++) {
+*/
       outputCollector.emit(new Values(rand.nextString(), 1, System.currentTimeMillis()));
-    }
+ //   }
   }
 
   @Override
