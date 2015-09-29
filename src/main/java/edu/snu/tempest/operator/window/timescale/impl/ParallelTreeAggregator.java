@@ -56,6 +56,8 @@ final class ParallelTreeAggregator<I, T> implements AutoCloseable {
    */
   public T doParallelAggregation(final List<T> dependentOutputs) {
     // aggregates dependent outputs
+    final ForkJoinPool pool = new ForkJoinPool(numOfParallelThreads);
+
     final T finalResult;
     // do parallel two-level tree aggregation if dependent size is large enough.
     if (dependentOutputs.size() >= sequentialThreshold) {
