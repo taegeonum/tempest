@@ -18,7 +18,7 @@ package edu.snu.tempest.operator.window.timescale.impl;
 
 import edu.snu.tempest.operator.common.NotFoundException;
 import edu.snu.tempest.operator.window.timescale.Timescale;
-import java.util.Collections;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
@@ -39,7 +39,7 @@ public final class DependencyGraph {
   /**
    * A table containing DependencyGraphNode for partial outputs.
    */
-  private final DefaultOutputLookupTableImpl<DependencyGraphNode> partialOutputTable;
+  //private final DefaultOutputLookupTableImpl<DependencyGraphNode> partialOutputTable;
 
   /**
    * The list of timescale.
@@ -69,13 +69,13 @@ public final class DependencyGraph {
   public DependencyGraph(final List<Timescale> timescales, final long startTime){
     this.sliceQueue = new LinkedList<>();
     this.table = new DefaultOutputLookupTableImpl<>();
-    this.partialOutputTable = new DefaultOutputLookupTableImpl<>();
+    //this.partialOutputTable = new DefaultOutputLookupTableImpl<>();
     this.timescales = timescales;
     this.period = calculatePeriod(timescales);
     this.startTime = startTime;
 
     // create dependency graph.
-    addSlicedWindowNodeAndEdge();
+    //addSlicedWindowNodeAndEdge();
     addOverlappingWindowNodeAndEdge();
   }
 
@@ -135,6 +135,7 @@ public final class DependencyGraph {
    * This method is based on "On-the-Fly Sharing for Streamed Aggregation" paper.
    * Similar to initializeWindowState function
    */
+  /*
   private void addSlicedWindowNodeAndEdge() {
     // add sliced window edges
     for (final Timescale ts : timescales) {
@@ -165,6 +166,7 @@ public final class DependencyGraph {
     LOG.log(Level.FINE, "Sliced queue: " + sliceQueue);
 
   }
+  */
 
   /**
    * Find child nodes which are included in the range of [start-end].
@@ -200,7 +202,11 @@ public final class DependencyGraph {
         }
       }
 
+      if (elem == null) {
+        st += 1;
+      }
       // find from partial output table.
+      /*
       if (elem == null) {
         try {
           elem = partialOutputTable.lookupLargestSizeOutput(st, end);
@@ -221,6 +227,7 @@ public final class DependencyGraph {
           }
         }
       }
+      */
     }
     return childNodes;
   }

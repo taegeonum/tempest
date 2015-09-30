@@ -6,6 +6,7 @@ import edu.snu.tempest.operator.window.timescale.DynamicMTSWindowOperator;
 import edu.snu.tempest.operator.window.timescale.Timescale;
 import edu.snu.tempest.operator.window.timescale.TimescaleWindowOperator;
 import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
+import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
 import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
 import edu.snu.tempest.operator.window.timescale.parameter.TimescaleString;
 import org.apache.reef.tang.Injector;
@@ -81,9 +82,10 @@ public final class NaiveMTSOperator<I, V> implements DynamicMTSWindowOperator<I,
       final List<Timescale> tsList = new LinkedList<>();
       tsList.add(ts);
       jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(tsList));
-      jcb.bindImplementation(ComputationReuser.class, StaticComputationReuser.class);
-      jcb.bindImplementation(NextSliceTimeProvider.class, StaticNextSliceTimeProvider.class);
-      jcb.bindImplementation(TimescaleWindowOperator.class, StaticMTSOperatorImpl.class);
+      jcb.bindImplementation(ComputationReuser.class, DynamicComputationReuser.class);
+      jcb.bindImplementation(NextSliceTimeProvider.class, DynamicNextSliceTimeProvider.class);
+      jcb.bindImplementation(TimescaleWindowOperator.class, DynamicMTSOperatorImpl.class);
+      jcb.bindNamedParameter(CachingProb.class, 0 + "");
       jcb.bindNamedParameter(StartTime.class, startTime+"");
 
       final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
@@ -116,9 +118,10 @@ public final class NaiveMTSOperator<I, V> implements DynamicMTSWindowOperator<I,
     final List<Timescale> tsList = new LinkedList<>();
     tsList.add(ts);
     jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(tsList));
-    jcb.bindImplementation(ComputationReuser.class, StaticComputationReuser.class);
-    jcb.bindImplementation(NextSliceTimeProvider.class, StaticNextSliceTimeProvider.class);
-    jcb.bindImplementation(TimescaleWindowOperator.class, StaticMTSOperatorImpl.class);
+    jcb.bindImplementation(ComputationReuser.class, DynamicComputationReuser.class);
+    jcb.bindImplementation(NextSliceTimeProvider.class, DynamicNextSliceTimeProvider.class);
+    jcb.bindImplementation(TimescaleWindowOperator.class, DynamicMTSOperatorImpl.class);
+    jcb.bindNamedParameter(CachingProb.class, 0+"");
     jcb.bindNamedParameter(StartTime.class, addTime+"");
 
     final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
