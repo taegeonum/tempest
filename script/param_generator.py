@@ -40,12 +40,13 @@ input_rates=["100000"]
 zipfian_constant="1"
 num_keys=["100000"]
 timescales=[uniform10]
+timescale_type="uniform"
 num_timescales = ["10"]
 applications=["topk"]
 
 def create_file(total_time, operator_type, num_thread, input_rate, num_key, timescale,num_timescale, application):
   directory = param_dir
-  file_name = application + "-" + operator_type + "-" + num_thread + "-" + input_rate + "-" + num_key + "-" + num_timescale
+  file_name = application + "-" + operator_type + "-" + num_thread + "-" + input_rate + "-" + num_key + "-" + num_timescale + "-" + timescale_type
   if not os.path.exists(directory):
         os.makedirs(directory)
 
