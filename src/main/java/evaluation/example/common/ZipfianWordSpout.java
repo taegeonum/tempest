@@ -11,6 +11,7 @@ import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -28,6 +29,8 @@ public final class ZipfianWordSpout extends BaseRichSpout {
 
   private final long numKey;
   private final double zipfConstant;
+
+  private final AtomicLong count = new AtomicLong(0);
 
   @Inject
   public ZipfianWordSpout(@Parameter(InputRate.class) long inputRate,
@@ -47,7 +50,6 @@ public final class ZipfianWordSpout extends BaseRichSpout {
 
   @Override
   public void nextTuple() {
-/*
     try {
       Thread.sleep(1);
     } catch (InterruptedException e) {
@@ -57,9 +59,8 @@ public final class ZipfianWordSpout extends BaseRichSpout {
     final int loop = (int)inputRate / 1000;
 
     for (int i = 0; i < loop; i++) {
-*/
       outputCollector.emit(new Values(rand.nextString(), 1, System.currentTimeMillis()));
- //   }
+    }
   }
 
   @Override
