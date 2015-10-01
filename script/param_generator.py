@@ -20,11 +20,11 @@ import os, sys, argparse
 
 #args = parser.parse_args()
 
-uniform2="(100,1)(200,2)"
-uniform5="(100,1)(200,2)(300,5)(400,10)(500,1)"
-uniform10="(100,1)(200,2)(300,5)(400,10)(500,1)(600,2)(700,5)(800,10)(900,1)(1000,2)"
-lskewed="(10,1)(20,2)(30,5)(60,10)(130,1)(220,2)(340,5)(510,10)(730,1)(1000,2)"
-rskewed="(50,1)(150,2)(670,5)(740,10)(800,1)(840,2)(890,5)(930,10)(965,1)(1000,2)"
+uniform2={"ts": "(100,1)(200,2)", "num_timescale": "2", "timescale_type": "uniform", "total_time": "450"}
+uniform5={"ts": "(100,1)(200,2)(300,5)(400,10)(500,1)", "num_timescale": "5", "timescale_type": "uniform", "total_time": "1100"}
+uniform10={"ts": "(100,1)(200,2)(300,5)(400,10)(500,1)(600,2)(700,5)(800,10)(900,1)(1000,2)", "num_timescale": "10", "timescale_type": "uniform", "total_time": "2100"}
+lskewed={"ts": "(10,1)(20,2)(30,5)(60,10)(130,1)(220,2)(340,5)(510,10)(730,1)(1000,2)", "num_timescale": "10", "timescale_type": "lskewed", "total_time": "2100"}
+rskewed={"ts": "(50,1)(150,2)(670,5)(740,10)(800,1)(840,2)(890,5)(930,10)(965,1)(1000,2)", "num_timescale": "10", "timescale_type": "rskewed", "total_time": "2100"}
 
 param_dir="params/1002-test/"
 log_dir="./logs/1002-test/"
@@ -37,16 +37,15 @@ operator_types=["naive"]
 num_threads=["32"]
 input_interval="1"
 input_rates=["100000"]
-zipfian_constant="1"
+zipfian_constant="0.99"
 num_keys=["100000"]
-timescales=[uniform10]
 timescale_type="uniform"
-num_timescales = ["10"]
 applications=["topk"]
+setting=uniform2
 
 def create_file(total_time, operator_type, num_thread, input_rate, num_key, timescale,num_timescale, application):
   directory = param_dir
-  file_name = application + "-" + operator_type + "-" + num_thread + "-" + input_rate + "-" + num_key + "-" + num_timescale + "-" + timescale_type
+  file_name = application + "-" + operator_type + "-" + num_thread + "-" + input_rate + "-" + num_key + "-" + num_timescale + "-" + setting["timescale_type"]
   if not os.path.exists(directory):
         os.makedirs(directory)
 
@@ -76,9 +75,9 @@ for total_time in total_times:
     for num_thread in num_threads:
       for input_rate in input_rates:
         for num_key in num_keys:
-          i = 0
-          for timescale in timescales:
-            for application in applications:
-              create_file(total_time, operator_type, num_thread, input_rate, num_key, timescale,num_timescales[i], application)
-            i += 1
+          for application in applications:
+            total_time = setting["total_time"]
+            timescale = setting["ts"]
+            num_timescale = setting["num_timescale"]
+            create_file(total_time, operator_type, num_thread, input_rate, num_key, timescale,num_timescale, application)
 
