@@ -49,9 +49,11 @@ def create_file(total_time, operator_type, num_thread, input_rate, num_key, time
   if not os.path.exists(directory):
         os.makedirs(directory)
 
+  test_name = num_key + "/" + application + "-" + operator_type + "-" + num_thread + "-" + num_timescale + "-" + setting["timescale_type"] + "/" + input_rate
+
   f = open(directory + "/" + file_name, "w")
   f.write("--log_dir=" + log_dir + "\n")
-  f.write("--test_name="+file_name + "\n")
+  f.write("--test_name="+test_name + "\n")
   f.write("--spouts=" + spouts + "\n")
   f.write("--num_split_bolt=15\n")
   f.write("--bolts=1\n")
