@@ -44,8 +44,10 @@ applications=["topk"]
 setting=uniform2
 
 def create_file(total_time, operator_type, num_thread, input_rate, num_key, timescale,num_timescale, application):
-  directory = param_dir
-  file_name = application + "-" + operator_type + "-" + num_thread + "-" + input_rate + "-" + num_key + "-" + num_timescale + "-" + setting["timescale_type"]
+  directory = param_dir + num_key + "/" + application + "-" + operator_type + "-" + num_thread + "-" + num_timescale + "-" + setting["timescale_type"]
+  #file_name = application + "-" + operator_type + "-" + num_thread + "-" + input_rate + "-" + num_key + "-" + num_timescale + "-" + setting["timescale_type"]
+  file_name = input_rate
+
   if not os.path.exists(directory):
         os.makedirs(directory)
 
