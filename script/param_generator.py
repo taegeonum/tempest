@@ -23,6 +23,7 @@ import os, sys, argparse
 uniform2={"ts": "(100,1)(200,2)", "num_timescale": "2", "timescale_type": "uniform", "total_time": "450"}
 uniform5={"ts": "(100,1)(200,2)(300,5)(400,10)(500,1)", "num_timescale": "5", "timescale_type": "uniform", "total_time": "1100"}
 uniform10={"ts": "(100,1)(200,2)(300,5)(400,10)(500,1)(600,2)(700,5)(800,10)(900,1)(1000,2)", "num_timescale": "10", "timescale_type": "uniform", "total_time": "2100"}
+ratio2={"ts": "(100,2)(200,4)(300,10)(400,20)(500,2)(600,4)(700,10)(800,20)(900,2)(1000,4)", "num_timescale": "10", "timescale_type": "ratio2", "total_time": "2100"}
 lskewed={"ts": "(10,1)(20,2)(30,5)(60,10)(130,1)(220,2)(340,5)(510,10)(730,1)(1000,2)", "num_timescale": "10", "timescale_type": "lskewed", "total_time": "2100"}
 rskewed={"ts": "(50,1)(150,2)(670,5)(740,10)(800,1)(840,2)(890,5)(930,10)(965,1)(1000,2)", "num_timescale": "10", "timescale_type": "rskewed", "total_time": "2100"}
 
