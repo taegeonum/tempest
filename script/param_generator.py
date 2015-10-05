@@ -24,6 +24,7 @@ uniform2={"ts": "(100,1)(200,2)", "num_timescale": "2", "timescale_type": "unifo
 uniform5={"ts": "(100,1)(200,2)(300,5)(400,10)(500,1)", "num_timescale": "5", "timescale_type": "uniform", "total_time": "1100"}
 uniform10={"ts": "(100,1)(200,2)(300,5)(400,10)(500,1)(600,2)(700,5)(800,10)(900,1)(1000,2)", "num_timescale": "10", "timescale_type": "uniform", "total_time": "2100"}
 ratio2={"ts": "(100,2)(200,4)(300,10)(400,20)(500,2)(600,4)(700,10)(800,20)(900,2)(1000,4)", "num_timescale": "10", "timescale_type": "ratio2", "total_time": "2100"}
+ratio4={"ts": "(100,4)(200,8)(300,20)(400,40)(500,4)(600,8)(700,20)(800,40)(900,4)(1000,8)", "num_timescale": "10", "timescale_type": "ratio4", "total_time": "2100"}
 lskewed={"ts": "(10,1)(20,2)(30,5)(60,10)(130,1)(220,2)(340,5)(510,10)(730,1)(1000,2)", "num_timescale": "10", "timescale_type": "lskewed", "total_time": "2100"}
 rskewed={"ts": "(50,1)(150,2)(670,5)(740,10)(800,1)(840,2)(890,5)(930,10)(965,1)(1000,2)", "num_timescale": "10", "timescale_type": "rskewed", "total_time": "2100"}
 
@@ -39,10 +40,10 @@ num_threads=["32"]
 input_interval="1"
 input_rates=["100000"]
 zipfian_constant="0.99"
-num_keys=["100000"]
+num_keys=["50000"]
 timescale_type="uniform"
 applications=["topk"]
-setting=uniform2
+setting=ratio2
 
 def create_file(total_time, operator_type, num_thread, input_rate, num_key, timescale,num_timescale, application):
   directory = param_dir + num_key + "/" + application + "-" + operator_type + "-" + num_thread + "-" + num_timescale + "-" + setting["timescale_type"]
