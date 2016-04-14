@@ -39,8 +39,8 @@ import java.util.logging.Logger;
 /**
  * A stage that triggers overlapping window operators, which execute final aggregation.
  */
-final class OverlappingWindowStage<V> implements EStage<Long> {
-  private static final Logger LOG = Logger.getLogger(OverlappingWindowStage.class.getCanonicalName());
+final class FinalAggregatorManager<V> implements EStage<Long> {
+  private static final Logger LOG = Logger.getLogger(FinalAggregatorManager.class.getCanonicalName());
 
   /**
    * Is this stage closed or not.
@@ -55,7 +55,7 @@ final class OverlappingWindowStage<V> implements EStage<Long> {
   /**
    * A priority queue ordering event handlers.
    */
-  private final PriorityQueue<OverlappingWindowOperator<V>> handlers;
+  private final PriorityQueue<FinalAggregator<V>> handlers;
 
   /**
    * A read/write lock for queue.
@@ -76,7 +76,7 @@ final class OverlappingWindowStage<V> implements EStage<Long> {
    * Overlapping window stage for doing final aggregation.
    */
   @Inject
-  private OverlappingWindowStage(@Parameter(NumThreads.class) final int numThreads) {
+  private FinalAggregatorManager(@Parameter(NumThreads.class) final int numThreads) {
     this.handlers = new PriorityQueue<>(10, new OWOComparator());
     this.executor = Executors.newFixedThreadPool(numThreads);
     this.subscriptionHandler = new OWOSubscriptionHandler();
@@ -99,11 +99,11 @@ final class OverlappingWindowStage<V> implements EStage<Long> {
   public void onNext(final Long time) {
     lock.readLock().lock();
     // save output information before final aggregation.
-    for (final OverlappingWindowOperator owo : handlers) {
+    for (final FinalAggregator owo : handlers) {
       owo.saveOutputInformation(time);
     }
     // do final aggregation
-    for (final OverlappingWindowOperator<V> owo : handlers) {
+    for (final FinalAggregator<V> owo : handlers) {
       executor.submit(new Runnable() {
         @Override
         public void run() {
@@ -120,7 +120,7 @@ final class OverlappingWindowStage<V> implements EStage<Long> {
    * @param handler an overlapping window operator
    * @return a subscription for unsubscribe
    */
-  public Subscription<OverlappingWindowOperator<V>> subscribe(final OverlappingWindowOperator<V> handler) {
+  public Subscription<FinalAggregator<V>> subscribe(final FinalAggregator<V> handler) {
     LOG.log(Level.FINE, "Subscribe " + handler);
     lock.writeLock().lock();
     handlers.add(handler);
@@ -131,17 +131,17 @@ final class OverlappingWindowStage<V> implements EStage<Long> {
   /**
    * Subscription handler for unsubscribe overlaping window operators.
    */
-  class OWOSubscriptionHandler implements SubscriptionHandler<OverlappingWindowOperator<V>> {
+  class OWOSubscriptionHandler implements SubscriptionHandler<FinalAggregator<V>> {
     /**
      * Unsubscribe the subscription.
      * @param subscription a subscription
      */
     @Override
-    public void unsubscribe(final Subscription<OverlappingWindowOperator<V>> subscription) {
+    public void unsubscribe(final Subscription<FinalAggregator<V>> subscription) {
       LOG.log(Level.FINE, "Unsubscribe " + subscription.getToken());
-      OverlappingWindowStage.this.lock.writeLock().lock();
-      OverlappingWindowStage.this.handlers.remove(subscription.getToken());
-      OverlappingWindowStage.this.lock.writeLock().unlock();
+      FinalAggregatorManager.this.lock.writeLock().lock();
+      FinalAggregatorManager.this.handlers.remove(subscription.getToken());
+      FinalAggregatorManager.this.lock.writeLock().unlock();
     }
   }
 }

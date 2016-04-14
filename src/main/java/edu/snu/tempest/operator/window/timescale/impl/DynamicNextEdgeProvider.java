@@ -33,8 +33,8 @@ import java.util.logging.Logger;
  * for streamed aggregation. In ACM SIGMOD, 2006
  * It returns next slice time for slicing input stream into paired sliced window.
  */
-public final class DynamicNextSliceTimeProvider implements NextSliceTimeProvider {
-  private static final Logger LOG = Logger.getLogger(DynamicNextSliceTimeProvider.class.getName());
+public final class DynamicNextEdgeProvider implements NextEdgeProvider {
+  private static final Logger LOG = Logger.getLogger(DynamicNextEdgeProvider.class.getName());
 
   /**
    * SliceQueue containing next slice time.
@@ -52,7 +52,7 @@ public final class DynamicNextSliceTimeProvider implements NextSliceTimeProvider
    * @param startTime a start time of the mts operator
    */
   @Inject
-  private DynamicNextSliceTimeProvider(
+  private DynamicNextEdgeProvider(
       final TimescaleParser tsParser,
       @Parameter(StartTime.class) final Long startTime) {
     this.sliceQueue = new PriorityQueue<>(10, new SliceInfoComparator());

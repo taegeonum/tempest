@@ -26,7 +26,7 @@ import edu.snu.tempest.operator.window.timescale.TimescaleWindowOutput;
  * For example, if a timescale is [w=10s, i=3s],
  * then OWO produces an output with 10 seconds window size every 3 seconds.
  */
-public interface OverlappingWindowOperator<V> extends Operator<Long, TimescaleWindowOutput<V>> {
+public interface FinalAggregator<V> extends Operator<Long, TimescaleWindowOutput<V>> {
   /**
    * Return a timescale related to this overlapping window operator.
    *

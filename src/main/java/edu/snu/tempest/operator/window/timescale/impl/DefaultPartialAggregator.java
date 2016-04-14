@@ -29,8 +29,8 @@ import java.util.logging.Logger;
  * @param <I> input
  * @param <V> aggregated result
  */
-final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I, V> {
-  private static final Logger LOG = Logger.getLogger(DefaultSlicedWindowOperator.class.getName());
+final class DefaultPartialAggregator<I, V> implements PartialAggregator<I, V> {
+  private static final Logger LOG = Logger.getLogger(DefaultPartialAggregator.class.getName());
 
   /**
    * Aggregator for incremental aggregation.
@@ -42,7 +42,7 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I,
   /**
    * Next slice time provider.
    */
-  private final NextSliceTimeProvider nextSliceTimeProvider;
+  private final NextEdgeProvider nextEdgeProvider;
 
   /**
    * Previous slice time.
@@ -71,15 +71,15 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I,
    * @param startTime a start time of the mts operator
    */
   @Inject
-  private DefaultSlicedWindowOperator(
+  private DefaultPartialAggregator(
       final CAAggregator<I, V> aggregator,
-      final NextSliceTimeProvider nextSliceTimeProvider,
+      final NextEdgeProvider nextEdgeProvider,
       @Parameter(StartTime.class) final Long startTime) {
     this.aggregator = aggregator;
-    this.nextSliceTimeProvider = nextSliceTimeProvider;
+    this.nextEdgeProvider = nextEdgeProvider;
     this.bucket = aggregator.init();
     prevSliceTime = startTime;
-    nextSliceTime = nextSliceTimeProvider.nextSliceTime();
+    nextSliceTime = nextEdgeProvider.nextSliceTime();
   }
 
   /**
@@ -90,7 +90,7 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I,
   public synchronized void slice(final long currTime) {
     while (nextSliceTime < currTime) {
       prevSliceTime = nextSliceTime;
-      nextSliceTime = nextSliceTimeProvider.nextSliceTime();
+      nextSliceTime = nextEdgeProvider.nextSliceTime();
     }
     LOG.log(Level.FINE, "SlicedWindow tickTime " + currTime + ", nextSlice: " + nextSliceTime);
 
@@ -104,7 +104,7 @@ final class DefaultSlicedWindowOperator<I, V> implements SlicedWindowOperator<I,
         emitter.emit(new PartialTimeWindowOutput<V>(prevSliceTime, nextSliceTime, partialAggregation));
       }
       prevSliceTime = nextSliceTime;
-      nextSliceTime = nextSliceTimeProvider.nextSliceTime();
+      nextSliceTime = nextEdgeProvider.nextSliceTime();
     }
   }
 

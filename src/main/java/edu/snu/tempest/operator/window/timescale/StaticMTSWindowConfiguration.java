@@ -25,8 +25,8 @@ public final class StaticMTSWindowConfiguration extends TimescaleWindowBaseConfi
 
   public static final ConfigurationModule CONF = new StaticMTSWindowConfiguration()
       .merge(TimescaleWindowBaseConfiguration.CONF)
-      .bindImplementation(ComputationReuser.class, StaticComputationReuser.class)
-      .bindImplementation(NextSliceTimeProvider.class, StaticNextSliceTimeProvider.class)
+      .bindImplementation(SpanTracker.class, StaticSpanTracker.class)
+      .bindImplementation(NextEdgeProvider.class, StaticNextEdgeProvider.class)
       .bindImplementation(TimescaleWindowOperator.class, StaticMTSOperatorImpl.class)
       .build();
 }

@@ -25,8 +25,8 @@ public final class NaiveMTSWindowConfiguration extends TimescaleWindowBaseConfig
 
   public static final ConfigurationModule CONF = new NaiveMTSWindowConfiguration()
       .merge(TimescaleWindowBaseConfiguration.CONF)
-      .bindImplementation(ComputationReuser.class, StaticComputationReuser.class)
-      .bindImplementation(NextSliceTimeProvider.class, StaticNextSliceTimeProvider.class)
+      .bindImplementation(SpanTracker.class, StaticSpanTracker.class)
+      .bindImplementation(NextEdgeProvider.class, StaticNextEdgeProvider.class)
       .bindImplementation(TimescaleWindowOperator.class, NaiveMTSOperator.class)
       .build();
 }

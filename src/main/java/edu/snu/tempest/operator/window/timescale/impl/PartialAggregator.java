@@ -22,8 +22,8 @@ import org.apache.reef.tang.annotations.DefaultImplementation;
  * Sliced window operator.
  * It chops input stream and aggregates the input using Aggregator.
  */
-@DefaultImplementation(DefaultSlicedWindowOperator.class)
-public interface SlicedWindowOperator<I, V> extends Operator<I, PartialTimeWindowOutput<V>> {
+@DefaultImplementation(DefaultPartialAggregator.class)
+public interface PartialAggregator<I, V> extends Operator<I, PartialTimeWindowOutput<V>> {
   /**
    * Slice current partial aggregation.
    * @param sliceTime slice time

@@ -40,7 +40,7 @@ public final class StaticMTSOperatorImpl<I, V> implements TimescaleWindowOperato
   /**
    * A sliced window operator for incremental aggregation.
    */
-  private final SlicedWindowOperator<I, V> slicedWindowOperator;
+  private final PartialAggregator<I, V> partialAggregator;
 
   /**
    * Output emitter.
@@ -50,7 +50,7 @@ public final class StaticMTSOperatorImpl<I, V> implements TimescaleWindowOperato
   /**
    * Overlapping window stage executing overlapping window operators.
    */
-  private final OverlappingWindowStage<V> owoStage;
+  private final FinalAggregatorManager<V> owoStage;
 
   /**
    * Parser for Initial timescales.
@@ -61,7 +61,7 @@ public final class StaticMTSOperatorImpl<I, V> implements TimescaleWindowOperato
    * Computation reuser whichc saves partial/final results
    * in order to do computation reuse between multiple timescales.
    */
-  private final ComputationReuser<V> computationReuser;
+  private final SpanTracker<V> spanTracker;
 
   /**
    * Start time of this operator.
@@ -74,24 +74,24 @@ public final class StaticMTSOperatorImpl<I, V> implements TimescaleWindowOperato
    * Creates static MTS window operator.
    * @param slicingStage a slicing stage which triggers slice of partial result
    * @param owoStage an overlapping window stage which executes overlapping window operators
-   * @param computationReuser a computation reuser which saves partial/final results
+   * @param spanTracker a computation reuser which saves partial/final results
    * @param tsParser timescale parser for initial timescales
-   * @param slicedWindowOperator  a sliced window operator which creates partial result
+   * @param partialAggregator  a sliced window operator which creates partial result
    * @param slicedWindowEmitter an output emitter which saves partial results and triggers final aggregation
    * @param startTime start time of this operator
    * @throws Exception
    */
   @Inject
   private StaticMTSOperatorImpl(
-      final OverlappingWindowStage<V> owoStage,
-      final ComputationReuser<V> computationReuser,
+      final FinalAggregatorManager<V> owoStage,
+      final SpanTracker<V> spanTracker,
       final TimescaleParser tsParser,
-      final SlicedWindowOperator<I, V> slicedWindowOperator,
-      final SlicedWindowOperatorOutputEmitter<V> slicedWindowEmitter,
+      final PartialAggregator<I, V> partialAggregator,
+      final PartialAggregatorOutputEmitter<V> slicedWindowEmitter,
       @Parameter(StartTime.class) final long startTime) throws Exception {
-    this.slicedWindowOperator = slicedWindowOperator;
-    this.computationReuser = computationReuser;
-    this.slicedWindowOperator.prepare(slicedWindowEmitter);
+    this.partialAggregator = partialAggregator;
+    this.spanTracker = spanTracker;
+    this.partialAggregator.prepare(slicedWindowEmitter);
     this.tsParser = tsParser;
     this.startTime = startTime;
     this.owoStage = owoStage;
@@ -104,7 +104,7 @@ public final class StaticMTSOperatorImpl<I, V> implements TimescaleWindowOperato
   @Override
   public void execute(final I val) {
     LOG.log(Level.FINEST, StaticMTSOperatorImpl.class.getName() + " execute : ( " + val + ")");
-    this.slicedWindowOperator.execute(val);
+    this.partialAggregator.execute(val);
   }
 
   /**
@@ -116,7 +116,7 @@ public final class StaticMTSOperatorImpl<I, V> implements TimescaleWindowOperato
     this.emitter = outputEmitter;
     // add overlapping window operators
     final Injector injector = Tang.Factory.getTang().newInjector();
-    injector.bindVolatileInstance(SlicedWindowOperator.class, slicedWindowOperator);
+    injector.bindVolatileInstance(PartialAggregator.class, partialAggregator);
     injector.bindVolatileParameter(StartTime.class, startTime);
     try {
       slicingStage = injector.getInstance(SlicingStage.class);
@@ -125,8 +125,8 @@ public final class StaticMTSOperatorImpl<I, V> implements TimescaleWindowOperato
       throw new RuntimeException(e);
     }
     for (final Timescale timescale : tsParser.timescales) {
-      final OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperator<>(
-          timescale, computationReuser, startTime);
+      final FinalAggregator<V> owo = new DefaultFinalAggregator<>(
+          timescale, spanTracker, startTime);
       owo.prepare(emitter);
       this.owoStage.subscribe(owo);
     }
@@ -136,6 +136,6 @@ public final class StaticMTSOperatorImpl<I, V> implements TimescaleWindowOperato
   public void close() throws Exception {
     slicingStage.close();
     owoStage.close();
-    computationReuser.close();
+    spanTracker.close();
   }
 }

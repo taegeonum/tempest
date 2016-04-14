@@ -29,7 +29,7 @@ import java.util.logging.Logger;
  */
 public final class DependencyGraph {
 
-  private static final Logger LOG = Logger.getLogger(StaticComputationReuser.class.getName());
+  private static final Logger LOG = Logger.getLogger(StaticSpanTracker.class.getName());
 
   /**
    * A table containing DependencyGraphNode for final outputs.

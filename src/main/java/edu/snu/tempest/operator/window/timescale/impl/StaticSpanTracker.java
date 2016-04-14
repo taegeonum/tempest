@@ -34,8 +34,8 @@ import java.util.logging.Logger;
  * StaticComputationReuserImpl Implementation.
  * It constructs dependency graph at start time.
  */
-public final class StaticComputationReuser<I, T> implements ComputationReuser<T> {
-  private static final Logger LOG = Logger.getLogger(StaticComputationReuser.class.getName());
+public final class StaticSpanTracker<I, T> implements SpanTracker<T> {
+  private static final Logger LOG = Logger.getLogger(StaticSpanTracker.class.getName());
 
   /**
    * A table containing DependencyGraphNode for final output.
@@ -84,7 +84,7 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
    * @param startTime an initial start time
    */
   @Inject
-  private StaticComputationReuser(
+  private StaticSpanTracker(
       final TimescaleParser tsParser,
       final CAAggregator<I, T> finalAggregator,
       @Parameter(StartTime.class) final long startTime,
@@ -97,7 +97,7 @@ public final class StaticComputationReuser<I, T> implements ComputationReuser<T>
     this.period = calculatePeriod(timescales);
     this.startTime = startTime;
     this.parallelAggregator = new ParallelTreeAggregator<>(numThreads, numThreads * 2, finalAggregator);
-    LOG.log(Level.INFO, StaticComputationReuser.class + " started. PERIOD: " + period);
+    LOG.log(Level.INFO, StaticSpanTracker.class + " started. PERIOD: " + period);
 
     // create dependency graph.
     addSlicedWindowNodeAndEdge();

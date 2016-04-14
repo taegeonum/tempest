@@ -34,9 +34,9 @@ import java.util.*;
 
 import static org.mockito.Mockito.*;
 
-public class DefaultSlicedWindowOperatorTest {
-  ComputationReuser<Map<Integer, Long>> computationReuser;
-  NextSliceTimeProvider nextSliceTimeProvider;
+public class DefaultPartialAggregatorTest {
+  SpanTracker<Map<Integer, Long>> spanTracker;
+  NextEdgeProvider nextEdgeProvider;
   List<Timescale> timescales;
   IntegerRef counter;
   Injector injector;
@@ -45,9 +45,9 @@ public class DefaultSlicedWindowOperatorTest {
 
   @Before
   public void initialize() throws InjectionException {
-    computationReuser = mock(ComputationReuser.class);
-    nextSliceTimeProvider = mock(NextSliceTimeProvider.class);
-    when(nextSliceTimeProvider.nextSliceTime()).thenReturn(1L, 3L, 4L, 6L, 7L, 9L);
+    spanTracker = mock(SpanTracker.class);
+    nextEdgeProvider = mock(NextEdgeProvider.class);
+    when(nextEdgeProvider.nextSliceTime()).thenReturn(1L, 3L, 4L, 6L, 7L, 9L);
     timescales = new LinkedList<>();
     counter = new IntegerRef(0);
     timescales.add(new Timescale(5, 3));
@@ -57,8 +57,8 @@ public class DefaultSlicedWindowOperatorTest {
     jcb.bindImplementation(CAAggregator.class, CountByKeyAggregator.class);
     jcb.bindNamedParameter(StartTime.class, Long.toString(0));
     injector = Tang.Factory.getTang().newInjector(jcb.build());
-    injector.bindVolatileInstance(ComputationReuser.class, computationReuser);
-    injector.bindVolatileInstance(NextSliceTimeProvider.class, nextSliceTimeProvider);
+    injector.bindVolatileInstance(SpanTracker.class, spanTracker);
+    injector.bindVolatileInstance(NextEdgeProvider.class, nextEdgeProvider);
   }
 
   /**
@@ -66,8 +66,8 @@ public class DefaultSlicedWindowOperatorTest {
    */
   @Test
   public void defaultSlicedWindowTest() throws InjectionException {
-    DefaultSlicedWindowOperator<Integer, Map<Integer, Long>> operator =
-        injector.getInstance(DefaultSlicedWindowOperator.class);
+    DefaultPartialAggregator<Integer, Map<Integer, Long>> operator =
+        injector.getInstance(DefaultPartialAggregator.class);
     operator.prepare(new OutputEmitter<PartialTimeWindowOutput<Map<Integer, Long>>>() {
       @Override
       public void close() throws Exception {

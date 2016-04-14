@@ -26,8 +26,8 @@ public final class DynamicDGWindowConfiguration extends TimescaleWindowBaseConfi
 
   public static final ConfigurationModule CONF = new DynamicDGWindowConfiguration()
       .merge(TimescaleWindowBaseConfiguration.CONF)
-      .bindImplementation(ComputationReuser.class, DependencyGraphComputationReuser.class)
-      .bindImplementation(NextSliceTimeProvider.class, DynamicNextSliceTimeProvider.class)
+      .bindImplementation(SpanTracker.class, DependencyGraphSpanTracker.class)
+      .bindImplementation(NextEdgeProvider.class, DynamicNextEdgeProvider.class)
       .bindImplementation(TimescaleWindowOperator.class, DynamicMTSOperatorImpl.class)
       .bindImplementation(DynamicMTSWindowOperator.class, DynamicMTSOperatorImpl.class)
       .build();

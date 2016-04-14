@@ -32,8 +32,8 @@ public final class DynamicMTSWindowConfiguration extends TimescaleWindowBaseConf
 
   public static final ConfigurationModule CONF = new DynamicMTSWindowConfiguration()
       .merge(TimescaleWindowBaseConfiguration.CONF)
-      .bindImplementation(ComputationReuser.class, DynamicComputationReuser.class)
-      .bindImplementation(NextSliceTimeProvider.class, DynamicNextSliceTimeProvider.class)
+      .bindImplementation(SpanTracker.class, DynamicSpanTracker.class)
+      .bindImplementation(NextEdgeProvider.class, DynamicNextEdgeProvider.class)
       .bindNamedParameter(CachingProb.class, CACHING_PROB)
       .bindImplementation(CachingPolicy.class, RandomCachingPolicy.class)
       .bindImplementation(TimescaleWindowOperator.class, DynamicMTSOperatorImpl.class)

@@ -20,7 +20,7 @@ import edu.snu.tempest.operator.window.timescale.Timescale;
 /**
  * Provide next slice time for partial aggregation.
  */
-public interface NextSliceTimeProvider {
+public interface NextEdgeProvider {
 
   /**
    * Get next slice time for partial aggregation.

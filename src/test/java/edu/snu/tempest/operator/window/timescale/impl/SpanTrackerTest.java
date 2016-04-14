@@ -40,7 +40,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public class ComputationReuserTest {
+public class SpanTrackerTest {
 
   List<Timescale> timescales;
   Timescale ts1;
@@ -77,7 +77,7 @@ public class ComputationReuserTest {
   public void dynamicComputationReuserMultiThreadAggregationTest() throws InjectionException, InterruptedException {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(CachingPolicy.class, RandomCachingPolicy.class);
-    jcb.bindImplementation(ComputationReuser.class, DynamicComputationReuser.class);
+    jcb.bindImplementation(SpanTracker.class, DynamicSpanTracker.class);
     multiThreadedFinalAggregation(jcb.build());
   }
 
@@ -85,14 +85,14 @@ public class ComputationReuserTest {
   public void dynamicDependencyGraphComputationReuserMultiThreadAggregationTest()
       throws InjectionException, InterruptedException {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
-    jcb.bindImplementation(ComputationReuser.class, DependencyGraphComputationReuser.class);
+    jcb.bindImplementation(SpanTracker.class, DependencyGraphSpanTracker.class);
     multiThreadedFinalAggregation(jcb.build());
   }
 
   @Test
   public void staticComputationReuserMultiThreadAggregationTest() throws InjectionException, InterruptedException {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
-    jcb.bindImplementation(ComputationReuser.class, StaticComputationReuser.class);
+    jcb.bindImplementation(SpanTracker.class, StaticSpanTracker.class);
     multiThreadedFinalAggregation(jcb.build());
   }
 
@@ -103,7 +103,7 @@ public class ComputationReuserTest {
     jcb.bindNamedParameter(StartTime.class, Long.toString(startTime));
     jcb.bindImplementation(CAAggregator.class, CountByKeyAggregator.class);
     jcb.bindImplementation(Aggregator.class, CountByKeyAggregator.class);
-    jcb.bindImplementation(ComputationReuser.class, DependencyGraphComputationReuser.class);
+    jcb.bindImplementation(SpanTracker.class, DependencyGraphSpanTracker.class);
     return jcb.build();
   }
 
@@ -116,7 +116,7 @@ public class ComputationReuserTest {
     jcb.bindNamedParameter(StartTime.class, Long.toString(startTime));
     jcb.bindImplementation(CAAggregator.class, CountByKeyAggregator.class);
     jcb.bindImplementation(Aggregator.class, CountByKeyAggregator.class);
-    jcb.bindImplementation(ComputationReuser.class, DynamicComputationReuser.class);
+    jcb.bindImplementation(SpanTracker.class, DynamicSpanTracker.class);
     return jcb.build();
   }
 
@@ -127,7 +127,7 @@ public class ComputationReuserTest {
     jcb.bindNamedParameter(StartTime.class, Long.toString(startTime));
     jcb.bindImplementation(CAAggregator.class, CountByKeyAggregator.class);
     jcb.bindImplementation(Aggregator.class, CountByKeyAggregator.class);
-    jcb.bindImplementation(ComputationReuser.class, StaticComputationReuser.class);
+    jcb.bindImplementation(SpanTracker.class, StaticSpanTracker.class);
     return jcb.build();
   }
 
@@ -162,8 +162,8 @@ public class ComputationReuserTest {
 
     final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
     // The computaton reuser does CountByKey operation for the timescales: [w=4,i=2] [w=8,i=4]
-    final ComputationReuser<Map<Integer, Long>> computationReuser =
-        injector.getInstance(ComputationReuser.class);
+    final SpanTracker<Map<Integer, Long>> spanTracker =
+        injector.getInstance(SpanTracker.class);
 
     // partial outputs for the computation reuser
     final Map<Integer, Long> partialOutput1 = new HashMap<>();
@@ -180,13 +180,13 @@ public class ComputationReuserTest {
 
 
     // save partial results into computation reuser.
-    computationReuser.savePartialOutput(0, 2, partialOutput1);
+    spanTracker.savePartialOutput(0, 2, partialOutput1);
     final Queue<Boolean> check = new ConcurrentLinkedQueue<>();
 
     // multi-threaded final aggregation.
     // [0-2] final aggregation
     // it waits 2 seconds in order to delay the final aggregation
-    computationReuser.saveOutputInformation(0, 2, ts1);
+    spanTracker.saveOutputInformation(0, 2, ts1);
     executor.submit(new Runnable() {
       @Override
       public void run() {
@@ -195,15 +195,15 @@ public class ComputationReuserTest {
         } catch (final InterruptedException e) {
           e.printStackTrace();
         }
-        final Map<Integer, Long> result1 = computationReuser.finalAggregate(0, 2, ts1).result;
+        final Map<Integer, Long> result1 = spanTracker.finalAggregate(0, 2, ts1).result;
         check.add(partialOutput1.equals(result1));
       }
     });
 
     // [0-4] final aggregation
     // it waits 2 seconds in order to delay the final aggregation
-    computationReuser.savePartialOutput(2, 4, partialOutput2);
-    computationReuser.saveOutputInformation(0, 4, ts1);
+    spanTracker.savePartialOutput(2, 4, partialOutput2);
+    spanTracker.saveOutputInformation(0, 4, ts1);
     executor.submit(new Runnable() {
       @Override
       public void run() {
@@ -212,7 +212,7 @@ public class ComputationReuserTest {
         } catch (final InterruptedException e) {
           e.printStackTrace();
         }
-        final Map<Integer, Long> result2 = computationReuser.finalAggregate(0, 4, ts1).result;
+        final Map<Integer, Long> result2 = spanTracker.finalAggregate(0, 4, ts1).result;
         check.add(MTSTestUtils.merge(partialOutput1, partialOutput2).equals(result2));
       }
     });
@@ -220,11 +220,11 @@ public class ComputationReuserTest {
     // [0-4] final aggregation
     // it can reuse the above final aggregation. [0-2]
     // it should aggregate expected outputs even though the above final aggregation is delayed.
-    computationReuser.saveOutputInformation(0, 4, ts2);
+    spanTracker.saveOutputInformation(0, 4, ts2);
     executor.submit(new Runnable() {
       @Override
       public void run() {
-        final Map<Integer, Long> result3 = computationReuser.finalAggregate(0, 4, ts2).result;
+        final Map<Integer, Long> result3 = spanTracker.finalAggregate(0, 4, ts2).result;
         check.add(MTSTestUtils.merge(partialOutput1, partialOutput2).equals(result3));
       }
     });
@@ -232,8 +232,8 @@ public class ComputationReuserTest {
     Thread.sleep(2000);
     // [2-6] final aggregation
     // it waits 2 seconds in order to delay the final aggregation
-    computationReuser.savePartialOutput(4, 6, partialOutput3);
-    computationReuser.saveOutputInformation(2, 6, ts1);
+    spanTracker.savePartialOutput(4, 6, partialOutput3);
+    spanTracker.saveOutputInformation(2, 6, ts1);
     executor.submit(new Runnable() {
       @Override
       public void run() {
@@ -242,7 +242,7 @@ public class ComputationReuserTest {
         } catch (final InterruptedException e) {
           e.printStackTrace();
         }
-        final Map<Integer, Long> result4 = computationReuser.finalAggregate(2, 6, ts1).result;
+        final Map<Integer, Long> result4 = spanTracker.finalAggregate(2, 6, ts1).result;
         check.add(MTSTestUtils.merge(partialOutput2, partialOutput3).equals(result4));
       }
     });
@@ -250,8 +250,8 @@ public class ComputationReuserTest {
     Thread.sleep(2000);
     // [4-8] final aggregation
     // it waits 2 seconds in order to delay the final aggregation
-    computationReuser.savePartialOutput(6, 8, partialOutput4);
-    computationReuser.saveOutputInformation(4, 8, ts1);
+    spanTracker.savePartialOutput(6, 8, partialOutput4);
+    spanTracker.saveOutputInformation(4, 8, ts1);
     executor.submit(new Runnable() {
       @Override
       public void run() {
@@ -260,7 +260,7 @@ public class ComputationReuserTest {
         } catch (final InterruptedException e) {
           e.printStackTrace();
         }
-        final Map<Integer, Long> result5 = computationReuser.finalAggregate(4, 8, ts1).result;
+        final Map<Integer, Long> result5 = spanTracker.finalAggregate(4, 8, ts1).result;
         check.add(MTSTestUtils.merge(partialOutput3, partialOutput4).equals(result5));
       }
     });
@@ -268,11 +268,11 @@ public class ComputationReuserTest {
     // [0-8] final aggregation
     // it can reuse the above final aggregation. ([0-4], [4-8] <- it is delayed)
     // it should aggregate expected outputs even though the above final aggregation is delayed.
-    computationReuser.saveOutputInformation(0, 8, ts2);
+    spanTracker.saveOutputInformation(0, 8, ts2);
     executor.submit(new Runnable() {
       @Override
       public void run() {
-        final Map<Integer, Long> result6 = computationReuser.finalAggregate(0, 8, ts2).result;
+        final Map<Integer, Long> result6 = spanTracker.finalAggregate(0, 8, ts2).result;
         check.add(MTSTestUtils.merge(partialOutput1, partialOutput2,
             partialOutput3, partialOutput4).equals(result6));
       }
@@ -291,8 +291,8 @@ public class ComputationReuserTest {
   public void computationReuserTest(final Configuration conf) throws InjectionException {
     final Injector injector = Tang.Factory.getTang().newInjector(conf);
 
-    final ComputationReuser<Map<Integer, Long>> computationReuser =
-        injector.getInstance(ComputationReuser.class);
+    final SpanTracker<Map<Integer, Long>> spanTracker =
+        injector.getInstance(SpanTracker.class);
 
     final Map<Integer, Long> partialOutput1 = new HashMap<>();
     partialOutput1.put(1, 10L); partialOutput1.put(2, 15L);
@@ -327,101 +327,101 @@ public class ComputationReuserTest {
     final Map<Integer, Long> partialOutput11 = new HashMap<>();
     partialOutput11.put(3, 10L);
 
-    computationReuser.savePartialOutput(0, 2, partialOutput1);
+    spanTracker.savePartialOutput(0, 2, partialOutput1);
     // [w=4, i=2] final aggregation at time 2
-    computationReuser.saveOutputInformation(0, 2, ts1);
-    final Map<Integer, Long> result1 = computationReuser.finalAggregate(0, 2, ts1).result;
+    spanTracker.saveOutputInformation(0, 2, ts1);
+    final Map<Integer, Long> result1 = spanTracker.finalAggregate(0, 2, ts1).result;
     Assert.assertEquals(partialOutput1, result1);
 
-    computationReuser.savePartialOutput(2, 3, partialOutput2);
+    spanTracker.savePartialOutput(2, 3, partialOutput2);
     // [w=6, i=3] final aggregation at time 3
-    computationReuser.saveOutputInformation(0, 3, ts2);
-    final Map<Integer, Long> result2 = computationReuser.finalAggregate(0, 3, ts2).result;
+    spanTracker.saveOutputInformation(0, 3, ts2);
+    final Map<Integer, Long> result2 = spanTracker.finalAggregate(0, 3, ts2).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput1, partialOutput2), result2);
 
-    computationReuser.savePartialOutput(3, 4, partialOutput3);
+    spanTracker.savePartialOutput(3, 4, partialOutput3);
     // [w=4, i=2] final aggregation at time 4
-    computationReuser.saveOutputInformation(0, 4, ts1);
-    final Map<Integer, Long> result3 = computationReuser.finalAggregate(0, 4, ts1).result;
+    spanTracker.saveOutputInformation(0, 4, ts1);
+    final Map<Integer, Long> result3 = spanTracker.finalAggregate(0, 4, ts1).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput1, partialOutput2, partialOutput3), result3);
     // [w=10, i=4] final aggregation at time 4
-    computationReuser.saveOutputInformation(0, 4, ts3);
-    final Map<Integer, Long> result4 = computationReuser.finalAggregate(0, 4, ts3).result;
+    spanTracker.saveOutputInformation(0, 4, ts3);
+    final Map<Integer, Long> result4 = spanTracker.finalAggregate(0, 4, ts3).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput1, partialOutput2, partialOutput3), result4);
 
-    computationReuser.savePartialOutput(4, 6, partialOutput4);
+    spanTracker.savePartialOutput(4, 6, partialOutput4);
     // [w=4, i=2] final aggregation at time 6
-    computationReuser.saveOutputInformation(2, 6, ts1);
-    final Map<Integer, Long> result5 = computationReuser.finalAggregate(2, 6, ts1).result;
+    spanTracker.saveOutputInformation(2, 6, ts1);
+    final Map<Integer, Long> result5 = spanTracker.finalAggregate(2, 6, ts1).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput2, partialOutput3, partialOutput4), result5);
     // [w=6, i=3] final aggregation at time 6
-    computationReuser.saveOutputInformation(0, 6, ts2);
-    final Map<Integer, Long> result6 = computationReuser.finalAggregate(0, 6, ts2).result;
+    spanTracker.saveOutputInformation(0, 6, ts2);
+    final Map<Integer, Long> result6 = spanTracker.finalAggregate(0, 6, ts2).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput1,
         partialOutput2, partialOutput3, partialOutput4), result6);
 
-    computationReuser.savePartialOutput(6, 8, partialOutput5);
+    spanTracker.savePartialOutput(6, 8, partialOutput5);
     // [w=4, i=2] final aggregation at time 8
-    computationReuser.saveOutputInformation(4, 8, ts1);
-    final Map<Integer, Long> result7 = computationReuser.finalAggregate(4, 8, ts1).result;
+    spanTracker.saveOutputInformation(4, 8, ts1);
+    final Map<Integer, Long> result7 = spanTracker.finalAggregate(4, 8, ts1).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput4, partialOutput5), result7);
     // [w=10, i=4] final aggregation at time 8
-    computationReuser.saveOutputInformation(0, 8, ts3);
-    final Map<Integer, Long> result8 = computationReuser.finalAggregate(0, 8, ts3).result;
+    spanTracker.saveOutputInformation(0, 8, ts3);
+    final Map<Integer, Long> result8 = spanTracker.finalAggregate(0, 8, ts3).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput1,
         partialOutput2, partialOutput3, partialOutput4, partialOutput5), result8);
 
-    computationReuser.savePartialOutput(8, 9, partialOutput6);
+    spanTracker.savePartialOutput(8, 9, partialOutput6);
     // [w=6, i=3] final aggregation at time 9
-    computationReuser.saveOutputInformation(3, 9, ts2);
-    final Map<Integer, Long> result9 = computationReuser.finalAggregate(3, 9, ts2).result;
+    spanTracker.saveOutputInformation(3, 9, ts2);
+    final Map<Integer, Long> result9 = spanTracker.finalAggregate(3, 9, ts2).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput3, partialOutput4,
         partialOutput5, partialOutput6), result9);
 
-    computationReuser.savePartialOutput(9, 10, partialOutput7);
+    spanTracker.savePartialOutput(9, 10, partialOutput7);
     // [w=4, i=2] final aggregation at time 10
-    computationReuser.saveOutputInformation(6, 10, ts1);
-    final Map<Integer, Long> result10 = computationReuser.finalAggregate(6, 10, ts1).result;
+    spanTracker.saveOutputInformation(6, 10, ts1);
+    final Map<Integer, Long> result10 = spanTracker.finalAggregate(6, 10, ts1).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput5, partialOutput6, partialOutput7), result10);
 
-    computationReuser.savePartialOutput(10, 12, partialOutput8);
+    spanTracker.savePartialOutput(10, 12, partialOutput8);
     // [w=4, i=2] final aggregation at time 12
-    computationReuser.saveOutputInformation(8, 12, ts1);
-    final Map<Integer, Long> result11 = computationReuser.finalAggregate(8, 12, ts1).result;
+    spanTracker.saveOutputInformation(8, 12, ts1);
+    final Map<Integer, Long> result11 = spanTracker.finalAggregate(8, 12, ts1).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput6, partialOutput7, partialOutput8), result11);
     // [w=6, i=3] final aggregation at time 12
-    computationReuser.saveOutputInformation(6, 12, ts2);
-    final Map<Integer, Long> result12 = computationReuser.finalAggregate(6, 12, ts2).result;
+    spanTracker.saveOutputInformation(6, 12, ts2);
+    final Map<Integer, Long> result12 = spanTracker.finalAggregate(6, 12, ts2).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput5,
         partialOutput6, partialOutput7, partialOutput8), result12);
     // [w=10, i=4] final aggregation at time 12
-    computationReuser.saveOutputInformation(2, 12, ts3);
-    final Map<Integer, Long> result13 = computationReuser.finalAggregate(2, 12, ts3).result;
+    spanTracker.saveOutputInformation(2, 12, ts3);
+    final Map<Integer, Long> result13 = spanTracker.finalAggregate(2, 12, ts3).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput2,
         partialOutput3, partialOutput4, partialOutput5,
         partialOutput6, partialOutput7, partialOutput8), result13);
 
-    computationReuser.savePartialOutput(12, 14, partialOutput9);
+    spanTracker.savePartialOutput(12, 14, partialOutput9);
     // [w=4, i=2] final aggregation at time 14
-    computationReuser.saveOutputInformation(10, 14, ts1);
-    final Map<Integer, Long> result14 = computationReuser.finalAggregate(10, 14, ts1).result;
+    spanTracker.saveOutputInformation(10, 14, ts1);
+    final Map<Integer, Long> result14 = spanTracker.finalAggregate(10, 14, ts1).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput8, partialOutput9), result14);
 
-    computationReuser.savePartialOutput(14, 15, partialOutput10);
+    spanTracker.savePartialOutput(14, 15, partialOutput10);
     // [w=6, i=3] final aggregation at time 15
-    computationReuser.saveOutputInformation(9, 15, ts2);
-    final Map<Integer, Long> result15 = computationReuser.finalAggregate(9, 15, ts2).result;
+    spanTracker.saveOutputInformation(9, 15, ts2);
+    final Map<Integer, Long> result15 = spanTracker.finalAggregate(9, 15, ts2).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput7, partialOutput8,
         partialOutput9, partialOutput10), result15);
 
-    computationReuser.savePartialOutput(15, 16, partialOutput11);
+    spanTracker.savePartialOutput(15, 16, partialOutput11);
     // [w=4, i=2] final aggregation at time 16
-    computationReuser.saveOutputInformation(12, 16, ts1);
-    final Map<Integer, Long> result16 = computationReuser.finalAggregate(12, 16, ts1).result;
+    spanTracker.saveOutputInformation(12, 16, ts1);
+    final Map<Integer, Long> result16 = spanTracker.finalAggregate(12, 16, ts1).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput9, partialOutput10, partialOutput11), result16);
     // [w=10, i=4] final aggregation at time 16
-    computationReuser.saveOutputInformation(6, 16, ts3);
-    final Map<Integer, Long> result17 = computationReuser.finalAggregate(6, 16, ts3).result;
+    spanTracker.saveOutputInformation(6, 16, ts3);
+    final Map<Integer, Long> result17 = spanTracker.finalAggregate(6, 16, ts3).result;
     Assert.assertEquals(MTSTestUtils.merge(partialOutput5, partialOutput6, partialOutput7,
         partialOutput8, partialOutput9, partialOutput10, partialOutput11), result17);
   }

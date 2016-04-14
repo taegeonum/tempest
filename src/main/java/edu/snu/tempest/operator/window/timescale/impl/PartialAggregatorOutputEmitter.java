@@ -25,28 +25,28 @@ import javax.inject.Inject;
  * and triggers overlapping window operators in order to do final aggregation.
  * @param <V> partial output
  */
-final class SlicedWindowOperatorOutputEmitter<V> implements OutputEmitter<PartialTimeWindowOutput<V>> {
+final class PartialAggregatorOutputEmitter<V> implements OutputEmitter<PartialTimeWindowOutput<V>> {
 
   /**
    * Computation reuser whichc saves partial/final results
    * in order to do computation reuse between multiple timescales.
    */
-  private final ComputationReuser<V> computationReuser;
+  private final SpanTracker<V> spanTracker;
 
   /**
    * Overlapping window stage executing overlapping window operators.
    */
-  private final OverlappingWindowStage<V> owoStage;
+  private final FinalAggregatorManager<V> owoStage;
 
   /**
    * SlicedWindowOperatorOutputEmitter.
-   * @param computationReuser a computation reuser
+   * @param spanTracker a computation reuser
    * @param owoStage an overlapping window stage
    */
   @Inject
-  private SlicedWindowOperatorOutputEmitter(final ComputationReuser<V> computationReuser,
-                                            final OverlappingWindowStage<V> owoStage) {
-    this.computationReuser = computationReuser;
+  private PartialAggregatorOutputEmitter(final SpanTracker<V> spanTracker,
+                                         final FinalAggregatorManager<V> owoStage) {
+    this.spanTracker = spanTracker;
     this.owoStage = owoStage;
   }
 
@@ -58,7 +58,7 @@ final class SlicedWindowOperatorOutputEmitter<V> implements OutputEmitter<Partia
   @Override
   public void emit(final PartialTimeWindowOutput<V> output) {
     // save partial result into computation reuser
-    computationReuser.savePartialOutput(output.windowStartTime, output.windowEndTime, output.output);
+    spanTracker.savePartialOutput(output.windowStartTime, output.windowEndTime, output.output);
     // trigger overlapping window operators for final aggregation
     owoStage.onNext(output.windowEndTime);
   }

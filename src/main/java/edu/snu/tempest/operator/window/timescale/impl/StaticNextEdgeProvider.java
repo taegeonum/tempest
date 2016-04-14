@@ -31,8 +31,8 @@ import java.util.logging.Logger;
  * for streamed aggregation. In ACM SIGMOD, 2006
  * It returns next slice time for slicing input stream into paired sliced window.
  */
-public final class StaticNextSliceTimeProvider implements NextSliceTimeProvider {
-  private static final Logger LOG = Logger.getLogger(StaticNextSliceTimeProvider.class.getName());
+public final class StaticNextEdgeProvider implements NextEdgeProvider {
+  private static final Logger LOG = Logger.getLogger(StaticNextEdgeProvider.class.getName());
 
   /**
    * The list of timescale.
@@ -70,13 +70,13 @@ public final class StaticNextSliceTimeProvider implements NextSliceTimeProvider 
    * @param startTime an initial start time
    */
   @Inject
-  private StaticNextSliceTimeProvider(final TimescaleParser tsParser,
-                                      @Parameter(StartTime.class) final long startTime) {
+  private StaticNextEdgeProvider(final TimescaleParser tsParser,
+                                 @Parameter(StartTime.class) final long startTime) {
     this.timescales = tsParser.timescales;
     this.sliceQueue = new LinkedList<>();
     this.period = calculatePeriod(timescales);
     this.startTime = startTime;
-    LOG.log(Level.INFO, StaticNextSliceTimeProvider.class + " started. PERIOD: " + period);
+    LOG.log(Level.INFO, StaticNextEdgeProvider.class + " started. PERIOD: " + period);
     createSliceQueue();
   }
 

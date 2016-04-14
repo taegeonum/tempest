@@ -30,7 +30,7 @@ import org.junit.Test;
 import java.util.LinkedList;
 import java.util.List;
 
-public final class NextSliceTimeProviderTest {
+public final class NextEdgeProviderTest {
 
   List<Timescale> timescales;
   Timescale ts1;
@@ -52,7 +52,7 @@ public final class NextSliceTimeProviderTest {
   public void staticNextSlicTimeTest() throws InjectionException {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(timescales));
-    jcb.bindImplementation(NextSliceTimeProvider.class, StaticNextSliceTimeProvider.class);
+    jcb.bindImplementation(NextEdgeProvider.class, StaticNextEdgeProvider.class);
     jcb.bindNamedParameter(StartTime.class, Integer.toString(0));
     nextSliceTimeTest(jcb.build());
   }
@@ -61,7 +61,7 @@ public final class NextSliceTimeProviderTest {
   public void dynamicNextSlicTimeTest() throws InjectionException {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(timescales));
-    jcb.bindImplementation(NextSliceTimeProvider.class, DynamicNextSliceTimeProvider.class);
+    jcb.bindImplementation(NextEdgeProvider.class, DynamicNextEdgeProvider.class);
     jcb.bindNamedParameter(StartTime.class, Integer.toString(0));
     nextSliceTimeTest(jcb.build());
   }
@@ -71,7 +71,7 @@ public final class NextSliceTimeProviderTest {
    */
   public void nextSliceTimeTest(final Configuration conf) throws InjectionException {
     final Injector injector = Tang.Factory.getTang().newInjector(conf);
-    final NextSliceTimeProvider sliceTimeProvider = injector.getInstance(NextSliceTimeProvider.class);
+    final NextEdgeProvider sliceTimeProvider = injector.getInstance(NextEdgeProvider.class);
     final long period = 12L;
     for (int i = 0; i < 5; i++) {
       Assert.assertEquals(2L + period * i, sliceTimeProvider.nextSliceTime());

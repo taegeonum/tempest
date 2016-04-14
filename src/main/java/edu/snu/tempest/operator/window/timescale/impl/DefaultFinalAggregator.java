@@ -26,8 +26,8 @@ import java.util.logging.Logger;
  * This operator executes final aggregation every interval.
  * It receives current time and triggers final aggregation.
  */
-final class DefaultOverlappingWindowOperator<I> implements OverlappingWindowOperator<I> {
-  private static final Logger LOG = Logger.getLogger(DefaultOverlappingWindowOperator.class.getName());
+final class DefaultFinalAggregator<I> implements FinalAggregator<I> {
+  private static final Logger LOG = Logger.getLogger(DefaultFinalAggregator.class.getName());
 
   /**
    * A timescale related to this overlapping window operator.
@@ -37,7 +37,7 @@ final class DefaultOverlappingWindowOperator<I> implements OverlappingWindowOper
   /**
    * A computation reuser for creating window outputs.
    */
-  private final ComputationReuser<I> computationReuser;
+  private final SpanTracker<I> spanTracker;
 
   /**
    * An output handler for window output.
@@ -52,14 +52,14 @@ final class DefaultOverlappingWindowOperator<I> implements OverlappingWindowOper
   /**
    * Default overlapping window operator.
    * @param timescale a timescale
-   * @param computationReuser a computation reuser for final aggregation
+   * @param spanTracker a computation reuser for final aggregation
    * @param startTime an initial start time
    */
-  public DefaultOverlappingWindowOperator(final Timescale timescale,
-                                          final ComputationReuser<I> computationReuser,
-                                          final long startTime) {
+  public DefaultFinalAggregator(final Timescale timescale,
+                                final SpanTracker<I> spanTracker,
+                                final long startTime) {
     this.timescale = timescale;
-    this.computationReuser = computationReuser;
+    this.spanTracker = spanTracker;
     this.startTime = startTime;
   }
 
@@ -94,7 +94,7 @@ final class DefaultOverlappingWindowOperator<I> implements OverlappingWindowOper
       final long start = Math.max(startTime, endTime - timescale.windowSize);
       try {
         final boolean fullyProcessed = this.startTime <= endTime - timescale.windowSize;
-        final DepOutputAndResult<I> finalResult = computationReuser.finalAggregate(start, currTime, timescale);
+        final DepOutputAndResult<I> finalResult = spanTracker.finalAggregate(start, currTime, timescale);
         // send the result to output emitter
         emitter.emit(new TimescaleWindowOutput<>(
             timescale, finalResult, endTime - timescale.windowSize, currTime, fullyProcessed));
@@ -113,7 +113,7 @@ final class DefaultOverlappingWindowOperator<I> implements OverlappingWindowOper
     if (((currTime - startTime) % timescale.intervalSize) == 0) {
       final long endTime = currTime;
       final long start = Math.max(startTime, endTime - timescale.windowSize);
-      computationReuser.saveOutputInformation(start, currTime, timescale);
+      spanTracker.saveOutputInformation(start, currTime, timescale);
     }
   }
 

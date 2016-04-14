@@ -21,10 +21,10 @@ import java.util.Comparator;
  * An overlapping window operator which has small sized window
  * is executed before another OWO with a large sized window.
  */
-final class OWOComparator implements Comparator<OverlappingWindowOperator> {
+final class OWOComparator implements Comparator<FinalAggregator> {
 
   @Override
-  public int compare(OverlappingWindowOperator x, OverlappingWindowOperator y) {
+  public int compare(FinalAggregator x, FinalAggregator y) {
     if (x.getTimescale().windowSize < y.getTimescale().windowSize) {
       return -1;
     } else if (x.getTimescale().windowSize > y.getTimescale().windowSize) {

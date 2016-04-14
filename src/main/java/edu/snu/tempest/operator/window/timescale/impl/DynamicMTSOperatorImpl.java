@@ -42,7 +42,7 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
   /**
    * A sliced window operator for incremental aggregation.
    */
-  private final SlicedWindowOperator<I, V> slicedWindowOperator;
+  private final PartialAggregator<I, V> partialAggregator;
 
   /**
    * Output emitter.
@@ -52,12 +52,12 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
   /**
    * Overlapping window stage executing overlapping window operators.
    */
-  private final OverlappingWindowStage<V> owoStage;
+  private final FinalAggregatorManager<V> owoStage;
 
   /**
    * Overlapping window subscriptions.
    */
-  private final Map<Timescale, Subscription<OverlappingWindowOperator<V>>> subscriptions;
+  private final Map<Timescale, Subscription<FinalAggregator<V>>> subscriptions;
 
   /**
    * Parser for Initial timescales.
@@ -68,7 +68,7 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
    * Computation reuser whichc saves partial/final results
    * in order to do computation reuse between multiple timescales.
    */
-  private final ComputationReuser<V> computationReuser;
+  private final SpanTracker<V> spanTracker;
 
   /**
    * Start time of this operator.
@@ -78,7 +78,7 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
   /**
    * Slice time provider which provides next slice time for partial result.
    */
-  private final NextSliceTimeProvider sliceTimeProvider;
+  private final NextEdgeProvider sliceTimeProvider;
 
   private SlicingStage<I, V> slicingStage;
 
@@ -86,9 +86,9 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
    * Creates dynamic MTS window operator.
    * @param slicingStage a slicing stage which triggers slice of partial result
    * @param owoStage an overlapping window stage which executes overlapping window operators
-   * @param computationReuser a computation reuser which saves partial/final results
+   * @param spanTracker a computation reuser which saves partial/final results
    * @param tsParser timescale parser for initial timescales
-   * @param slicedWindowOperator  a sliced window operator which creates partial result
+   * @param partialAggregator  a sliced window operator which creates partial result
    * @param sliceTimeProvider a slice time provider which provides next slice time
    * @param slicedWindowEmitter an output emitter which saves partial results and triggers final aggregation
    * @param startTime start time of this operator
@@ -96,18 +96,18 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
    */
   @Inject
   private DynamicMTSOperatorImpl(
-      final OverlappingWindowStage<V> owoStage,
-      final ComputationReuser<V> computationReuser,
+      final FinalAggregatorManager<V> owoStage,
+      final SpanTracker<V> spanTracker,
       final TimescaleParser tsParser,
-      final SlicedWindowOperator<I, V> slicedWindowOperator,
-      final NextSliceTimeProvider sliceTimeProvider,
-      final SlicedWindowOperatorOutputEmitter<V> slicedWindowEmitter,
+      final PartialAggregator<I, V> partialAggregator,
+      final NextEdgeProvider sliceTimeProvider,
+      final PartialAggregatorOutputEmitter<V> slicedWindowEmitter,
       @Parameter(StartTime.class) final long startTime) throws Exception {
     this.owoStage = owoStage;
-    this.slicedWindowOperator = slicedWindowOperator;
+    this.partialAggregator = partialAggregator;
     this.sliceTimeProvider = sliceTimeProvider;
-    this.computationReuser = computationReuser;
-    this.slicedWindowOperator.prepare(slicedWindowEmitter);
+    this.spanTracker = spanTracker;
+    this.partialAggregator.prepare(slicedWindowEmitter);
     this.subscriptions = new HashMap<>();
     this.tsParser = tsParser;
     this.startTime = startTime;
@@ -120,7 +120,7 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
   @Override
   public void execute(final I val) {
     LOG.log(Level.FINEST, DynamicMTSOperatorImpl.class.getName() + " execute : ( " + val + ")");
-    this.slicedWindowOperator.execute(val);
+    this.partialAggregator.execute(val);
   }
 
   /**
@@ -131,7 +131,7 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
   public void prepare(final OutputEmitter<TimescaleWindowOutput<V>> outputEmitter) {
     this.emitter = outputEmitter;
     final Injector injector = Tang.Factory.getTang().newInjector();
-    injector.bindVolatileInstance(SlicedWindowOperator.class, slicedWindowOperator);
+    injector.bindVolatileInstance(PartialAggregator.class, partialAggregator);
     injector.bindVolatileParameter(StartTime.class, startTime);
     try {
       slicingStage = injector.getInstance(SlicingStage.class);
@@ -141,10 +141,10 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
     }
     // add overlapping window operators
     for (final Timescale timescale : tsParser.timescales) {
-      final OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperator<>(
-          timescale, computationReuser, startTime);
+      final FinalAggregator<V> owo = new DefaultFinalAggregator<>(
+          timescale, spanTracker, startTime);
       owo.prepare(emitter);
-      final Subscription<OverlappingWindowOperator<V>> ss = this.owoStage.subscribe(owo);
+      final Subscription<FinalAggregator<V>> ss = this.owoStage.subscribe(owo);
       subscriptions.put(ss.getToken().getTimescale(), ss);
     }
   }
@@ -164,13 +164,13 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
     this.sliceTimeProvider.onTimescaleAddition(timescale, adjTime);
 
     //2. add timescale to computationReuser.
-    this.computationReuser.onTimescaleAddition(timescale, adjTime);
+    this.spanTracker.onTimescaleAddition(timescale, adjTime);
 
     //3. add overlapping window operator
-    final OverlappingWindowOperator<V> owo = new DefaultOverlappingWindowOperator<>(
-        timescale, computationReuser, adjTime);
+    final FinalAggregator<V> owo = new DefaultFinalAggregator<>(
+        timescale, spanTracker, adjTime);
     owo.prepare(emitter);
-    final Subscription<OverlappingWindowOperator<V>> ss = this.owoStage.subscribe(owo);
+    final Subscription<FinalAggregator<V>> ss = this.owoStage.subscribe(owo);
     subscriptions.put(ss.getToken().getTimescale(), ss);
   }
 
@@ -182,12 +182,12 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
   @Override
   public void onTimescaleDeletion(final Timescale timescale, final long deleteTime) {
     LOG.log(Level.INFO, DynamicMTSOperatorImpl.class.getName() + " removeTimescale: " + timescale);
-    final Subscription<OverlappingWindowOperator<V>> ss = subscriptions.get(timescale);
+    final Subscription<FinalAggregator<V>> ss = subscriptions.get(timescale);
     if (ss == null) {
       LOG.log(Level.WARNING, "Deletion error: Timescale " + timescale + " not exists. ");
     } else {
       this.sliceTimeProvider.onTimescaleDeletion(timescale, deleteTime);
-      this.computationReuser.onTimescaleDeletion(timescale, deleteTime);
+      this.spanTracker.onTimescaleDeletion(timescale, deleteTime);
       ss.unsubscribe();
     }
   }
@@ -196,6 +196,6 @@ public final class DynamicMTSOperatorImpl<I, V> implements DynamicMTSWindowOpera
   public void close() throws Exception {
     slicingStage.close();
     owoStage.close();
-    computationReuser.close();
+    spanTracker.close();
   }
 }

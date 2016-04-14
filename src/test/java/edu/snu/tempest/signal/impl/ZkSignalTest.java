@@ -24,7 +24,6 @@ import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.wake.EventHandler;
-import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -37,7 +36,7 @@ public class ZkSignalTest {
   /**
    * ZkSignalSender sends three signals.
    */
-  @Test
+  //@Test
   public void sendSignalTest() throws Exception {
     final Monitor monitor = new Monitor();
     final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();

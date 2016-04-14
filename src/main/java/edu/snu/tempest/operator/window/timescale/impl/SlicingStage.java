@@ -64,11 +64,11 @@ final class SlicingStage<I, V> implements Stage {
   /**
    * Constructs a slicing stage.
    *
-   * @param slicedWindowOperator a sliced window operator
+   * @param partialAggregator a sliced window operator
    * @param period               a period in milli-seconds
    */
   @Inject
-  private SlicingStage(final SlicedWindowOperator<I, V> slicedWindowOperator,
+  private SlicingStage(final PartialAggregator<I, V> partialAggregator,
                        @Parameter(SlicedWindowTriggerPeriod.class) final long period,
                        @Parameter(StartTime.class) final long startTime) {
     this.executor = Executors.newScheduledThreadPool(1, new DefaultThreadFactory(SlicingStage.class.getName()));
@@ -83,7 +83,7 @@ final class SlicingStage<I, V> implements Stage {
           LOG.log(Level.FINE, SlicingStage.class.getName() + " trigger: " + time);
           for (long triggerTime = prevTriggeredTime + 1; triggerTime <= time; triggerTime++) {
             // slice partial aggregation and save the result into computation reuser.
-            slicedWindowOperator.slice(triggerTime);
+            partialAggregator.slice(triggerTime);
           }
           prevTriggeredTime = time;
         }

@@ -26,7 +26,7 @@ import java.util.Map;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public final class DefaultOverlappingWindowOperatorTest {
+public final class DefaultFinalAggregatorTest {
 
   /**
    * Overlapping window operator should call computationReuser.finalAggregate
@@ -37,13 +37,13 @@ public final class DefaultOverlappingWindowOperatorTest {
     final Map<Integer, Integer> map = new HashMap<>();
     map.put(1, 1);
     final Timescale ts = new Timescale(5, 3);
-    final ComputationReuser<Map<Integer, Integer>> computationReuser = mock(ComputationReuser.class);
-    final OverlappingWindowOperator operator = new DefaultOverlappingWindowOperator<>(
-        ts, computationReuser, 0L);
+    final SpanTracker<Map<Integer, Integer>> spanTracker = mock(SpanTracker.class);
+    final FinalAggregator operator = new DefaultFinalAggregator<>(
+        ts, spanTracker, 0L);
     operator.prepare(new LoggingOutputEmitter());
     operator.execute(3L);
-    verify(computationReuser).finalAggregate(0, 3, ts);
+    verify(spanTracker).finalAggregate(0, 3, ts);
     operator.execute(6L);
-    verify(computationReuser).finalAggregate(1, 6, ts);
+    verify(spanTracker).finalAggregate(1, 6, ts);
   }
 }

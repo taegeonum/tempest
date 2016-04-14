@@ -82,8 +82,8 @@ public final class NaiveMTSOperator<I, V> implements DynamicMTSWindowOperator<I,
       final List<Timescale> tsList = new LinkedList<>();
       tsList.add(ts);
       jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(tsList));
-      jcb.bindImplementation(ComputationReuser.class, DynamicComputationReuser.class);
-      jcb.bindImplementation(NextSliceTimeProvider.class, DynamicNextSliceTimeProvider.class);
+      jcb.bindImplementation(SpanTracker.class, DynamicSpanTracker.class);
+      jcb.bindImplementation(NextEdgeProvider.class, DynamicNextEdgeProvider.class);
       jcb.bindImplementation(TimescaleWindowOperator.class, DynamicMTSOperatorImpl.class);
       jcb.bindNamedParameter(CachingProb.class, 0 + "");
       jcb.bindNamedParameter(StartTime.class, startTime+"");
@@ -118,8 +118,8 @@ public final class NaiveMTSOperator<I, V> implements DynamicMTSWindowOperator<I,
     final List<Timescale> tsList = new LinkedList<>();
     tsList.add(ts);
     jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(tsList));
-    jcb.bindImplementation(ComputationReuser.class, DynamicComputationReuser.class);
-    jcb.bindImplementation(NextSliceTimeProvider.class, DynamicNextSliceTimeProvider.class);
+    jcb.bindImplementation(SpanTracker.class, DynamicSpanTracker.class);
+    jcb.bindImplementation(NextEdgeProvider.class, DynamicNextEdgeProvider.class);
     jcb.bindImplementation(TimescaleWindowOperator.class, DynamicMTSOperatorImpl.class);
     jcb.bindNamedParameter(CachingProb.class, 0+"");
     jcb.bindNamedParameter(StartTime.class, addTime+"");

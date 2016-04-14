@@ -21,7 +21,7 @@ import edu.snu.tempest.operator.window.timescale.Timescale;
  * Computation reuser interface. This is a data structure for output generation of window output.
  * It saves partial aggregation and produces final aggregation of window output.
  */
-public interface ComputationReuser<T> extends AutoCloseable {
+public interface SpanTracker<T> extends AutoCloseable {
 
   /**
    * Save a partial output containing data starting from the startTime to endTime.
