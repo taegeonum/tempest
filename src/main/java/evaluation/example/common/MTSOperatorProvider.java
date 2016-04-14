@@ -55,7 +55,7 @@ public final class MTSOperatorProvider<I, V> {
           .set(DynamicMTSWindowConfiguration.CA_AGGREGATOR, aggregator)
           .set(DynamicMTSWindowConfiguration.CACHING_PROB, cachingProb)
           .build();
-    } else if (operatorType.equals("dynamic_dg")) {
+    } else if (operatorType.equals("dynamic_st")) {
       operatorConf = DynamicDGWindowConfiguration.CONF
           .set(DynamicMTSWindowConfiguration.START_TIME, startTime)
           .set(DynamicMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(timescales))
@@ -67,7 +67,7 @@ public final class MTSOperatorProvider<I, V> {
           .set(NaiveMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(timescales))
           .set(NaiveMTSWindowConfiguration.START_TIME, startTime)
           .build();
-    } else if (operatorType.equals("static_mts")) {
+    } else if (operatorType.equals("static_st")) {
       operatorConf = StaticMTSWindowConfiguration.CONF
           .set(StaticMTSWindowConfiguration.CA_AGGREGATOR, aggregator)
           .set(StaticMTSWindowConfiguration.INITIAL_TIMESCALES, TimescaleParser.parseToString(timescales))
