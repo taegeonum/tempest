@@ -1,0 +1,11 @@
+--log_dir=./logs/0818-additional-timescales-tree-agg
+--test_name=1-10-static
+--spouts=20
+--bolts=1
+--total_time=1800
+--input=random
+--operator_type=static_mts
+--num_threads=1
+--input_interval=1
+--timescales=(300,2)(400,4)(500,5)(600,5)(750,5)(800,10)(900,10)(1000,10)(1050,5)(1200,10)
+--tree_aggregation=false

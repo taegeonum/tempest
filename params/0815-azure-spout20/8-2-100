@@ -1,0 +1,11 @@
+--log_dir=./logs/0815-azure-test-spout20/
+--test_name=8-2-100
+--spouts=20
+--bolts=1
+--caching_rate=100
+--total_time=1800
+--input=random
+--operator_type=dynamic_mts
+--num_threads=8
+--input_interval=1
+--timescales=(300,2)(1200,10)

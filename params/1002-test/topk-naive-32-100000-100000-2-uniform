@@ -1,0 +1,16 @@
+--log_dir=./logs/1002-test/
+--test_name=topk-naive-32-100000-100000-2-uniform
+--spouts=1
+--num_split_bolt=15
+--bolts=1
+--caching_prob=0
+--total_time=450
+--input=zipfian
+--input_path=/
+--operator_type=naive
+--num_threads=32
+--input_interval=1
+--input_rate=100000
+--zipfian_constant=0.99
+--num_keys=100000
+--timescales=(100,1)(200,2)
