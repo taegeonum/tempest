@@ -34,7 +34,7 @@ public final class WikiDataSpout extends BaseRichSpout {
 
   private final double inputInterval;
 
-  @NamedParameter(short_name = "input_path")
+  @NamedParameter(short_name = "input_path", default_value=".")
   public final static class InputPath implements Name<String> {}
 
   private final String inputPath;

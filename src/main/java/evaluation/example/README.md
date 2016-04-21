@@ -24,6 +24,7 @@
   - The above three timescales will be added dynamically at runtime.
  - ts_add_interval: The interval of addition of timescale (sec).
   - If ts_add_interval=3, then it adds the additional timescales every 3 seconds.
+ - num_threads: the number of threads (Default=10)
 
 3. Run applications
  - static Word count (static multi-time operator test)
