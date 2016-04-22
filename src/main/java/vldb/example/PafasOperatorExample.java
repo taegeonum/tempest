@@ -15,6 +15,9 @@ import vldb.operator.window.timescale.parameter.NumThreads;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Static GreedySelection PAFAS.
+ */
 public final class PafasOperatorExample {
 
   public static void main(final String[] args) throws Exception {

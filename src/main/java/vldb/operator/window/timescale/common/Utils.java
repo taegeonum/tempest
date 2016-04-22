@@ -1,30 +1,17 @@
-package vldb.operator.window.timescale.pafas;
+package vldb.operator.window.timescale.common;
 
 import vldb.operator.window.timescale.Timescale;
-import vldb.operator.window.timescale.common.TimescaleParser;
 
-import javax.inject.Inject;
 import java.util.List;
 
-public final class PeriodCalculator {
-
-  private final long period;
-
-  @Inject
-  private PeriodCalculator(final TimescaleParser tsParser) {
-    this.period = calculatePeriod(tsParser.timescales);
-  }
-
-  public long getPeriod() {
-    return period;
-  }
+public final class Utils {
 
   /**
    * Find period of repeated pattern.
    * period = c * lcm ( i_{1}, i_{2}, ..., i_{k} ) ( i_{k} is interval of k-th timescale)
    * c is natural number which satisfies period >= largest_window_size
    */
-  private long calculatePeriod(final List<Timescale> timescales) {
+  public static long calculatePeriod(final List<Timescale> timescales) {
     long period = 0;
     long largestWindowSize = 0;
 
