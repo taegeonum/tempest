@@ -20,7 +20,7 @@ import edu.snu.tempest.operator.window.aggregator.CAAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.CountByKeyAggregator;
 import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.timescale.Timescale;
-import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
+import vldb.operator.window.timescale.parameter.StartTime;
 import edu.snu.tempest.test.util.IntegerExtractor;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;

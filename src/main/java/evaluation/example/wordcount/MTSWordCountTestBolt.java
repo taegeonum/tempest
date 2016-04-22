@@ -28,7 +28,7 @@ import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.timescale.TimeWindowOutputHandler;
 import edu.snu.tempest.operator.window.timescale.Timescale;
 import edu.snu.tempest.operator.window.timescale.TimescaleWindowOperator;
-import edu.snu.tempest.operator.window.timescale.parameter.NumThreads;
+import vldb.operator.window.timescale.parameter.NumThreads;
 import evaluation.example.common.*;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;

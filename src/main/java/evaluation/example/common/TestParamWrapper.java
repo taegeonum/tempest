@@ -15,15 +15,15 @@
  */
 package evaluation.example.common;
 
-import edu.snu.tempest.example.storm.parameter.*;
 import edu.snu.tempest.operator.window.timescale.Timescale;
 import edu.snu.tempest.operator.window.timescale.impl.TimescaleParser;
-import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
-import edu.snu.tempest.operator.window.timescale.parameter.TimescaleString;
+import vldb.operator.window.timescale.parameter.CachingProb;
+import vldb.operator.window.timescale.parameter.TimescaleString;
 import evaluation.example.parameter.InputRate;
 import evaluation.example.parameter.NumOfKey;
 import evaluation.example.parameter.ZipfianConstant;
 import org.apache.reef.tang.annotations.Parameter;
+import vldb.evaluation.parameter.*;
 
 import javax.inject.Inject;
 import java.util.List;

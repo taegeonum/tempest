@@ -16,8 +16,8 @@
 package edu.snu.tempest.operator.window.timescale.impl;
 
 import edu.snu.tempest.operator.window.timescale.Timescale;
-import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
-import edu.snu.tempest.operator.window.timescale.parameter.TimescaleString;
+import vldb.operator.window.timescale.parameter.StartTime;
+import vldb.operator.window.timescale.parameter.TimescaleString;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;

@@ -21,18 +21,18 @@ import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
-import edu.snu.tempest.example.storm.parameter.*;
 import edu.snu.tempest.example.storm.util.StormRunner;
-import edu.snu.tempest.example.storm.wordcount.RandomWordSpout;
+import vldb.evaluation.common.RandomWordSpout;
 import edu.snu.tempest.example.util.writer.LocalOutputWriter;
 import edu.snu.tempest.example.util.writer.OutputWriter;
 import edu.snu.tempest.operator.window.timescale.Timescale;
-import edu.snu.tempest.operator.window.timescale.parameter.CachingProb;
-import edu.snu.tempest.operator.window.timescale.parameter.NumThreads;
-import edu.snu.tempest.operator.window.timescale.parameter.TimescaleString;
+import vldb.operator.window.timescale.parameter.CachingProb;
+import vldb.operator.window.timescale.parameter.NumThreads;
+import vldb.operator.window.timescale.parameter.TimescaleString;
 import evaluation.example.common.SplitFilterBolt;
 import evaluation.example.common.TestParamWrapper;
 import evaluation.example.common.WikiDataSpout;
+import evaluation.example.common.ZipfianWordSpout;
 import evaluation.example.parameter.InputRate;
 import evaluation.example.parameter.NumOfKey;
 import evaluation.example.parameter.ZipfianConstant;
@@ -42,6 +42,7 @@ import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.exceptions.BindException;
 import org.apache.reef.tang.formats.CommandLine;
+import vldb.evaluation.parameter.*;
 
 import java.io.IOException;
 import java.util.List;
@@ -117,7 +118,7 @@ final class TopkTestTopology {
     if (inputType.compareTo("random") == 0) {
       spout = new RandomWordSpout(inputInterval);
     } else if (inputType.compareTo("zipfian") == 0) {
-      spout = new evaluation.example.common.ZipfianWordSpout(inputRate, numKey, zipfConst);
+      spout = new ZipfianWordSpout(inputRate, numKey, zipfConst);
     } else if (inputType.compareTo("wiki") == 0) {
       spout = new WikiDataSpout(inputInterval, inputPath);
     }

@@ -18,7 +18,7 @@ package edu.snu.tempest.operator.window.timescale.impl;
 import edu.snu.tempest.operator.OutputEmitter;
 import edu.snu.tempest.operator.common.Subscription;
 import edu.snu.tempest.operator.window.timescale.*;
-import edu.snu.tempest.operator.window.timescale.parameter.StartTime;
+import vldb.operator.window.timescale.parameter.StartTime;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.annotations.Parameter;
