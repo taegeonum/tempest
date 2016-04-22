@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 public final class StaticSpanTrackerTest {
@@ -28,8 +29,9 @@ public final class StaticSpanTrackerTest {
   public void testStaticSpanTracker() throws InjectionException {
     final String tsString = "(4,2)(5,3)(6,3)";
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
+    final long startTime = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
     jcb.bindNamedParameter(TimescaleString.class, tsString);
-    jcb.bindNamedParameter(StartTime.class, "0");
+    jcb.bindNamedParameter(StartTime.class, startTime+"");
     jcb.bindImplementation(DependencyGraph.class, StaticDependencyGraphImpl.class);
     jcb.bindImplementation(DependencyGraph.SelectionAlgorithm.class, GreedySelectionAlgorithm.class);
 
@@ -42,9 +44,9 @@ public final class StaticSpanTrackerTest {
 
     // Test getNextSliceTime
     // 1, 2, 3, 4, 6 ...
-    long prevTime = 0;
+    long prevTime = startTime;
     for (int i = 0; i < 3; i++) {
-      final long j = i * period;
+      final long j = startTime + i * period;
       // 1
       prevTime = spanTracker.getNextSliceTime(prevTime);
       Assert.assertEquals(1 + j, prevTime);
@@ -69,7 +71,7 @@ public final class StaticSpanTrackerTest {
     // At 6: [2, 6), [1, 6), [0, 6)
     // ...
     for (int i = 0; i < 3; i++) {
-      final long j = i * period;
+      final long j = startTime + i * period;
       // at 2
       final List<Timespan> ts1 = spanTracker.getFinalTimespans(2+j);
       Assert.assertEquals(Arrays.asList(
@@ -99,11 +101,12 @@ public final class StaticSpanTrackerTest {
   @Test(timeout = 15000L)
   public void testGreedyStaticSpanTrackerGetAggregate() throws InjectionException, InterruptedException {
     final ExecutorService executorService = Executors.newFixedThreadPool(10);
+    final long startTime = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 
     final String tsString = "(4,2)(5,3)(6,3)";
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindNamedParameter(TimescaleString.class, tsString);
-    jcb.bindNamedParameter(StartTime.class, "0");
+    jcb.bindNamedParameter(StartTime.class, startTime+"");
     jcb.bindImplementation(DependencyGraph.class, StaticDependencyGraphImpl.class);
     jcb.bindImplementation(DependencyGraph.SelectionAlgorithm.class, GreedySelectionAlgorithm.class);
 
@@ -116,7 +119,7 @@ public final class StaticSpanTrackerTest {
 
     for (int i = 0; i < 50; i++) {
       LOG.info("Iteration: " + (i+1));
-      final long j = i * period;
+      final long j = startTime + i * period;
       // Partial aggregates
       final Timespan p1 = new Timespan(0+j, 1+j, null);
       final Timespan p2 = new Timespan(1+j, 2+j, null);
