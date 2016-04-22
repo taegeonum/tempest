@@ -103,11 +103,12 @@ public final class DefaultPartialTimespans<T> implements PartialTimespans {
         prevSliceTime = nextSliceTime;
       }
     }
-    LOG.log(Level.FINE, "Sliced queue: " + sliceQueue);
+    LOG.log(Level.FINE, "Sliced queue: " + partialTimespanMap);
   }
 
   @Override
   public Node<T> getNextPartialTimespanNode(final long currTime) {
+    //System.out.println("GET_NEXT_PARTIAL: " + adjStartTime(currTime));
     return partialTimespanMap.get(adjStartTime(currTime));
   }
 
@@ -120,9 +121,9 @@ public final class DefaultPartialTimespans<T> implements PartialTimespans {
 
   private long adjStartTime(final long time) {
     if (time < startTime) {
-      return (time - startTime) % period + period;
+      return time + period;
     } else {
-      return (time - startTime) % period;
+      return startTime + (time - startTime) % period;
     }
   }
 }

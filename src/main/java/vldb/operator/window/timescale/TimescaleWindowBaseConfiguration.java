@@ -22,6 +22,7 @@ import org.apache.reef.tang.formats.RequiredImpl;
 import org.apache.reef.tang.formats.RequiredParameter;
 import vldb.operator.window.aggregator.CAAggregator;
 import vldb.operator.window.timescale.pafas.DependencyGraph;
+import vldb.operator.window.timescale.parameter.StartTime;
 import vldb.operator.window.timescale.parameter.TimescaleString;
 
 /**
@@ -32,7 +33,7 @@ public class TimescaleWindowBaseConfiguration extends ConfigurationModuleBuilder
   /**
    * Start time of the operator.
    */
-  //public static final RequiredParameter<Long> START_TIME = new RequiredParameter<>();
+  public static final RequiredParameter<Long> START_TIME = new RequiredParameter<>();
 
   /**
    * A commutative/associative aggregator.
@@ -51,7 +52,7 @@ public class TimescaleWindowBaseConfiguration extends ConfigurationModuleBuilder
   public static final RequiredParameter<String> INITIAL_TIMESCALES = new RequiredParameter<>();
 
   public static final ConfigurationModule CONF = new TimescaleWindowBaseConfiguration()
-      //.bindNamedParameter(StartTime.class, START_TIME)
+      .bindNamedParameter(StartTime.class, START_TIME)
       .bindNamedParameter(TimescaleString.class, INITIAL_TIMESCALES)
       .bindImplementation(CAAggregator.class, CA_AGGREGATOR)
       .bindImplementation(DependencyGraph.SelectionAlgorithm.class, SELECTION)

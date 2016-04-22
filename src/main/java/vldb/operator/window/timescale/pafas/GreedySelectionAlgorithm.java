@@ -1,8 +1,10 @@
 package vldb.operator.window.timescale.pafas;
 
+import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.common.NotFoundException;
 import vldb.operator.window.timescale.common.OutputLookupTable;
 import vldb.operator.window.timescale.common.WindowTimeAndOutput;
+import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
 import java.util.LinkedList;
@@ -13,13 +15,16 @@ public class GreedySelectionAlgorithm<T> implements DependencyGraph.SelectionAlg
   private final PartialTimespans<T> partialTimespans;
   private final OutputLookupTable<Node<T>> finalTimespans;
   private final long period;
+  private final long startTime;
 
   @Inject
   private GreedySelectionAlgorithm(final PartialTimespans<T> partialTimespans,
                                    final OutputLookupTable<Node<T>> finalTimespans,
-                                   final PeriodCalculator periodCalculator) {
+                                   final PeriodCalculator periodCalculator,
+                                   @Parameter(StartTime.class) long startTime) {
     this.partialTimespans = partialTimespans;
     this.finalTimespans = finalTimespans;
+    this.startTime = startTime;
     this.period = periodCalculator.getPeriod();
   }
 
@@ -51,9 +56,11 @@ public class GreedySelectionAlgorithm<T> implements DependencyGraph.SelectionAlg
       }
 
       // No relations among final timespans, so find from partial timespans
+      //System.out.println("PARTIAL ST: " + st);
       if (elem == null) {
-        if (st < 0) {
+        if (st < startTime) {
           final Node<T> partialTimespanNode = partialTimespans.getNextPartialTimespanNode(st + period);
+          //System.out.println("st < startTime: " + st);
           childNodes.add(partialTimespanNode);
           st = partialTimespanNode.end - period;
         } else {

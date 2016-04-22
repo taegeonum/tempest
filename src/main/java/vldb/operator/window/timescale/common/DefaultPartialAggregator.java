@@ -67,6 +67,8 @@ final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
 
   private final FinalAggregator<V> finalAggregator;
 
+  private long nextRealTime;
+
   /**
    * DefaultSlicedWindowOperatorImpl.
    * @param aggregator an aggregator for incremental aggregation
@@ -85,6 +87,7 @@ final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
     this.spanTracker = spanTracker;
     this.finalAggregator = finalAggregator;
     this.nextSliceTime = spanTracker.getNextSliceTime(startTime);
+    this.nextRealTime = System.currentTimeMillis() + (nextSliceTime - prevSliceTime) * 1000;
     executorService.schedule(new PartialAggregateEmitter(), nextSliceTime - prevSliceTime, TimeUnit.SECONDS);
   }
 
@@ -108,6 +111,7 @@ final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
   final class PartialAggregateEmitter implements Runnable {
     @Override
     public void run() {
+      final long currTime = System.currentTimeMillis();
       // create a new bucket
       V partialAggregation = null;
       synchronized (sync) {
@@ -122,7 +126,9 @@ final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
       finalAggregator.triggerFinalAggregation(finalTimespans);
       prevSliceTime = nextSliceTime;
       nextSliceTime = spanTracker.getNextSliceTime(prevSliceTime);
-      executorService.schedule(new PartialAggregateEmitter(), nextSliceTime - prevSliceTime, TimeUnit.SECONDS);
+
+      nextRealTime = nextRealTime + (nextSliceTime - prevSliceTime) * 1000;
+      executorService.schedule(new PartialAggregateEmitter(), nextRealTime - currTime, TimeUnit.MILLISECONDS);
     }
   }
 }

@@ -56,6 +56,10 @@ public final class PartialAggregatorTest {
     when(spanTracker.getNextSliceTime(3L)).thenReturn(4L);
     when(spanTracker.getFinalTimespans(4L)).thenReturn(finalTimespans3);
 
+    when(spanTracker.getNextSliceTime(4L)).thenReturn(6L);
+    when(spanTracker.getNextSliceTime(6L)).thenReturn(7L);
+
+
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, IntegerExtractor.class);
     jcb.bindImplementation(CAAggregator.class, CountByKeyAggregator.class);

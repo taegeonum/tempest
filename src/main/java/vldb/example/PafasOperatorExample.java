@@ -1,7 +1,6 @@
 package vldb.example;
 
 import org.apache.reef.tang.*;
-import org.apache.reef.tang.exceptions.InjectionException;
 import vldb.operator.OutputEmitter;
 import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
 import vldb.operator.window.aggregator.impl.KeyExtractor;
@@ -14,18 +13,20 @@ import vldb.operator.window.timescale.pafas.StaticMWOConfiguration;
 import vldb.operator.window.timescale.parameter.NumThreads;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public final class PafasOperatorExample {
 
-  public static void main(final String[] args) throws InjectionException, InterruptedException {
+  public static void main(final String[] args) throws Exception {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
     jcb.bindNamedParameter(NumThreads.class, "4");
 
     final Configuration pafasConf = StaticMWOConfiguration.CONF
-        .set(StaticMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)")
+        .set(StaticMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)(12,4)(15,3)")
         .set(StaticMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(StaticMWOConfiguration.SELECTION, GreedySelectionAlgorithm.class)
+        .set(StaticMWOConfiguration.START_TIME, TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()))
         .build();
 
     final Injector injector = Tang.Factory.getTang().newInjector(
@@ -49,5 +50,6 @@ public final class PafasOperatorExample {
       operator.execute(Integer.toString(i%5));
       Thread.sleep(10);
     }
+    operator.close();
   }
 }

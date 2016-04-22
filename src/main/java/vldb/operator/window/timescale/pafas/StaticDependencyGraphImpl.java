@@ -90,9 +90,11 @@ public final class StaticDependencyGraphImpl<T> implements DependencyGraph {
    */
   private long adjStartTime(final long time) {
     if (time < startTime) {
-      return (time - startTime) % period + period;
+      //return (time - startTime) % period + period;
+      return time + period;
     } else {
-      return (time - startTime) % period;
+      //return (time - startTime) % period;
+      return startTime + (time - startTime) % period;
     }
   }
 
@@ -105,7 +107,7 @@ public final class StaticDependencyGraphImpl<T> implements DependencyGraph {
    * @param time current time
    */
   private long adjEndTime(final long time) {
-    final long adj = (time - startTime) % period == 0 ? period : (time - startTime) % period;
+    final long adj = (time - startTime) % period == 0 ? (startTime + period) : startTime + (time - startTime) % period;
     LOG.log(Level.FINE, "adjEndTime: time: " + time + ", adj: " + adj);
     return adj;
   }
@@ -115,7 +117,7 @@ public final class StaticDependencyGraphImpl<T> implements DependencyGraph {
    */
   private void addOverlappingWindowNodeAndEdge() {
     for (final Timescale timescale : timescales) {
-      for (long time = timescale.intervalSize; time <= period; time += timescale.intervalSize) {
+      for (long time = timescale.intervalSize + startTime; time <= period + startTime; time += timescale.intervalSize) {
         // create vertex and add it to the table cell of (time, windowsize)
         final long start = time - timescale.windowSize;
         final Node parent = new Node(start, time);

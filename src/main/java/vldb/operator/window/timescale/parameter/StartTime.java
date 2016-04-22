@@ -18,5 +18,5 @@ package vldb.operator.window.timescale.parameter;
 import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 
-@NamedParameter(doc = "start time of MTS operator", short_name = "start_time", default_value="0")
+@NamedParameter(doc = "start time of MTS operator (TimeUnit: sec)", short_name = "start_time", default_value="0")
 public final class StartTime implements Name<Long> {}
