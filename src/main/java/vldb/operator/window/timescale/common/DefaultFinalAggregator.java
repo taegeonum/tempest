@@ -67,11 +67,12 @@ final class DefaultFinalAggregator<V> implements FinalAggregator<V> {
                                  final TimeWindowOutputHandler<V, ?> outputHandler,
                                  final CAAggregator<?, V> aggregateFunction,
                                  @Parameter(NumThreads.class) final int numThreads,
-                                 @Parameter(StartTime.class) final long startTime) {
+                                 @Parameter(StartTime.class) final long startTime,
+                                 final SharedForkJoinPool sharedForkJoinPool) {
     this.spanTracker = spanTracker;
     this.outputHandler = outputHandler;
     this.executor = Executors.newFixedThreadPool(numThreads);
-    this.forkJoinPool = new ForkJoinPool(numThreads);
+    this.forkJoinPool = sharedForkJoinPool.getForkJoinPool();
     this.parallelAggregator = new ParallelTreeAggregator<>(numThreads, numThreads * 2, aggregateFunction, forkJoinPool);
     this.executorService = Executors.newCachedThreadPool();
     this.startTime = startTime;

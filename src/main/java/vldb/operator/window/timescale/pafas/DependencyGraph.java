@@ -32,6 +32,8 @@ public interface DependencyGraph<T> {
 
   Node<T> getNode(Timespan timespan);
 
+  long getPeriod();
+
   /**
    * Receive timescale to be added.
    * @param ts timescale to be added.

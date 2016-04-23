@@ -37,27 +37,30 @@ public final class Node<T> {
    */
   public final long end;
 
+  public final boolean partial;
   /**
    * DependencyGraphNode.
    * @param start the start time of the node.
    * @param end tbe end time of the node.
    */
-  public Node(final long start, final long end) {
+  public Node(final long start, final long end, boolean partial) {
     this.dependencies = new LinkedList<>();
     this.refCnt = 0;
     this.start = start;
     this.end = end;
+    this.partial = partial;
   }
 
 
   /**
    * For testing. It should not be used.
    */
-  public Node(final long start, final long end, final int refCnt) {
+  public Node(final long start, final long end, final int refCnt, boolean partial) {
     this.dependencies = new LinkedList<>();
     this.refCnt = refCnt;
     this.start = start;
     this.end = end;
+    this.partial = partial;
   }
 
   /**

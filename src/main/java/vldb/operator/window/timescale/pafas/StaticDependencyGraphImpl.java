@@ -120,7 +120,7 @@ public final class StaticDependencyGraphImpl<T> implements DependencyGraph {
       for (long time = timescale.intervalSize + startTime; time <= period + startTime; time += timescale.intervalSize) {
         // create vertex and add it to the table cell of (time, windowsize)
         final long start = time - timescale.windowSize;
-        final Node parent = new Node(start, time);
+        final Node parent = new Node(start, time, false);
         final List<Node<T>> childNodes = selectionAlgorithm.selection(start, time);
         LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies1: " + childNodes);
         for (final Node<T> elem : childNodes) {
@@ -164,6 +164,11 @@ public final class StaticDependencyGraphImpl<T> implements DependencyGraph {
       }
       return partialTimespanNode;
     }
+  }
+
+  @Override
+  public long getPeriod() {
+    return period;
   }
 
   @Override

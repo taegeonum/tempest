@@ -67,6 +67,7 @@ public final class DefaultPartialTimespans<T> implements PartialTimespans {
     this.partialTimespanMap = new HashMap<>();
     LOG.log(Level.INFO, DefaultPartialTimespans.class + " started. PERIOD: " + period);
     createSliceQueue();
+    //System.out.println("TS: " + timescales + ", QUEUE: " + partialTimespanMap);
   }
 
 
@@ -99,7 +100,7 @@ public final class DefaultPartialTimespans<T> implements PartialTimespans {
     long prevSliceTime = startTime;
     for (final long nextSliceTime : sliceQueue) {
       if (prevSliceTime != nextSliceTime) {
-        partialTimespanMap.put(prevSliceTime, new Node<T>(prevSliceTime, nextSliceTime));
+        partialTimespanMap.put(prevSliceTime, new Node<T>(prevSliceTime, nextSliceTime, true));
         prevSliceTime = nextSliceTime;
       }
     }
