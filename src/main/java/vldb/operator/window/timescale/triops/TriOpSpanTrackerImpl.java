@@ -23,6 +23,7 @@ import org.apache.reef.tang.exceptions.InjectionException;
 import vldb.operator.window.aggregator.CAAggregator;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.*;
+import vldb.operator.window.timescale.onthefly.OntheflySelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.*;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.StartTime;

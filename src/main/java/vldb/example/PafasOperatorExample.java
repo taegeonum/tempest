@@ -28,7 +28,7 @@ public final class PafasOperatorExample {
     final Configuration pafasConf = StaticMWOConfiguration.CONF
         .set(StaticMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)(12,4)(15,3)")
         .set(StaticMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-        .set(StaticMWOConfiguration.SELECTION, GreedySelectionAlgorithm.class)
+        .set(StaticMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
         .set(StaticMWOConfiguration.START_TIME, TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()))
         .build();
 

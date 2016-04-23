@@ -13,26 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package vldb.operator.window.timescale.pafas;
+package vldb.operator.window.timescale.onthefly;
 
 import org.apache.reef.tang.formats.ConfigurationModule;
-import org.apache.reef.tang.formats.RequiredImpl;
 import vldb.operator.window.timescale.TimescaleWindowBaseConfiguration;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.common.SpanTracker;
+import vldb.operator.window.timescale.pafas.DependencyGraph;
+import vldb.operator.window.timescale.pafas.PafasMWO;
+import vldb.operator.window.timescale.pafas.StaticDependencyGraphImpl;
+import vldb.operator.window.timescale.pafas.StaticSpanTrackerImpl;
 
 /**
  * A helper class for static MTS window configuration.
  */
-public final class StaticMWOConfiguration extends TimescaleWindowBaseConfiguration {
+public final class OntheflyMWOConfiguration extends TimescaleWindowBaseConfiguration {
 
-    public static final RequiredImpl<DependencyGraph.SelectionAlgorithm> SELECTION_ALGORITHM = new RequiredImpl<>();
-
-    public static final ConfigurationModule CONF = new StaticMWOConfiguration()
-        .merge(TimescaleWindowBaseConfiguration.CONF)
-        .bindImplementation(DependencyGraph.SelectionAlgorithm.class, SELECTION_ALGORITHM)
-        .bindImplementation(SpanTracker.class, StaticSpanTrackerImpl.class)
-        .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
-        .bindImplementation(DependencyGraph.class, StaticDependencyGraphImpl.class)
-        .build();
+  public static final ConfigurationModule CONF = new OntheflyMWOConfiguration()
+      .merge(TimescaleWindowBaseConfiguration.CONF)
+      .bindImplementation(SpanTracker.class, StaticSpanTrackerImpl.class)
+      .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
+      .bindImplementation(DependencyGraph.class, StaticDependencyGraphImpl.class)
+      .bindImplementation(DependencyGraph.SelectionAlgorithm.class, OntheflySelectionAlgorithm.class)
+      .build();
 }
