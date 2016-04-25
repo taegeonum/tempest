@@ -5,9 +5,7 @@ import vldb.operator.window.aggregator.CAAggregator;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
-import java.util.concurrent.RecursiveTask;
+import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 /**
@@ -72,7 +70,20 @@ public final class ParallelTreeAggregator<I, T> implements AutoCloseable {
     if (dependentOutputs.size() >= sequentialThreshold) {
       finalResult = pool.invoke(new Aggregate(dependentOutputs, 0, dependentOutputs.size()));
     } else {
-      finalResult = finalAggregator.aggregate(dependentOutputs);
+      try {
+        finalResult = pool.submit(new Callable<T>() {
+          @Override
+          public T call() throws Exception {
+            return finalAggregator.aggregate(dependentOutputs);
+          }
+        }).get();
+      } catch (final InterruptedException e) {
+        e.printStackTrace();
+        throw new RuntimeException(e);
+      } catch (final ExecutionException e) {
+        e.printStackTrace();
+        throw new RuntimeException(e);
+      }
     }
     //pool.shutdown();
     return finalResult;

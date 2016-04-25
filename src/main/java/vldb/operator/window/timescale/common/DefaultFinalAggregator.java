@@ -46,8 +46,6 @@ final class DefaultFinalAggregator<V> implements FinalAggregator<V> {
 
   private final TimeWindowOutputHandler<V, ?> outputHandler;
 
-  private final ExecutorService executor;
-
   private final AtomicBoolean closed = new AtomicBoolean(false);
 
   private final ParallelTreeAggregator<?, V> parallelAggregator;
@@ -58,6 +56,7 @@ final class DefaultFinalAggregator<V> implements FinalAggregator<V> {
 
   private final long startTime;
 
+  private final int numThreads;
   /**
    * Default overlapping window operator.
    * @param spanTracker a computation reuser for final aggregation
@@ -71,7 +70,7 @@ final class DefaultFinalAggregator<V> implements FinalAggregator<V> {
                                  final SharedForkJoinPool sharedForkJoinPool) {
     this.spanTracker = spanTracker;
     this.outputHandler = outputHandler;
-    this.executor = Executors.newFixedThreadPool(numThreads);
+    this.numThreads = numThreads;
     this.forkJoinPool = sharedForkJoinPool.getForkJoinPool();
     this.parallelAggregator = new ParallelTreeAggregator<>(numThreads, numThreads * 2, aggregateFunction, forkJoinPool);
     this.executorService = Executors.newCachedThreadPool();
@@ -106,7 +105,7 @@ final class DefaultFinalAggregator<V> implements FinalAggregator<V> {
   @Override
   public void close() throws Exception {
     if (closed.compareAndSet(false, true)) {
-      executor.shutdownNow();
+      executorService.shutdownNow();
       forkJoinPool.shutdownNow();
     }
   }
