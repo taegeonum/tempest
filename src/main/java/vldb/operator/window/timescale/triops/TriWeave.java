@@ -65,6 +65,9 @@ public final class TriWeave {
       mergedTs.addAll(g2.timescales);
       final Group mergedGroup = new Group(mergedTs, mCost);
       groupedPlans.add(mergedGroup);
+      costLookupTable.remove(g1);
+      costLookupTable.remove(g2);
+      costLookupTable.put(mergedGroup, new HashMap<Group, Double>());
     }
 
     return new HashSet<>(groupedPlans);
