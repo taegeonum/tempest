@@ -18,6 +18,7 @@ package vldb.operator.window.timescale.common;
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.window.aggregator.CAAggregator;
 import vldb.operator.window.timescale.parameter.StartTime;
+import vldb.operator.window.timescale.profiler.AggregationCounter;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -69,6 +70,8 @@ final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
 
   private long nextRealTime;
 
+  private final AggregationCounter aggregationCounter;
+
   /**
    * DefaultSlicedWindowOperatorImpl.
    * @param aggregator an aggregator for incremental aggregation
@@ -79,7 +82,9 @@ final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
       final CAAggregator<I, V> aggregator,
       final SpanTracker<V> spanTracker,
       final FinalAggregator<V> finalAggregator,
+      final AggregationCounter aggregationCounter,
       @Parameter(StartTime.class) final Long startTime) {
+    this.aggregationCounter = aggregationCounter;
     this.aggregator = aggregator;
     this.bucket = aggregator.init();
     this.executorService = Executors.newSingleThreadScheduledExecutor();
@@ -100,6 +105,7 @@ final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
     LOG.log(Level.FINE, "SlicedWindow aggregates input of [" +  val + "]");
     synchronized (sync) {
       aggregator.incrementalAggregate(bucket, val);
+      aggregationCounter.incrementPartialAggregation();
     }
   }
 

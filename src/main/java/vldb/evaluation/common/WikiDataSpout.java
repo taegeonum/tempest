@@ -22,8 +22,6 @@ import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
-import org.apache.reef.tang.annotations.Name;
-import org.apache.reef.tang.annotations.NamedParameter;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -34,8 +32,6 @@ public final class WikiDataSpout extends BaseRichSpout {
 
   private final double inputInterval;
 
-  @NamedParameter(short_name = "input_path", default_value=".")
-  public final static class InputPath implements Name<String> {}
 
   private final String inputPath;
 

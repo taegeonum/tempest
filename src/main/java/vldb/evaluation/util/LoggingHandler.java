@@ -1,4 +1,4 @@
-package vldb.operator.window.timescale.pafas;
+package vldb.evaluation.util;
 
 import vldb.operator.OutputEmitter;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
@@ -15,8 +15,7 @@ public final class LoggingHandler<I, O> implements TimeWindowOutputHandler<I, O>
   @Override
   public void execute(final TimescaleWindowOutput<I> val) {
     System.out.println(id + " ts: " + val.timescale +
-        ", timespan: [" + val.startTime + ", " + val.endTime + ")"
-        + ", output: " + val.output.result);
+        ", timespan: [" + val.startTime + ", " + val.endTime + ")");
   }
 
   @Override

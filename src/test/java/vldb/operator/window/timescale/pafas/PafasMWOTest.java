@@ -9,15 +9,20 @@ import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
 import vldb.operator.window.timescale.parameter.NumThreads;
+import vldb.operator.window.timescale.profiler.AggregationCounter;
 import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
+import java.util.Random;
+import java.util.logging.Logger;
 
 /**
  * Created by taegeonum on 4/22/16.
  */
 public final class PafasMWOTest {
+  private static final Logger LOG = Logger.getLogger(PafasMWOTest.class.getName());
 
   @Test
   public void testPafasMWO() throws Exception {
@@ -26,58 +31,71 @@ public final class PafasMWOTest {
     jcb.bindNamedParameter(NumThreads.class, "4");
 
     final long currTime = 0;
+    final List<Configuration> configurationList = new LinkedList<>();
+    final List<String> operatorIds = new LinkedList<>();
 
     // PAFAS-Greedy
-    final Configuration pafasGreedyConf = StaticMWOConfiguration.CONF
+    configurationList.add(StaticMWOConfiguration.CONF
         .set(StaticMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)")
         .set(StaticMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(StaticMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
         .set(StaticMWOConfiguration.START_TIME, currTime)
-        .build();
-
-
-    final CountDownLatch countDownLatch1 = new CountDownLatch(30);
-    final Injector injector = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), pafasGreedyConf));
-    injector.bindVolatileInstance(TimeWindowOutputHandler.class,
-        new LoggingHandler<>("PAFAS", countDownLatch1));
-    final TimescaleWindowOperator<String, Map<String, Long>> pafasMWO = injector.getInstance(PafasMWO.class);
-
+        .build());
+    operatorIds.add("PAFAS");
 
     // On-the-fly operator
-    final Configuration ontheflyConf = OntheflyMWOConfiguration.CONF
+    configurationList.add(OntheflyMWOConfiguration.CONF
         .set(OntheflyMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)")
         .set(OntheflyMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(OntheflyMWOConfiguration.START_TIME, currTime)
-        .build();
-
-    final CountDownLatch countDownLatch2 = new CountDownLatch(30);
-    final Injector injector2 = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), ontheflyConf));
-    injector2.bindVolatileInstance(TimeWindowOutputHandler.class,
-        new LoggingHandler<>("OnTheFly", countDownLatch2));
-    final TimescaleWindowOperator<String, Map<String, Long>> ontheflyMWO = injector2.getInstance(PafasMWO.class);
+        .build());
+    operatorIds.add("OntheFly");
 
     // TriOPs
-    final Configuration triOpsConf = TriOpsMWOConfiguration.CONF
+    configurationList.add(TriOpsMWOConfiguration.CONF
         .set(TriOpsMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)")
         .set(TriOpsMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(TriOpsMWOConfiguration.START_TIME, currTime)
-        .build();
+        .build());
+    operatorIds.add("TriOps");
 
-    final CountDownLatch countDownLatch3 = new CountDownLatch(30);
-    final Injector injector3 = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), triOpsConf));
-    injector3.bindVolatileInstance(TimeWindowOutputHandler.class,
-        new LoggingHandler<>("TriOPs", countDownLatch3));
-    final TimescaleWindowOperator<String, Map<String, Long>> triOpsMWO = injector3.getInstance(PafasMWO.class);
-
-    for (int i = 0; i < 2000; i++) {
-      pafasMWO.execute(Integer.toString(i%5));
-      ontheflyMWO.execute(Integer.toString(i%5));
-      triOpsMWO.execute(Integer.toString(i%5));
-      Thread.sleep(10);
+    int i = 0;
+    final List<TimescaleWindowOperator> mwos = new LinkedList<>();
+    final List<AggregationCounter> aggregationCounters = new LinkedList<>();
+    for (final Configuration conf : configurationList) {
+      final Injector injector = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), conf));
+      injector.bindVolatileInstance(TimeWindowOutputHandler.class, new LoggingHandler<>(operatorIds.get(i)));
+      final TimescaleWindowOperator<String, Map<String, Long>> mwo = injector.getInstance(PafasMWO.class);
+      mwos.add(mwo);
+      final AggregationCounter aggregationCounter = injector.getInstance(AggregationCounter.class);
+      aggregationCounters.add(aggregationCounter);
+      i += 1;
     }
 
-    pafasMWO.close();
-    ontheflyMWO.close();
-    triOpsMWO.close();
+    final int numKey = 1000;
+    final int numInput = 10000;
+    final Random random = new Random();
+    for (i = 0; i < numInput; i++) {
+      final int key = Math.abs(random.nextInt()%numKey);
+      for (final TimescaleWindowOperator mwo : mwos) {
+        mwo.execute(Integer.toString(key));
+      }
+      Thread.sleep(1);
+    }
+
+    for (final TimescaleWindowOperator mwo : mwos) {
+      mwo.close();
+    }
+
+    i = 0;
+    for (final TimescaleWindowOperator mwo : mwos) {
+      final AggregationCounter aggregationCounter = aggregationCounters.get(i);
+      final long partialCount = aggregationCounter.getNumPartialAggregation();
+      final long finalCount = aggregationCounter.getNumFinalAggregation();
+      final String id = operatorIds.get(i);
+      LOG.info(id + " aggregation count: partial: " + partialCount + ", final: " + finalCount
+          + ", total: " + (partialCount + finalCount));
+      i += 1;
+    }
   }
 }
