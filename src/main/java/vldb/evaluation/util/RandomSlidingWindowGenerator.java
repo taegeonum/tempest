@@ -58,6 +58,7 @@ public final class RandomSlidingWindowGenerator implements SlidingWindowGenerato
       final int intervalSize = i - (i%5);
       if (windowSize > intervalSize) {
         if (!windowSizes.contains(windowSize)) {
+          windowSizes.add(windowSize);
           timescales.add(new Timescale(windowSize, intervalSize));
         }
       }

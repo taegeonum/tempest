@@ -13,6 +13,7 @@ public final class PeriodCalculator {
   @Inject
   private PeriodCalculator(final TimescaleParser tsParser) {
     this.period = calculatePeriod(tsParser.timescales);
+    System.out.println("@Period: " + period);
   }
 
   public long getPeriod() {

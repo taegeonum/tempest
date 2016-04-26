@@ -88,11 +88,14 @@ final class DefaultFinalAggregator<V> implements FinalAggregator<V> {
   @Override
   public void triggerFinalAggregation(final List<Timespan> finalTimespans) {
     for (final Timespan timespan : finalTimespans) {
+      //System.out.println("BEFORE_GET: " + timespan);
       final List<V> aggregates = spanTracker.getDependentAggregates(timespan);
+      //System.out.println("AFTER_GET: " + timespan);
       executorService.submit(new Runnable() {
         @Override
         public void run() {
           final V finalResult = parallelAggregator.doParallelAggregation(aggregates);
+          //System.out.println("PUT_TIMESPAN: " + timespan);
           spanTracker.putAggregate(finalResult, timespan);
           outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,
               new DepOutputAndResult<V>(aggregates.size(), finalResult),
