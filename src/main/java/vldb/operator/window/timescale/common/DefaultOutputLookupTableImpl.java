@@ -82,6 +82,9 @@ public final class DefaultOutputLookupTableImpl<V> implements OutputLookupTable<
    * @throws edu.snu.tempest.operator.common.NotFoundException
    */
   public ConcurrentSkipListMap<Long, V> lookup(final long startTime) throws NotFoundException {
+    if (table.get(startTime) == null) {
+      throw new NotFoundException("Not found startTime: " + startTime);
+    }
     return table.get(startTime);
   }
 
