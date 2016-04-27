@@ -52,9 +52,9 @@ public final class RandomSlidingWindowGenerator implements SlidingWindowGenerato
     final int intervalRange = maxIntervalSize - minIntervalSize;
 
     while (timescales.size() < num) {
-      final int w = (Math.abs(random.nextInt()) % windowRange) + minWindowSize;
+      final int w = (Math.abs(random.nextInt()) % (windowRange+5)) + minWindowSize;
       final int windowSize = w - (w%5);
-      final int i = (Math.abs(random.nextInt()) % intervalRange) + minIntervalSize;
+      final int i = (Math.abs(random.nextInt()) % (intervalRange+5)) + minIntervalSize;
       final int intervalSize = i - (i%5);
       if (windowSize > intervalSize) {
         if (!windowSizes.contains(windowSize)) {
