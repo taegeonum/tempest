@@ -7,10 +7,8 @@ import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
 import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
-import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
-import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -36,13 +34,24 @@ public final class PafasMWOTest {
 
     // PAFAS-Greedy
     configurationList.add(StaticMWOConfiguration.CONF
-        .set(StaticMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)")
+        .set(StaticMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)")
         .set(StaticMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(StaticMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
         .set(StaticMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("PAFAS");
 
+
+    // PAFAS-Greedy
+    configurationList.add(StaticMWOConfiguration.CONF
+        .set(StaticMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)")
+        .set(StaticMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+        .set(StaticMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+        .set(StaticMWOConfiguration.START_TIME, currTime)
+        .build());
+    operatorIds.add("PAFAS-DP");
+
+/*
     // On-the-fly operator
     configurationList.add(OntheflyMWOConfiguration.CONF
         .set(OntheflyMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)")
@@ -58,6 +67,7 @@ public final class PafasMWOTest {
         .set(TriOpsMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("TriOps");
+*/
 
     int i = 0;
     final List<TimescaleWindowOperator> mwos = new LinkedList<>();
@@ -72,7 +82,7 @@ public final class PafasMWOTest {
       i += 1;
     }
 
-    final int numKey = 1000;
+    final int numKey = 10;
     final int numInput = 10000;
     final Random random = new Random();
     for (i = 0; i < numInput; i++) {
