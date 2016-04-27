@@ -3,6 +3,7 @@ package vldb.operator.window.timescale.pafas;
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.common.NotFoundException;
 import vldb.operator.window.timescale.common.OutputLookupTable;
+import vldb.operator.window.timescale.parameter.GCD;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
@@ -15,88 +16,86 @@ public class DPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorit
   private final OutputLookupTable<Node<T>> finalTimespans;
   private final long period;
   private final long startTime;
-  private final Map<Long, Map<Long, List<Node<T>>>> dpTable;
+  private final Map<Long, Map<Long, Node<T>>> nodeMemento;
+  private final Map<Long, Map<Long, Integer>> aggNumMemento;
+  private final long gcd;
 
   @Inject
   private DPSelectionAlgorithm(final PartialTimespans<T> partialTimespans,
                                final OutputLookupTable<Node<T>> finalTimespans,
                                final PeriodCalculator periodCalculator,
-                               @Parameter(StartTime.class) long startTime) {
+                               @Parameter(StartTime.class) long startTime,
+                               @Parameter(GCD.class) long gcd) {
     this.partialTimespans = partialTimespans;
     this.finalTimespans = finalTimespans;
     this.startTime = startTime;
     this.period = periodCalculator.getPeriod();
-    this.dpTable = new HashMap<>();
-  }
-
-  private void insertDpTable(long start, long end, List<Node<T>> nodes) {
-    if (!dpTable.containsKey(start)) {
-      dpTable.put(start, new HashMap<Long, List<Node<T>>>());
-    }
-    if (!dpTable.get(start).containsKey(end)) {
-      dpTable.get(start).put(end, nodes);
-    }
+    this.gcd = gcd;
+    this.nodeMemento = new HashMap<>();
+    this.aggNumMemento = new HashMap<>();
   }
 
   @Override
   public List<Node<T>> selection(final long start, final long end) {
 
-    if (start == end) {
-      return new LinkedList<>();
-    }
-    if (dpTable.containsKey(start)) {
-      if (dpTable.get(start).containsKey(end)) {
-        return dpTable.get(start).get(end);
-      }
-    }
-    try {
-      final Node<T> finalNode = finalTimespans.lookup(start, end);
-      final List<Node<T>> childrenNodes = new LinkedList<>(Arrays.asList(finalNode));
-      insertDpTable(start, end, childrenNodes);
-    } catch (NotFoundException e) {
-      final Node<T> partialNode = partialTimespans.getNextPartialTimespanNode(start);
-      if (partialNode.end == end) {
-        final List<Node<T>> childrenNodes = new LinkedList<>(Arrays.asList(partialNode));
-        insertDpTable(start, end, childrenNodes);
-        return new LinkedList<>(Arrays.asList(partialNode));
-      }
-    }
+    Map<Long, Integer> dpTable = new HashMap<>();
+    Map<Long, Node<T>> dpTableNode = new HashMap<>();
 
-    List<Node<T>> minimumNodes = null;
-    Node<T> minimumTimespan = null;
-    final List<Node<T>> availableNodes = new LinkedList<>();
+    dpTable.put(end, 0);
+    long currentStart = end - gcd;
+    while (currentStart >= start) {
+      dpTable.put(currentStart, -1);
+      dpTableNode.put(currentStart, null);
+      final long scanStartPoint, scanEndPoint;
+      if (currentStart < startTime) {
+        scanStartPoint = currentStart + period;
+      } else {
+        scanStartPoint = currentStart;
+      }
 
-    try {
-      final ConcurrentSkipListMap<Long, Node<T>> availableFinalNodes = finalTimespans.lookup(start);
-      for (final long endTime: availableFinalNodes.keySet()) {
-        final Node<T> finalNode = availableFinalNodes.get(endTime);
-        if (finalNode.end <= end) {
+      final List<Node<T>> availableNodes = new LinkedList<>();
+      try {
+        ConcurrentSkipListMap<Long, Node<T>> availableFinalNodes = finalTimespans.lookup(scanStartPoint);
+        for (final long endTime: availableFinalNodes.keySet()) {
+          final Node<T> finalNode = availableFinalNodes.get(endTime);
           availableNodes.add(finalNode);
         }
+      } catch (NotFoundException e) {
+        // Do Nothing
       }
-    } catch (NotFoundException e) {
-
+      final Node<T> availablePartialNode = partialTimespans.getNextPartialTimespanNode(scanStartPoint);
+      if (availablePartialNode != null) {
+        availableNodes.add(availablePartialNode);
+      }
+      for (final Node<T> node : availableNodes) {
+        final long beforeStart;
+        if (currentStart < startTime) {
+          beforeStart = node.end - period;
+        } else {
+          beforeStart = node.end;
+        }
+        if (dpTable.containsKey(beforeStart) && dpTable.get(beforeStart) != -1) {
+          final int candidate = dpTable.get(beforeStart) + 1;
+          if (dpTable.get(currentStart) == -1 || dpTable.get(currentStart) > candidate) {
+            dpTable.put(currentStart, candidate);
+            dpTableNode.put(currentStart, node);
+          }
+        }
+      }
+      currentStart -= gcd;
     }
-    final Node<T> partialNode = partialTimespans.getNextPartialTimespanNode(start);
-    if (partialNode.end <= end) {
-      availableNodes.add(partialNode);
-    }
-    if(availableNodes.isEmpty()) {
-      throw new IllegalStateException("Cannot construct dependency graph!");
-    }
-    for (final Node<T> node : availableNodes) {
-      final List<Node<T>> candidateNodes = selection(node.end, end);
-      if (minimumNodes == null) {
-        minimumNodes = candidateNodes;
-        minimumTimespan = node;
-      } else if (minimumNodes.size() > candidateNodes.size()) {
-        minimumNodes = candidateNodes;
-        minimumTimespan = node;
+    final List<Node<T>> childrenNodes = new LinkedList<>();
+    currentStart = start;
+    while (currentStart < end) {
+      final Node<T> currentNode = dpTableNode.get(currentStart);
+      System.out.println(currentNode);
+      childrenNodes.add(currentNode);
+      if (currentNode.start == currentStart) {
+        currentStart = currentNode.end;
+      } else if (currentNode.start == currentStart + period) {
+        currentStart = currentNode.end - period;
       }
     }
-    final List<Node<T>> childrenNodes = new LinkedList<>(minimumNodes);
-    childrenNodes.add(minimumTimespan);
-    insertDpTable(start, end, childrenNodes);
     return childrenNodes;
   }
 

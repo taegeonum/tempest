@@ -82,7 +82,7 @@ public final class PafasMWOTest {
       i += 1;
     }
 
-    final int numKey = 1000;
+    final int numKey = 10;
     final int numInput = 10000;
     final Random random = new Random();
     for (i = 0; i < numInput; i++) {
