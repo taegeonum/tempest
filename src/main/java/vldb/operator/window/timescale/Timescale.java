@@ -89,11 +89,11 @@ public final class Timescale implements Comparable, Serializable {
   @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder();
-    sb.append("[");
+    sb.append("(");
     sb.append(windowSize);
-    sb.append(", ");
+    sb.append(",");
     sb.append(intervalSize);
-    sb.append("]");
+    sb.append(")");
     return sb.toString();
   }
 }
