@@ -4,6 +4,7 @@ import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.window.timescale.Timescale;
+import vldb.operator.window.timescale.pafas.PeriodCalculator;
 
 import javax.inject.Inject;
 import java.util.*;
@@ -30,6 +31,7 @@ public final class RandomSlidingWindowGenerator implements SlidingWindowGenerato
   private final int minIntervalSize;
   private final int maxIntervalSize;
   private final Set<Integer> windowSizes = new HashSet<>();
+  private final List<Integer> intervals = new LinkedList<>();
 
   @Inject
   private RandomSlidingWindowGenerator(
@@ -52,14 +54,16 @@ public final class RandomSlidingWindowGenerator implements SlidingWindowGenerato
     final int intervalRange = maxIntervalSize - minIntervalSize;
 
     while (timescales.size() < num) {
-      final int w = (Math.abs(random.nextInt()) % (windowRange+5)) + minWindowSize;
-      final int windowSize = w - (w%5);
-      final int i = (Math.abs(random.nextInt()) % (intervalRange+5)) + minIntervalSize;
-      final int intervalSize = i - (i%5);
+      final int windowSize = (Math.abs(random.nextInt()) % (windowRange+1)) + minWindowSize;
+      final int intervalSize = (Math.abs(random.nextInt()) % (intervalRange+1)) + minIntervalSize;
       if (windowSize > intervalSize) {
         if (!windowSizes.contains(windowSize)) {
           windowSizes.add(windowSize);
-          timescales.add(new Timescale(windowSize, intervalSize));
+          final Timescale ts = new Timescale(windowSize, intervalSize);
+          timescales.add(ts);
+          if (PeriodCalculator.calculatePeriodFromTimescales(timescales) > 500000L) {
+            timescales.remove(ts);
+          }
         }
       }
     }
