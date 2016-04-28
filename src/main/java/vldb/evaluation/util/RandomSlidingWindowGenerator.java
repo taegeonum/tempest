@@ -52,7 +52,6 @@ public final class RandomSlidingWindowGenerator implements SlidingWindowGenerato
     final Set<Timescale> timescales = new HashSet<>();
     final int windowRange = maxWindowSize - minWindowSize;
     final int intervalRange = maxIntervalSize - minIntervalSize;
-
     while (timescales.size() < num) {
       final int windowSize = (Math.abs(random.nextInt()) % (windowRange+1)) + minWindowSize;
       final int intervalSize = (Math.abs(random.nextInt()) % (intervalRange+1)) + minIntervalSize;
@@ -61,7 +60,7 @@ public final class RandomSlidingWindowGenerator implements SlidingWindowGenerato
           windowSizes.add(windowSize);
           final Timescale ts = new Timescale(windowSize, intervalSize);
           timescales.add(ts);
-          if (PeriodCalculator.calculatePeriodFromTimescales(timescales) > 500000L) {
+          if (PeriodCalculator.calculatePeriodFromTimescales(timescales) > 200000L) {
             timescales.remove(ts);
           }
         }

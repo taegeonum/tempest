@@ -32,6 +32,7 @@ public final class WikiWordGenerator extends Generator {
 
     try {
       this.sc = new Scanner(inputFile, "UTF-8");
+      this.buffer = sc.nextLine().split(" ");
     } catch (FileNotFoundException e) {
       throw new RuntimeException(e);
     }
@@ -43,7 +44,7 @@ public final class WikiWordGenerator extends Generator {
    */
   @Override
   public String nextString() {
-    if (buffer == null || index >= buffer.length) {
+    if (index >= buffer.length) {
       if (sc.hasNextLine()) {
         buffer = sc.nextLine().split(" ");
         index = 0;
@@ -51,7 +52,14 @@ public final class WikiWordGenerator extends Generator {
         return null;
       }
     }
-    return buffer[index++];
+    try {
+      final String word = buffer[index];
+      index += 1;
+      return word;
+    } catch (final ArrayIndexOutOfBoundsException e) {
+      e.printStackTrace();
+      return "noword";
+    }
   }
 
   @Override
