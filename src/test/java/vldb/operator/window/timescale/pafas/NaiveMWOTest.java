@@ -42,11 +42,11 @@ public final class NaiveMWOTest {
         .build());
     operatorIds.add("PAFAS");
 
-
     // Naive
     configurationList.add(NaiveMWOConfiguration.CONF
-        .set(StaticMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)")
-        .set(StaticMWOConfiguration.START_TIME, currTime)
+        .set(NaiveMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+        .set(NaiveMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)")
+        .set(NaiveMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("NAIVE");
 

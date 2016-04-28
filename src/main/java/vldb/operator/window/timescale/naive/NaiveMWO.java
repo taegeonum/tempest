@@ -21,6 +21,8 @@ import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.OutputEmitter;
 import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
+import vldb.operator.window.aggregator.impl.KeyExtractor;
+import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.TimescaleWindowOutput;
@@ -53,6 +55,8 @@ public final class NaiveMWO<I, V> implements TimescaleWindowOperator<I, V> {
   private NaiveMWO(
       final TimescaleParser tsParser,
       final AggregationCounter aggregationCounter,
+      final KeyExtractor keyExtractor,
+      final TimeWindowOutputHandler timeWindowOutputHandler,
       @Parameter(StartTime.class) final long startTime) throws Exception {
     this.operators = new LinkedList<>();
     final List<Timescale> timescales = tsParser.timescales;
@@ -65,6 +69,8 @@ public final class NaiveMWO<I, V> implements TimescaleWindowOperator<I, V> {
           .build();
       final Injector injector = Tang.Factory.getTang().newInjector(conf);
       injector.bindVolatileInstance(AggregationCounter.class, aggregationCounter);
+      injector.bindVolatileInstance(KeyExtractor.class, keyExtractor);
+      injector.bindVolatileInstance(TimeWindowOutputHandler.class, timeWindowOutputHandler);
       final PafasMWO<I, V> operator = injector.getInstance(PafasMWO.class);
       operators.add(operator);
     }
