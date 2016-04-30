@@ -46,6 +46,7 @@ public final class Node<T> {
   public Node(final long start, final long end, boolean partial) {
     this.dependencies = new LinkedList<>();
     this.refCnt = 0;
+    this.initialRefCnt = 0;
     this.start = start;
     this.end = end;
     this.partial = partial;
@@ -97,8 +98,8 @@ public final class Node<T> {
   }
 
   private void increaseRefCnt() {
+    initialRefCnt++;
     refCnt++;
-    initialRefCnt = refCnt;
   }
 
   /**
@@ -120,7 +121,7 @@ public final class Node<T> {
   public String toString() {
     final boolean outputExists = !(output == null);
     final StringBuilder sb = new StringBuilder();
-    sb.append("(refCnt: ");
+    sb.append("(init: " + initialRefCnt + ", refCnt: ");
     sb.append(refCnt);
     sb.append(", range: [");
     sb.append(start);

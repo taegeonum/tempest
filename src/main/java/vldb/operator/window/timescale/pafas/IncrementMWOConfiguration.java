@@ -24,14 +24,15 @@ import vldb.operator.window.timescale.common.SpanTracker;
 /**
  * A helper class for static MTS window configuration.
  */
-public final class StaticMWOConfiguration extends TimescaleWindowBaseConfiguration {
+public final class IncrementMWOConfiguration extends TimescaleWindowBaseConfiguration {
 
     public static final RequiredImpl<DependencyGraph.SelectionAlgorithm> SELECTION_ALGORITHM = new RequiredImpl<>();
-    public static final ConfigurationModule CONF = new StaticMWOConfiguration()
+
+    public static final ConfigurationModule CONF = new IncrementMWOConfiguration()
         .merge(TimescaleWindowBaseConfiguration.CONF)
         .bindImplementation(DependencyGraph.SelectionAlgorithm.class, SELECTION_ALGORITHM)
         .bindImplementation(SpanTracker.class, StaticSpanTrackerImpl.class)
         .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
-        .bindImplementation(DependencyGraph.class, StaticDependencyGraphImpl.class)
+        .bindImplementation(DependencyGraph.class, IncrementalDependencyGraphImpl.class)
         .build();
 }
