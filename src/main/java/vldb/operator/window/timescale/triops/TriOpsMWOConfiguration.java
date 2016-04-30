@@ -22,6 +22,7 @@ import vldb.operator.window.timescale.common.SpanTracker;
 import vldb.operator.window.timescale.pafas.DependencyGraph;
 import vldb.operator.window.timescale.pafas.PafasMWO;
 import vldb.operator.window.timescale.pafas.StaticDependencyGraphImpl;
+import vldb.operator.window.timescale.pafas.StaticParallelDependencyGraphImpl;
 
 /**
  * A helper class for static MTS window configuration.
@@ -32,6 +33,6 @@ public final class TriOpsMWOConfiguration extends TimescaleWindowBaseConfigurati
       .merge(TimescaleWindowBaseConfiguration.CONF)
       .bindImplementation(SpanTracker.class, TriOpSpanTrackerImpl.class)
       .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
-      .bindImplementation(DependencyGraph.class, StaticDependencyGraphImpl.class)
+      .bindImplementation(DependencyGraph.class, StaticParallelDependencyGraphImpl.class)
       .build();
 }

@@ -20,7 +20,7 @@ import vldb.operator.window.timescale.TimescaleWindowBaseConfiguration;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.common.SpanTracker;
 import vldb.operator.window.timescale.pafas.DependencyGraph;
-import vldb.operator.window.timescale.pafas.StaticDependencyGraphImpl;
+import vldb.operator.window.timescale.pafas.StaticParallelDependencyGraphImpl;
 import vldb.operator.window.timescale.pafas.StaticSpanTrackerImpl;
 
 /**
@@ -32,6 +32,6 @@ public final class NaiveMWOConfiguration extends TimescaleWindowBaseConfiguratio
         .merge(TimescaleWindowBaseConfiguration.CONF)
         .bindImplementation(SpanTracker.class, StaticSpanTrackerImpl.class)
         .bindImplementation(TimescaleWindowOperator.class, NaiveMWO.class)
-        .bindImplementation(DependencyGraph.class, StaticDependencyGraphImpl.class)
+        .bindImplementation(DependencyGraph.class, StaticParallelDependencyGraphImpl.class)
         .build();
 }
