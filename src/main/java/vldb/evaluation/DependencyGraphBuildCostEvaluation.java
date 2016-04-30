@@ -24,7 +24,7 @@ public final class DependencyGraphBuildCostEvaluation {
     jcb.bindNamedParameter(TimescaleString.class, tsString);
     jcb.bindNamedParameter(StartTime.class, "0");
     jcb.bindImplementation(DependencyGraph.class, dgClass);
-    jcb.bindImplementation(DependencyGraph.SelectionAlgorithm.class, GreedySelectionAlgorithm.class);
+    jcb.bindImplementation(DependencyGraph.SelectionAlgorithm.class, DPSelectionAlgorithm.class);
     final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
     final DependencyGraph<Integer> dependencyGraph = injector.getInstance(DependencyGraph.class);
     final TimescaleParser tsParser = injector.getInstance(TimescaleParser.class);
@@ -124,6 +124,36 @@ public final class DependencyGraphBuildCostEvaluation {
     staticDG = getDependencyGraph(tsString60, StaticDependencyGraphImpl.class);
     buildEndTime = System.currentTimeMillis();
     System.out.println("--------------------StaticDG\t" + (buildEndTime-buildStartTime)+"---------------------");
+
+
+    System.out.println("--------------------------TS80: " + tsString80+"-----------------------------\n");
+    System.out.println("--------------------------Type\tConstructionTime-------------------------------");
+
+    buildStartTime = System.currentTimeMillis();
+    incrementParallelDG = getDependencyGraph(tsString80, IncrementalParallelDependencyGraphImpl.class);
+    buildEndTime = System.currentTimeMillis();
+    System.out.println("IncParallelDG\t" + (buildEndTime-buildStartTime));
+
+    System.out.println("----------------IncParallelDG step & time. StepSize=10------------------");
+    for (int i = 1; i <= 100; i++) {
+      buildStartTime = System.currentTimeMillis();
+      incrementParallelDG.getFinalTimespans(10*i);
+      buildEndTime = System.currentTimeMillis();
+      System.out.println(i+"\t" + (buildEndTime-buildStartTime));
+    }
+
+    buildStartTime = System.currentTimeMillis();
+    parallelStaticDG = getDependencyGraph(tsString80, StaticParallelDependencyGraphImpl.class);
+    buildEndTime = System.currentTimeMillis();
+    System.out.println("---------------------StaticParallelDG\t" + (buildEndTime-buildStartTime) + "----------------");
+
+
+    buildStartTime = System.currentTimeMillis();
+    staticDG = getDependencyGraph(tsString80, StaticDependencyGraphImpl.class);
+    buildEndTime = System.currentTimeMillis();
+    System.out.println("--------------------StaticDG\t" + (buildEndTime-buildStartTime)+"---------------------");
+
+
 
 
     System.out.println("--------------------------TS100: " + tsString100+"-----------------------------\n");

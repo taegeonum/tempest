@@ -96,7 +96,7 @@ public final class TestRunner {
         conf = IncrementMWOConfiguration.CONF
             .set(IncrementMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(IncrementMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(IncrementMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
+            .set(IncrementMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
             .set(IncrementMWOConfiguration.START_TIME, "0")
             .build();
         break;
