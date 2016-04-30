@@ -57,8 +57,15 @@ public class DPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorit
       try {
         ConcurrentSkipListMap<Long, Node<T>> availableFinalNodes = finalTimespans.lookup(scanStartPoint);
         for (final long endTime: availableFinalNodes.keySet()) {
-          final Node<T> finalNode = availableFinalNodes.get(endTime);
-          availableNodes.add(finalNode);
+          // All nodes are pre-stored to finalTimespans.
+          // 1) The node can be itself
+          // 2) The node cannot be included in the [start-end)
+          // We need to avoid those for correct algorithm.
+          if (!((endTime - scanStartPoint) == (end-start)) &&
+              !((currentStart >= startTime) && (endTime > end))) {
+            final Node<T> finalNode = availableFinalNodes.get(endTime);
+            availableNodes.add(finalNode);
+          }
         }
       } catch (NotFoundException e) {
         // Do Nothing
