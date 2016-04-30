@@ -88,7 +88,7 @@ public class DPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorit
     currentStart = start;
     while (currentStart < end) {
       final Node<T> currentNode = dpTableNode.get(currentStart);
-      System.out.println(currentNode);
+      //System.out.println(currentNode);
       childrenNodes.add(currentNode);
       if (currentNode.start == currentStart) {
         currentStart = currentNode.end;
