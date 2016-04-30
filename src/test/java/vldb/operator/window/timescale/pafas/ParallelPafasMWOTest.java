@@ -34,25 +34,37 @@ public final class ParallelPafasMWOTest {
 
     // PAFAS-Greedy-incremental
     configurationList.add(StaticParallelMWOConfiguration.CONF
-        .set(StaticParallelMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)")
+        .set(StaticParallelMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)(12,4)")
         .set(StaticParallelMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-        .set(StaticParallelMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
+        .set(StaticParallelMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
         .set(StaticParallelMWOConfiguration.START_TIME, currTime)
         .build());
-    operatorIds.add("PAFAS-parallel");
+    operatorIds.add("PAFAS-DP-PARALLEL");
+
 
     // PAFAS-Greedy-incremental
+    configurationList.add(StaticMWOConfiguration.CONF
+        .set(StaticMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)(12,4)")
+        .set(StaticMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+        .set(StaticMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+        .set(StaticMWOConfiguration.START_TIME, currTime)
+        .build());
+    operatorIds.add("PAFAS-DP");
+
+    /*
+    // PAFAS-Greedy-incremental
     configurationList.add(IncrementMWOConfiguration.CONF
-        .set(IncrementMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)")
+        .set(IncrementMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)(12,4)")
         .set(IncrementMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(IncrementMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
         .set(IncrementMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("PAFAS-INC-parallel");
+*/
 
     // PAFAS-Greedy
     configurationList.add(StaticMWOConfiguration.CONF
-        .set(StaticMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)")
+        .set(StaticMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)(12,4)")
         .set(StaticMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(StaticMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
         .set(StaticMWOConfiguration.START_TIME, currTime)
