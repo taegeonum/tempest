@@ -20,6 +20,7 @@ import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.common.NotFoundException;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.OutputLookupTable;
+import vldb.operator.window.timescale.common.SharedForkJoinPool;
 import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.common.Timespan;
 import vldb.operator.window.timescale.parameter.StartTime;
@@ -27,15 +28,16 @@ import vldb.operator.window.timescale.parameter.StartTime;
 import javax.inject.Inject;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ForkJoinTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * DependencyGraph shows which nodes are related to each other. This is used so that unnecessary outputs are not saved.
  */
-public final class IncrementalDependencyGraphImpl<T> implements DependencyGraph {
+public final class IncrementalParallelDependencyGraphImpl<T> implements DependencyGraph {
 
-  private static final Logger LOG = Logger.getLogger(IncrementalDependencyGraphImpl.class.getName());
+  private static final Logger LOG = Logger.getLogger(IncrementalParallelDependencyGraphImpl.class.getName());
 
   /**
    * A table containing DependencyGraphNode for partial outputs.
@@ -62,19 +64,23 @@ public final class IncrementalDependencyGraphImpl<T> implements DependencyGraph 
   private final SelectionAlgorithm<T> selectionAlgorithm;
 
   private long currBuildingIndex;
-  private final long incrementalStep = 60;
+  private final long incrementalStep = 10;
   private final long largestWindowSize;
+  private final SharedForkJoinPool sharedForkJoinPool;
+
   /**
    * DependencyGraph constructor. This first builds the dependency graph.
    * @param startTime the initial start time of when the graph is built.
    */
   @Inject
-  private IncrementalDependencyGraphImpl(final TimescaleParser tsParser,
-                                         @Parameter(StartTime.class) final long startTime,
-                                         final PartialTimespans partialTimespans,
-                                         final PeriodCalculator periodCalculator,
-                                         final OutputLookupTable<Node<T>> outputLookupTable,
-                                         final SelectionAlgorithm<T> selectionAlgorithm) {
+  private IncrementalParallelDependencyGraphImpl(final TimescaleParser tsParser,
+                                                 @Parameter(StartTime.class) final long startTime,
+                                                 final PartialTimespans partialTimespans,
+                                                 final PeriodCalculator periodCalculator,
+                                                 final OutputLookupTable<Node<T>> outputLookupTable,
+                                                 final SharedForkJoinPool sharedForkJoinPool,
+                                                 final SelectionAlgorithm<T> selectionAlgorithm) {
+    this.sharedForkJoinPool = sharedForkJoinPool;
     this.partialTimespans = partialTimespans;
     this.timescales = tsParser.timescales;
     this.largestWindowSize = timescales.get(timescales.size()-1).windowSize;
@@ -126,45 +132,72 @@ public final class IncrementalDependencyGraphImpl<T> implements DependencyGraph 
     // [<-step-><----largestWindow---->....<-behind->]
 
     // Add nodes until incremental step + largestWindow
+    final List<ForkJoinTask> tasks = new LinkedList<>();
     for (final Timescale timescale : timescales) {
-      for (long time = timescale.intervalSize + startTime; time <= startTime + incrementalStep + largestWindowSize; time += timescale.intervalSize) {
-        // create vertex and add it to the table cell of (time, windowsize)
-        final long start = time - timescale.windowSize;
-        final Node parent = new Node(start, time, false);
-        finalTimespans.saveOutput(start, time, parent);
-        LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
-      }
+      tasks.add(sharedForkJoinPool.getForkJoinPool().submit(new Runnable() {
+        @Override
+        public void run() {
+          for (long time = timescale.intervalSize + startTime; time <= startTime + incrementalStep + largestWindowSize; time += timescale.intervalSize) {
+            // create vertex and add it to the table cell of (time, windowsize)
+            final long start = time - timescale.windowSize;
+            final Node parent = new Node(start, time, false);
+            finalTimespans.saveOutput(start, time, parent);
+            LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
+          }
+        }
+      }));
     }
 
     // Add behind nodes
     final long behindStart = Math.max(startTime + incrementalStep + largestWindowSize,
         (startTime + period - largestWindowSize + incrementalStep));
     for (final Timescale timescale : timescales) {
-      final long align = behindStart + (timescale.intervalSize - ((behindStart - startTime) % timescale.intervalSize));
-      for (long time = align; time <= period; time += timescale.intervalSize) {
-        // create vertex and add it to the table cell of (time, windowsize)
-        final long start = time - timescale.windowSize;
-        final Node parent = new Node(start, time, false);
-        finalTimespans.saveOutput(start, time, parent);
-        LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
-      }
+      tasks.add(sharedForkJoinPool.getForkJoinPool().submit(new Runnable() {
+        @Override
+        public void run() {
+          final long align = behindStart + (timescale.intervalSize - ((behindStart - startTime) % timescale.intervalSize));
+          for (long time = align; time <= period; time += timescale.intervalSize) {
+            // create vertex and add it to the table cell of (time, windowsize)
+            final long start = time - timescale.windowSize;
+            final Node parent = new Node(start, time, false);
+            finalTimespans.saveOutput(start, time, parent);
+            LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
+          }
+        }
+      }));
+    }
+
+    // Join the tasks creating nodes
+    for (final ForkJoinTask task : tasks) {
+      task.join();
     }
 
     // Add edges for the front node
+    final List<ForkJoinTask> taskEdges = new LinkedList<>();
     for (final Timescale timescale : timescales) {
-      for (long time = timescale.intervalSize + startTime; time <= startTime + incrementalStep + largestWindowSize; time += timescale.intervalSize) {
-        final long start = time - timescale.windowSize;
-        try {
-          final Node<T> parent = finalTimespans.lookup(start, time);
-          final List<Node<T>> childNodes = selectionAlgorithm.selection(start, time);
-          for (final Node<T> elem : childNodes) {
-            parent.addDependency(elem);
+      taskEdges.add(sharedForkJoinPool.getForkJoinPool().submit(new Runnable() {
+        @Override
+        public void run() {
+          for (long time = timescale.intervalSize + startTime; time <= startTime + incrementalStep + largestWindowSize; time += timescale.intervalSize) {
+            final long start = time - timescale.windowSize;
+            try {
+              final Node<T> parent = finalTimespans.lookup(start, time);
+              final List<Node<T>> childNodes = selectionAlgorithm.selection(start, time);
+              for (final Node<T> elem : childNodes) {
+                parent.addDependency(elem);
+              }
+            } catch (final NotFoundException e) {
+              e.printStackTrace();
+              throw new RuntimeException(e);
+            }
           }
-        } catch (final NotFoundException e) {
-          e.printStackTrace();
-          throw new RuntimeException(e);
         }
-      }
+      }));
+    }
+
+    // Join the tasks connecting edges.
+    for (final ForkJoinTask task : taskEdges) {
+      task.join();
     }
   }
 
@@ -172,29 +205,67 @@ public final class IncrementalDependencyGraphImpl<T> implements DependencyGraph 
    * Add DependencyGraphNode and connect dependent nodes.
    */
   private void addOverlappingWindowNodeAndEdge(final long curr, final long until) {
+    final List<ForkJoinTask> tasks = new LinkedList<>();
+    // Create nodes
     for (final Timescale timescale : timescales) {
-      final long align = curr + (timescale.intervalSize - (curr - startTime) % timescale.intervalSize);
-      for (long time = align; time <= until; time += timescale.intervalSize) {
-        // create vertex and add it to the table cell of (time, windowsize)
-        final long start = time - timescale.windowSize;
-        final List<Node<T>> childNodes = selectionAlgorithm.selection(start, time);
-        LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies1: " + childNodes);
+      tasks.add(sharedForkJoinPool.getForkJoinPool().submit(new Runnable() {
+        @Override
+        public void run() {
+          final long align = curr + (timescale.intervalSize - (curr - startTime) % timescale.intervalSize);
+          for (long time = align; time <= until; time += timescale.intervalSize) {
+            // create vertex and add it to the table cell of (time, windowsize)
+            final long start = time - timescale.windowSize;
+            Node parent;
+            try {
+              parent = finalTimespans.lookup(start, time);
+            } catch (NotFoundException e) {
+              parent = new Node(start, time, false);
+              finalTimespans.saveOutput(start, time, parent);
+            }
+            LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
+          }
+        }
+      }));
+    }
 
-        Node parent;
-        try {
-          parent = finalTimespans.lookup(start, time);
-        } catch (NotFoundException e) {
-          parent = new Node(start, time, false);
-          finalTimespans.saveOutput(start, time, parent);
+    // Join the tasks
+    for (final ForkJoinTask task : tasks) {
+      task.join();
+    }
+
+    final List<ForkJoinTask> taskEdges = new LinkedList<>();
+    for (final Timescale timescale : timescales) {
+      taskEdges.add(sharedForkJoinPool.getForkJoinPool().submit(new Runnable() {
+        @Override
+        public void run() {
+          final long align = curr + (timescale.intervalSize - (curr - startTime) % timescale.intervalSize);
+          for (long time = align; time <= until; time += timescale.intervalSize) {
+            final long start = time - timescale.windowSize;
+            final List<Node<T>> childNodes = selectionAlgorithm.selection(start, time);
+            LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies1: " + childNodes);
+
+            Node parent;
+            try {
+              parent = finalTimespans.lookup(start, time);
+            } catch (NotFoundException e) {
+              e.printStackTrace();
+              throw new RuntimeException(e);
+            }
+            //System.out.println("ADD: " + start + "-" + time);
+            //System.out.println("SAVE: [" + start + "-" + time + ")");
+            for (final Node<T> elem : childNodes) {
+              parent.addDependency(elem);
+            }
+            LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
+            LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies2: " + childNodes);
+          }
         }
-        //System.out.println("ADD: " + start + "-" + time);
-        //System.out.println("SAVE: [" + start + "-" + time + ")");
-        for (final Node<T> elem : childNodes) {
-          parent.addDependency(elem);
-        }
-        LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
-        LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies2: " + childNodes);
-      }
+      }));
+    }
+
+    // Join the tasks
+    for (final ForkJoinTask task : taskEdges) {
+      task.join();
     }
   }
 

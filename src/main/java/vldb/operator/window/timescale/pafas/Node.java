@@ -89,7 +89,7 @@ public final class Node<T> {
    * Add dependent node.
    * @param n a dependent node
    */
-  public void addDependency(final Node n) {
+  public synchronized void addDependency(final Node n) {
     if (n == null) {
       throw new NullPointerException();
     }
