@@ -33,8 +33,37 @@ public class GreedySelectionAlgorithm<T> implements DependencyGraph.SelectionAlg
     final List<Node<T>> childNodes = new LinkedList<>();
     // find child nodes.
     long st = start;
+
+    // First fetch a dependent node
+    WindowTimeAndOutput<Node<T>> elem = null;
+    try {
+      // Why end-1? because the [start-end) can be stored in the final timespans.
+      elem = finalTimespans.lookupLargestSizeOutput(st, end-1);
+      st = elem.endTime;
+      childNodes.add(elem.output);
+    } catch (final NotFoundException e) {
+      try {
+        elem = finalTimespans.lookupLargestSizeOutput(st + period, period);
+        childNodes.add(elem.output);
+        st = elem.endTime - period;
+      } catch (NotFoundException e1) {
+        // Fetch from partial
+        if (st < startTime) {
+          final Node<T> partialTimespanNode = partialTimespans.getNextPartialTimespanNode(st + period);
+          //System.out.println("st < startTime: " + st);
+          childNodes.add(partialTimespanNode);
+          st = partialTimespanNode.end - period;
+        } else {
+          final Node<T> partialTimespanNode = partialTimespans.getNextPartialTimespanNode(st);
+          childNodes.add(partialTimespanNode);
+          st = partialTimespanNode.end;
+        }
+      }
+    }
+
+
     while (st < end) {
-      WindowTimeAndOutput<Node<T>> elem = null;
+      elem = null;
       try {
         elem = finalTimespans.lookupLargestSizeOutput(st, end);
 

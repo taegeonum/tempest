@@ -70,7 +70,7 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
   @Override
   public List<T> getDependentAggregates(final Timespan timespan) {
     final Node<T> node = dependencyGraph.getNode(timespan);
-    //System.out.println("NODE: " + node);
+    //System.out.println("PARENT NODE: " + node);
     final List<Node<T>> dependentNodes = node.getDependencies();
     //System.out.println(timespan + " DEP_NODES: " + dependentNodes);
     final List<T> aggregates = new LinkedList<>();
@@ -89,7 +89,6 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
                 e.printStackTrace();
               }
             } else {
-              //System.out.println("DEP_NODE: " + dependentNode + ", V: " + dependentNode.getOutput());
               aggregates.add(dependentNode.getOutput());
               dependentNode.decreaseRefCnt();
               break;
