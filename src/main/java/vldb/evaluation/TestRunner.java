@@ -17,6 +17,7 @@ import vldb.operator.window.timescale.naive.NaiveMWOConfiguration;
 import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
 import vldb.operator.window.timescale.pafas.DPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.GreedySelectionAlgorithm;
+import vldb.operator.window.timescale.pafas.IncrementMWOConfiguration;
 import vldb.operator.window.timescale.pafas.StaticMWOConfiguration;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
@@ -36,6 +37,8 @@ public final class TestRunner {
   public enum OperatorType {
     PAFAS,
     PAFAS_DP,
+    PAFASI,
+    PAFASI_DP,
     TriOps,
     OnTheFly,
     Naive
@@ -77,6 +80,24 @@ public final class TestRunner {
             .set(StaticMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(StaticMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
             .set(StaticMWOConfiguration.START_TIME, "0")
+            .build();
+        break;
+      case PAFASI:
+        // PAFAS Incremental-Greedy
+        conf = IncrementMWOConfiguration.CONF
+            .set(IncrementMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(IncrementMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(IncrementMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
+            .set(IncrementMWOConfiguration.START_TIME, "0")
+            .build();
+        break;
+      case PAFASI_DP:
+        // PAFAS Incremental-DP
+        conf = IncrementMWOConfiguration.CONF
+            .set(IncrementMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(IncrementMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(IncrementMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
+            .set(IncrementMWOConfiguration.START_TIME, "0")
             .build();
         break;
       case PAFAS_DP:
