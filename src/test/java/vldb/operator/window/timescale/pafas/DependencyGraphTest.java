@@ -61,6 +61,46 @@ public final class DependencyGraphTest {
     }
   }
 
+  @Test
+  public void testIncrementalParallelDependencyGraphFinalTimespans() throws InjectionException {
+    final String tsString = "(4,2)(5,3)(8,4)";
+    final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
+    jcb.bindNamedParameter(TimescaleString.class, tsString);
+    jcb.bindNamedParameter(StartTime.class, "0");
+    jcb.bindImplementation(DependencyGraph.class, IncrementalParallelDependencyGraphImpl.class);
+    jcb.bindImplementation(DependencyGraph.SelectionAlgorithm.class, GreedySelectionAlgorithm.class);
+    final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
+    final DependencyGraph<Integer> dependencyGraph = injector.getInstance(DependencyGraph.class);
+    final TimescaleParser tsParser = injector.getInstance(TimescaleParser.class);
+    final List<Timescale> timescales = tsParser.timescales;
+    final PeriodCalculator periodCalculator = injector.getInstance(PeriodCalculator.class);
+    final long period = periodCalculator.getPeriod();
+
+    // Test finalTimespans
+    for (int i = 0; i < 30; i++) {
+      Assert.assertEquals(Arrays.asList(new Timespan(-2 + i * period, 2 + i * period, timescales.get(0))),
+          dependencyGraph.getFinalTimespans(2 + i * period));
+      Assert.assertEquals(Arrays.asList(new Timespan(-2 + i * period, 3 + i * period, timescales.get(1))),
+          dependencyGraph.getFinalTimespans(3 + i * period));
+      Assert.assertEquals(Arrays.asList(new Timespan(0 + i * period, 4 + i * period, timescales.get(0)),
+              new Timespan(-4 + i * period, 4 + i * period, timescales.get(2))),
+          dependencyGraph.getFinalTimespans(4 + i * period));
+      Assert.assertEquals(Arrays.asList(new Timespan(2 + i * period, 6 + i * period, timescales.get(0)),
+              new Timespan(1 + i * period, 6 + i * period, timescales.get(1))),
+          dependencyGraph.getFinalTimespans(6 + i * period));
+      Assert.assertEquals(Arrays.asList(new Timespan(4 + i * period, 8 + i * period, timescales.get(0)),
+              new Timespan(0 + i * period, 8 + i * period, timescales.get(2))),
+          dependencyGraph.getFinalTimespans(8 + i * period));
+      Assert.assertEquals(Arrays.asList(new Timespan(4 + i * period, 9 + i * period, timescales.get(1))),
+          dependencyGraph.getFinalTimespans(9 + i * period));
+      Assert.assertEquals(Arrays.asList(new Timespan(6 + i * period, 10 + i * period, timescales.get(0))),
+          dependencyGraph.getFinalTimespans(10 + i * period));
+      Assert.assertEquals(Arrays.asList(new Timespan(8 + i * period, 12 + i * period, timescales.get(0)),
+              new Timespan(7 + i * period, 12 + i * period, timescales.get(1)),
+              new Timespan(4 + i * period, 12 + i * period, timescales.get(2))),
+          dependencyGraph.getFinalTimespans(12 + i * period));
+    }
+  }
 
   @Test
   public void testIncrementalDependencyGraphFinalTimespans() throws InjectionException {
@@ -69,6 +109,47 @@ public final class DependencyGraphTest {
     jcb.bindNamedParameter(TimescaleString.class, tsString);
     jcb.bindNamedParameter(StartTime.class, "0");
     jcb.bindImplementation(DependencyGraph.class, IncrementalDependencyGraphImpl.class);
+    jcb.bindImplementation(DependencyGraph.SelectionAlgorithm.class, GreedySelectionAlgorithm.class);
+    final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
+    final DependencyGraph<Integer> dependencyGraph = injector.getInstance(DependencyGraph.class);
+    final TimescaleParser tsParser = injector.getInstance(TimescaleParser.class);
+    final List<Timescale> timescales = tsParser.timescales;
+    final PeriodCalculator periodCalculator = injector.getInstance(PeriodCalculator.class);
+    final long period = periodCalculator.getPeriod();
+
+    // Test finalTimespans
+    for (int i = 0; i < 30; i++) {
+      Assert.assertEquals(Arrays.asList(new Timespan(-2 + i * period, 2 + i * period, timescales.get(0))),
+          dependencyGraph.getFinalTimespans(2 + i * period));
+      Assert.assertEquals(Arrays.asList(new Timespan(-2 + i * period, 3 + i * period, timescales.get(1))),
+          dependencyGraph.getFinalTimespans(3 + i * period));
+      Assert.assertEquals(Arrays.asList(new Timespan(0 + i * period, 4 + i * period, timescales.get(0)),
+              new Timespan(-4 + i * period, 4 + i * period, timescales.get(2))),
+          dependencyGraph.getFinalTimespans(4 + i * period));
+      Assert.assertEquals(Arrays.asList(new Timespan(2 + i * period, 6 + i * period, timescales.get(0)),
+              new Timespan(1 + i * period, 6 + i * period, timescales.get(1))),
+          dependencyGraph.getFinalTimespans(6 + i * period));
+      Assert.assertEquals(Arrays.asList(new Timespan(4 + i * period, 8 + i * period, timescales.get(0)),
+              new Timespan(0 + i * period, 8 + i * period, timescales.get(2))),
+          dependencyGraph.getFinalTimespans(8 + i * period));
+      Assert.assertEquals(Arrays.asList(new Timespan(4 + i * period, 9 + i * period, timescales.get(1))),
+          dependencyGraph.getFinalTimespans(9 + i * period));
+      Assert.assertEquals(Arrays.asList(new Timespan(6 + i * period, 10 + i * period, timescales.get(0))),
+          dependencyGraph.getFinalTimespans(10 + i * period));
+      Assert.assertEquals(Arrays.asList(new Timespan(8 + i * period, 12 + i * period, timescales.get(0)),
+              new Timespan(7 + i * period, 12 + i * period, timescales.get(1)),
+              new Timespan(4 + i * period, 12 + i * period, timescales.get(2))),
+          dependencyGraph.getFinalTimespans(12 + i * period));
+    }
+  }
+
+  @Test
+  public void testParallelDependencyGraphFinalTimespans() throws InjectionException {
+    final String tsString = "(4,2)(5,3)(8,4)";
+    final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
+    jcb.bindNamedParameter(TimescaleString.class, tsString);
+    jcb.bindNamedParameter(StartTime.class, "0");
+    jcb.bindImplementation(DependencyGraph.class, StaticParallelDependencyGraphImpl.class);
     jcb.bindImplementation(DependencyGraph.SelectionAlgorithm.class, GreedySelectionAlgorithm.class);
     final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
     final DependencyGraph<Integer> dependencyGraph = injector.getInstance(DependencyGraph.class);
