@@ -21,7 +21,7 @@ import javax.inject.Inject;
 /**
  * Compute function for count by key.
  */
-final class CountByKeyComputeFunc implements ComputeByKeyAggregator.ComputeByKeyFunc<Long> {
+public final class CountByKeyComputeFunc implements ComputeByKeyAggregator.ComputeByKeyFunc<Long> {
 
   @Inject
   private CountByKeyComputeFunc() {

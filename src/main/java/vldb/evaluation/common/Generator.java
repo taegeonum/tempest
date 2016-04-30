@@ -1,7 +1,6 @@
 package vldb.evaluation.common;
 
-public abstract class Generator
-{
+public abstract class Generator implements AutoCloseable {
   /**
    * Generate the next string in the distribution.
    */

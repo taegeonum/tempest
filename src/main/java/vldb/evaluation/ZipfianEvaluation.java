@@ -7,6 +7,7 @@ import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.exceptions.BindException;
+import org.apache.reef.tang.formats.AvroConfigurationSerializer;
 import org.apache.reef.tang.formats.CommandLine;
 import vldb.evaluation.parameter.*;
 import vldb.evaluation.util.Profiler;
@@ -25,13 +26,8 @@ import java.util.logging.Logger;
 /**
  * Created by taegeonum on 4/25/16.
  */
-public final class WikiWordCountEvaluation {
-  private static final Logger LOG = Logger.getLogger(WikiWordCountEvaluation.class.getName());
-
-  /**
-   * Parameters.
-   */
-  static final String wikiDataPath = "./dataset/big_wiki.txt";
+public final class ZipfianEvaluation {
+  private static final Logger LOG = Logger.getLogger(ZipfianEvaluation.class.getName());
 
   /**
    * Parse command line arguments.
@@ -47,6 +43,9 @@ public final class WikiWordCountEvaluation {
         .registerShortNameOfClass(NumThreads.class)
         .registerShortNameOfClass(InputRate.class)
         .registerShortNameOfClass(Variable.class)
+        .registerShortNameOfClass(EndTime.class)
+        .registerShortNameOfClass(TestName.class)
+        .registerShortNameOfClass(NumOfKey.class)
         .processCommandLine(args);
 
     return cl.getBuilder().build();
@@ -66,14 +65,18 @@ public final class WikiWordCountEvaluation {
     final double inputRate = injector.getNamedInstance(InputRate.class);
     final String variable = injector.getNamedInstance(Variable.class);
     final long endTime = injector.getNamedInstance(EndTime.class);
+    final String testName = injector.getNamedInstance(TestName.class);
+    final long numKey = injector.getNamedInstance(NumOfKey.class);
 
     final TestRunner.OperatorType operatorType = TestRunner.OperatorType.valueOf(
         injector.getNamedInstance(OperatorTypeParam.class));
-    //SlidingWindowGenerator swg = injector.getInstance(RandomSlidingWindowGenerator.class);
 
     final OutputWriter writer = injector.getInstance(LocalOutputWriter.class);
-    writer.writeLine(outputPath + "/info", "\n----------------------" + operatorType.name() + "-------------\n" +
-        "NumWindows\tPartialCnt\tFinalCnt\tElapsedTime\n");
+    final AvroConfigurationSerializer serializer = injector.getInstance(AvroConfigurationSerializer.class);
+
+    final String prefix = outputPath + testName + "-" + variable + "-" + operatorType.name();
+    writer.writeLine(prefix + "_result", "-------------------------------------\n"
+        + serializer.toString(commandLineConf) + "--------------------------------");
 
     // Profiler
     final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
@@ -81,7 +84,7 @@ public final class WikiWordCountEvaluation {
       @Override
       public void run() {
         try {
-          writer.writeLine(outputPath+"/" + variable + "-" + operatorType.name() + "-memory", System.currentTimeMillis() + "\t" + Profiler.getMemoryUsage());
+          writer.writeLine(prefix + "_memory", System.currentTimeMillis() + "\t" + Profiler.getMemoryUsage());
           //writer.writeLine(outputPath+"/" + variable + "-" + operatorType.name() + "-computation", System.currentTimeMillis() + "\t" + aggregationCounter.getNumPartialAggregation() +"\t" + aggregationCounter.getNumFinalAggregation());
         } catch (IOException e) {
           e.printStackTrace();
@@ -90,8 +93,8 @@ public final class WikiWordCountEvaluation {
     }, 1, 1, TimeUnit.SECONDS);
 
     final TestRunner.Result result = TestRunner.runTest(timescales,
-        numThreads, 10, operatorType, inputRate, endTime);
-    writer.writeLine(outputPath+"/result", variable + "\t" + result.partialCount + "\t" + result.finalCount + "\t" + result.elapsedTime);
+        numThreads, numKey, operatorType, inputRate, endTime);
+    writer.writeLine(prefix + "_result", operatorType.name() + "\t" + variable + "\t" + result.partialCount + "\t" + result.finalCount + "\t" + result.elapsedTime);
 
     // End of experiments
     Thread.sleep(2000);

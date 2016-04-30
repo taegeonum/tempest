@@ -292,4 +292,9 @@ public class ZipfianGenerator extends IntegerGenerator implements Serializable
   public double mean() {
     throw new UnsupportedOperationException("@todo implement ZipfianGenerator.mean()");
   }
+
+  @Override
+  public void close() throws Exception {
+
+  }
 }

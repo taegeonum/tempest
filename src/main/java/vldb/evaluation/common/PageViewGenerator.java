@@ -12,7 +12,7 @@ import java.util.Scanner;
 /**
  * Created by taegeonum on 4/25/16.
  */
-public final class WikiWordGenerator extends Generator {
+public final class PageViewGenerator extends Generator {
 
   @Override
   public void close() throws Exception {
@@ -28,7 +28,7 @@ public final class WikiWordGenerator extends Generator {
   private String[] buffer = null;
 
   @Inject
-  private WikiWordGenerator(
+  private PageViewGenerator(
       @Parameter(WikidataPath.class) final String wikiDataPath) {
     this.inputFile = new File(wikiDataPath);
     if (!inputFile.isFile()) {

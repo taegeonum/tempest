@@ -22,9 +22,11 @@ import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOutput;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.StartTime;
+import vldb.operator.window.timescale.profiler.AggregationCounter;
 
 import javax.inject.Inject;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
@@ -57,6 +59,9 @@ final class DefaultFinalAggregator<V> implements FinalAggregator<V> {
   private final long startTime;
 
   private final int numThreads;
+
+  private final AggregationCounter aggregationCounter;
+
   /**
    * Default overlapping window operator.
    * @param spanTracker a computation reuser for final aggregation
@@ -67,6 +72,7 @@ final class DefaultFinalAggregator<V> implements FinalAggregator<V> {
                                  final CAAggregator<?, V> aggregateFunction,
                                  @Parameter(NumThreads.class) final int numThreads,
                                  @Parameter(StartTime.class) final long startTime,
+                                 final AggregationCounter aggregationCounter,
                                  final SharedForkJoinPool sharedForkJoinPool) {
     this.spanTracker = spanTracker;
     this.outputHandler = outputHandler;
@@ -75,6 +81,7 @@ final class DefaultFinalAggregator<V> implements FinalAggregator<V> {
     this.parallelAggregator = new ParallelTreeAggregator<>(numThreads, numThreads * 2, aggregateFunction, forkJoinPool);
     this.executorService = Executors.newCachedThreadPool();
     this.startTime = startTime;
+    this.aggregationCounter = aggregationCounter;
   }
 
   @Override
@@ -91,6 +98,7 @@ final class DefaultFinalAggregator<V> implements FinalAggregator<V> {
       //System.out.println("BEFORE_GET: " + timespan);
       final List<V> aggregates = spanTracker.getDependentAggregates(timespan);
       //System.out.println("AFTER_GET: " + timespan);
+      aggregationCounter.incrementFinalAggregation(timespan.endTime, (List<Map>)aggregates);
       executorService.submit(new Runnable() {
         @Override
         public void run() {

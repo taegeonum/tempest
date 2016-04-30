@@ -76,7 +76,7 @@ final class LinregTestDynamicTopology {
         .registerShortNameOfClass(TimescaleString.class)
         .registerShortNameOfClass(NumSpouts.class)
         .registerShortNameOfClass(TotalTime.class)
-        .registerShortNameOfClass(OperatorType.class)
+        .registerShortNameOfClass(OperatorTypeParam.class)
         .registerShortNameOfClass(InputType.class)
         .registerShortNameOfClass(NumBolts.class)
         .registerShortNameOfClass(InputInterval.class)
@@ -106,7 +106,7 @@ final class LinregTestDynamicTopology {
     final String testName = injector.getNamedInstance(TestName.class);
     final String logDir = injector.getNamedInstance(LogDir.class);
     final double cachingProb = injector.getNamedInstance(CachingProb.class);
-    final String operator = injector.getNamedInstance(OperatorType.class);
+    final String operator = injector.getNamedInstance(OperatorTypeParam.class);
     final String topologyName = operator + "_LR_TOPOLOGY";
     final String inputType = injector.getNamedInstance(InputType.class);
     final int numBolts = injector.getNamedInstance(NumBolts.class);

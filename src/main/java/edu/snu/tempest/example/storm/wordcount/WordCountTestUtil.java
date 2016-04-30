@@ -44,7 +44,7 @@ final class WordCountTestUtil {
                             @Parameter(LogDir.class) final String logDir,
                             @Parameter(CachingProb.class) final double cachingProb,
                             @Parameter(TotalTime.class) final int totalTime,
-                            @Parameter(OperatorType.class) final String operator,
+                            @Parameter(OperatorTypeParam.class) final String operator,
                             @Parameter(InputType.class) final String inputType,
                             @Parameter(TimescaleString.class) final String timescaleParameter) {
     this.numSpouts = numSpouts;

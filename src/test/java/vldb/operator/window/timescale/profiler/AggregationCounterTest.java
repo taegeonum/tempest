@@ -5,9 +5,12 @@ import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.exceptions.InjectionException;
 import org.junit.Test;
+import vldb.evaluation.parameter.EndTime;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -23,6 +26,7 @@ public final class AggregationCounterTest {
     final List<Future> futureTasks = new LinkedList<>();
 
     final Injector injector = Tang.Factory.getTang().newInjector();
+    injector.bindVolatileParameter(EndTime.class, 10L);
     final AggregationCounter aggregationCounter = injector.getInstance(AggregationCounter.class);
 
     for (int i = 0; i < numThreads; i++) {
@@ -46,7 +50,11 @@ public final class AggregationCounterTest {
         @Override
         public void run() {
           for (int j = 0; j < numInput; j++) {
-            aggregationCounter.incrementFinalAggregation();
+            final List<Map> maps = new LinkedList<Map>();
+            final Map map = new HashMap();
+            map.put(1, 1);
+            maps.add(map);
+            aggregationCounter.incrementFinalAggregation(5L, maps);
           }
         }
       }));

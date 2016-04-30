@@ -18,6 +18,7 @@ package edu.snu.tempest.example.util.writer;
 import org.apache.commons.lang.StringUtils;
 
 import javax.inject.Inject;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -36,7 +37,7 @@ public final class LocalOutputWriter implements OutputWriter {
   /**
    * A map of file writer.
    */
-  private final ConcurrentMap<String, FileWriter> writerMap;
+  private final ConcurrentMap<String, BufferedWriter> writerMap;
 
   private ExecutorService executor;
 
@@ -49,10 +50,10 @@ public final class LocalOutputWriter implements OutputWriter {
 
   @Override
   public void close() throws Exception {
-    for (final FileWriter writer : writerMap.values()) {
+    executor.shutdown();
+    for (final BufferedWriter writer : writerMap.values()) {
       writer.close();
     }
-    executor.shutdown();
   }
 
   /**
@@ -72,21 +73,21 @@ public final class LocalOutputWriter implements OutputWriter {
     if (path.length() == 0 || path == null) {
       throw new InvalidParameterException("The output path should not be null");
     }
-    
-    FileWriter writer = writerMap.get(path);
+
+    BufferedWriter writer = writerMap.get(path);
 
     if (writer == null) {
       synchronized (writerMap) {
         writer = writerMap.get(path);
         if (writer == null) {
           createDirectory(path);
-          writerMap.putIfAbsent(path, new FileWriter(path));
+          writerMap.putIfAbsent(path, new BufferedWriter(new FileWriter(path, true)));
           writer = writerMap.get(path);
         }
       }
     }
 
-    final FileWriter fw = writer;
+    final BufferedWriter fw = writer;
     executor.submit(new Runnable() {
       @Override
       public void run() {

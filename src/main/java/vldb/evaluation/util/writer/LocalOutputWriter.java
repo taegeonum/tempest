@@ -52,10 +52,10 @@ public final class LocalOutputWriter implements OutputWriter {
 
   @Override
   public void close() throws Exception {
+    executor.shutdown();
     for (final FileWriter writer : writerMap.values()) {
       writer.close();
     }
-    executor.shutdown();
   }
 
   /**
@@ -83,7 +83,7 @@ public final class LocalOutputWriter implements OutputWriter {
         writer = writerMap.get(path);
         if (writer == null) {
           createDirectory(path);
-          writerMap.putIfAbsent(path, new FileWriter(path));
+          writerMap.putIfAbsent(path, new FileWriter(path, true));
           writer = writerMap.get(path);
         }
       }

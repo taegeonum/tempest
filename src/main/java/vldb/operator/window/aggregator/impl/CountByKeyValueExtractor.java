@@ -21,7 +21,7 @@ import javax.inject.Inject;
  * CountByKeyExtractor.
  * It extracts value 1 from input.
  */
-final class CountByKeyValueExtractor<I> implements ValueExtractor<I, Long> {
+public final class CountByKeyValueExtractor<I> implements ValueExtractor<I, Long> {
 
   @Inject
   private CountByKeyValueExtractor() {

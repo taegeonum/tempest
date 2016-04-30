@@ -18,5 +18,5 @@ package vldb.evaluation.parameter;
 import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 
-@NamedParameter(doc = "test name", short_name = "test_name", default_value="default-test")
+@NamedParameter(doc = "test name", short_name = "test_name")
 public final class TestName implements Name<String> {}

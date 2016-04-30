@@ -18,6 +18,6 @@ package vldb.operator.window.timescale.parameter;
 import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 
-@NamedParameter(doc = "the number of threads for final aggregation", short_name = "num_threads", default_value = "10")
+@NamedParameter(doc = "the number of threads for final aggregation", short_name = "num_threads", default_value = "16")
 public final class NumThreads implements Name<Integer> {
 }

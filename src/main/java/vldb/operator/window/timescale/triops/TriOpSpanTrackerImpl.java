@@ -28,6 +28,7 @@ import vldb.operator.window.timescale.pafas.*;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.StartTime;
 import vldb.operator.window.timescale.parameter.TimescaleString;
+import vldb.operator.window.timescale.profiler.AggregationCounter;
 
 import javax.inject.Inject;
 import java.util.*;
@@ -51,6 +52,7 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
   private final List<DependencyGraph<T>> dependencyGraphs;
 
   private final ParallelTreeAggregator<I, T> intermediateAggregator;
+  private final AggregationCounter aggregationCounter;
   /**
    * DependencyGraphComputationReuser constructor.
    * @param tsParser timescale parser
@@ -62,8 +64,10 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
                                final PartialTimespans<T> sharedPartialTimespans,
                                @Parameter(NumThreads.class) final int numThreads,
                                final CAAggregator<I, T> caAggregator,
+                               final AggregationCounter aggregationCounter,
                                final SharedForkJoinPool sharedForkJoinPool) throws InjectionException {
     this.timescales = tsParser.timescales;
+    this.aggregationCounter = aggregationCounter;
     this.sharedPartialTimespans = sharedPartialTimespans;
     this.timescaleGraphMap = new HashMap<>();
     this.dependencyGraphs = new LinkedList<>();
@@ -136,6 +140,7 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
                 sharedPartialNode.decreaseRefCnt();
               }
               // Get the intermediate result.
+              aggregationCounter.incrementFinalAggregation(realEnd, (List<Map>)intermediateAggregates);
               final T intermediateResult = intermediateAggregator.doParallelAggregation(intermediateAggregates);
               dependentNode.saveOutput(intermediateResult);
               aggregates.add(dependentNode.getOutput());

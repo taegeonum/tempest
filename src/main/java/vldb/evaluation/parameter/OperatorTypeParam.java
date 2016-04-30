@@ -19,4 +19,4 @@ import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 
 @NamedParameter(doc = "type of mts operator", short_name="operator_type", default_value = "dynamic_mts")
-public final class OperatorType implements Name<String> {}
+public final class OperatorTypeParam implements Name<String> {}
