@@ -97,7 +97,7 @@ public final class Node<T> {
     n.increaseRefCnt();
   }
 
-  private void increaseRefCnt() {
+  private synchronized void increaseRefCnt() {
     initialRefCnt++;
     refCnt++;
   }

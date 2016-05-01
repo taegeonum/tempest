@@ -7,6 +7,7 @@ import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
 import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
+import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
 
@@ -32,6 +33,7 @@ public final class ParallelPafasMWOTest {
     final List<Configuration> configurationList = new LinkedList<>();
     final List<String> operatorIds = new LinkedList<>();
 
+    /*
     // PAFAS-Greedy-incremental
     configurationList.add(StaticParallelMWOConfiguration.CONF
         .set(StaticParallelMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)(12,4)")
@@ -50,7 +52,7 @@ public final class ParallelPafasMWOTest {
         .set(StaticMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("PAFAS-DP");
-
+*/
     /*
     // PAFAS-Greedy-incremental
     configurationList.add(IncrementMWOConfiguration.CONF
@@ -63,6 +65,7 @@ public final class ParallelPafasMWOTest {
 */
 
     // PAFAS-Greedy
+
     configurationList.add(StaticMWOConfiguration.CONF
         .set(StaticMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)(12,4)")
         .set(StaticMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
@@ -70,15 +73,17 @@ public final class ParallelPafasMWOTest {
         .set(StaticMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("PAFAS");
-/*
+
+
     // On-the-fly operator
     configurationList.add(OntheflyMWOConfiguration.CONF
-        .set(OntheflyMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)")
+        .set(OntheflyMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)(12,4)")
         .set(OntheflyMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(OntheflyMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("OntheFly");
 
+    /*
     // TriOPs
     configurationList.add(TriOpsMWOConfiguration.CONF
         .set(TriOpsMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)")
