@@ -171,6 +171,8 @@ public final class StaticParallelDependencyGraphImpl<T> implements DependencyGra
     for (final ForkJoinTask task : taskEdges) {
       task.join();
     }
+
+    //System.out.println(partialTimespans);
   }
 
   @Override

@@ -127,4 +127,9 @@ public final class DefaultPartialTimespans<T> implements PartialTimespans {
       return startTime + (time - startTime) % period;
     }
   }
+
+  @Override
+  public String toString() {
+    return partialTimespanMap.toString();
+  }
 }
