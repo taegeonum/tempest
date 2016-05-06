@@ -30,7 +30,7 @@ public final class OntheflyMWOConfiguration extends TimescaleWindowBaseConfigura
       .merge(TimescaleWindowBaseConfiguration.CONF)
       .bindImplementation(SpanTracker.class, StaticSpanTrackerImpl.class)
       .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
-      .bindImplementation(DependencyGraph.class, StaticParallelDependencyGraphImpl.class)
+      .bindImplementation(DependencyGraph.class, IncrementalParallelDependencyGraphImpl.class)
       .bindImplementation(DependencyGraph.SelectionAlgorithm.class, OntheflySelectionAlgorithm.class)
       .build();
 }

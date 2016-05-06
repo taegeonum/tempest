@@ -9,6 +9,7 @@ import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.exceptions.BindException;
 import org.apache.reef.tang.formats.AvroConfigurationSerializer;
 import org.apache.reef.tang.formats.CommandLine;
+import vldb.evaluation.common.FileWordGenerator;
 import vldb.evaluation.parameter.*;
 import vldb.evaluation.util.Profiler;
 import vldb.operator.window.timescale.Timescale;
@@ -26,9 +27,9 @@ import java.util.logging.Logger;
 /**
  * Created by taegeonum on 4/25/16.
  */
-public final class ZipfianEvaluation {
-  private static final Logger LOG = Logger.getLogger(ZipfianEvaluation.class.getName());
-  static final String wikiDataPath = "./dataset/big_wiki.txt";
+public final class TwitterEvaluation {
+  private static final Logger LOG = Logger.getLogger(TwitterEvaluation.class.getName());
+  //static final String twitterDataPath = "./dataset/bigtwitter.txt";
 
   /**
    * Parse command line arguments.
@@ -41,12 +42,13 @@ public final class ZipfianEvaluation {
         .registerShortNameOfClass(OperatorTypeParam.class)
         .registerShortNameOfClass(TimescaleString.class)
         .registerShortNameOfClass(OutputPath.class)
+        .registerShortNameOfClass(FileWordGenerator.FileDataPath.class)
         .registerShortNameOfClass(NumThreads.class)
         .registerShortNameOfClass(InputRate.class)
         .registerShortNameOfClass(Variable.class)
         .registerShortNameOfClass(EndTime.class)
         .registerShortNameOfClass(TestName.class)
-        .registerShortNameOfClass(NumOfKey.class)
+        //.registerShortNameOfClass(NumOfKey.class)
         .processCommandLine(args);
 
     return cl.getBuilder().build();
@@ -67,7 +69,8 @@ public final class ZipfianEvaluation {
     final String variable = injector.getNamedInstance(Variable.class);
     final long endTime = injector.getNamedInstance(EndTime.class);
     final String testName = injector.getNamedInstance(TestName.class);
-    final long numKey = injector.getNamedInstance(NumOfKey.class);
+    final String dataPath = injector.getNamedInstance(FileWordGenerator.FileDataPath.class);
+    //final long numKey = injector.getNamedInstance(NumOfKey.class);
 
     final TestRunner.OperatorType operatorType = TestRunner.OperatorType.valueOf(
         injector.getNamedInstance(OperatorTypeParam.class));
@@ -93,8 +96,8 @@ public final class ZipfianEvaluation {
       }
     }, 1, 1, TimeUnit.SECONDS);
 
-    final TestRunner.Result result = TestRunner.runTest(timescales,
-        numThreads, numKey, operatorType, inputRate, endTime);
+    final TestRunner.Result result = TestRunner.runFileWordTest(timescales,
+        numThreads, dataPath, operatorType, inputRate, endTime);
     writer.writeLine(prefix + "_result", operatorType.name() + "\t" + variable + "\t" + result.partialCount + "\t" + result.finalCount + "\t" + result.elapsedTime);
 
     // End of experiments

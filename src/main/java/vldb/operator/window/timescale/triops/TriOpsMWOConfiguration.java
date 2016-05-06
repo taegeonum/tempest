@@ -19,10 +19,7 @@ import org.apache.reef.tang.formats.ConfigurationModule;
 import vldb.operator.window.timescale.TimescaleWindowBaseConfiguration;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.common.SpanTracker;
-import vldb.operator.window.timescale.pafas.DependencyGraph;
-import vldb.operator.window.timescale.pafas.PafasMWO;
-import vldb.operator.window.timescale.pafas.StaticDependencyGraphImpl;
-import vldb.operator.window.timescale.pafas.StaticParallelDependencyGraphImpl;
+import vldb.operator.window.timescale.pafas.*;
 
 /**
  * A helper class for static MTS window configuration.
@@ -33,6 +30,6 @@ public final class TriOpsMWOConfiguration extends TimescaleWindowBaseConfigurati
       .merge(TimescaleWindowBaseConfiguration.CONF)
       .bindImplementation(SpanTracker.class, TriOpSpanTrackerImpl.class)
       .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
-      .bindImplementation(DependencyGraph.class, StaticParallelDependencyGraphImpl.class)
+      .bindImplementation(DependencyGraph.class, IncrementalParallelDependencyGraphImpl.class)
       .build();
 }

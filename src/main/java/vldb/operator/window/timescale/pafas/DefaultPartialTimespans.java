@@ -85,25 +85,50 @@ public final class DefaultPartialTimespans<T> implements PartialTimespans {
       long time = pairedA;
       boolean odd = true;
 
-      while(time <= period) {
-        sliceQueue.add(startTime + time);
-        if (odd) {
-          time += pairedB;
-        } else {
-          time += pairedA;
+      if (period > 8000) {
+        while (time <= 8000) {
+          sliceQueue.add(startTime + time);
+          if (odd) {
+            time += pairedB;
+          } else {
+            time += pairedA;
+          }
+          odd = !odd;
         }
-        odd = !odd;
-      }
-    }
 
-    Collections.sort(sliceQueue);
-    long prevSliceTime = startTime;
-    for (final long nextSliceTime : sliceQueue) {
-      if (prevSliceTime != nextSliceTime) {
-        partialTimespanMap.put(prevSliceTime, new Node<T>(prevSliceTime, nextSliceTime, true));
-        prevSliceTime = nextSliceTime;
+        odd = true;
+        long adjStartTime = (startTime + period - 4000) - (startTime + period - 4000) % ts.intervalSize;
+        adjStartTime += pairedA;
+        while (adjStartTime <= startTime + period) {
+          sliceQueue.add(adjStartTime);
+          if (odd) {
+            adjStartTime += pairedB;
+          } else {
+            adjStartTime += pairedA;
+          }
+          odd = !odd;
+        }
+      } else {
+        while (time <= period) {
+          sliceQueue.add(startTime + time);
+          if (odd) {
+            time += pairedB;
+          } else {
+            time += pairedA;
+          }
+          odd = !odd;
+        }
+      }
+      Collections.sort(sliceQueue);
+      long prevSliceTime = startTime;
+      for (final long nextSliceTime : sliceQueue) {
+        if (prevSliceTime != nextSliceTime) {
+          partialTimespanMap.put(prevSliceTime, new Node<T>(prevSliceTime, nextSliceTime, true));
+          prevSliceTime = nextSliceTime;
+        }
       }
     }
+    //System.out.println(sliceQueue);
     LOG.log(Level.FINE, "Sliced queue: " + partialTimespanMap);
   }
 

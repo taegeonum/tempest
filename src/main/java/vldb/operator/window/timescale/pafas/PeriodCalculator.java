@@ -40,6 +40,7 @@ public final class PeriodCalculator {
       if (largestWindowSize < ts.windowSize) {
         largestWindowSize = ts.windowSize;
       }
+      //System.out.println("Period: " + period);
     }
 
     if (period < largestWindowSize) {
@@ -48,6 +49,19 @@ public final class PeriodCalculator {
         period *= div;
       } else {
         period *= (div+1);
+      }
+    }
+    return period;
+  }
+
+  public static long calculatePeriodFromIntervals(final List<Integer> intervals) {
+    long period = 0;
+
+    for (final int intervalSize : intervals) {
+      if (period == 0) {
+        period = intervalSize;
+      } else {
+        period = lcm(period, intervalSize);
       }
     }
     return period;

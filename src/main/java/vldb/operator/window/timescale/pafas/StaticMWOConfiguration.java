@@ -32,6 +32,6 @@ public final class StaticMWOConfiguration extends TimescaleWindowBaseConfigurati
         .bindImplementation(DependencyGraph.SelectionAlgorithm.class, SELECTION_ALGORITHM)
         .bindImplementation(SpanTracker.class, StaticSpanTrackerImpl.class)
         .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
-        .bindImplementation(DependencyGraph.class, StaticParallelDependencyGraphImpl.class)
+        .bindImplementation(DependencyGraph.class, IncrementalParallelDependencyGraphImpl.class)
         .build();
 }

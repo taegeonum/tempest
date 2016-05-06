@@ -64,7 +64,7 @@ public final class IncrementalParallelDependencyGraphImpl<T> implements Dependen
   private final SelectionAlgorithm<T> selectionAlgorithm;
 
   private long currBuildingIndex;
-  private final long incrementalStep = 10;
+  private final long incrementalStep = 4500;
   private final long largestWindowSize;
   private final SharedForkJoinPool sharedForkJoinPool;
 

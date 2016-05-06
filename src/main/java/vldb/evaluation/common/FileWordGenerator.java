@@ -12,15 +12,15 @@ import java.util.Scanner;
 /**
  * Created by taegeonum on 4/25/16.
  */
-public final class WikiWordGenerator extends Generator {
+public final class FileWordGenerator extends Generator {
 
   @Override
   public void close() throws Exception {
     sc.close();
   }
 
-  @NamedParameter(short_name = "data_path", default_value=".")
-  public final static class WikidataPath implements Name<String> {}
+  @NamedParameter(short_name = "data_path", default_value="./dataset/bigtwitter.txt")
+  public final static class FileDataPath implements Name<String> {}
 
   private final File inputFile;
   private Scanner sc;
@@ -28,9 +28,9 @@ public final class WikiWordGenerator extends Generator {
   private String[] buffer = null;
 
   @Inject
-  private WikiWordGenerator(
-      @Parameter(WikidataPath.class) final String wikiDataPath) {
-    this.inputFile = new File(wikiDataPath);
+  private FileWordGenerator(
+      @Parameter(FileDataPath.class) final String fileDataPath) {
+    this.inputFile = new File(fileDataPath);
     if (!inputFile.isFile()) {
       throw new RuntimeException(inputFile + " is not file");
     }
@@ -51,14 +51,20 @@ public final class WikiWordGenerator extends Generator {
   public String nextString() {
     if (index >= buffer.length) {
       if (sc.hasNextLine()) {
-        buffer = sc.nextLine().split(" ");
         index = 0;
+        final String line = sc.nextLine();
+        if (line.length() == 0) {
+          return "noword";
+        }
+        buffer = line.split(" ");
       } else {
         return null;
       }
     }
     try {
-      final String word = buffer[index];
+      String word = buffer[index];
+      word = word.toLowerCase();
+      word = word.trim();
       index += 1;
       return word;
     } catch (final ArrayIndexOutOfBoundsException e) {

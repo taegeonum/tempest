@@ -86,6 +86,7 @@ public class DPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorit
           if (dpTable.get(currentStart) == -1 || dpTable.get(currentStart) > candidate) {
             dpTable.put(currentStart, candidate);
             dpTableNode.put(currentStart, node);
+            //System.out.println("PUT dpTableNode: " + currentStart + ", NODE: " + node);
           }
         }
       }
@@ -95,6 +96,7 @@ public class DPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorit
     currentStart = start;
     while (currentStart < end) {
       final Node<T> currentNode = dpTableNode.get(currentStart);
+      //System.out.println("CURR START: " + currentStart + ", NODE: " + currentNode);
       //System.out.println(currentNode);
       childrenNodes.add(currentNode);
       if (currentNode.start == currentStart) {

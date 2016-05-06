@@ -2,6 +2,7 @@ package vldb.evaluation;
 
 import org.apache.reef.tang.*;
 import vldb.evaluation.common.Generator;
+import vldb.evaluation.common.FileWordGenerator;
 import vldb.evaluation.common.ZipfianGenerator;
 import vldb.evaluation.parameter.EndTime;
 import vldb.example.DefaultExtractor;
@@ -44,16 +45,75 @@ public final class TestRunner {
     Naive
   }
 
-  public static Result runTest(final List<Timescale> timescales,
-                      final int numThreads,
-                      final long numKey,
-                      final OperatorType operatorType,
-                      final double inputRate,
-                      final long totalTime) throws Exception {
+  private static Configuration getOperatorConf(final OperatorType operatorType,
+                                               final String timescaleString) {
+    switch (operatorType) {
+      case PAFAS:
+        // PAFAS-Greedy
+        return StaticMWOConfiguration.CONF
+            .set(StaticMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(StaticMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(StaticMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
+            .set(StaticMWOConfiguration.START_TIME, "0")
+            .build();
+      case PAFASI:
+        // PAFAS Incremental-Greedy
+        return IncrementMWOConfiguration.CONF
+            .set(IncrementMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(IncrementMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(IncrementMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
+            .set(IncrementMWOConfiguration.START_TIME, "0")
+            .build();
+      case PAFASI_DP:
+        // PAFAS Incremental-DP
+        return IncrementMWOConfiguration.CONF
+            .set(IncrementMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(IncrementMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(IncrementMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+            .set(IncrementMWOConfiguration.START_TIME, "0")
+            .build();
+      case PAFAS_DP:
+        return StaticMWOConfiguration.CONF
+            .set(StaticMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(StaticMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(StaticMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+            .set(StaticMWOConfiguration.START_TIME, "0")
+            .build();
+      case OnTheFly:
+        // On-the-fly operator
+        return OntheflyMWOConfiguration.CONF
+            .set(OntheflyMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(OntheflyMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(OntheflyMWOConfiguration.START_TIME, "0")
+            .build();
+      case TriOps:
+        // TriOPs
+        return TriOpsMWOConfiguration.CONF
+            .set(TriOpsMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(TriOpsMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(TriOpsMWOConfiguration.START_TIME, "0")
+            .build();
+      case Naive:
+        return NaiveMWOConfiguration.CONF
+            .set(NaiveMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(NaiveMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(NaiveMWOConfiguration.START_TIME, "0")
+            .build();
+      default:
+        throw new RuntimeException("Not implemented Naive");
+    }
+  }
+
+  public static Result runFileWordTest(final List<Timescale> timescales,
+                                       final int numThreads,
+                                       final String filePath,
+                                       final OperatorType operatorType,
+                                       final double inputRate,
+                                       final long totalTime) throws Exception {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
     jcb.bindNamedParameter(NumThreads.class, numThreads+"");
-    //jcb.bindNamedParameter(WikiWordGenerator.WikidataPath.class, wikiDataPath);
+    jcb.bindNamedParameter(FileWordGenerator.FileDataPath.class, filePath);
     jcb.bindNamedParameter(EndTime.class, totalTime+"");
 
     Collections.sort(timescales);
@@ -71,69 +131,76 @@ public final class TestRunner {
     writer.writeLine(outputPath+"/result", "-------------------------------------");
     */
     int i = 0;
-    final Configuration conf;
-    switch (operatorType) {
-      case PAFAS:
-        // PAFAS-Greedy
-        conf = StaticMWOConfiguration.CONF
-            .set(StaticMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
-            .set(StaticMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(StaticMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
-            .set(StaticMWOConfiguration.START_TIME, "0")
-            .build();
+    final Configuration conf = getOperatorConf(operatorType, timescaleString);
+
+    //writer.writeLine(outputPath+"/result", "=================\nOperator=" + operatorType.name());
+    final Injector newInjector = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), conf));
+    final Generator wordGenerator = newInjector.getInstance(FileWordGenerator.class);
+
+    newInjector.bindVolatileInstance(TimeWindowOutputHandler.class,
+        new EvaluationHandler<>(operatorType.name(), countDownLatch, totalTime));
+    final TimescaleWindowOperator<String, Map<String, Long>> mwo = newInjector.getInstance(TimescaleWindowOperator.class);
+    final AggregationCounter aggregationCounter = newInjector.getInstance(AggregationCounter.class);
+    i += 1;
+
+    final long currTime = System.currentTimeMillis();
+    long processedInput = 0;
+    while (processedInput < inputRate * totalTime) {
+      //System.out.println("totalTime: " + (totalTime*1000) + ", elapsed: " + (System.currentTimeMillis() - currTime));
+      final String word = wordGenerator.nextString();
+      final long cTime = System.nanoTime();
+      //System.out.println("word: " + word);
+      if (word == null) {
+        // End of input
         break;
-      case PAFASI:
-        // PAFAS Incremental-Greedy
-        conf = IncrementMWOConfiguration.CONF
-            .set(IncrementMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
-            .set(IncrementMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(IncrementMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
-            .set(IncrementMWOConfiguration.START_TIME, "0")
-            .build();
-        break;
-      case PAFASI_DP:
-        // PAFAS Incremental-DP
-        conf = IncrementMWOConfiguration.CONF
-            .set(IncrementMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
-            .set(IncrementMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(IncrementMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
-            .set(IncrementMWOConfiguration.START_TIME, "0")
-            .build();
-        break;
-      case PAFAS_DP:
-        conf = StaticMWOConfiguration.CONF
-            .set(StaticMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
-            .set(StaticMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(StaticMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
-            .set(StaticMWOConfiguration.START_TIME, "0")
-            .build();
-        break;
-      case OnTheFly:
-        // On-the-fly operator
-        conf = OntheflyMWOConfiguration.CONF
-            .set(OntheflyMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
-            .set(OntheflyMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(OntheflyMWOConfiguration.START_TIME, "0")
-            .build();
-        break;
-      case TriOps:
-        // TriOPs
-        conf = TriOpsMWOConfiguration.CONF
-            .set(TriOpsMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
-            .set(TriOpsMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(TriOpsMWOConfiguration.START_TIME, "0")
-            .build();
-        break;
-      case Naive:
-        conf = NaiveMWOConfiguration.CONF
-            .set(NaiveMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
-            .set(NaiveMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(NaiveMWOConfiguration.START_TIME, "0")
-            .build();
-        break;
-      default:
-        throw new RuntimeException("Not implemented Naive");
+      }
+      mwo.execute(word);
+      processedInput += 1;
+      while (System.nanoTime() - cTime < 1000000000*(1.0/inputRate)) {
+        // adjust input rate
+      }
     }
+    final long endTime = System.currentTimeMillis();
+    countDownLatch.await();
+    mwo.close();
+    wordGenerator.close();
+    final long partialCount = aggregationCounter.getNumPartialAggregation();
+    final long finalCount = aggregationCounter.getNumFinalAggregation();
+    //writer.writeLine(outputPath+"/result", "PARTIAL="+partialCount);
+    //writer.writeLine(outputPath+"/result", "FINAL=" + finalCount);
+    //writer.writeLine(outputPath+"/result", "ELAPSED_TIME="+(endTime-currTime));
+    return new Result(partialCount, finalCount, (endTime - currTime));
+  }
+
+  public static Result runTest(final List<Timescale> timescales,
+                      final int numThreads,
+                      final long numKey,
+                      final OperatorType operatorType,
+                      final double inputRate,
+                      final long totalTime) throws Exception {
+    final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
+    jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
+    jcb.bindNamedParameter(NumThreads.class, numThreads+"");
+    //jcb.bindNamedParameter(FileWordGenerator.FileDataPath.class, wikiDataPath);
+    jcb.bindNamedParameter(EndTime.class, totalTime+"");
+
+    Collections.sort(timescales);
+    int numOutputs = 0;
+    for (final Timescale ts : timescales) {
+      numOutputs += (totalTime / ts.intervalSize);
+    }
+    final CountDownLatch countDownLatch = new CountDownLatch(numOutputs);
+
+    final String timescaleString = TimescaleParser.parseToString(timescales);
+    /*
+    writer.writeLine(outputPath+"/result", "-------------------------------------");
+    writer.writeLine(outputPath+"/result", "@NumWindows=" + timescales.size());
+    writer.writeLine(outputPath+"/result", "@Windows="+timescaleString);
+    writer.writeLine(outputPath+"/result", "-------------------------------------");
+    */
+    int i = 0;
+    final Configuration conf = getOperatorConf(operatorType, timescaleString);
+
     //writer.writeLine(outputPath+"/result", "=================\nOperator=" + operatorType.name());
     final Injector newInjector = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), conf));
     final Generator wordGenerator = new ZipfianGenerator(numKey, 0.99);

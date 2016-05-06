@@ -30,7 +30,6 @@ public final class RandomSlidingWindowGenerator implements SlidingWindowGenerato
   private final int maxWindowSize;
   private final int minIntervalSize;
   private final int maxIntervalSize;
-  private final Set<Integer> windowSizes = new HashSet<>();
   private final List<Integer> intervals = new LinkedList<>();
 
   @Inject
@@ -47,7 +46,40 @@ public final class RandomSlidingWindowGenerator implements SlidingWindowGenerato
     this.maxWindowSize = maxWindowSize;
   }
 
+  public List<Integer> getIntervals(final int num) {
+    final Random random = new Random();
+    final List<Integer> intervals = new LinkedList<>();
+
+    for (int i = 0; i < num; i++) {
+      while (true) {
+        final int intervalRange = maxIntervalSize - minIntervalSize;
+        final int intervalSize = (Math.abs(random.nextInt()) % (intervalRange + 1)) + minIntervalSize;
+        intervals.add(intervalSize);
+        if (PeriodCalculator.calculatePeriodFromIntervals(intervals) > (Long.MAX_VALUE /300)) {
+          intervals.remove((Integer)intervalSize);
+        } else {
+          break;
+        }
+      }
+    }
+    return intervals;
+  }
+
+  public List<Integer> getWindows(final int num) {
+    final Random random = new Random();
+    final Set<Integer> windows = new HashSet<>();
+
+    while (windows.size() < num) {
+      final int windowRange = maxWindowSize - minWindowSize;
+      final int windowSize = (Math.abs(random.nextInt()) % (windowRange+1)) + minWindowSize;
+      windows.add(windowSize);
+    }
+    return new LinkedList<>(windows);
+  }
+
+
   public List<Timescale> generateSlidingWindows(final int num) {
+    final Set<Integer> windowSizes = new HashSet<>();
     final Random random = new Random();
     final Set<Timescale> timescales = new HashSet<>();
     final int windowRange = maxWindowSize - minWindowSize;
@@ -60,8 +92,49 @@ public final class RandomSlidingWindowGenerator implements SlidingWindowGenerato
           windowSizes.add(windowSize);
           final Timescale ts = new Timescale(windowSize, intervalSize);
           timescales.add(ts);
-          if (PeriodCalculator.calculatePeriodFromTimescales(timescales) > 200000L) {
+          if (PeriodCalculator.calculatePeriodFromTimescales(timescales) > (Long.MAX_VALUE/300)) {
             timescales.remove(ts);
+          }
+        }
+      }
+    }
+    return new LinkedList<>(timescales);
+  }
+
+  public List<Timescale> generateSlidingWindowsWithFixedWindows(final List<Integer> windows) {
+    final Random random = new Random();
+    final Set<Timescale> timescales = new HashSet<>();
+    final int intervalRange = maxIntervalSize - minIntervalSize;
+    for (final long windowSize : windows) {
+      while (true) {
+        final int intervalSize = (Math.abs(random.nextInt()) % (intervalRange+1)) + minIntervalSize;
+        if (windowSize > intervalSize) {
+          final Timescale ts = new Timescale(windowSize, intervalSize);
+          timescales.add(ts);
+          if (PeriodCalculator.calculatePeriodFromTimescales(timescales) > (Long.MAX_VALUE/300)) {
+            timescales.remove(ts);
+          } else {
+            break;
+          }
+        }
+      }
+    }
+    return new LinkedList<>(timescales);
+  }
+
+  public List<Timescale> generateSlidingWindowsWithFixedInterval(final List<Integer> intervals) {
+    final Random random = new Random();
+    final Set<Integer> windowSizes = new HashSet<>();
+    final Set<Timescale> timescales = new HashSet<>();
+    final int windowRange = maxWindowSize - minWindowSize;
+    for (final long interval : intervals) {
+      while (true) {
+        final int windowSize = (Math.abs(random.nextInt()) % (windowRange+1)) + minWindowSize;
+        if (windowSize > interval) {
+          if (!windowSizes.contains(windowSize)) {
+            windowSizes.add(windowSize);
+            timescales.add(new Timescale(windowSize, interval));
+            break;
           }
         }
       }
