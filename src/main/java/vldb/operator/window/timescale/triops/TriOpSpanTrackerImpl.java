@@ -140,7 +140,7 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
                 sharedPartialNode.decreaseRefCnt();
               }
               // Get the intermediate result.
-              aggregationCounter.incrementFinalAggregation(realEnd, (List<Map>)intermediateAggregates);
+              //aggregationCounter.incrementFinalAggregation(realEnd, (List<Map>)intermediateAggregates);
               final T intermediateResult = intermediateAggregator.doParallelAggregation(intermediateAggregates);
               dependentNode.saveOutput(intermediateResult);
               aggregates.add(dependentNode.getOutput());

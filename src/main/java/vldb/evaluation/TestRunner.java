@@ -1,8 +1,9 @@
 package vldb.evaluation;
 
+import edu.snu.tempest.example.util.writer.OutputWriter;
 import org.apache.reef.tang.*;
-import vldb.evaluation.common.Generator;
 import vldb.evaluation.common.FileWordGenerator;
+import vldb.evaluation.common.Generator;
 import vldb.evaluation.common.ZipfianGenerator;
 import vldb.evaluation.parameter.EndTime;
 import vldb.example.DefaultExtractor;
@@ -24,6 +25,7 @@ import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
 import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -109,7 +111,9 @@ public final class TestRunner {
                                        final String filePath,
                                        final OperatorType operatorType,
                                        final double inputRate,
-                                       final long totalTime) throws Exception {
+                                       final long totalTime,
+                                       final OutputWriter writer,
+                                       final String prefix) throws Exception {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
     jcb.bindNamedParameter(NumThreads.class, numThreads+"");
@@ -138,7 +142,7 @@ public final class TestRunner {
     final Generator wordGenerator = newInjector.getInstance(FileWordGenerator.class);
 
     newInjector.bindVolatileInstance(TimeWindowOutputHandler.class,
-        new EvaluationHandler<>(operatorType.name(), countDownLatch, totalTime));
+        new EvaluationHandler<>(operatorType.name(), countDownLatch, totalTime, writer, prefix));
     final TimescaleWindowOperator<String, Map<String, Long>> mwo = newInjector.getInstance(TimescaleWindowOperator.class);
     final AggregationCounter aggregationCounter = newInjector.getInstance(AggregationCounter.class);
     i += 1;
@@ -177,7 +181,9 @@ public final class TestRunner {
                       final long numKey,
                       final OperatorType operatorType,
                       final double inputRate,
-                      final long totalTime) throws Exception {
+                      final long totalTime,
+                      final OutputWriter writer,
+                      final String prefix) throws Exception {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
     jcb.bindNamedParameter(NumThreads.class, numThreads+"");
@@ -206,7 +212,7 @@ public final class TestRunner {
     final Generator wordGenerator = new ZipfianGenerator(numKey, 0.99);
 
     newInjector.bindVolatileInstance(TimeWindowOutputHandler.class,
-        new EvaluationHandler<>(operatorType.name(), countDownLatch, totalTime));
+        new EvaluationHandler<>(operatorType.name(), countDownLatch, totalTime, writer, prefix));
     final TimescaleWindowOperator<String, Map<String, Long>> mwo = newInjector.getInstance(TimescaleWindowOperator.class);
     final AggregationCounter aggregationCounter = newInjector.getInstance(AggregationCounter.class);
     i += 1;
@@ -260,17 +266,29 @@ public final class TestRunner {
     private final String id;
     private final CountDownLatch countDownLatch;
     private final long totalTime;
+    private final OutputWriter writer;
+    private final String prefix;
 
-    public EvaluationHandler(final String id, final CountDownLatch countDownLatch, final long totalTime) {
+    public EvaluationHandler(final String id, final CountDownLatch countDownLatch, final long totalTime,
+                             final OutputWriter writer,
+                             final String prefix) {
       this.id = id;
       this.countDownLatch = countDownLatch;
       this.totalTime = totalTime;
+      this.writer = writer;
+      this.prefix = prefix;
     }
 
     @Override
     public void execute(final TimescaleWindowOutput<I> val) {
       if (val.endTime <= totalTime) {
         countDownLatch.countDown();
+      }
+      try {
+        writer.writeLine(prefix + "/" + val.timescale, System.currentTimeMillis()+"\t" + val.startTime + "\t" + val.endTime);
+      } catch (IOException e) {
+        e.printStackTrace();
+        throw new RuntimeException(e);
       }
       System.out.println(id + " ts: " + val.timescale +
           ", timespan: [" + val.startTime + ", " + val.endTime + ")");

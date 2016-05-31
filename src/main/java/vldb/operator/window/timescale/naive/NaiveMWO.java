@@ -19,6 +19,7 @@ import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.annotations.Parameter;
+import vldb.evaluation.parameter.EndTime;
 import vldb.operator.OutputEmitter;
 import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
 import vldb.operator.window.aggregator.impl.KeyExtractor;
@@ -26,10 +27,9 @@ import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.TimescaleWindowOutput;
+import vldb.operator.window.timescale.common.SharedForkJoinPool;
 import vldb.operator.window.timescale.common.TimescaleParser;
-import vldb.operator.window.timescale.pafas.GreedySelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.PafasMWO;
-import vldb.operator.window.timescale.pafas.StaticMWOConfiguration;
 import vldb.operator.window.timescale.parameter.StartTime;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
 
@@ -57,20 +57,23 @@ public final class NaiveMWO<I, V> implements TimescaleWindowOperator<I, V> {
       final AggregationCounter aggregationCounter,
       final KeyExtractor keyExtractor,
       final TimeWindowOutputHandler timeWindowOutputHandler,
-      @Parameter(StartTime.class) final long startTime) throws Exception {
+      final SharedForkJoinPool sharedForkJoinPool,
+      @Parameter(StartTime.class) final long startTime,
+      @Parameter(EndTime.class) final long endTime) throws Exception {
     this.operators = new LinkedList<>();
     final List<Timescale> timescales = tsParser.timescales;
     for (final Timescale timescale : timescales) {
-      final Configuration conf = StaticMWOConfiguration.CONF
-          .set(StaticMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-          .set(StaticMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
-          .set(StaticMWOConfiguration.START_TIME, startTime+"")
-          .set(StaticMWOConfiguration.INITIAL_TIMESCALES, timescale.toString())
-          .build();
+      final Configuration conf = StaticNaiveMWOConfiguration.CONF
+          .set(StaticNaiveMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+          .set(StaticNaiveMWOConfiguration.START_TIME, startTime+"")
+          .set(StaticNaiveMWOConfiguration.INITIAL_TIMESCALES, timescale.toString())
+      .build();
       final Injector injector = Tang.Factory.getTang().newInjector(conf);
       injector.bindVolatileInstance(AggregationCounter.class, aggregationCounter);
       injector.bindVolatileInstance(KeyExtractor.class, keyExtractor);
       injector.bindVolatileInstance(TimeWindowOutputHandler.class, timeWindowOutputHandler);
+      injector.bindVolatileParameter(EndTime.class, endTime);
+      //injector.bindVolatileInstance(SharedForkJoinPool.class, sharedForkJoinPool);
       final PafasMWO<I, V> operator = injector.getInstance(PafasMWO.class);
       operators.add(operator);
     }

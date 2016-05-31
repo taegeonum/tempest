@@ -50,7 +50,6 @@ public class GreedySelectionAlgorithm<T> implements DependencyGraph.SelectionAlg
         // Fetch from partial
         if (st < startTime) {
           final Node<T> partialTimespanNode = partialTimespans.getNextPartialTimespanNode(st + period);
-          //System.out.println("st < startTime: " + st);
           childNodes.add(partialTimespanNode);
           st = partialTimespanNode.end - period;
         } else {

@@ -2,6 +2,7 @@ package vldb.operator.window.timescale.pafas;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
    * DependencyGraphNode.
@@ -26,6 +27,8 @@ public final class Node<T> {
    * An output.
    */
   private T output;
+
+  public final AtomicBoolean outputStored = new AtomicBoolean(false);
 
   /**
    * The start time of the node.
@@ -78,6 +81,7 @@ public final class Node<T> {
         final T prevOutput = output;
         synchronized (prevOutput) {
           output = null;
+          outputStored.set(false);
           prevOutput.notifyAll();
         }
         refCnt = initialRefCnt;
@@ -139,6 +143,7 @@ public final class Node<T> {
 
   public void saveOutput(final T value) {
     this.output = value;
+    this.outputStored.set(true);
   }
 
 }

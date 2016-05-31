@@ -1,7 +1,5 @@
 package vldb.evaluation.util;
 
-import org.apache.reef.tang.annotations.Name;
-import org.apache.reef.tang.annotations.NamedParameter;
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.pafas.PeriodCalculator;
@@ -12,22 +10,7 @@ import java.util.*;
 /**
  * Created by taegeonum on 4/25/16.
  */
-public final class RandomSlidingWindowGenerator implements SlidingWindowGenerator {
-
-  @NamedParameter
-  public static final class MinWindowSize implements Name<Integer> {}
-
-  @NamedParameter
-  public static final class MaxWindowSize implements Name<Integer> {}
-
-  @NamedParameter
-  public static final class MinIntervalSize implements Name<Integer> {}
-
-  @NamedParameter
-  public static final class MaxIntervalSize implements Name<Integer> {}
-
-  @NamedParameter(default_value = "9223372036854775807")
-  public static final class MaxPeriod implements Name<Long> {}
+public final class RandomSlidingWindowGenerator2 implements SlidingWindowGenerator {
 
   private final int minWindowSize;
   private final int maxWindowSize;
@@ -35,14 +18,15 @@ public final class RandomSlidingWindowGenerator implements SlidingWindowGenerato
   private final int maxIntervalSize;
   private final List<Integer> intervals = new LinkedList<>();
   private final long maxPeriod;
+  private final List<Integer> divisors;
 
   @Inject
-  private RandomSlidingWindowGenerator(
-      @Parameter(MinWindowSize.class) final int minWindowSize,
-      @Parameter(MaxWindowSize.class) final int maxWindowSize,
-      @Parameter(MinIntervalSize.class) final int minIntervalSize,
-      @Parameter(MaxIntervalSize.class) final int maxIntervalSize,
-      @Parameter(MaxPeriod.class) final long maxPeriod) {
+  private RandomSlidingWindowGenerator2(
+      @Parameter(RandomSlidingWindowGenerator.MinWindowSize.class) final int minWindowSize,
+      @Parameter(RandomSlidingWindowGenerator.MaxWindowSize.class) final int maxWindowSize,
+      @Parameter(RandomSlidingWindowGenerator.MinIntervalSize.class) final int minIntervalSize,
+      @Parameter(RandomSlidingWindowGenerator.MaxIntervalSize.class) final int maxIntervalSize,
+      @Parameter(RandomSlidingWindowGenerator.MaxPeriod.class) final long maxPeriod) {
     assert minWindowSize > 0 && minWindowSize < maxWindowSize;
     assert minIntervalSize > 0 && minIntervalSize < maxIntervalSize;
     this.minWindowSize = minWindowSize;
@@ -50,6 +34,12 @@ public final class RandomSlidingWindowGenerator implements SlidingWindowGenerato
     this.minIntervalSize = minIntervalSize;
     this.maxWindowSize = maxWindowSize;
     this.maxPeriod = maxPeriod;
+    divisors = new LinkedList<>();
+    for (int i = 1; i <= maxPeriod; i++) {
+      if (maxPeriod % i == 0) {
+        divisors.add(i);
+      }
+    }
   }
 
   public List<Integer> getIntervals(final int num) {
@@ -94,7 +84,7 @@ public final class RandomSlidingWindowGenerator implements SlidingWindowGenerato
       //final int windowSize = (Math.abs(random.nextInt()) % (windowRange+1)) + minWindowSize;
       //final int intervalSize = (Math.abs(random.nextInt()) % (intervalRange+1)) + minIntervalSize;
       int windowSize = (Math.abs(random.nextInt()) % (windowRange+1)) + minWindowSize;
-      int intervalSize = (Math.abs(random.nextInt()) % (intervalRange+1)) + minIntervalSize;
+      int intervalSize = divisors.get(Math.abs(random.nextInt())%divisors.size());
       //windowSize = windowSize - windowSize % 10;
       //intervalSize = Math.max(1, intervalSize - intervalSize % 5);
       if (windowSize > intervalSize) {
@@ -102,8 +92,8 @@ public final class RandomSlidingWindowGenerator implements SlidingWindowGenerato
           windowSizes.add(windowSize);
           final Timescale ts = new Timescale(windowSize, intervalSize);
           timescales.add(ts);
-          if (PeriodCalculator.calculatePeriodFromTimescales(timescales) > (Long.MAX_VALUE/300)) {
-          //if (PeriodCalculator.calculatePeriodFromTimescales(timescales) > maxPeriod) {
+          //if (PeriodCalculator.calculatePeriodFromTimescales(timescales) > (Long.MAX_VALUE/300)) {
+          if (PeriodCalculator.calculatePeriodFromTimescales(timescales) > maxPeriod) {
             timescales.remove(ts);
           }
         }

@@ -97,12 +97,13 @@ public final class TwitterEvaluation {
     }, 1, 1, TimeUnit.SECONDS);
 
     final TestRunner.Result result = TestRunner.runFileWordTest(timescales,
-        numThreads, dataPath, operatorType, inputRate, endTime);
+        numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix);
     writer.writeLine(prefix + "_result", operatorType.name() + "\t" + variable + "\t" + result.partialCount + "\t" + result.finalCount + "\t" + result.elapsedTime);
 
     // End of experiments
     Thread.sleep(2000);
     executorService.shutdownNow();
     writer.close();
+    Runtime.getRuntime().halt(1);
   }
 }

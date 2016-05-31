@@ -28,7 +28,7 @@ import vldb.operator.window.timescale.parameter.StartTime;
 import javax.inject.Inject;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -64,9 +64,9 @@ public final class IncrementalParallelDependencyGraphImpl<T> implements Dependen
   private final SelectionAlgorithm<T> selectionAlgorithm;
 
   private long currBuildingIndex;
-  private final long incrementalStep = 4500;
+  private final long incrementalStep = 1;
   private final long largestWindowSize;
-  private final SharedForkJoinPool sharedForkJoinPool;
+  private final ExecutorService executorService;
 
   /**
    * DependencyGraph constructor. This first builds the dependency graph.
@@ -80,7 +80,7 @@ public final class IncrementalParallelDependencyGraphImpl<T> implements Dependen
                                                  final OutputLookupTable<Node<T>> outputLookupTable,
                                                  final SharedForkJoinPool sharedForkJoinPool,
                                                  final SelectionAlgorithm<T> selectionAlgorithm) {
-    this.sharedForkJoinPool = sharedForkJoinPool;
+    this.executorService = Executors.newFixedThreadPool(24);
     this.partialTimespans = partialTimespans;
     this.timescales = tsParser.timescales;
     this.largestWindowSize = timescales.get(timescales.size()-1).windowSize;
@@ -132,9 +132,9 @@ public final class IncrementalParallelDependencyGraphImpl<T> implements Dependen
     // [<-step-><----largestWindow---->....<-behind->]
 
     // Add nodes until incremental step + largestWindow
-    final List<ForkJoinTask> tasks = new LinkedList<>();
+    final List<Future> tasks = new LinkedList<>();
     for (final Timescale timescale : timescales) {
-      tasks.add(sharedForkJoinPool.getForkJoinPool().submit(new Runnable() {
+      tasks.add(executorService.submit(new Runnable() {
         @Override
         public void run() {
           for (long time = timescale.intervalSize + startTime; time <= startTime + incrementalStep + largestWindowSize; time += timescale.intervalSize) {
@@ -142,45 +142,54 @@ public final class IncrementalParallelDependencyGraphImpl<T> implements Dependen
             final long start = time - timescale.windowSize;
             final Node parent = new Node(start, time, false);
             finalTimespans.saveOutput(start, time, parent);
-            LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
+            //LOG.log(Level.INFO, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
           }
         }
       }));
     }
 
     // Add behind nodes
-    final long behindStart = Math.max(startTime + incrementalStep + largestWindowSize,
-        (startTime + period - largestWindowSize + incrementalStep));
+    final long behindStart = Math.max(startTime + incrementalStep + largestWindowSize, (startTime + period - largestWindowSize));
     for (final Timescale timescale : timescales) {
-      tasks.add(sharedForkJoinPool.getForkJoinPool().submit(new Runnable() {
+      tasks.add(executorService.submit(new Runnable() {
         @Override
         public void run() {
-          final long align = behindStart + (timescale.intervalSize - ((behindStart - startTime) % timescale.intervalSize));
-          for (long time = align; time <= period; time += timescale.intervalSize) {
+          //final long align = behindStart + (timescale.intervalSize - ((behindStart - startTime) % timescale.intervalSize));
+          final long alignSize = (timescale.intervalSize
+              - (behindStart - (startTime + timescale.intervalSize - timescale.windowSize)) % timescale.intervalSize);
+          final long align = alignSize == timescale.intervalSize ? behindStart : behindStart + alignSize;
+          for (long time = align + timescale.windowSize; time <= period; time += timescale.intervalSize) {
             // create vertex and add it to the table cell of (time, windowsize)
             final long start = time - timescale.windowSize;
             final Node parent = new Node(start, time, false);
             finalTimespans.saveOutput(start, time, parent);
-            LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
+            //LOG.log(Level.INFO, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
           }
         }
       }));
     }
 
     // Join the tasks creating nodes
-    for (final ForkJoinTask task : tasks) {
-      task.join();
+    for (final Future task : tasks) {
+      try {
+        task.get();
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      } catch (ExecutionException e) {
+        e.printStackTrace();
+      }
     }
 
     // Add edges for the front node
-    final List<ForkJoinTask> taskEdges = new LinkedList<>();
+    final List<Future> taskEdges = new LinkedList<>();
     for (final Timescale timescale : timescales) {
-      taskEdges.add(sharedForkJoinPool.getForkJoinPool().submit(new Runnable() {
+      taskEdges.add(executorService.submit(new Runnable() {
         @Override
         public void run() {
           for (long time = timescale.intervalSize + startTime; time <= startTime + incrementalStep + largestWindowSize; time += timescale.intervalSize) {
             final long start = time - timescale.windowSize;
             try {
+              //System.out.println("Exception: " + start + ", " + time);
               final Node<T> parent = finalTimespans.lookup(start, time);
               final List<Node<T>> childNodes = selectionAlgorithm.selection(start, time);
               for (final Node<T> elem : childNodes) {
@@ -196,8 +205,14 @@ public final class IncrementalParallelDependencyGraphImpl<T> implements Dependen
     }
 
     // Join the tasks connecting edges.
-    for (final ForkJoinTask task : taskEdges) {
-      task.join();
+    for (final Future task : taskEdges) {
+      try {
+        task.get();
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      } catch (ExecutionException e) {
+        e.printStackTrace();
+      }
     }
   }
 
@@ -205,10 +220,10 @@ public final class IncrementalParallelDependencyGraphImpl<T> implements Dependen
    * Add DependencyGraphNode and connect dependent nodes.
    */
   private void addOverlappingWindowNodeAndEdge(final long curr, final long until) {
-    final List<ForkJoinTask> tasks = new LinkedList<>();
+    final List<Future> tasks = new LinkedList<>();
     // Create nodes
     for (final Timescale timescale : timescales) {
-      tasks.add(sharedForkJoinPool.getForkJoinPool().submit(new Runnable() {
+      tasks.add(executorService.submit(new Runnable() {
         @Override
         public void run() {
           final long align = curr + (timescale.intervalSize - (curr - startTime) % timescale.intervalSize);
@@ -229,13 +244,19 @@ public final class IncrementalParallelDependencyGraphImpl<T> implements Dependen
     }
 
     // Join the tasks
-    for (final ForkJoinTask task : tasks) {
-      task.join();
+    for (final Future task : tasks) {
+      try {
+        task.get();
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      } catch (ExecutionException e) {
+        e.printStackTrace();
+      }
     }
 
-    final List<ForkJoinTask> taskEdges = new LinkedList<>();
+    final List<Future> taskEdges = new LinkedList<>();
     for (final Timescale timescale : timescales) {
-      taskEdges.add(sharedForkJoinPool.getForkJoinPool().submit(new Runnable() {
+      taskEdges.add(executorService.submit(new Runnable() {
         @Override
         public void run() {
           final long align = curr + (timescale.intervalSize - (curr - startTime) % timescale.intervalSize);
@@ -264,8 +285,14 @@ public final class IncrementalParallelDependencyGraphImpl<T> implements Dependen
     }
 
     // Join the tasks
-    for (final ForkJoinTask task : taskEdges) {
-      task.join();
+    for (final Future task : taskEdges) {
+      try {
+        task.get();
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      } catch (ExecutionException e) {
+        e.printStackTrace();
+      }
     }
   }
 
@@ -286,8 +313,9 @@ public final class IncrementalParallelDependencyGraphImpl<T> implements Dependen
     final List<Timespan> timespans = new LinkedList<>();
     if (t >= currBuildingIndex && currBuildingIndex + largestWindowSize < period) {
       // Incremental build dependency graph
-      addOverlappingWindowNodeAndEdge(currBuildingIndex + largestWindowSize,
-          Math.min(period, currBuildingIndex + largestWindowSize + incrementalStep));
+      //System.out.println("final build: " + (currBuildingIndex + largestWindowSize) + ", " + Math.min(period, currBuildingIndex + largestWindowSize + incrementalStep));
+          addOverlappingWindowNodeAndEdge(currBuildingIndex + largestWindowSize,
+              Math.min(period, currBuildingIndex + largestWindowSize + incrementalStep));
       currBuildingIndex += incrementalStep;
     }
 
@@ -334,5 +362,9 @@ public final class IncrementalParallelDependencyGraphImpl<T> implements Dependen
   @Override
   public void removeSlidingWindow(final Timescale ts, final long deleteTime) {
 
+  }
+
+  public void close() {
+    executorService.shutdown();
   }
 }

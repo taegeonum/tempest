@@ -13,17 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package vldb.operator.window.timescale.pafas;
+package vldb.operator.window.timescale.parameter;
 
-import org.apache.reef.tang.annotations.DefaultImplementation;
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
 
-/**
- * Generate partial timespans.
- */
-@DefaultImplementation(IncrementalPartialTimespans.class)
-public interface PartialTimespans<T> {
-
-  Node<T> getNextPartialTimespanNode(long currTime);
-
-  long getNextSliceTime(long currTime);
+@NamedParameter(doc = "the number of threads for final aggregation", short_name = "num_final_threads", default_value = "16")
+public final class NumFinalThread implements Name<Integer> {
 }

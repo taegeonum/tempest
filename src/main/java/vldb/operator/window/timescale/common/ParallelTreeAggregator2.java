@@ -3,17 +3,19 @@ package vldb.operator.window.timescale.common;
 
 import vldb.operator.window.aggregator.CAAggregator;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.RecursiveTask;
 import java.util.logging.Logger;
 
 /**
  * This class does parallel tree aggregation for final aggregation.
  */
-public final class ParallelTreeAggregator<I, T> implements AutoCloseable {
-  private static final Logger LOG = Logger.getLogger(ParallelTreeAggregator.class.getCanonicalName());
+public final class ParallelTreeAggregator2<I, T> implements AutoCloseable {
+  private static final Logger LOG = Logger.getLogger(ParallelTreeAggregator2.class.getCanonicalName());
 
   /**
    * The number of threads for parallel aggregation.
@@ -41,16 +43,16 @@ public final class ParallelTreeAggregator<I, T> implements AutoCloseable {
    * @param sequentialThreshold the minimum size which triggers parallel aggregation
    * @param finalAggregator final aggregator
    */
-  public ParallelTreeAggregator(final int numOfParallelThreads,
-                                final int sequentialThreshold,
-                                final CAAggregator<I, T> finalAggregator) {
+  public ParallelTreeAggregator2(final int numOfParallelThreads,
+                                 final int sequentialThreshold,
+                                 final CAAggregator<I, T> finalAggregator) {
     this(numOfParallelThreads, sequentialThreshold, finalAggregator, new ForkJoinPool(numOfParallelThreads));
   }
 
-  public ParallelTreeAggregator(final int numOfParallelThreads,
-                                final int sequentialThreshold,
-                                final CAAggregator<I, T> finalAggregator,
-                                final ForkJoinPool pool) {
+  public ParallelTreeAggregator2(final int numOfParallelThreads,
+                                 final int sequentialThreshold,
+                                 final CAAggregator<I, T> finalAggregator,
+                                 final ForkJoinPool pool) {
     this.sequentialThreshold = sequentialThreshold;
     this.finalAggregator = finalAggregator;
     this.pool = pool;
@@ -62,33 +64,32 @@ public final class ParallelTreeAggregator<I, T> implements AutoCloseable {
    * @param dependentOutputs the dependent outputs
    * @return final result
    */
-  public T doParallelAggregation(final List<T> dependentOutputs) {
+  public ForkJoinTask<T> doParallelAggregation(final List<T> dependentOutputs, final Timespan timespan) {
     // aggregates dependent outputs
     //final ForkJoinPool pool = new ForkJoinPool(numOfParallelThreads);
 
-    final T finalResult;
+    final ForkJoinTask<T> finalResult;
     // do parallel two-level tree aggregation if dependent size is large enough.
     if (dependentOutputs.size() >= sequentialThreshold && numOfParallelThreads > 1) {
-      finalResult = pool.invoke(new Aggregate(dependentOutputs, 0, dependentOutputs.size()));
+      //final ForkJoinTask<T> t = pool.submit(new Aggregate(dependentOutputs, 0, dependentOutputs.size()));
+      finalResult = pool.submit(new Aggregate(dependentOutputs, 0, dependentOutputs.size()));
     } else {
-      try {
+      //try {
         finalResult = pool.submit(new Callable<T>() {
           @Override
           public T call() throws Exception {
             return finalAggregator.aggregate(dependentOutputs);
           }
-        }).get();
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        System.out.println("InterruptedException");
+        });
+      //} catch (final InterruptedException e) {
+       /* e.printStackTrace();
         return (T)new HashMap<>();
         //throw new RuntimeException(e);
       } catch (final ExecutionException e) {
-        System.out.println("ExecutionException");
         e.printStackTrace();
         return (T)new HashMap<>();
         //throw new RuntimeException(e);
-      }
+      }*/
     }
     //pool.shutdown();
     return finalResult;
@@ -132,12 +133,11 @@ public final class ParallelTreeAggregator<I, T> implements AutoCloseable {
       if (end - start == list.size()) {
         // root node
         final List<ForkJoinTask<T>> tasks = new LinkedList<>();
-        final int hop = Math.max(2, list.size() / numOfParallelThreads);
-        final int numParallelism = list.size()/numOfParallelThreads < 2 ? (list.size()/2) : numOfParallelThreads;
+        final int hop = list.size() / numOfParallelThreads;
         // splits the dependent outputs and uses multiple threads for the aggregation of split outputs.
-        for (int i = 0; i < numParallelism; i++) {
+        for (int i = 0; i < numOfParallelThreads; i++) {
           final int startIndex = i * hop;
-          final int endIndex = i == (numParallelism - 1) ? list.size() : startIndex + hop;
+          final int endIndex = i == (numOfParallelThreads - 1) ? list.size() : startIndex + hop;
           final RecursiveTask<T> task = new Aggregate(list, startIndex, endIndex);
           tasks.add(task.fork());
         }

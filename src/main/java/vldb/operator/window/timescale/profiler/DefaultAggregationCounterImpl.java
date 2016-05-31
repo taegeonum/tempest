@@ -4,11 +4,10 @@ import org.apache.reef.tang.annotations.Parameter;
 import vldb.evaluation.parameter.EndTime;
 
 import javax.inject.Inject;
-import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class DefaultAggregationCounterImpl implements AggregationCounter {
 
@@ -18,6 +17,8 @@ public final class DefaultAggregationCounterImpl implements AggregationCounter {
   private final int numKey = 50;
   private final Random random = new Random();
   private final long endTime;
+
+  private final AtomicBoolean stop = new AtomicBoolean(false);
 
   @Inject
   private DefaultAggregationCounterImpl(@Parameter(EndTime.class) final long endTime) {
@@ -34,16 +35,61 @@ public final class DefaultAggregationCounterImpl implements AggregationCounter {
    */
   @Override
   public void incrementPartialAggregation() {
-    while (true) {
-      final int key = Math.abs(random.nextInt()) % numKey;
-      final Long val = paCounterMap.get(key);
-      //System.out.println("KEY: " + key);
-      if (paCounterMap.replace(key, val, val + 1)) {
-        break;
+    if (!stop.get()) {
+      while (true) {
+        final int key = Math.abs(random.nextInt()) % numKey;
+        final Long val = paCounterMap.get(key);
+        //System.out.println("KEY: " + key);
+        try {
+          if (paCounterMap.replace(key, val, val + 1)) {
+            break;
+          }
+        } catch (final NullPointerException e) {
+          e.printStackTrace();
+          System.out.println("key: " + key);
+        }
       }
     }
   }
 
+  public void incrementFinalAggregation() {
+    if (!stop.get()) {
+      while (true) {
+        final int key = Math.abs(random.nextInt()) % numKey;
+        final Long val = faCounterMap.get(key);
+        //System.out.println("KEY: " + key);
+        try {
+          if (faCounterMap.replace(key, val, val + 1)) {
+            break;
+          }
+        } catch (final NullPointerException e) {
+          e.printStackTrace();
+          System.out.println("key: " + key);
+        }
+      }
+    }
+  }
+
+  @Override
+  public void incrementFinalAggregation(final long num) {
+    if (!stop.get()) {
+      while (true) {
+        final int key = Math.abs(random.nextInt()) % numKey;
+        final Long val = faCounterMap.get(key);
+        //System.out.println("KEY: " + key);
+        try {
+          if (faCounterMap.replace(key, val, val + num)) {
+            break;
+          }
+        } catch (final NullPointerException e) {
+          e.printStackTrace();
+          System.out.println("key: " + key);
+        }
+      }
+    }
+  }
+
+  /*
   @Override
   public void incrementFinalAggregation(final long etime, final List<Map> mapList) {
     if (etime <= endTime) {
@@ -66,6 +112,7 @@ public final class DefaultAggregationCounterImpl implements AggregationCounter {
       }
     }
   }
+  */
 
   @Override
   public long getNumPartialAggregation() {
@@ -83,5 +130,10 @@ public final class DefaultAggregationCounterImpl implements AggregationCounter {
       sum += val;
     }
     return sum;
+  }
+
+  @Override
+  public void stopCount() {
+    stop.set(true);
   }
 }

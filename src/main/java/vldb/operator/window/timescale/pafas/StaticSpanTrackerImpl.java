@@ -79,7 +79,7 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
         // Do not count first outgoing edge
         while (true) {
           synchronized (dependentNode) {
-            if (dependentNode.getOutput() == null) {
+            if (!dependentNode.outputStored.get()) {
               // null
               try {
                 //System.out.println("WAIT: " + dependentNode);
@@ -108,7 +108,7 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
       synchronized (node) {
         if (node.getInitialRefCnt() != 0) {
           node.saveOutput(agg);
-          //System.out.println("PUT_AGG: " + timespan + ", " + node + ", " + agg);
+          //System.out.println("PUT_AGG: " + timespan + ", " + node);
           // after saving the output, notify the thread that is waiting for this output.
           node.notifyAll();
         }

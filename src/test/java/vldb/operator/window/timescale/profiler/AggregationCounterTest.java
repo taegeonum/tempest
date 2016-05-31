@@ -7,10 +7,8 @@ import org.apache.reef.tang.exceptions.InjectionException;
 import org.junit.Test;
 import vldb.evaluation.parameter.EndTime;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -50,11 +48,7 @@ public final class AggregationCounterTest {
         @Override
         public void run() {
           for (int j = 0; j < numInput; j++) {
-            final List<Map> maps = new LinkedList<Map>();
-            final Map map = new HashMap();
-            map.put(1, 1);
-            maps.add(map);
-            aggregationCounter.incrementFinalAggregation(5L, maps);
+            aggregationCounter.incrementFinalAggregation();
           }
         }
       }));
