@@ -71,7 +71,7 @@ public final class IncrementalPartialTimespans<T> implements PartialTimespans {
     this.partialTimespanMap = new HashMap<>();
     this.largestWindowSize = timescales.get(timescales.size()-1).windowSize;
     this.currIndex = startTime + incrementalStep + largestWindowSize;
-    LOG.log(Level.INFO, IncrementalPartialTimespans.class + " started. PERIOD: " + period);
+    //LOG.log(Level.INFO, IncrementalPartialTimespans.class + " started. PERIOD: " + period);
     createSliceQueue();
     //System.out.println("TS: " + timescales + ", QUEUE: " + partialTimespanMap);
   }

@@ -114,9 +114,9 @@ public final class DependencyGraphBuildCostEvaluation {
 
     // numWindows
     for (int j = 0; j < 1; j++) {
-      System.out.println("----------------- window " + (20*(j+1)) + "-------------------");
-      for (int i = 0; i < 1; i++) {
-        final List<Timescale> timescales = swg.generateSlidingWindows(20*(j+1));
+      System.out.println("----------------- window " + (100*(j+1)) + "-------------------");
+      for (int i = 0; i < 100; i++) {
+        final List<Timescale> timescales = swg.generateSlidingWindows(100*(j+1));
         Collections.sort(timescales);
         //System.out.println("---------------------W=" + window);
         //System.out.println("--------------------------Type\tConstructionTime-------------------------------");
@@ -130,6 +130,8 @@ public final class DependencyGraphBuildCostEvaluation {
         final Set<Timescale> timescaleSet = new HashSet<>(timescales);
         System.out.println((buildEndTime - buildStartTime) + "\t"
             + PeriodCalculator.calculatePeriodFromTimescales(timescaleSet));
+
+        /*
         System.out.println("----------------- incremental build -------------------");
         long time = 0;
         for (int k = 1; k <= 1000; k++) {
@@ -139,6 +141,7 @@ public final class DependencyGraphBuildCostEvaluation {
           buildEndTime = System.currentTimeMillis();
           System.out.println(k + "\t" + (buildEndTime - buildStartTime));
         }
+        */
         dependencyGraph.close();
       }
     }
