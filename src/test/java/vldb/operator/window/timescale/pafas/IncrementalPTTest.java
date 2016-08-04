@@ -37,18 +37,18 @@ public class IncrementalPTTest {
     jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(timescales));
 
     final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
-    final PartialTimespans<Integer> partialTimespans = injector.getInstance(IncrementalPartialTimespans.class);
+    final PartialTimespans<Integer> partialTimespans = injector.getInstance(InfinitePartialTimespans.class);
     final PartialTimespans<Integer> defaultPT = injector.getInstance(DefaultPartialTimespans.class);
     long time = 0;
     long time2 = 0;
     long period = PeriodCalculator.calculatePeriodFromTimescales(new HashSet<Timescale>(timescales));
-    while (time < period) {
+    while (time < 40000) {
       long prevTime = time;
       long prevTime2 = time2;
       time2 = defaultPT.getNextSliceTime(prevTime2);
       time = partialTimespans.getNextSliceTime(prevTime);
       Assert.assertEquals(time2, time);
-      System.out.println(prevTime + ", " + time + "," + partialTimespans.getNextPartialTimespanNode(prevTime));
+      //System.out.println(prevTime + ", " + time + "," + partialTimespans.getNextPartialTimespanNode(prevTime));
     }
   }
 }

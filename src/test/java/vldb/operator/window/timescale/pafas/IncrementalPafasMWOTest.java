@@ -50,6 +50,15 @@ public final class IncrementalPafasMWOTest {
         .build());
     operatorIds.add("PAFAS-INC");
 
+    // Infinite
+    configurationList.add(IncrementMWOConfiguration.CONF
+        .set(IncrementMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)")
+        .set(IncrementMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+        .set(IncrementMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
+        .set(IncrementMWOConfiguration.START_TIME, currTime)
+        .build());
+    operatorIds.add("PAFAS-INF");
+
 /*
     // On-the-fly operator
     configurationList.add(OntheflyMWOConfiguration.CONF

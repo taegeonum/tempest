@@ -30,18 +30,13 @@ import java.util.logging.Logger;
  * for streamed aggregation. In ACM SIGMOD, 2006
  * It returns next slice time for slicing input stream into paired sliced window.
  */
-public final class DefaultPartialTimespans<T> implements PartialTimespans {
-  private static final Logger LOG = Logger.getLogger(DefaultPartialTimespans.class.getName());
+public final class InfinitePartialTimespans<T> implements PartialTimespans {
+  private static final Logger LOG = Logger.getLogger(InfinitePartialTimespans.class.getName());
 
   /**
    * The list of timescale.
    */
   private final List<Timescale> timescales;
-
-  /**
-   * A period of the repeated pattern.
-   */
-  private final long period;
 
   /**
    * A start time.
@@ -53,23 +48,24 @@ public final class DefaultPartialTimespans<T> implements PartialTimespans {
    */
   private final Map<Long, Node<T>> partialTimespanMap;
 
+  private final long incrementalStep = 2;
+  private final long largestWindowSize;
+  private long currIndex;
+
   /**
    * StaticComputationReuserImpl Implementation.
    * @param startTime an initial start time
    */
   @Inject
-  private DefaultPartialTimespans(final TimescaleParser tsParser,
-                                  @Parameter(StartTime.class) final long startTime,
-                                  final PeriodCalculator periodCalculator) {
+  private InfinitePartialTimespans(final TimescaleParser tsParser,
+                                   @Parameter(StartTime.class) final long startTime) {
     this.timescales = tsParser.timescales;
-    this.period = periodCalculator.getPeriod();
     this.startTime = startTime;
     this.partialTimespanMap = new HashMap<>();
-    LOG.log(Level.INFO, DefaultPartialTimespans.class + " started. PERIOD: " + period);
+    this.largestWindowSize = timescales.get(timescales.size()-1).windowSize;
+    this.currIndex = startTime + incrementalStep + largestWindowSize;
     createSliceQueue();
-    //System.out.println("TS: " + timescales + ", QUEUE: " + partialTimespanMap);
   }
-
 
   /**
    * It creates the list of next slice time.
@@ -85,7 +81,7 @@ public final class DefaultPartialTimespans<T> implements PartialTimespans {
       long time = pairedA;
       boolean odd = true;
 
-      while (time <= period) {
+      while (time <= incrementalStep + largestWindowSize) {
         sliceQueue.add(startTime + time);
         if (odd) {
           time += pairedB;
@@ -94,7 +90,6 @@ public final class DefaultPartialTimespans<T> implements PartialTimespans {
         }
         odd = !odd;
       }
-
       Collections.sort(sliceQueue);
       long prevSliceTime = startTime;
       for (final long nextSliceTime : sliceQueue) {
@@ -105,28 +100,58 @@ public final class DefaultPartialTimespans<T> implements PartialTimespans {
       }
     }
     //System.out.println(sliceQueue);
+    //System.out.println(sliceQueue);
+    //System.out.println(sliceQueue2);
+    //System.out.println(partialTimespanMap);
     LOG.log(Level.FINE, "Sliced queue: " + partialTimespanMap);
   }
 
   @Override
   public Node<T> getNextPartialTimespanNode(final long currTime) {
-    //System.out.println("GET_NEXT_PARTIAL: " + adjStartTime(currTime));
-    return partialTimespanMap.get(adjStartTime(currTime));
+    //System.out.println("GET_NEXT_PARTIAL: " + adjStartTime(currTime) +", " + partialTimespanMap.get(adjStartTime(currTime)));
+    return partialTimespanMap.get(currTime);
   }
 
   @Override
   public long getNextSliceTime(final long currTime) {
-    final long adjTime = adjStartTime(currTime);
-    final Node<T> node = partialTimespanMap.get(adjTime);
-    return node.end + (currTime - adjTime);
-  }
-
-  private long adjStartTime(final long time) {
-    if (time < startTime) {
-      return time + period;
-    } else {
-      return startTime + (time - startTime) % period;
+    // TODO: Incremental build
+    //System.out.println("currTiume : " + currTime + ", currIndex: " + currIndex);
+    if (currTime + largestWindowSize + incrementalStep > currIndex) {
+      long nextStep = currTime + largestWindowSize + incrementalStep;
+      //System.out.println("partial build: " + currIndex + ", "+ nextStep);
+      //System.out.println("adjTime null:" + currTime + ", " + adjTime);
+      final List<Long> sliceQueue = new LinkedList<>();
+      for (final Timescale ts : timescales) {
+        long adjStartTime = currIndex - (currIndex - startTime) % ts.intervalSize;
+        boolean odd = false;
+        while (adjStartTime <= nextStep) {
+          final long pairedB = ts.windowSize % ts.intervalSize;
+          final long pairedA = ts.intervalSize - pairedB;
+          sliceQueue.add(adjStartTime);
+          if (odd) {
+            adjStartTime += pairedB;
+          } else {
+            adjStartTime += pairedA;
+          }
+          odd = !odd;
+        }
+      }
+      Collections.sort(sliceQueue);
+      //System.out.println(sliceQueue);
+      long prevSliceTime = sliceQueue.get(0);
+      for (final long nextSliceTime : sliceQueue) {
+        if (prevSliceTime != nextSliceTime) {
+          if (partialTimespanMap.get(prevSliceTime) == null) {
+            //System.out.println("Add: " + prevSliceTime + ", " + nextSliceTime);
+            partialTimespanMap.put(prevSliceTime, new Node<T>(prevSliceTime, nextSliceTime, true));
+          }
+          prevSliceTime = nextSliceTime;
+        }
+      }
+      currIndex = nextStep;
     }
+    Node<T> node = partialTimespanMap.get(currTime);
+    return node.end;
   }
 
   @Override
