@@ -15,12 +15,9 @@
  */
 package vldb.operator.window.timescale.pafas;
 
-import org.apache.reef.tang.annotations.DefaultImplementation;
-
 /**
  * Generate partial timespans.
  */
-@DefaultImplementation(IncrementalPartialTimespans.class)
 public interface PartialTimespans<T> {
 
   Node<T> getNextPartialTimespanNode(long currTime);

@@ -2,6 +2,7 @@ package vldb.operator.window.timescale.pafas;
 
 import org.apache.reef.tang.*;
 import org.junit.Test;
+import vldb.evaluation.parameter.EndTime;
 import vldb.example.DefaultExtractor;
 import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
 import vldb.operator.window.aggregator.impl.KeyExtractor;
@@ -33,32 +34,46 @@ public final class IncrementalPafasMWOTest {
     final List<String> operatorIds = new LinkedList<>();
 
     // PAFAS-Greedy-incremental
+    /*
     configurationList.add(StaticMWOConfiguration.CONF
         .set(StaticMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)")
         .set(StaticMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-        .set(StaticMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
+        .set(StaticMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
         .set(StaticMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("PAFAS");
 
+    */
     // PAFAS-Greedy-incremental
     configurationList.add(IncrementMWOConfiguration.CONF
         .set(IncrementMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)")
         .set(IncrementMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-        .set(IncrementMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
+        .set(IncrementMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
         .set(IncrementMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("PAFAS-INC");
 
+
+    // single
+    configurationList.add(StaticSingleMWOConfiguration.CONF
+        .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)")
+        .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+        .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+        .set(StaticSingleMWOConfiguration.START_TIME, currTime)
+        .build());
+    operatorIds.add("PAFAS-SINGLE");
+
+
     // Infinite
-    configurationList.add(IncrementMWOConfiguration.CONF
-        .set(IncrementMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)")
-        .set(IncrementMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-        .set(IncrementMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
-        .set(IncrementMWOConfiguration.START_TIME, currTime)
+    /*
+    configurationList.add(InfiniteMWOConfiguration.CONF
+        .set(InfiniteMWOConfiguration.INITIAL_TIMESCALES, "(4,1)(5,2)(6,3)(10,4)")
+        .set(InfiniteMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+        .set(InfiniteMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+        .set(InfiniteMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("PAFAS-INF");
-
+    */
 /*
     // On-the-fly operator
     configurationList.add(OntheflyMWOConfiguration.CONF
@@ -83,6 +98,7 @@ public final class IncrementalPafasMWOTest {
     for (final Configuration conf : configurationList) {
       final Injector injector = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), conf));
       injector.bindVolatileInstance(TimeWindowOutputHandler.class, new LoggingHandler<>(operatorIds.get(i)));
+      injector.bindVolatileParameter(EndTime.class, 500L);
       final TimescaleWindowOperator<String, Map<String, Long>> mwo = injector.getInstance(PafasMWO.class);
       mwos.add(mwo);
       final AggregationCounter aggregationCounter = injector.getInstance(AggregationCounter.class);
@@ -91,14 +107,14 @@ public final class IncrementalPafasMWOTest {
     }
 
     final int numKey = 10;
-    final int numInput = 10000;
+    final int numInput = 5000;
     final Random random = new Random();
     for (i = 0; i < numInput; i++) {
       final int key = Math.abs(random.nextInt()%numKey);
       for (final TimescaleWindowOperator mwo : mwos) {
         mwo.execute(Integer.toString(key));
       }
-      Thread.sleep(10);
+      Thread.sleep(5);
     }
 
     for (final TimescaleWindowOperator mwo : mwos) {

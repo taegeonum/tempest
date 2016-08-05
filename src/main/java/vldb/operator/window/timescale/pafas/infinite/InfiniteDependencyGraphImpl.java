@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vldb.operator.window.timescale.pafas;
+package vldb.operator.window.timescale.pafas.infinite;
 
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.common.NotFoundException;
@@ -22,6 +22,10 @@ import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.OutputLookupTable;
 import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.common.Timespan;
+import vldb.operator.window.timescale.pafas.DependencyGraph;
+import vldb.operator.window.timescale.pafas.Node;
+import vldb.operator.window.timescale.pafas.PartialTimespans;
+import vldb.operator.window.timescale.pafas.PeriodCalculator;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
@@ -57,7 +61,6 @@ public final class InfiniteDependencyGraphImpl<T> implements DependencyGraph {
   private final SelectionAlgorithm<T> selectionAlgorithm;
 
   private long currBuildingIndex;
-  private final long incrementalStep = 60;
   private final long largestWindowSize;
   private final long period;
 
@@ -72,6 +75,7 @@ public final class InfiniteDependencyGraphImpl<T> implements DependencyGraph {
                                       final OutputLookupTable<Node<T>> outputLookupTable,
                                       final SelectionAlgorithm<T> selectionAlgorithm,
                                       final PeriodCalculator periodCalculator) {
+    LOG.info("START " + this.getClass());
     this.partialTimespans = partialTimespans;
     this.timescales = tsParser.timescales;
     this.largestWindowSize = timescales.get(timescales.size()-1).windowSize;
@@ -81,39 +85,6 @@ public final class InfiniteDependencyGraphImpl<T> implements DependencyGraph {
     this.selectionAlgorithm = selectionAlgorithm;
     this.period = periodCalculator.getPeriod();
     addOverlappingWindowNodeAndEdge(startTime, startTime + largestWindowSize);
-  }
-
-  private void addFirstStepNodeAndEdge() {
-    // [---------------------period------------------]
-    // [<-step-><----largestWindow---->....<-behind->]
-
-    // Add nodes until incremental step + largestWindow
-    for (final Timescale timescale : timescales) {
-      for (long time = timescale.intervalSize + startTime; time <= startTime + incrementalStep + largestWindowSize; time += timescale.intervalSize) {
-        // create vertex and add it to the table cell of (time, windowsize)
-        final long start = time - timescale.windowSize;
-        final Node parent = new Node(start, time, false);
-        finalTimespans.saveOutput(start, time, parent);
-        LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
-      }
-    }
-
-    // Add edges for the front node
-    for (final Timescale timescale : timescales) {
-      for (long time = timescale.intervalSize + startTime; time <= startTime + incrementalStep + largestWindowSize; time += timescale.intervalSize) {
-        final long start = time - timescale.windowSize;
-        try {
-          final Node<T> parent = finalTimespans.lookup(start, time);
-          final List<Node<T>> childNodes = selectionAlgorithm.selection(start, time);
-          for (final Node<T> elem : childNodes) {
-            parent.addDependency(elem);
-          }
-        } catch (final NotFoundException e) {
-          e.printStackTrace();
-          throw new RuntimeException(e);
-        }
-      }
-    }
   }
 
   /**
@@ -144,7 +115,7 @@ public final class InfiniteDependencyGraphImpl<T> implements DependencyGraph {
 
     // Add edges
     for (final Node parent : addedNodes) {
-      final List<Node<T>> childNodes = selectionAlgorithm.selection(parent.start, parent.end);
+      final List<Node<T>> childNodes = selectionAlgorithm.selection(Math.max(parent.start, startTime), parent.end);
       LOG.log(Level.FINE, "(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
       for (final Node<T> elem : childNodes) {
         parent.addDependency(elem);

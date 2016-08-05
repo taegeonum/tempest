@@ -13,27 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package vldb.operator.window.timescale.pafas;
+package vldb.operator.window.timescale.pafas.infinite;
 
 import org.apache.reef.tang.formats.ConfigurationModule;
 import org.apache.reef.tang.formats.RequiredImpl;
 import vldb.operator.window.timescale.TimescaleWindowBaseConfiguration;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
+import vldb.operator.window.timescale.common.FinalAggregator;
+import vldb.operator.window.timescale.common.SingleThreadFinalAggregator;
 import vldb.operator.window.timescale.common.SpanTracker;
+import vldb.operator.window.timescale.pafas.DependencyGraph;
+import vldb.operator.window.timescale.pafas.PafasMWO;
+import vldb.operator.window.timescale.pafas.PartialTimespans;
+import vldb.operator.window.timescale.pafas.StaticSpanTrackerImpl;
 
 /**
  * A helper class for static MTS window configuration.
  */
-public final class IncrementMWOConfiguration extends TimescaleWindowBaseConfiguration {
+public final class InfiniteMWOConfiguration extends TimescaleWindowBaseConfiguration {
 
     public static final RequiredImpl<DependencyGraph.SelectionAlgorithm> SELECTION_ALGORITHM = new RequiredImpl<>();
 
-    public static final ConfigurationModule CONF = new IncrementMWOConfiguration()
+    public static final ConfigurationModule CONF = new InfiniteMWOConfiguration()
         .merge(TimescaleWindowBaseConfiguration.CONF)
         .bindImplementation(DependencyGraph.SelectionAlgorithm.class, SELECTION_ALGORITHM)
         .bindImplementation(SpanTracker.class, StaticSpanTrackerImpl.class)
         .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
-        .bindImplementation(PartialTimespans.class, IncrementalPartialTimespans.class)
-        .bindImplementation(DependencyGraph.class, IncrementalParallelDependencyGraphImpl.class)
+        .bindImplementation(PartialTimespans.class, InfinitePartialTimespans.class)
+        .bindImplementation(FinalAggregator.class, SingleThreadFinalAggregator.class)
+        .bindImplementation(DependencyGraph.class, InfiniteDependencyGraphImpl.class)
         .build();
 }

@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package vldb.operator.window.timescale.pafas;
+package vldb.operator.window.timescale.pafas.infinite;
 
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.TimescaleParser;
+import vldb.operator.window.timescale.pafas.Node;
+import vldb.operator.window.timescale.pafas.PartialTimespans;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
@@ -48,7 +50,7 @@ public final class InfinitePartialTimespans<T> implements PartialTimespans {
    */
   private final Map<Long, Node<T>> partialTimespanMap;
 
-  private final long incrementalStep = 2;
+  private final long incrementalStep = 3;
   private final long largestWindowSize;
   private long currIndex;
 
@@ -59,6 +61,7 @@ public final class InfinitePartialTimespans<T> implements PartialTimespans {
   @Inject
   private InfinitePartialTimespans(final TimescaleParser tsParser,
                                    @Parameter(StartTime.class) final long startTime) {
+    LOG.info("START " + this.getClass());
     this.timescales = tsParser.timescales;
     this.startTime = startTime;
     this.partialTimespanMap = new HashMap<>();
@@ -90,13 +93,13 @@ public final class InfinitePartialTimespans<T> implements PartialTimespans {
         }
         odd = !odd;
       }
-      Collections.sort(sliceQueue);
-      long prevSliceTime = startTime;
-      for (final long nextSliceTime : sliceQueue) {
-        if (prevSliceTime != nextSliceTime) {
-          partialTimespanMap.put(prevSliceTime, new Node<T>(prevSliceTime, nextSliceTime, true));
-          prevSliceTime = nextSliceTime;
-        }
+    }
+    Collections.sort(sliceQueue);
+    long prevSliceTime = startTime;
+    for (final long nextSliceTime : sliceQueue) {
+      if (prevSliceTime != nextSliceTime) {
+        partialTimespanMap.put(prevSliceTime, new Node<T>(prevSliceTime, nextSliceTime, true));
+        prevSliceTime = nextSliceTime;
       }
     }
     //System.out.println(sliceQueue);

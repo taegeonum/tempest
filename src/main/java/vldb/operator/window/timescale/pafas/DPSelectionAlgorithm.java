@@ -9,9 +9,10 @@ import vldb.operator.window.timescale.parameter.StartTime;
 import javax.inject.Inject;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.logging.Logger;
 
 public class DPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorithm<T> {
-
+  private final Logger LOG = Logger.getLogger(DPSelectionAlgorithm.class.getName());
   private final PartialTimespans<T> partialTimespans;
   private final OutputLookupTable<Node<T>> finalTimespans;
   private final long period;
@@ -47,24 +48,39 @@ public class DPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorit
       dpTable.put(currentStart, -1);
       dpTableNode.put(currentStart, null);
       final long scanStartPoint, scanEndPoint;
-      if (currentStart < startTime) {
-        scanStartPoint = currentStart + period;
-      } else {
-        scanStartPoint = currentStart;
-      }
+      scanStartPoint = currentStart;
 
       final List<Node<T>> availableNodes = new LinkedList<>();
       try {
         ConcurrentSkipListMap<Long, Node<T>> availableFinalNodes = finalTimespans.lookup(scanStartPoint);
-        for (final long endTime: availableFinalNodes.keySet()) {
+        if (scanStartPoint < startTime) {
+          try {
+            final Map<Long, Node<T>> additionalNodes = finalTimespans.lookup(scanStartPoint + period);
+            //LOG.info("@@@ after: " + additionalNodes);
+            if (additionalNodes != null) {
+              availableFinalNodes.putAll(additionalNodes);
+              //LOG.info("@@@ after2: " + availableFinalNodes);
+            }
+          } catch (final NotFoundException nf) {
+            // Do nothing
+          }
+        }
+        for (final Map.Entry<Long, Node<T>> entry: availableFinalNodes.entrySet()) {
+          final long endTime = entry.getKey();
+          // [s    |i             e]
+          //                   [p--]
           // All nodes are pre-stored to finalTimespans.
           // 1) The node can be itself
           // 2) The node cannot be included in the [start-end)
           // We need to avoid those for correct algorithm.
-          if (!((endTime - scanStartPoint) == (end-start)) &&
-              !((currentStart >= startTime) && (endTime > end))) {
-            final Node<T> finalNode = availableFinalNodes.get(endTime);
+          final Node<T> finalNode = entry.getValue();
+          if (finalNode.end > end) {
             availableNodes.add(finalNode);
+          } else {
+            if (!((endTime - scanStartPoint) == (end - start)) &&
+                !((currentStart >= startTime) && (entry.getKey() > end))) {
+              availableNodes.add(finalNode);
+            }
           }
         }
       } catch (NotFoundException e) {
@@ -76,7 +92,7 @@ public class DPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorit
       }
       for (final Node<T> node : availableNodes) {
         final long beforeStart;
-        if (currentStart < startTime) {
+        if (node.end > end) {
           beforeStart = node.end - period;
         } else {
           beforeStart = node.end;

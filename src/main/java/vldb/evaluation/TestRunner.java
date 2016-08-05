@@ -17,10 +17,8 @@ import vldb.operator.window.timescale.TimescaleWindowOutput;
 import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.naive.NaiveMWOConfiguration;
 import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
-import vldb.operator.window.timescale.pafas.DPSelectionAlgorithm;
-import vldb.operator.window.timescale.pafas.GreedySelectionAlgorithm;
-import vldb.operator.window.timescale.pafas.IncrementMWOConfiguration;
-import vldb.operator.window.timescale.pafas.StaticMWOConfiguration;
+import vldb.operator.window.timescale.pafas.*;
+import vldb.operator.window.timescale.pafas.infinite.InfiniteMWOConfiguration;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
 import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
@@ -40,6 +38,8 @@ public final class TestRunner {
   public enum OperatorType {
     PAFAS,
     PAFAS_DP,
+    PAFAS_SINGLE,
+    PAFAS_INFINITE,
     PAFASI,
     PAFASI_DP,
     TriOps,
@@ -50,6 +50,20 @@ public final class TestRunner {
   private static Configuration getOperatorConf(final OperatorType operatorType,
                                                final String timescaleString) {
     switch (operatorType) {
+      case PAFAS_SINGLE:
+        return StaticSingleMWOConfiguration.CONF
+            .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+            .set(StaticSingleMWOConfiguration.START_TIME, "0")
+            .build();
+      case PAFAS_INFINITE:
+        return InfiniteMWOConfiguration.CONF
+            .set(InfiniteMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(InfiniteMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(InfiniteMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+            .set(InfiniteMWOConfiguration.START_TIME, "0")
+            .build();
       case PAFAS:
         // PAFAS-Greedy
         return StaticMWOConfiguration.CONF
@@ -145,11 +159,14 @@ public final class TestRunner {
         new EvaluationHandler<>(operatorType.name(), countDownLatch, totalTime, writer, prefix));
     final TimescaleWindowOperator<String, Map<String, Long>> mwo = newInjector.getInstance(TimescaleWindowOperator.class);
     final AggregationCounter aggregationCounter = newInjector.getInstance(AggregationCounter.class);
+    final PeriodCalculator periodCalculator = newInjector.getInstance(PeriodCalculator.class);
+    final long period = periodCalculator.getPeriod();
     i += 1;
 
     final long currTime = System.currentTimeMillis();
     long processedInput = 0;
-    while (processedInput < inputRate * totalTime) {
+    Thread.sleep(period);
+    while (processedInput < inputRate * (totalTime - period)) {
       //System.out.println("totalTime: " + (totalTime*1000) + ", elapsed: " + (System.currentTimeMillis() - currTime));
       final String word = wordGenerator.nextString();
       final long cTime = System.nanoTime();

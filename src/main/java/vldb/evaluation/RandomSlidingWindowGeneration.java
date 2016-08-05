@@ -8,8 +8,8 @@ import vldb.evaluation.util.RandomSlidingWindowGenerator;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.TimescaleParser;
 
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -17,10 +17,10 @@ import java.util.List;
  */
 public final class RandomSlidingWindowGeneration {
 
-  static final int minWindowSize = 200;
-  static final int maxWindowSize = 1200;
+  static final int minWindowSize = 10;
+  static final int maxWindowSize = 200;
   static final int minIntervalSize = 1;
-  static final int maxIntervalSize = 100;
+  static final int maxIntervalSize = 10;
 
   public static void main(String[] args) throws InjectionException {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
@@ -34,13 +34,22 @@ public final class RandomSlidingWindowGeneration {
 
     // numWindows
 
-    for (int i = 1; i <= 5; i += 1) {
-      final List<Timescale> timescales = swg.generateSlidingWindows(i*100);
+    /*
+    for (int i = 1; i <= 1; i += 1) {
+      final List<Timescale> timescales = swg.generateSlidingWindows(200);
       Collections.sort(timescales);
       System.out.println(TimescaleParser.parseToString(timescales));
     }
+    */
 
-    final List<Integer> intervals = Arrays.asList(14, 27, 49, 99, 88, 28, 77, 100, 22, 68, 42, 63, 33, 44, 68, 55, 24, 75, 38, 26, 92, 90, 32, 47, 60, 14, 90, 56, 57, 13, 44, 13, 13, 51, 16, 33, 36, 99, 13, 78, 55, 54, 62, 34, 95, 14, 30, 18, 90, 81, 56, 47, 7, 39, 44, 32, 33, 93, 77, 20);
+    final List<Integer> intervals = new LinkedList<>();
+    for (int i = 0; i < 30; i++) {
+      intervals.add(1);
+      intervals.add(2);
+      intervals.add(3);
+      intervals.add(4);
+      intervals.add(5);
+    }
     final List<Timescale> tss = swg.generateSlidingWindowsWithFixedInterval(intervals);
     Collections.sort(tss);
     System.out.println(TimescaleParser.parseToString(tss));

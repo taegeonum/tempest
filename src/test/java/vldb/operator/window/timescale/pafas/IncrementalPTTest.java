@@ -9,6 +9,7 @@ import org.junit.Test;
 import vldb.evaluation.util.RandomSlidingWindowGenerator;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.TimescaleParser;
+import vldb.operator.window.timescale.pafas.infinite.InfinitePartialTimespans;
 import vldb.operator.window.timescale.parameter.TimescaleString;
 
 import java.util.HashSet;
