@@ -29,6 +29,8 @@ import javax.inject.Inject;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
@@ -63,6 +65,8 @@ public final class SingleThreadFinalAggregator<V> implements FinalAggregator<V> 
   private final long endTime;
 
   private final CAAggregator<?, V> aggregateFunction;
+
+  private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
   //private final ConcurrentMap<Timescale, ExecutorService> executorServiceMap;
 
@@ -100,27 +104,32 @@ public final class SingleThreadFinalAggregator<V> implements FinalAggregator<V> 
 
   @Override
   public void triggerFinalAggregation(final List<Timespan> finalTimespans) {
-    Collections.sort(finalTimespans, timespanComparator);
-    for (final Timespan timespan : finalTimespans) {
-      //System.out.println("BEFORE_GET: " + timespan);
-      if (timespan.endTime <= endTime) {
-        final List<V> aggregates = spanTracker.getDependentAggregates(timespan);
-        //System.out.println("AFTER_GET: " + timespan);
-        //aggregationCounter.incrementFinalAggregation(timespan.endTime, (List<Map>)aggregates);
-        //System.out.println("INC: " + timespan);
-        try {
-          final V finalResult = aggregateFunction.aggregate(aggregates);
-          //System.out.println("PUT_TIMESPAN: " + timespan);
-          spanTracker.putAggregate(finalResult, timespan);
-          outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,
-              new DepOutputAndResult<V>(aggregates.size(), finalResult),
-              timespan.startTime, timespan.endTime, timespan.startTime >= startTime));
-        } catch (Exception e) {
-          e.printStackTrace();
-          System.out.println(e);
+    executor.submit(new Runnable() {
+      @Override
+      public void run() {
+        Collections.sort(finalTimespans, timespanComparator);
+        for (final Timespan timespan : finalTimespans) {
+          //System.out.println("BEFORE_GET: " + timespan);
+          if (timespan.endTime <= endTime) {
+            final List<V> aggregates = spanTracker.getDependentAggregates(timespan);
+            //System.out.println("AFTER_GET: " + timespan);
+            //aggregationCounter.incrementFinalAggregation(timespan.endTime, (List<Map>)aggregates);
+            //System.out.println("INC: " + timespan);
+            try {
+              final V finalResult = aggregateFunction.aggregate(aggregates);
+              //System.out.println("PUT_TIMESPAN: " + timespan);
+              spanTracker.putAggregate(finalResult, timespan);
+              outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,
+                  new DepOutputAndResult<V>(aggregates.size(), finalResult),
+                  timespan.startTime, timespan.endTime, timespan.startTime >= startTime));
+            } catch (Exception e) {
+              e.printStackTrace();
+              System.out.println(e);
+            }
+          }
         }
       }
-    }
+    });
   }
 
   @Override

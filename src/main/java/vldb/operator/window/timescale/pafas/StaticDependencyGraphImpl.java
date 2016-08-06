@@ -122,7 +122,8 @@ public final class StaticDependencyGraphImpl<T> implements DependencyGraph {
         final long start = time - timescale.windowSize;
         final Node parent = new Node(start, time, false);
         final List<Node<T>> childNodes = selectionAlgorithm.selection(start, time);
-        LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies1: " + childNodes);
+        //LOG.log(Level.INFO, "(" + start + ", " + time + ") dependencies1: " + childNodes);
+        //System.out.println("LOGGIGN: (" + start + ", " + time + ") dependencies1: " + childNodes);
         for (final Node<T> elem : childNodes) {
           parent.addDependency(elem);
         }

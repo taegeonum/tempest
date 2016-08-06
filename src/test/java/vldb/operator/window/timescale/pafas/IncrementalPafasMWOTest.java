@@ -43,25 +43,37 @@ public final class IncrementalPafasMWOTest {
         .build());
     operatorIds.add("PAFAS");
 
-    */
+
     // PAFAS-Greedy-incremental
     configurationList.add(IncrementMWOConfiguration.CONF
         .set(IncrementMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)")
         .set(IncrementMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-        .set(IncrementMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+        .set(IncrementMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
         .set(IncrementMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("PAFAS-INC");
 
+*/
+
+/*
+    // single
+    configurationList.add(StaticSingleMWOConfiguration.CONF
+        .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, "(10,4)(11,1)(12,3)(13,2)(15,5)(16,2)(17,5)(19,5)(20,2)(21,5)(22,2)(23,3)(24,2)(25,2)(26,1)(27,4)(28,1)(29,2)(30,4)(33,4)(34,4)(35,4)(36,5)(38,5)(40,3)(41,1)(43,3)(44,4)(45,5)(46,1)(48,4)(50,2)(53,1)(55,1)(56,5)(58,1)(59,3)(61,2)(62,1)(64,3)(65,2)(66,3)(67,2)(68,2)(70,3)(71,4)(72,3)(73,2)(75,4)(76,5)(78,3)(79,3)(80,3)(81,1)(82,2)(83,1)(84,3)(88,5)(91,1)(92,5)(93,3)(94,1)(95,4)(96,4)(97,1)(98,1)(99,4)(100,1)(101,1)(102,3)(103,1)(104,1)(106,4)(108,3)(109,3)(110,4)(111,1)(112,4)(114,3)(115,2)(116,4)(117,1)(119,1)(120,2)(121,4)(123,4)(125,5)(126,2)(127,5)(128,3)(130,4)(132,5)(133,3)(134,2)(135,5)(136,1)(137,3)(139,5)(140,1)(141,3)(142,1)(144,4)(145,2)(146,2)(147,4)(148,2)(149,2)(150,2)(152,1)(153,4)(155,5)(156,5)(157,5)(158,3)(159,5)(160,5)(161,5)(162,5)(163,3)(164,3)(166,4)(167,4)(170,4)(171,3)(172,1)(174,3)(175,3)(176,2)(177,5)(178,5)(179,2)(180,2)(181,2)(182,3)(183,5)(184,5)(186,2)(187,4)(188,2)(189,4)(190,5)(191,4)(192,1)(193,1)(194,5)(195,1)(196,4)(198,3)(199,2)(200,5)")
+        .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+        .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
+        .set(StaticSingleMWOConfiguration.START_TIME, currTime)
+        .build());
+    operatorIds.add("PAFAS-SINGLE-GREEDY");
+*/
 
     // single
     configurationList.add(StaticSingleMWOConfiguration.CONF
-        .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)")
+        .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, "(10,4)(11,1)(12,3)(13,2)(15,5)(16,2)(17,5)(19,5)(20,2)(21,5)(22,2)(23,3)(24,2)(25,2)(26,1)(27,4)(28,1)(29,2)(30,4)(33,4)(34,4)(35,4)(36,5)(38,5)(40,3)(41,1)(43,3)(44,4)(45,5)(46,1)(48,4)(50,2)(53,1)(55,1)(56,5)(58,1)(59,3)(61,2)(62,1)(64,3)(65,2)(66,3)(67,2)(68,2)(70,3)(71,4)(72,3)(73,2)(75,4)(76,5)(78,3)(79,3)(80,3)(81,1)(82,2)(83,1)(84,3)(88,5)(91,1)(92,5)(93,3)(94,1)(95,4)(96,4)(97,1)(98,1)(99,4)(100,1)(101,1)(102,3)(103,1)(104,1)(106,4)(108,3)(109,3)(110,4)(111,1)(112,4)(114,3)(115,2)(116,4)(117,1)(119,1)(120,2)(121,4)(123,4)(125,5)(126,2)(127,5)(128,3)(130,4)(132,5)(133,3)(134,2)(135,5)(136,1)(137,3)(139,5)(140,1)(141,3)(142,1)(144,4)(145,2)(146,2)(147,4)(148,2)(149,2)(150,2)(152,1)(153,4)(155,5)(156,5)(157,5)(158,3)(159,5)(160,5)(161,5)(162,5)(163,3)(164,3)(166,4)(167,4)(170,4)(171,3)(172,1)(174,3)(175,3)(176,2)(177,5)(178,5)(179,2)(180,2)(181,2)(182,3)(183,5)(184,5)(186,2)(187,4)(188,2)(189,4)(190,5)(191,4)(192,1)(193,1)(194,5)(195,1)(196,4)(198,3)(199,2)(200,5)")
         .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
         .set(StaticSingleMWOConfiguration.START_TIME, currTime)
         .build());
-    operatorIds.add("PAFAS-SINGLE");
+    operatorIds.add("PAFAS-SINGLE-DP");
 
 
     // Infinite
@@ -106,15 +118,15 @@ public final class IncrementalPafasMWOTest {
       i += 1;
     }
 
-    final int numKey = 10;
-    final int numInput = 5000;
+    final int numKey = 1000;
+    final int numInput = 10000;
     final Random random = new Random();
     for (i = 0; i < numInput; i++) {
       final int key = Math.abs(random.nextInt()%numKey);
       for (final TimescaleWindowOperator mwo : mwos) {
         mwo.execute(Integer.toString(key));
       }
-      Thread.sleep(5);
+      Thread.sleep(10);
     }
 
     for (final TimescaleWindowOperator mwo : mwos) {

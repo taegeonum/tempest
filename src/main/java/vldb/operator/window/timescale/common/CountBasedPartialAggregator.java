@@ -22,10 +22,9 @@ import vldb.operator.window.timescale.profiler.AggregationCounter;
 
 import javax.inject.Inject;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -34,8 +33,8 @@ import java.util.logging.Logger;
  * @param <I> input
  * @param <V> aggregated result
  */
-final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
-  private static final Logger LOG = Logger.getLogger(DefaultPartialAggregator.class.getName());
+public final class CountBasedPartialAggregator<I, V> implements PartialAggregator<I> {
+  private static final Logger LOG = Logger.getLogger(CountBasedPartialAggregator.class.getName());
 
   /**
    * Aggregator for incremental aggregation.
@@ -63,25 +62,22 @@ final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
    */
   private final Object sync = new Object();
 
-  private final ScheduledExecutorService executorService;
-
   private final SpanTracker<V> spanTracker;
 
   private final FinalAggregator<V> finalAggregator;
-
-  private long nextRealTime;
 
   private final AggregationCounter aggregationCounter;
 
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
+  private long count = 0;
   /**
    * DefaultSlicedWindowOperatorImpl.
    * @param aggregator an aggregator for incremental aggregation
    * @param startTime a start time of the mts operator
    */
   @Inject
-  private DefaultPartialAggregator(
+  private CountBasedPartialAggregator(
       final CAAggregator<I, V> aggregator,
       final SpanTracker<V> spanTracker,
       final FinalAggregator<V> finalAggregator,
@@ -90,13 +86,10 @@ final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
     this.aggregationCounter = aggregationCounter;
     this.aggregator = aggregator;
     this.bucket = aggregator.init();
-    this.executorService = Executors.newSingleThreadScheduledExecutor();
     this.prevSliceTime = startTime;
     this.spanTracker = spanTracker;
     this.finalAggregator = finalAggregator;
     this.nextSliceTime = spanTracker.getNextSliceTime(startTime);
-    this.nextRealTime = System.currentTimeMillis() + (nextSliceTime - prevSliceTime) * 1000;
-    executorService.schedule(new PartialAggregateEmitter(), nextSliceTime - prevSliceTime, TimeUnit.SECONDS);
   }
 
   /**
@@ -106,44 +99,26 @@ final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
   @Override
   public void execute(final I val) {
     LOG.log(Level.FINE, "SlicedWindow aggregates input of [" +  val + "]");
-    synchronized (sync) {
-      aggregator.incrementalAggregate(bucket, val);
-      aggregationCounter.incrementPartialAggregation();
+    aggregator.incrementalAggregate(bucket, val);
+    aggregationCounter.incrementPartialAggregation();
+    count += 1;
+    if (count == (nextSliceTime - prevSliceTime) * 1000) {
+      final V partialAggregation = bucket;
+      bucket = aggregator.init();
+      System.out.println("PARTIAL_SIZE: " + ((Map)partialAggregation).size() + "\t" + (prevSliceTime) + "-" + (nextSliceTime));
+      final long next = nextSliceTime;
+      final long prev = prevSliceTime;
+      prevSliceTime = nextSliceTime;
+      nextSliceTime = spanTracker.getNextSliceTime(prevSliceTime);
+      spanTracker.putAggregate(partialAggregation, new Timespan(prev, next, null));
+      final List<Timespan> finalTimespans = spanTracker.getFinalTimespans(next);
+      finalAggregator.triggerFinalAggregation(finalTimespans);
+      count = 0;
     }
   }
 
   @Override
   public void close() throws Exception {
-    executorService.shutdown();
-  }
-
-  final class PartialAggregateEmitter implements Runnable {
-    @Override
-    public void run() {
-      final long currTime = System.currentTimeMillis();
-      // create a new bucket
-      final V partialAggregation;
-      synchronized (sync) {
-        partialAggregation = bucket;
-        bucket = aggregator.init();
-      }
-      final long next = nextSliceTime;
-      final long prev = prevSliceTime;
-      prevSliceTime = nextSliceTime;
-      nextSliceTime = spanTracker.getNextSliceTime(prevSliceTime);
-      nextRealTime = nextRealTime + (nextSliceTime - prevSliceTime) * 1000;
-      executorService.schedule(new PartialAggregateEmitter(), nextRealTime - currTime, TimeUnit.MILLISECONDS);
-      executor.submit(new Runnable() {
-        @Override
-        public void run() {
-          // Store the partial aggregate to SpanTracker.
-          //System.out.println("PUT: [" + prevSliceTime + ", " + nextSliceTime + ")");
-          spanTracker.putAggregate(partialAggregation, new Timespan(prev, next, null));
-          // Get final timespans
-          final List<Timespan> finalTimespans = spanTracker.getFinalTimespans(next);
-          finalAggregator.triggerFinalAggregation(finalTimespans);
-        }
-      });
-    }
+    executor.shutdown();
   }
 }

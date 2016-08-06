@@ -39,7 +39,10 @@ public final class TestRunner {
     PAFAS,
     PAFAS_DP,
     PAFAS_SINGLE,
+    PAFAS_SINGLE_COUNT,
     PAFAS_INFINITE,
+    PAFAS_SINGLE_GREEDY,
+    PAFAS_SINGLE_GREEDY_COUNT,
     PAFASI,
     PAFASI_DP,
     TriOps,
@@ -50,11 +53,32 @@ public final class TestRunner {
   private static Configuration getOperatorConf(final OperatorType operatorType,
                                                final String timescaleString) {
     switch (operatorType) {
+      case PAFAS_SINGLE_COUNT:
+        return StaticSingleCountMWOConfiguration.CONF
+            .set(StaticSingleCountMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(StaticSingleCountMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(StaticSingleCountMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+            .set(StaticSingleCountMWOConfiguration.START_TIME, "0")
+            .build();
+      case PAFAS_SINGLE_GREEDY_COUNT:
+        return StaticSingleCountMWOConfiguration.CONF
+            .set(StaticSingleCountMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(StaticSingleCountMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(StaticSingleCountMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
+            .set(StaticSingleCountMWOConfiguration.START_TIME, "0")
+            .build();
       case PAFAS_SINGLE:
         return StaticSingleMWOConfiguration.CONF
             .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+            .set(StaticSingleMWOConfiguration.START_TIME, "0")
+            .build();
+      case PAFAS_SINGLE_GREEDY:
+        return StaticSingleMWOConfiguration.CONF
+            .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
             .build();
       case PAFAS_INFINITE:
@@ -165,8 +189,8 @@ public final class TestRunner {
 
     final long currTime = System.currentTimeMillis();
     long processedInput = 0;
-    Thread.sleep(period);
-    while (processedInput < inputRate * (totalTime - period)) {
+    //Thread.sleep(period);
+    while (processedInput < inputRate * (totalTime)) {
       //System.out.println("totalTime: " + (totalTime*1000) + ", elapsed: " + (System.currentTimeMillis() - currTime));
       final String word = wordGenerator.nextString();
       final long cTime = System.nanoTime();
