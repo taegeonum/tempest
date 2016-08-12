@@ -14,6 +14,5 @@ public interface AggregationCounter {
   long getNumPartialAggregation();
 
   long getNumFinalAggregation();
-
   void stopCount();
 }

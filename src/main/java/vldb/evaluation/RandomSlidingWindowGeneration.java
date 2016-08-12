@@ -18,7 +18,7 @@ import java.util.List;
 public final class RandomSlidingWindowGeneration {
 
   static final int minWindowSize = 10;
-  static final int maxWindowSize = 200;
+  static final int maxWindowSize = 500;
   static final int minIntervalSize = 1;
   static final int maxIntervalSize = 10;
 
@@ -43,12 +43,17 @@ public final class RandomSlidingWindowGeneration {
     */
 
     final List<Integer> intervals = new LinkedList<>();
-    for (int i = 0; i < 30; i++) {
-      intervals.add(1);
-      intervals.add(2);
-      intervals.add(3);
-      intervals.add(4);
-      intervals.add(5);
+    for (int i = 0; i < 10; i++) {
+      intervals.add(10);
+      intervals.add(20);
+      intervals.add(30);
+      intervals.add(40);
+      intervals.add(50);
+      intervals.add(60);
+      intervals.add(70);
+      intervals.add(80);
+      intervals.add(90);
+      intervals.add(100);
     }
     final List<Timescale> tss = swg.generateSlidingWindowsWithFixedInterval(intervals);
     Collections.sort(tss);

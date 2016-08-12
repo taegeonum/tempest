@@ -158,6 +158,11 @@ public final class InfinitePartialTimespans<T> implements PartialTimespans {
   }
 
   @Override
+  public void removeNode(final long startTime) {
+    partialTimespanMap.remove(startTime);
+  }
+
+  @Override
   public String toString() {
     return partialTimespanMap.toString();
   }

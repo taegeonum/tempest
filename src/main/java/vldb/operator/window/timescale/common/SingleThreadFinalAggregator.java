@@ -104,32 +104,28 @@ public final class SingleThreadFinalAggregator<V> implements FinalAggregator<V> 
 
   @Override
   public void triggerFinalAggregation(final List<Timespan> finalTimespans) {
-    executor.submit(new Runnable() {
-      @Override
-      public void run() {
-        Collections.sort(finalTimespans, timespanComparator);
-        for (final Timespan timespan : finalTimespans) {
-          //System.out.println("BEFORE_GET: " + timespan);
-          if (timespan.endTime <= endTime) {
-            final List<V> aggregates = spanTracker.getDependentAggregates(timespan);
-            //System.out.println("AFTER_GET: " + timespan);
-            //aggregationCounter.incrementFinalAggregation(timespan.endTime, (List<Map>)aggregates);
-            //System.out.println("INC: " + timespan);
-            try {
-              final V finalResult = aggregateFunction.aggregate(aggregates);
-              //System.out.println("PUT_TIMESPAN: " + timespan);
-              spanTracker.putAggregate(finalResult, timespan);
-              outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,
-                  new DepOutputAndResult<V>(aggregates.size(), finalResult),
-                  timespan.startTime, timespan.endTime, timespan.startTime >= startTime));
-            } catch (Exception e) {
-              e.printStackTrace();
-              System.out.println(e);
-            }
-          }
+    Collections.sort(finalTimespans, timespanComparator);
+    for (final Timespan timespan : finalTimespans) {
+      //System.out.println("BEFORE_GET: " + timespan);
+      if (timespan.endTime <= endTime) {
+        final List<V> aggregates = spanTracker.getDependentAggregates(timespan);
+        //System.out.println("AFTER_GET: " + timespan);
+        //aggregationCounter.incrementFinalAggregation(timespan.endTime, (List<Map>)aggregates);
+        //System.out.println("INC: " + timespan);
+        try {
+          //System.out.println("FINAL: (" + timespan.startTime + ", " + timespan.endTime + ")");
+          final V finalResult = aggregateFunction.aggregate(aggregates);
+          //System.out.println("PUT_TIMESPAN: " + timespan);
+          spanTracker.putAggregate(finalResult, timespan);
+          outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,
+              new DepOutputAndResult<V>(aggregates.size(), finalResult),
+              timespan.startTime, timespan.endTime, timespan.startTime >= startTime));
+        } catch (Exception e) {
+          e.printStackTrace();
+          System.out.println(e);
         }
       }
-    });
+    }
   }
 
   @Override

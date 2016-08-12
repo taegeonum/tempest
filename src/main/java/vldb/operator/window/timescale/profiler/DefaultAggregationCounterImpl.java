@@ -13,6 +13,7 @@ public final class DefaultAggregationCounterImpl implements AggregationCounter {
 
   private final ConcurrentMap<Integer, Long> paCounterMap;
   private final ConcurrentMap<Integer, Long> faCounterMap;
+  private final ConcurrentMap<Integer, Long> processedKeyMap;
 
   private final int numKey = 50;
   private final Random random = new Random();
@@ -25,9 +26,11 @@ public final class DefaultAggregationCounterImpl implements AggregationCounter {
     this.endTime = endTime;
     this.paCounterMap = new ConcurrentHashMap<>();
     this.faCounterMap = new ConcurrentHashMap<>();
+    this.processedKeyMap = new ConcurrentHashMap<>();
     for (int i = 0; i < numKey; i++) {
       this.paCounterMap.put(i, 0L);
       this.faCounterMap.put(i, 0L);
+      this.processedKeyMap.put(i, 0L);
     }
   }
 

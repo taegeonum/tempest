@@ -98,7 +98,7 @@ public final class TwitterEvaluation {
 
     final TestRunner.Result result = TestRunner.runFileWordTest(timescales,
         numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix);
-    writer.writeLine(prefix + "_result", operatorType.name() + "\t" + variable + "\t" + result.partialCount + "\t" + result.finalCount + "\t" + result.elapsedTime);
+    writer.writeLine(prefix + "_result", operatorType.name() + "\t" + variable + "\t" + result.partialCount + "\t" + result.finalCount + "\t" + result.processedInput + "\t" + result.elapsedTime);
 
     // End of experiments
     Thread.sleep(2000);

@@ -82,7 +82,7 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
             if (!dependentNode.outputStored.get()) {
               // null
               try {
-                //System.out.println("WAIT: " + dependentNode);
+                System.out.println("WAIT: " + dependentNode +", final: " + timespan);
                 dependentNode.wait();
                 //System.out.println("AWAKE: " + dependentNode);
               } catch (InterruptedException e) {
@@ -104,6 +104,9 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
   @Override
   public void putAggregate(final T agg, final Timespan timespan) {
     final Node<T> node = dependencyGraph.getNode(timespan);
+    //if (timespan.timescale == null) {
+    //  System.out.println("PUT_PARTIAL: " + timespan.startTime + ", " + timespan.endTime + " node: " + node.start + ", " + node.end);
+    //}
     if (node.getInitialRefCnt() != 0) {
       synchronized (node) {
         if (node.getInitialRefCnt() != 0) {

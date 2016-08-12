@@ -18,6 +18,7 @@ import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.naive.NaiveMWOConfiguration;
 import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
 import vldb.operator.window.timescale.pafas.*;
+import vldb.operator.window.timescale.pafas.infinite.InfiniteCountMWOConfiguration;
 import vldb.operator.window.timescale.pafas.infinite.InfiniteMWOConfiguration;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
@@ -43,6 +44,7 @@ public final class TestRunner {
     PAFAS_INFINITE,
     PAFAS_SINGLE_GREEDY,
     PAFAS_SINGLE_GREEDY_COUNT,
+    PAFAS_INFINITE_COUNT,
     PAFASI,
     PAFASI_DP,
     TriOps,
@@ -59,6 +61,13 @@ public final class TestRunner {
             .set(StaticSingleCountMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(StaticSingleCountMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
             .set(StaticSingleCountMWOConfiguration.START_TIME, "0")
+            .build();
+      case PAFAS_INFINITE_COUNT:
+        return InfiniteCountMWOConfiguration.CONF
+            .set(InfiniteCountMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(InfiniteCountMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(InfiniteCountMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+            .set(InfiniteCountMWOConfiguration.START_TIME, "0")
             .build();
       case PAFAS_SINGLE_GREEDY_COUNT:
         return StaticSingleCountMWOConfiguration.CONF
@@ -190,7 +199,10 @@ public final class TestRunner {
     final long currTime = System.currentTimeMillis();
     long processedInput = 0;
     //Thread.sleep(period);
-    while (processedInput < inputRate * (totalTime)) {
+    // FOR TIME
+    //while (processedInput < inputRate * (totalTime)) {
+    // FOR COUNT
+    while (processedInput < 100 * (totalTime)) {
       //System.out.println("totalTime: " + (totalTime*1000) + ", elapsed: " + (System.currentTimeMillis() - currTime));
       final String word = wordGenerator.nextString();
       final long cTime = System.nanoTime();
@@ -199,11 +211,12 @@ public final class TestRunner {
         // End of input
         break;
       }
+
       mwo.execute(word);
       processedInput += 1;
-      while (System.nanoTime() - cTime < 1000000000*(1.0/inputRate)) {
+      //while (System.nanoTime() - cTime < 1000000000*(1.0/inputRate)) {
         // adjust input rate
-      }
+      //}
     }
     final long endTime = System.currentTimeMillis();
     countDownLatch.await();
@@ -214,7 +227,7 @@ public final class TestRunner {
     //writer.writeLine(outputPath+"/result", "PARTIAL="+partialCount);
     //writer.writeLine(outputPath+"/result", "FINAL=" + finalCount);
     //writer.writeLine(outputPath+"/result", "ELAPSED_TIME="+(endTime-currTime));
-    return new Result(partialCount, finalCount, (endTime - currTime));
+    return new Result(partialCount, finalCount, processedInput, (endTime - currTime));
   }
 
   public static Result runTest(final List<Timescale> timescales,
@@ -284,19 +297,22 @@ public final class TestRunner {
     //writer.writeLine(outputPath+"/result", "PARTIAL="+partialCount);
     //writer.writeLine(outputPath+"/result", "FINAL=" + finalCount);
     //writer.writeLine(outputPath+"/result", "ELAPSED_TIME="+(endTime-currTime));
-    return new Result(partialCount, finalCount, (endTime - currTime));
+    return new Result(partialCount, finalCount, 0, (endTime - currTime));
   }
 
   public static class Result {
     public final long partialCount;
     public final long finalCount;
     public final long elapsedTime;
+    public final long processedInput;
 
     public Result(final long partialCount,
                   final long finalCount,
+                  final long processedInput,
                   final long elapsedTime) {
       this.partialCount = partialCount;
       this.finalCount = finalCount;
+      this.processedInput = processedInput;
       this.elapsedTime = elapsedTime;
     }
   }

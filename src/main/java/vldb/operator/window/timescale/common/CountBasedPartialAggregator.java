@@ -22,7 +22,6 @@ import vldb.operator.window.timescale.profiler.AggregationCounter;
 
 import javax.inject.Inject;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -102,10 +101,10 @@ public final class CountBasedPartialAggregator<I, V> implements PartialAggregato
     aggregator.incrementalAggregate(bucket, val);
     aggregationCounter.incrementPartialAggregation();
     count += 1;
-    if (count == (nextSliceTime - prevSliceTime) * 1000) {
+    if (count == (nextSliceTime - prevSliceTime) * 100) {
       final V partialAggregation = bucket;
       bucket = aggregator.init();
-      System.out.println("PARTIAL_SIZE: " + ((Map)partialAggregation).size() + "\t" + (prevSliceTime) + "-" + (nextSliceTime));
+      //System.out.println("PARTIAL_SIZE: " + ((Map)partialAggregation).size() + "\t" + (prevSliceTime) + "-" + (nextSliceTime));
       final long next = nextSliceTime;
       final long prev = prevSliceTime;
       prevSliceTime = nextSliceTime;
