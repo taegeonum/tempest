@@ -18,6 +18,8 @@ package vldb.operator.window.timescale.onthefly;
 import org.apache.reef.tang.formats.ConfigurationModule;
 import vldb.operator.window.timescale.TimescaleWindowBaseConfiguration;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
+import vldb.operator.window.timescale.common.FinalAggregator;
+import vldb.operator.window.timescale.common.SingleThreadFinalAggregator;
 import vldb.operator.window.timescale.common.SpanTracker;
 import vldb.operator.window.timescale.pafas.*;
 
@@ -30,7 +32,9 @@ public final class OntheflyMWOConfiguration extends TimescaleWindowBaseConfigura
       .merge(TimescaleWindowBaseConfiguration.CONF)
       .bindImplementation(SpanTracker.class, StaticSpanTrackerImpl.class)
       .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
-      .bindImplementation(DependencyGraph.class, IncrementalParallelDependencyGraphImpl.class)
       .bindImplementation(DependencyGraph.SelectionAlgorithm.class, OntheflySelectionAlgorithm.class)
+      .bindImplementation(PartialTimespans.class, DefaultPartialTimespans.class)
+      .bindImplementation(FinalAggregator.class, SingleThreadFinalAggregator.class)
+      .bindImplementation(DependencyGraph.class, StaticDependencyGraphImpl.class)
       .build();
 }

@@ -83,7 +83,6 @@ public final class PafasMWO<I, V> implements TimescaleWindowOperator<I, V> {
    */
   @Override
   public void execute(final I val) {
-    //LOG.log(Level.FINEST, PafasMWO.class.getName() + " execute : ( " + val + ")");
     this.partialAggregator.execute(val);
   }
 

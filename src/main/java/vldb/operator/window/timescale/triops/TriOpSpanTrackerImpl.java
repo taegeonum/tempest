@@ -82,6 +82,7 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
       jcb.bindImplementation(DependencyGraph.SelectionAlgorithm.class, OntheflySelectionAlgorithm.class);
       jcb.bindNamedParameter(StartTime.class, startTime+"");
       jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(tss));
+      jcb.bindImplementation(PartialTimespans.class, DefaultPartialTimespans.class);
 
       final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
       final DependencyGraph<T> dependencyGraph = injector.getInstance(StaticDependencyGraphImpl.class);

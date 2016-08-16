@@ -18,6 +18,7 @@ import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.naive.NaiveMWOConfiguration;
 import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
 import vldb.operator.window.timescale.pafas.*;
+import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.pafas.infinite.InfiniteCountMWOConfiguration;
 import vldb.operator.window.timescale.pafas.infinite.InfiniteMWOConfiguration;
 import vldb.operator.window.timescale.parameter.NumThreads;
@@ -29,6 +30,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by taegeonum on 4/28/16.
@@ -40,6 +42,8 @@ public final class TestRunner {
     PAFAS,
     PAFAS_DP,
     PAFAS_SINGLE,
+    PAFAS_SINGLE_ALL_STORE,
+    PAFAS_SINGLE_NO_REFCNT,
     PAFAS_SINGLE_COUNT,
     PAFAS_INFINITE,
     PAFAS_SINGLE_GREEDY,
@@ -82,6 +86,20 @@ public final class TestRunner {
             .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
+            .build();
+      case PAFAS_SINGLE_ALL_STORE:
+        return StaticSingleAllStoreMWOConfiguration.CONF
+            .set(StaticSingleAllStoreMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(StaticSingleAllStoreMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(StaticSingleAllStoreMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+            .set(StaticSingleAllStoreMWOConfiguration.START_TIME, "0")
+            .build();
+      case PAFAS_SINGLE_NO_REFCNT:
+        return StaticSingleNoRefCntMWOConfiguration.CONF
+            .set(StaticSingleNoRefCntMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(StaticSingleNoRefCntMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(StaticSingleNoRefCntMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+            .set(StaticSingleNoRefCntMWOConfiguration.START_TIME, "0")
             .build();
       case PAFAS_SINGLE_GREEDY:
         return StaticSingleMWOConfiguration.CONF
@@ -190,7 +208,7 @@ public final class TestRunner {
 
     newInjector.bindVolatileInstance(TimeWindowOutputHandler.class,
         new EvaluationHandler<>(operatorType.name(), countDownLatch, totalTime, writer, prefix));
-    final TimescaleWindowOperator<String, Map<String, Long>> mwo = newInjector.getInstance(TimescaleWindowOperator.class);
+    final TimescaleWindowOperator<Object, Map<String, Long>> mwo = newInjector.getInstance(TimescaleWindowOperator.class);
     final AggregationCounter aggregationCounter = newInjector.getInstance(AggregationCounter.class);
     final PeriodCalculator periodCalculator = newInjector.getInstance(PeriodCalculator.class);
     final long period = periodCalculator.getPeriod();
@@ -202,7 +220,9 @@ public final class TestRunner {
     // FOR TIME
     //while (processedInput < inputRate * (totalTime)) {
     // FOR COUNT
-    while (processedInput < 100 * (totalTime)) {
+    long prevTickTime = System.nanoTime();
+    long tick = 1;
+    while (tick <= totalTime) {
       //System.out.println("totalTime: " + (totalTime*1000) + ", elapsed: " + (System.currentTimeMillis() - currTime));
       final String word = wordGenerator.nextString();
       final long cTime = System.nanoTime();
@@ -212,7 +232,14 @@ public final class TestRunner {
         break;
       }
 
+      if (processedInput % ((long)inputRate) == 0) {
+        mwo.execute(new WindowTimeEvent(tick));
+        tick += 1;
+        prevTickTime += TimeUnit.SECONDS.toNanos(1);
+      }
+
       mwo.execute(word);
+
       processedInput += 1;
       //while (System.nanoTime() - cTime < 1000000000*(1.0/inputRate)) {
         // adjust input rate

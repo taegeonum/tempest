@@ -26,10 +26,12 @@ public final class FileWordGenerator extends Generator {
   private Scanner sc;
   private int index = 0;
   private String[] buffer = null;
+  private final String filePath;
 
   @Inject
   private FileWordGenerator(
       @Parameter(FileDataPath.class) final String fileDataPath) {
+    this.filePath = fileDataPath;
     this.inputFile = new File(fileDataPath);
     if (!inputFile.isFile()) {
       throw new RuntimeException(inputFile + " is not file");
@@ -49,28 +51,22 @@ public final class FileWordGenerator extends Generator {
    */
   @Override
   public String nextString() {
-    if (index >= buffer.length) {
-      if (sc.hasNextLine()) {
-        index = 0;
-        final String line = sc.nextLine();
-        if (line.length() == 0) {
-          return "noword";
-        }
-        buffer = line.split(" ");
+    if (sc.hasNextLine()) {
+      final String str = sc.nextLine();
+      if (str != null) {
+        return str;
       } else {
-        return null;
+        return "a";
       }
-    }
-    try {
-      String word = buffer[index];
-      word = word.toLowerCase();
-      word = word.trim();
-      index += 1;
-      return word;
-    } catch (final ArrayIndexOutOfBoundsException e) {
-      e.printStackTrace();
-      System.out.println("@@ error");
-      return "noword";
+    } else {
+      sc.close();
+      try {
+        sc = new Scanner(new File(filePath),  "UTF-8");
+        return sc.nextLine();
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+        throw new RuntimeException(e);
+      }
     }
   }
 

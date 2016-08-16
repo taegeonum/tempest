@@ -13,27 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package vldb.operator.window.timescale.triops;
+package vldb.operator.window.timescale.pafas;
 
 import org.apache.reef.tang.formats.ConfigurationModule;
+import org.apache.reef.tang.formats.RequiredImpl;
 import vldb.operator.window.timescale.TimescaleWindowBaseConfiguration;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.common.FinalAggregator;
 import vldb.operator.window.timescale.common.SingleThreadFinalAggregator;
 import vldb.operator.window.timescale.common.SpanTracker;
-import vldb.operator.window.timescale.pafas.*;
 
 /**
  * A helper class for static MTS window configuration.
  */
-public final class TriOpsMWOConfiguration extends TimescaleWindowBaseConfiguration {
-    
-  public static final ConfigurationModule CONF = new TriOpsMWOConfiguration()
-      .merge(TimescaleWindowBaseConfiguration.CONF)
-      .bindImplementation(SpanTracker.class, TriOpSpanTrackerImpl.class)
-      .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
-      .bindImplementation(PartialTimespans.class, DefaultPartialTimespans.class)
-      .bindImplementation(FinalAggregator.class, SingleThreadFinalAggregator.class)
-      .bindImplementation(DependencyGraph.class, StaticDependencyGraphImpl.class)
-      .build();
+public final class StaticSingleAllStoreMWOConfiguration extends TimescaleWindowBaseConfiguration {
+
+    public static final RequiredImpl<DependencyGraph.SelectionAlgorithm> SELECTION_ALGORITHM = new RequiredImpl<>();
+    public static final ConfigurationModule CONF = new StaticSingleAllStoreMWOConfiguration()
+        .merge(TimescaleWindowBaseConfiguration.CONF)
+        .bindImplementation(DependencyGraph.SelectionAlgorithm.class, SELECTION_ALGORITHM)
+        .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
+        .bindImplementation(PartialTimespans.class, DefaultPartialTimespans.class)
+        .bindImplementation(FinalAggregator.class, SingleThreadFinalAggregator.class)
+        .bindImplementation(SpanTracker.class, AllStoreSpanTrackerImpl.class)
+        .bindImplementation(DependencyGraph.class, StaticDependencyGraphImpl.class)
+        .build();
 }

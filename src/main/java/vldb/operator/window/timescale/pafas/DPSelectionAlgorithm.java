@@ -38,7 +38,6 @@ public class DPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorit
 
   @Override
   public List<Node<T>> selection(final long start, final long end) {
-    //System.out.println("[" + start + ", " + end + ")");
     Map<Long, Integer> dpTable = new HashMap<>();
     Map<Long, Node<T>> dpTableNode = new HashMap<>();
 
@@ -95,7 +94,7 @@ public class DPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorit
       }
       for (final Node<T> node : availableNodes) {
         final long beforeStart;
-        if (node.start > end) {
+        if (node.start >= end) {
           beforeStart = node.end - period;
         } else {
           beforeStart = node.end;
@@ -110,6 +109,7 @@ public class DPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorit
         }
       }
       currentStart -= gcd;
+
     }
     final List<Node<T>> childrenNodes = new LinkedList<>();
     currentStart = start;
