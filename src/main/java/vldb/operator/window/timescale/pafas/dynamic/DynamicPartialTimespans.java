@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package vldb.operator.window.timescale.pafas.infinite;
+package vldb.operator.window.timescale.pafas.dynamic;
 
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.window.timescale.Timescale;
-import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.pafas.Node;
 import vldb.operator.window.timescale.pafas.PartialTimespans;
 import vldb.operator.window.timescale.parameter.StartTime;
@@ -32,8 +31,8 @@ import java.util.logging.Logger;
  * for streamed aggregation. In ACM SIGMOD, 2006
  * It returns next slice time for slicing input stream into paired sliced window.
  */
-public final class InfinitePartialTimespans<T> implements PartialTimespans {
-  private static final Logger LOG = Logger.getLogger(InfinitePartialTimespans.class.getName());
+public final class DynamicPartialTimespans<T> implements PartialTimespans {
+  private static final Logger LOG = Logger.getLogger(DynamicPartialTimespans.class.getName());
 
   /**
    * The list of timescale.
@@ -50,23 +49,25 @@ public final class InfinitePartialTimespans<T> implements PartialTimespans {
    */
   private final Map<Long, Node<T>> partialTimespanMap;
 
-  private final long incrementalStep = 3;
-  private final long largestWindowSize;
   private long currIndex;
+  private long rebuildSize;
+
+  private final WindowManager windowManager;
 
   /**
    * StaticComputationReuserImpl Implementation.
    * @param startTime an initial start time
    */
   @Inject
-  private InfinitePartialTimespans(final TimescaleParser tsParser,
-                                   @Parameter(StartTime.class) final long startTime) {
+  private DynamicPartialTimespans(final WindowManager windowManager,
+                                  @Parameter(StartTime.class) final long startTime) {
     LOG.info("START " + this.getClass());
-    this.timescales = tsParser.timescales;
+    this.timescales = windowManager.timescales;
     this.startTime = startTime;
     this.partialTimespanMap = new HashMap<>();
-    this.largestWindowSize = timescales.get(timescales.size()-1).windowSize;
-    this.currIndex = startTime + incrementalStep + largestWindowSize;
+    this.rebuildSize = windowManager.getRebuildSize();
+    this.currIndex = startTime + rebuildSize;
+    this.windowManager = windowManager;
     createSliceQueue();
   }
 
@@ -84,7 +85,7 @@ public final class InfinitePartialTimespans<T> implements PartialTimespans {
       long time = pairedA;
       boolean odd = true;
 
-      while (time <= incrementalStep + largestWindowSize) {
+      while (time <= rebuildSize) {
         sliceQueue.add(startTime + time);
         if (odd) {
           time += pairedB;
@@ -98,6 +99,7 @@ public final class InfinitePartialTimespans<T> implements PartialTimespans {
     long prevSliceTime = startTime;
     for (final long nextSliceTime : sliceQueue) {
       if (prevSliceTime != nextSliceTime) {
+        //System.out.println("Add: " + prevSliceTime + ", " + nextSliceTime);
         partialTimespanMap.put(prevSliceTime, new Node<T>(prevSliceTime, nextSliceTime, true));
         prevSliceTime = nextSliceTime;
       }
@@ -115,46 +117,75 @@ public final class InfinitePartialTimespans<T> implements PartialTimespans {
     return partialTimespanMap.get(currTime);
   }
 
+  private void buildSlice(final long start, final long end) {
+    long nextStep = end;
+    //System.out.println("partial build: " + currIndex + ", "+ nextStep);
+    //System.out.println("adjTime null:" + currTime + ", " + adjTime);
+    final List<Long> sliceQueue = new LinkedList<>();
+    for (final Timescale ts : timescales) {
+      long adjStartTime = start - (start - windowManager.timescaleStartTime(ts)) % ts.intervalSize;
+      boolean odd = false;
+      while (adjStartTime <= nextStep) {
+        final long pairedB = ts.windowSize % ts.intervalSize;
+        final long pairedA = ts.intervalSize - pairedB;
+        sliceQueue.add(adjStartTime);
+        if (odd) {
+          adjStartTime += pairedB;
+        } else {
+          adjStartTime += pairedA;
+        }
+        odd = !odd;
+      }
+    }
+    Collections.sort(sliceQueue);
+    //System.out.println(sliceQueue + ", " + timescales);
+    long prevSliceTime = sliceQueue.get(0);
+    for (final long nextSliceTime : sliceQueue) {
+      if (prevSliceTime != nextSliceTime) {
+        if (partialTimespanMap.get(prevSliceTime) == null) {
+          //System.out.println("Add: " + prevSliceTime + ", " + nextSliceTime);
+          partialTimespanMap.put(prevSliceTime, new Node<T>(prevSliceTime, nextSliceTime, true));
+          //System.out.println("PUT " + prevSliceTime + ": " + partialTimespanMap.get(prevSliceTime));
+        }
+        prevSliceTime = nextSliceTime;
+      }
+    }
+    currIndex = nextStep;
+  }
+
   @Override
   public long getNextSliceTime(final long currTime) {
     // TODO: Incremental build
     //System.out.println("currTiume : " + currTime + ", currIndex: " + currIndex);
-    if (currTime + largestWindowSize + incrementalStep > currIndex) {
-      long nextStep = currTime + largestWindowSize + incrementalStep;
-      //System.out.println("partial build: " + currIndex + ", "+ nextStep);
-      //System.out.println("adjTime null:" + currTime + ", " + adjTime);
-      final List<Long> sliceQueue = new LinkedList<>();
-      for (final Timescale ts : timescales) {
-        long adjStartTime = currIndex - (currIndex - startTime) % ts.intervalSize;
-        boolean odd = false;
-        while (adjStartTime <= nextStep) {
-          final long pairedB = ts.windowSize % ts.intervalSize;
-          final long pairedA = ts.intervalSize - pairedB;
-          sliceQueue.add(adjStartTime);
-          if (odd) {
-            adjStartTime += pairedB;
-          } else {
-            adjStartTime += pairedA;
-          }
-          odd = !odd;
-        }
-      }
-      Collections.sort(sliceQueue);
-      //System.out.println(sliceQueue);
-      long prevSliceTime = sliceQueue.get(0);
-      for (final long nextSliceTime : sliceQueue) {
-        if (prevSliceTime != nextSliceTime) {
-          if (partialTimespanMap.get(prevSliceTime) == null) {
-            //System.out.println("Add: " + prevSliceTime + ", " + nextSliceTime);
-            partialTimespanMap.put(prevSliceTime, new Node<T>(prevSliceTime, nextSliceTime, true));
-          }
-          prevSliceTime = nextSliceTime;
-        }
-      }
-      currIndex = nextStep;
+    if (currTime + rebuildSize > currIndex) {
+      buildSlice(currIndex, currTime + rebuildSize);
     }
     Node<T> node = partialTimespanMap.get(currTime);
+    if (node == null) {
+      // Find next partial
+      for (long i = currTime; i <= currIndex; i++) {
+        node = partialTimespanMap.get(i);
+        if (node != null) {
+          break;
+        }
+      }
+    }
     return node.end;
+  }
+
+  public void addWindow(final Timescale window, final long prevSliceTime, final long time) {
+    // Remove all partials
+    for (long removeIndex = prevSliceTime; removeIndex <= currIndex; removeIndex += 1) {
+      partialTimespanMap.remove(removeIndex);
+    }
+
+    // Create new partials
+    rebuildSize = windowManager.getRebuildSize();
+    buildSlice(prevSliceTime, time + rebuildSize);
+  }
+
+  public void removeNode(final long startTime) {
+    partialTimespanMap.remove(startTime);
   }
 
   @Override

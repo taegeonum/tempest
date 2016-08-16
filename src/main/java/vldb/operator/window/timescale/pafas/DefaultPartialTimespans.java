@@ -121,11 +121,6 @@ public final class DefaultPartialTimespans<T> implements PartialTimespans {
     return node.end + (currTime - adjTime);
   }
 
-  @Override
-  public void removeNode(final long startTime) {
-    // do nothing
-  }
-
   private long adjStartTime(final long time) {
     if (time < startTime) {
       return time + period;

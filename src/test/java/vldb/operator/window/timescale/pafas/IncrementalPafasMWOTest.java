@@ -8,6 +8,8 @@ import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
 import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
+import vldb.operator.window.timescale.pafas.dynamic.DynamicDPSelectionAlgorithm;
+import vldb.operator.window.timescale.pafas.dynamic.DynamicMWOConfiguration;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
@@ -16,7 +18,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -68,9 +69,17 @@ public final class IncrementalPafasMWOTest {
     operatorIds.add("PAFAS-SINGLE-GREEDY");
 */
 
+    configurationList.add(DynamicMWOConfiguration.CONF
+        .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, "(10,1)(30,3)(60,6)")
+        .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+        .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPSelectionAlgorithm.class)
+        .set(DynamicMWOConfiguration.START_TIME, currTime)
+        .build());
+    operatorIds.add("Dynamic");
+
     // single
     configurationList.add(StaticSingleMWOConfiguration.CONF
-        .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, "(10,1)(30,3)(60,6)(120,12)(300,30)(600,60)(900,90)(1200,120)(1500,150)(1800,180)")
+        .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, "(10,1)(30,3)(60,6)")
         .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
         .set(StaticSingleMWOConfiguration.START_TIME, currTime)
@@ -119,28 +128,24 @@ public final class IncrementalPafasMWOTest {
     }
 
     final int numKey = 1000;
-    final int numInput = 10000;
+    final int numInput = 30000;
     final Random random = new Random();
-    long prevTickTime = System.nanoTime();
     long tick = 1;
-    for (i = 0; i < numInput; i++) {
+    for (i = 1; i <= numInput; i++) {
       final int key = Math.abs(random.nextInt()%numKey);
       long cTickTime = System.nanoTime();
-      if (TimeUnit.NANOSECONDS.toMillis(cTickTime - prevTickTime) >= 1000) {
+      if (i % 300 == 0) {
         for (final TimescaleWindowOperator mwo : mwos) {
+          //System.out.println("Tick " + tick);
           mwo.execute(new WindowTimeEvent(tick));
         }
         tick += 1;
-        prevTickTime += TimeUnit.SECONDS.toNanos(1);
       } else {
         for (final TimescaleWindowOperator mwo : mwos) {
           mwo.execute(Integer.toString(key));
         }
       }
-      for (final TimescaleWindowOperator mwo : mwos) {
-        mwo.execute(Integer.toString(key));
-      }
-      Thread.sleep(10);
+      Thread.sleep(1);
     }
 
     for (final TimescaleWindowOperator mwo : mwos) {

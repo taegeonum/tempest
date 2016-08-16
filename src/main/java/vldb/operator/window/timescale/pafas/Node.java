@@ -38,7 +38,7 @@ public final class Node<T> {
   /**
    * The end time of the node.
    */
-  public final long end;
+  public long end;
 
   public final boolean partial;
   /**

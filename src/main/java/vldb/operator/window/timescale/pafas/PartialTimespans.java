@@ -23,6 +23,4 @@ public interface PartialTimespans<T> {
   Node<T> getNextPartialTimespanNode(long currTime);
 
   long getNextSliceTime(long currTime);
-
-  void removeNode(long startTime);
 }
