@@ -151,6 +151,6 @@ public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
   public void removeWindow(final Timescale window, final long time) {
     spanTracker.removeSlidingWindow(window, time);
     // 2) Update next slice time
-    nextSliceTime = spanTracker.getNextSliceTime(time);
+    nextSliceTime = spanTracker.getNextSliceTime(prevSliceTime);
   }
 }

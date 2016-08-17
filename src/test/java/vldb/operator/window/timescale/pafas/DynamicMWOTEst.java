@@ -61,9 +61,13 @@ public final class DynamicMWOTEst {
         mwo.execute(new WindowTimeEvent(tick));
 
         // Add window
-        System.out.println("ADD WIndow " + tick);
         if (tick <= 9) {
+          System.out.println("ADD WIndow " + tick);
           mwo.addWindow(timescaleList.get((int)tick), tick);
+        }
+        if (tick > 9 && tick <= 18) {
+          System.out.println("RM WIndow " + tick);
+          mwo.removeWindow(timescaleList.get((int)tick%9), tick);
         }
         tick += 1;
       } else {

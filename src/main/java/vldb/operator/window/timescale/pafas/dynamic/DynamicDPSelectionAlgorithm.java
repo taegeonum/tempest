@@ -96,6 +96,7 @@ public class DynamicDPSelectionAlgorithm<T> implements DependencyGraph.Selection
           }
         }
       }
+
       final Node<T> availablePartialNode = partialTimespans.getNextPartialTimespanNode(scanStartPoint);
       if (availablePartialNode != null) {
         availableNodes.add(availablePartialNode);
@@ -119,6 +120,7 @@ public class DynamicDPSelectionAlgorithm<T> implements DependencyGraph.Selection
       currentStart -= gcd;
 
     }
+
     final List<Node<T>> childrenNodes = new LinkedList<>();
     currentStart = start;
     while (currentStart < end) {

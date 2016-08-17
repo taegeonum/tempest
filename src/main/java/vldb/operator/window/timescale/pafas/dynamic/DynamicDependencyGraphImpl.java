@@ -19,7 +19,6 @@ package vldb.operator.window.timescale.pafas.dynamic;
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.common.NotFoundException;
 import vldb.operator.window.timescale.Timescale;
-import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.common.Timespan;
 import vldb.operator.window.timescale.pafas.DependencyGraph;
 import vldb.operator.window.timescale.pafas.Node;
@@ -27,6 +26,7 @@ import vldb.operator.window.timescale.pafas.PeriodCalculator;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
@@ -67,8 +67,7 @@ public final class DynamicDependencyGraphImpl<T> implements DependencyGraph {
    * @param startTime the initial start time of when the graph is built.
    */
   @Inject
-  private DynamicDependencyGraphImpl(final TimescaleParser tsParser,
-                                     @Parameter(StartTime.class) final long startTime,
+  private DynamicDependencyGraphImpl(@Parameter(StartTime.class) final long startTime,
                                      final DynamicPartialTimespans partialTimespans,
                                      final DynamicOutputLookupTableImpl<Node<T>> outputLookupTable,
                                      final SelectionAlgorithm<T> selectionAlgorithm,
@@ -77,7 +76,7 @@ public final class DynamicDependencyGraphImpl<T> implements DependencyGraph {
     LOG.info("START " + this.getClass());
     this.windowManager = windowManager;
     this.partialTimespans = partialTimespans;
-    this.timescales = tsParser.timescales;
+    this.timescales = windowManager.timescales;
     this.startTime = startTime;
     this.currBuildingIndex = startTime + windowManager.getRebuildSize();
     this.rebuildSize = windowManager.getRebuildSize();
@@ -92,14 +91,16 @@ public final class DynamicDependencyGraphImpl<T> implements DependencyGraph {
    * Add DependencyGraphNode and connect dependent nodes.
    */
   private void addOverlappingWindowNodeAndEdge(final long curr, final long until) {
-    final List<Node> addedNodes = new LinkedList<>();
+    //System.out.println("curr: " + curr + ", until: " + until);
+    final List<Node<T>> addedNodes = new LinkedList<>();
+    currBuildingIndex = until;
     for (final Timescale timescale : timescales) {
       final long align = curr + (timescale.intervalSize - (curr - windowManager.timescaleStartTime(timescale)) % timescale.intervalSize);
       for (long time = align; time <= until; time += timescale.intervalSize) {
         // create vertex and add it to the table cell of (time, windowsize)
         final long start = Math.max(time - timescale.windowSize, windowManager.timescaleStartTime(timescale));
         //System.out.println("aa: (" + start + ", " + time + "), " + "curr: " + curr + ", until: " + until + ", ts: " + timescale);
-        Node parent;
+        Node<T> parent;
         try {
           parent = finalTimespans.lookup(start, time, timescale);
         } catch (NotFoundException e) {
@@ -116,9 +117,14 @@ public final class DynamicDependencyGraphImpl<T> implements DependencyGraph {
     }
 
     // Add edges
-    for (final Node parent : addedNodes) {
+    addEdges(addedNodes);
+  }
+
+  private void addEdges(final Collection<Node<T>> parentNodes) {
+    // Add edges
+    for (final Node parent : parentNodes) {
       //final List<Node<T>> childNodes = selectionAlgorithm.selection(Math.max(parent.start, startTime), parent.end);
-      //System.out.println("FInd node: " + parent);
+      //System.out.println("FInd node: " + parent + ", " + parent.getDependencies());
       final List<Node<T>> childNodes = selectionAlgorithm.selection(parent.start, parent.end);
       LOG.log(Level.FINE, "(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
       for (final Node<T> elem : childNodes) {
@@ -142,6 +148,7 @@ public final class DynamicDependencyGraphImpl<T> implements DependencyGraph {
      *                 t   step  cbi     lw
      */
     final List<Timespan> timespans = new LinkedList<>();
+    //System.out.println("GET_FINAL: " + t + ", rebuildSize: " + rebuildSize + ", currBuildingIndex; " + currBuildingIndex);
     if (t + rebuildSize > currBuildingIndex) {
       // Incremental build dependency graph
       addOverlappingWindowNodeAndEdge(currBuildingIndex, t + rebuildSize);
@@ -211,6 +218,7 @@ public final class DynamicDependencyGraphImpl<T> implements DependencyGraph {
         for (final Node<T> child : parentNode.getDependencies()) {
           // Decrease RefCnt
           child.refCnt -= 1;
+          child.parents.remove(parentNode);
           prevChildNodes.add(child);
         }
         finalTimespans.deleteOutput(timespan.startTime, timespan.endTime, timespan.timescale);
@@ -238,12 +246,135 @@ public final class DynamicDependencyGraphImpl<T> implements DependencyGraph {
     }
   }
 
+  @Override
+  public void removeSlidingWindow(final Timescale timescale, final long deleteTime) {
+    throw new RuntimeException("not implemeted");
+  }
+
+
+  public void removeSlidingWindow(final Timescale ts, final long tsStartTime, final long deleteTime) {
+    // Retrieve timespans which are created after addTime
+    // ---------------|----------|
+    //          window change
+    //                Then, until currBuildingIndex, we rebuild the nodes.
+    final List<Timespan> timespans = new LinkedList<>();
+    for (long timespanET = deleteTime + 1; timespanET <= currBuildingIndex; timespanET++) {
+      for (final Timescale timescale : timescales) {
+        if ((timespanET - windowManager.timescaleStartTime(timescale)) % timescale.intervalSize == 0) {
+          final Timespan newTS = new Timespan(Math.max(timespanET - timescale.windowSize, windowManager.timescaleStartTime(timescale)), timespanET, timescale);
+          //System.out.println("newTS: " + newTS + ", " + newTS.timescale);
+          timespans.add(newTS);
+        }
+      }
+    }
+    for (long timespanET = deleteTime + 1; timespanET <= currBuildingIndex; timespanET++) {
+      if ((timespanET - tsStartTime) % ts.intervalSize == 0) {
+        final Timespan newTS = new Timespan(Math.max(timespanET - ts.windowSize, tsStartTime), timespanET, ts);
+        //System.out.println("newTS: " + newTS + ", " + newTS.timescale);
+        timespans.add(newTS);
+      }
+    }
+
+    // Remove nodes !!
+    final List<Node<T>> prevChildNodes = new LinkedList<>();
+    // Lookup and retrieve child nodes
+    for (final Timespan timespan : timespans) {
+      try {
+        final Node<T> parentNode = finalTimespans.lookup(timespan.startTime, timespan.endTime, timespan.timescale);
+        for (final Node<T> child : parentNode.getDependencies()) {
+          // Decrease RefCnt
+          child.refCnt -= 1;
+          child.parents.remove(parentNode);
+          prevChildNodes.add(child);
+        }
+        finalTimespans.deleteOutput(timespan.startTime, timespan.endTime, timespan.timescale);
+      } catch (NotFoundException e) {
+        e.printStackTrace();
+        throw new RuntimeException(e);
+      }
+    }
+    //System.out.println("After final remove: " + partialTimespans);
+
+    // Create new nodes and edges
+    rebuildSize = windowManager.getRebuildSize();
+    addOverlappingWindowNodeAndEdge(deleteTime, deleteTime + rebuildSize);
+
+    // Remove child nodes which have zero reference count
+    for (final Node<T> child : prevChildNodes) {
+      if (child.refCnt == 0) {
+        if (child.end <= deleteTime) {
+          if (child.partial) {
+            partialTimespans.removeNode(child.start);
+          } else {
+            finalTimespans.deleteOutput(child.start, child.end, child);
+          }
+        }
+      }
+    }
+
+    /*
+    // Retrieve timespans that will be deleted
+    final List<Timespan> timespans = new LinkedList<>();
+    for (long timespanET = deleteTime + 1; timespanET <= currBuildingIndex; timespanET++) {
+      if ((timespanET - tsStartTime) % timescale.intervalSize == 0) {
+        final Timespan newTS = new Timespan(Math.max(timespanET - timescale.windowSize, tsStartTime), timespanET, timescale);
+        //System.out.println("newTS: " + newTS + ", " + newTS.timescale);
+        timespans.add(newTS);
+      }
+    }
+
+    // Remove nodes !!
+    final List<Node<T>> prevChildNodes = new LinkedList<>();
+    final List<Node<T>> removedNodes = new LinkedList<>();
+    // Lookup and retrieve child nodes
+    for (final Timespan timespan : timespans) {
+      try {
+        final Node<T> parentNode = finalTimespans.lookup(timespan.startTime, timespan.endTime, timespan.timescale);
+        removedNodes.add(parentNode);
+        for (final Node<T> child : parentNode.getDependencies()) {
+          // Decrease RefCnt
+          child.refCnt -= 1;
+          prevChildNodes.add(child);
+        }
+        finalTimespans.deleteOutput(timespan.startTime, timespan.endTime, timespan.timescale);
+      } catch (NotFoundException e) {
+        e.printStackTrace();
+        throw new RuntimeException(e);
+      }
+    }
+
+    // Re-connect parents!
+    final Set<Node<T>> parents = new HashSet<>();
+    for (final Node<T> removedNode : removedNodes) {
+      final List<Node<T>> nodes = removedNode.parents;
+      for (final Node<T> pnode : nodes) {
+        for (final Node<T> cNode : pnode.getDependencies()) {
+          cNode.refCnt -= 1;
+        }
+      }
+      parents.addAll(removedNode.parents);
+    }
+    System.out.println("PARENTS: " + parents);
+    addEdges(parents);
+
+    // Remove unused child nodes
+    // Remove child nodes which have zero reference count
+    for (final Node<T> child : prevChildNodes) {
+      if (child.refCnt == 0) {
+        if (child.end <= deleteTime) {
+          if (child.partial) {
+            partialTimespans.removeNode(child.start);
+          } else {
+            finalTimespans.deleteOutput(child.start, child.end, child);
+          }
+        }
+      }
+    }
+    */
+  }
+
   public void removeNode(final Node<T> node) {
     finalTimespans.deleteOutput(node.start, node.end, node);
   }
 
-  @Override
-  public void removeSlidingWindow(final Timescale ts, final long deleteTime) {
-
-  }
 }

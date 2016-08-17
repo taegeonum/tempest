@@ -61,8 +61,8 @@ public final class WindowManager {
 
   public long getRebuildSize() {
     if (timescales.size() == 1) {
-      return timescales.get(0).intervalSize;
+      return timescales.get(0).windowSize;
     }
-    return timescales.get(timescales.size()-1).windowSize - timescales.get(0).windowSize;
+    return timescales.get(timescales.size()-1).windowSize;
   }
 }

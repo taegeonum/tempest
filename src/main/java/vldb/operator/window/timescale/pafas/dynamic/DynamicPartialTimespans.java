@@ -113,6 +113,7 @@ public final class DynamicPartialTimespans<T> implements PartialTimespans {
 
   @Override
   public Node<T> getNextPartialTimespanNode(final long currTime) {
+    //System.out.println("currTime: " + currTime);
     //System.out.println("GET_NEXT_PARTIAL: " + adjStartTime(currTime) +", " + partialTimespanMap.get(adjStartTime(currTime)));
     return partialTimespanMap.get(currTime);
   }
@@ -174,14 +175,45 @@ public final class DynamicPartialTimespans<T> implements PartialTimespans {
   }
 
   public void addWindow(final Timescale window, final long prevSliceTime, final long time) {
-    // Remove all partials
+    // Remove all partial
+    //System.out.println("window " + window + " Remove : " + prevSliceTime + ", " + currIndex);
     for (long removeIndex = prevSliceTime; removeIndex <= currIndex; removeIndex += 1) {
       partialTimespanMap.remove(removeIndex);
     }
 
     // Create new partials
     rebuildSize = windowManager.getRebuildSize();
+    //System.out.println("Rebuild : " + prevSliceTime + ", " + time + rebuildSize);
     buildSlice(prevSliceTime, time + rebuildSize);
+    //System.out.println("Rebuild " + partialTimespanMap);
+  }
+
+  public void removeWindow(final Timescale window, final long prevSliceTime, final long time) {
+    // Remove all partials
+    //System.out.println("Prev rebuild: " + partialTimespanMap);
+    for (long removeIndex = time+1; removeIndex <= currIndex; removeIndex += 1) {
+      partialTimespanMap.remove(removeIndex);
+    }
+    //System.out.println("Removed rebuild: " + partialTimespanMap);
+
+    // Create new partials
+    rebuildSize = windowManager.getRebuildSize();
+    buildSlice(time+1, time + rebuildSize);
+
+    // Adjust time slice
+    if (partialTimespanMap.get(time) != null) {
+      // find next slice
+      long nextS = time;
+      for (long s = nextS+1; s <= time + rebuildSize; s++) {
+        if (partialTimespanMap.get(s) != null) {
+          nextS = s;
+          break;
+        }
+      }
+      partialTimespanMap.remove(time);
+      partialTimespanMap.put(time, new Node<T>(time, nextS, true));
+    }
+    //System.out.println("After rebuild: " + partialTimespanMap);
   }
 
   public void removeNode(final long startTime) {

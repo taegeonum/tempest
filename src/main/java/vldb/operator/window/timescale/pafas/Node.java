@@ -13,6 +13,7 @@ public final class Node<T> {
    */
   private final List<Node<T>> dependencies;
 
+  public final List<Node<T>> parents;
   /**
    * A reference count to be referenced by other nodes.
    */
@@ -48,6 +49,7 @@ public final class Node<T> {
    */
   public Node(final long start, final long end, boolean partial) {
     this.dependencies = new LinkedList<>();
+    this.parents = new LinkedList<>();
     this.refCnt = 0;
     this.initialRefCnt = 0;
     this.start = start;
@@ -61,6 +63,7 @@ public final class Node<T> {
    */
   public Node(final long start, final long end, final int refCnt, boolean partial) {
     this.dependencies = new LinkedList<>();
+    this.parents = new LinkedList<>();
     this.refCnt = refCnt;
     this.start = start;
     this.end = end;
@@ -99,6 +102,7 @@ public final class Node<T> {
     }
     dependencies.add(n);
     n.increaseRefCnt();
+    n.parents.add(this);
   }
 
   private synchronized void increaseRefCnt() {

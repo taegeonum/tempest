@@ -100,6 +100,7 @@ public final class DynamicSpanTrackerImpl<I, T> implements SpanTracker<T> {
             } else {
               aggregates.add(dependentNode.getOutput());
               dependentNode.refCnt -= 1;
+              dependentNode.parents.remove(node);
               if (dependentNode.refCnt == 0) {
                 // Remove
                 if (dependentNode.partial) {
@@ -149,6 +150,9 @@ public final class DynamicSpanTrackerImpl<I, T> implements SpanTracker<T> {
 
   @Override
   public void removeSlidingWindow(final Timescale ts, final long deleteTime) {
-    throw new RuntimeException("Not implemented");
+    final long stTime = windowManager.timescaleStartTime(ts);
+    windowManager.removeWindow(ts, deleteTime);
+    partialTimespans.removeWindow(ts, prevSliceTime, deleteTime);
+    dependencyGraph.removeSlidingWindow(ts, stTime, deleteTime);
   }
 }
