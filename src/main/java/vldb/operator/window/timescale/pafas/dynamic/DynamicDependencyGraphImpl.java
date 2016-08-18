@@ -55,7 +55,7 @@ public final class DynamicDependencyGraphImpl<T> implements DependencyGraph {
   private final long startTime;
 
   private final DynamicPartialTimespans<T> partialTimespans;
-  private final DynamicOutputLookupTableImpl<Node<T>> finalTimespans;
+  private final DynamicOutputLookupTable<Node<T>> finalTimespans;
   private final SelectionAlgorithm<T> selectionAlgorithm;
 
   private long currBuildingIndex;
@@ -69,7 +69,7 @@ public final class DynamicDependencyGraphImpl<T> implements DependencyGraph {
   @Inject
   private DynamicDependencyGraphImpl(@Parameter(StartTime.class) final long startTime,
                                      final DynamicPartialTimespans partialTimespans,
-                                     final DynamicOutputLookupTableImpl<Node<T>> outputLookupTable,
+                                     final DynamicOutputLookupTable<Node<T>> outputLookupTable,
                                      final SelectionAlgorithm<T> selectionAlgorithm,
                                      final WindowManager windowManager,
                                      final PeriodCalculator periodCalculator) {
@@ -127,6 +127,7 @@ public final class DynamicDependencyGraphImpl<T> implements DependencyGraph {
       //System.out.println("FInd node: " + parent + ", " + parent.getDependencies());
       final List<Node<T>> childNodes = selectionAlgorithm.selection(parent.start, parent.end);
       LOG.log(Level.FINE, "(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
+      //System.out.println("(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
       for (final Node<T> elem : childNodes) {
         parent.addDependency(elem);
       }

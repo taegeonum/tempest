@@ -9,9 +9,7 @@ import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.TimescaleParser;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicDPSelectionAlgorithm;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicMWO;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicMWOConfiguration;
+import vldb.operator.window.timescale.pafas.dynamic.*;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
@@ -38,7 +36,8 @@ public final class DynamicMWOTEst {
     final Configuration conf = DynamicMWOConfiguration.CONF
         .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, "(30,3)")
         .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-        .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPSelectionAlgorithm.class)
+        .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicGreedySelectionAlgorithm.class)
+        .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicGreedyOutputLookupTableImpl.class)
         .set(DynamicMWOConfiguration.START_TIME, currTime)
         .build();
 
@@ -65,9 +64,21 @@ public final class DynamicMWOTEst {
           System.out.println("ADD WIndow " + tick);
           mwo.addWindow(timescaleList.get((int)tick), tick);
         }
-        if (tick > 9 && tick <= 18) {
+        if (tick == 20) {
           System.out.println("RM WIndow " + tick);
-          mwo.removeWindow(timescaleList.get((int)tick%9), tick);
+          mwo.removeWindow(timescaleList.get(0), tick);
+        }
+        if (tick == 30) {
+          System.out.println("RM WIndow " + tick);
+          mwo.removeWindow(timescaleList.get(9), tick);
+        }
+        if (tick == 40) {
+          System.out.println("RM WIndow " + tick);
+          mwo.removeWindow(timescaleList.get(8), tick);
+        }
+        if (tick == 50) {
+          System.out.println("RM WIndow " + tick);
+          mwo.removeWindow(timescaleList.get(6), tick);
         }
         tick += 1;
       } else {

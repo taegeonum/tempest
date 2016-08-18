@@ -14,13 +14,13 @@ import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.TimescaleWindowOutput;
+import vldb.operator.window.timescale.common.DefaultOutputLookupTableImpl;
 import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.naive.NaiveMWOConfiguration;
 import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
 import vldb.operator.window.timescale.pafas.*;
+import vldb.operator.window.timescale.pafas.dynamic.*;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
-import vldb.operator.window.timescale.pafas.infinite.InfiniteCountMWOConfiguration;
-import vldb.operator.window.timescale.pafas.infinite.InfiniteMWOConfiguration;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
 import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
@@ -39,6 +39,8 @@ public final class TestRunner {
   //static final long totalTime = 1800;
 
   public enum OperatorType {
+    DYNAMIC_DP,
+    DYNAMIC_GREEDY,
     PAFAS,
     PAFAS_DP,
     PAFAS_SINGLE,
@@ -59,32 +61,28 @@ public final class TestRunner {
   private static Configuration getOperatorConf(final OperatorType operatorType,
                                                final String timescaleString) {
     switch (operatorType) {
-      case PAFAS_SINGLE_COUNT:
-        return StaticSingleCountMWOConfiguration.CONF
-            .set(StaticSingleCountMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
-            .set(StaticSingleCountMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(StaticSingleCountMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
-            .set(StaticSingleCountMWOConfiguration.START_TIME, "0")
-            .build();
-      case PAFAS_INFINITE_COUNT:
-        return InfiniteCountMWOConfiguration.CONF
-            .set(InfiniteCountMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
-            .set(InfiniteCountMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(InfiniteCountMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
-            .set(InfiniteCountMWOConfiguration.START_TIME, "0")
-            .build();
-      case PAFAS_SINGLE_GREEDY_COUNT:
-        return StaticSingleCountMWOConfiguration.CONF
-            .set(StaticSingleCountMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
-            .set(StaticSingleCountMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(StaticSingleCountMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
-            .set(StaticSingleCountMWOConfiguration.START_TIME, "0")
+      case DYNAMIC_DP:
+        return DynamicMWOConfiguration.CONF
+          .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+          .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+          .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPSelectionAlgorithm.class)
+          .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicDPOutputLookupTableImpl.class)
+          .set(DynamicMWOConfiguration.START_TIME, "0")
+          .build();
+      case DYNAMIC_GREEDY:
+        return DynamicMWOConfiguration.CONF
+            .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicGreedySelectionAlgorithm.class)
+            .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicGreedyOutputLookupTableImpl.class)
+            .set(DynamicMWOConfiguration.START_TIME, "0")
             .build();
       case PAFAS_SINGLE:
         return StaticSingleMWOConfiguration.CONF
             .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+            .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
             .build();
       case PAFAS_SINGLE_ALL_STORE:
@@ -92,6 +90,7 @@ public final class TestRunner {
             .set(StaticSingleAllStoreMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(StaticSingleAllStoreMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(StaticSingleAllStoreMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+            .set(StaticSingleAllStoreMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(StaticSingleAllStoreMWOConfiguration.START_TIME, "0")
             .build();
       case PAFAS_SINGLE_NO_REFCNT:
@@ -99,6 +98,7 @@ public final class TestRunner {
             .set(StaticSingleNoRefCntMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(StaticSingleNoRefCntMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(StaticSingleNoRefCntMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+            .set(StaticSingleNoRefCntMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(StaticSingleNoRefCntMWOConfiguration.START_TIME, "0")
             .build();
       case PAFAS_SINGLE_GREEDY:
@@ -106,14 +106,8 @@ public final class TestRunner {
             .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
+            .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DefaultOutputLookupTableImpl.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
-            .build();
-      case PAFAS_INFINITE:
-        return InfiniteMWOConfiguration.CONF
-            .set(InfiniteMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
-            .set(InfiniteMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(InfiniteMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
-            .set(InfiniteMWOConfiguration.START_TIME, "0")
             .build();
       case PAFAS:
         // PAFAS-Greedy
@@ -121,29 +115,7 @@ public final class TestRunner {
             .set(StaticMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(StaticMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(StaticMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
-            .set(StaticMWOConfiguration.START_TIME, "0")
-            .build();
-      case PAFASI:
-        // PAFAS Incremental-Greedy
-        return IncrementMWOConfiguration.CONF
-            .set(IncrementMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
-            .set(IncrementMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(IncrementMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
-            .set(IncrementMWOConfiguration.START_TIME, "0")
-            .build();
-      case PAFASI_DP:
-        // PAFAS Incremental-DP
-        return IncrementMWOConfiguration.CONF
-            .set(IncrementMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
-            .set(IncrementMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(IncrementMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
-            .set(IncrementMWOConfiguration.START_TIME, "0")
-            .build();
-      case PAFAS_DP:
-        return StaticMWOConfiguration.CONF
-            .set(StaticMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
-            .set(StaticMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(StaticMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+            .set(StaticMWOConfiguration.OUTPUT_LOOKUP_TABLE, DefaultOutputLookupTableImpl.class)
             .set(StaticMWOConfiguration.START_TIME, "0")
             .build();
       case OnTheFly:
@@ -151,6 +123,7 @@ public final class TestRunner {
         return OntheflyMWOConfiguration.CONF
             .set(OntheflyMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(OntheflyMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(OntheflyMWOConfiguration.OUTPUT_LOOKUP_TABLE, DefaultOutputLookupTableImpl.class)
             .set(OntheflyMWOConfiguration.START_TIME, "0")
             .build();
       case TriOps:
@@ -158,12 +131,14 @@ public final class TestRunner {
         return TriOpsMWOConfiguration.CONF
             .set(TriOpsMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(TriOpsMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(TriOpsMWOConfiguration.OUTPUT_LOOKUP_TABLE, DefaultOutputLookupTableImpl.class)
             .set(TriOpsMWOConfiguration.START_TIME, "0")
             .build();
       case Naive:
         return NaiveMWOConfiguration.CONF
             .set(NaiveMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(NaiveMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(NaiveMWOConfiguration.OUTPUT_LOOKUP_TABLE, DefaultOutputLookupTableImpl.class)
             .set(NaiveMWOConfiguration.START_TIME, "0")
             .build();
       default:
@@ -215,13 +190,18 @@ public final class TestRunner {
     i += 1;
 
     final long currTime = System.currentTimeMillis();
-    long processedInput = 0;
+    long processedInput = 1;
     //Thread.sleep(period);
     // FOR TIME
     //while (processedInput < inputRate * (totalTime)) {
     // FOR COUNT
     long prevTickTime = System.nanoTime();
     long tick = 1;
+    while (tick <= period) {
+      mwo.execute(new WindowTimeEvent(tick));
+      tick += 1;
+    }
+
     while (tick <= totalTime) {
       //System.out.println("totalTime: " + (totalTime*1000) + ", elapsed: " + (System.currentTimeMillis() - currTime));
       final String word = wordGenerator.nextString();
@@ -232,13 +212,14 @@ public final class TestRunner {
         break;
       }
 
+      mwo.execute(word);
+
       if (processedInput % ((long)inputRate) == 0) {
         mwo.execute(new WindowTimeEvent(tick));
         tick += 1;
         prevTickTime += TimeUnit.SECONDS.toNanos(1);
       }
 
-      mwo.execute(word);
 
       processedInput += 1;
       //while (System.nanoTime() - cTime < 1000000000*(1.0/inputRate)) {

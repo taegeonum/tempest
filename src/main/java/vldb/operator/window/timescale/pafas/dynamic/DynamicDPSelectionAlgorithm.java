@@ -11,14 +11,18 @@ import vldb.operator.window.timescale.parameter.GCD;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
-import java.util.*;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Logger;
 
 public class DynamicDPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorithm<T> {
   private final Logger LOG = Logger.getLogger(DynamicDPSelectionAlgorithm.class.getName());
   private final PartialTimespans<T> partialTimespans;
-  private final DynamicOutputLookupTableImpl<Node<T>> finalTimespans;
+  private final DynamicOutputLookupTable<Node<T>> finalTimespans;
   private final long period;
   private final long startTime;
   private final Map<Long, Map<Long, Node<T>>> nodeMemento;
@@ -27,7 +31,7 @@ public class DynamicDPSelectionAlgorithm<T> implements DependencyGraph.Selection
 
   @Inject
   private DynamicDPSelectionAlgorithm(final PartialTimespans<T> partialTimespans,
-                                      final DynamicOutputLookupTableImpl<Node<T>> finalTimespans,
+                                      final DynamicOutputLookupTable<Node<T>> finalTimespans,
                                       final PeriodCalculator periodCalculator,
                                       @Parameter(StartTime.class) long startTime,
                                       @Parameter(GCD.class) long gcd) {
@@ -53,11 +57,11 @@ public class DynamicDPSelectionAlgorithm<T> implements DependencyGraph.Selection
       final long scanStartPoint, scanEndPoint;
       scanStartPoint = currentStart;
       final List<Node<T>> availableNodes = new LinkedList<>();
-      ConcurrentSkipListMap<Long, Map<Timescale, Node<T>>> availableFinalNodes = null;
+      ConcurrentMap<Long, Map<Timescale, Node<T>>> availableFinalNodes = null;
       try {
         availableFinalNodes = finalTimespans.lookup(scanStartPoint);
       } catch (final NotFoundException nf1) {
-        availableFinalNodes = new ConcurrentSkipListMap<>();
+        availableFinalNodes = new ConcurrentHashMap<>();
       } finally {
         // Add startTime + period nodes
         if (scanStartPoint < startTime) {

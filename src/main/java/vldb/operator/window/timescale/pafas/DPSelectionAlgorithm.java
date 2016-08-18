@@ -7,8 +7,12 @@ import vldb.operator.window.timescale.parameter.GCD;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
-import java.util.*;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Logger;
 
 public class DPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorithm<T> {
@@ -49,11 +53,11 @@ public class DPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorit
       final long scanStartPoint, scanEndPoint;
       scanStartPoint = currentStart;
       final List<Node<T>> availableNodes = new LinkedList<>();
-      ConcurrentSkipListMap<Long, Node<T>> availableFinalNodes = null;
+      ConcurrentMap<Long, Node<T>> availableFinalNodes = null;
       try {
         availableFinalNodes = finalTimespans.lookup(scanStartPoint);
       } catch (final NotFoundException nf1) {
-        availableFinalNodes = new ConcurrentSkipListMap<>();
+        availableFinalNodes = new ConcurrentHashMap<>();
       } finally {
         // Add startTime + period nodes
         if (scanStartPoint < startTime) {

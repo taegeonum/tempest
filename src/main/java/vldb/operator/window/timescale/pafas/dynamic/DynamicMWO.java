@@ -107,7 +107,6 @@ public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
     if (val instanceof WindowTimeEvent) {
       if (isSliceTime(((WindowTimeEvent) val).time)) {
         slice(prevSliceTime, nextSliceTime);
-        final V partialAggregation = bucket;
       }
     } else {
       aggregator.incrementalAggregate(bucket, val);

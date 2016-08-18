@@ -27,6 +27,7 @@ import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.TimescaleWindowOutput;
+import vldb.operator.window.timescale.common.DefaultOutputLookupTableImpl;
 import vldb.operator.window.timescale.common.SharedForkJoinPool;
 import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.pafas.PafasMWO;
@@ -66,6 +67,7 @@ public final class NaiveMWO<I, V> implements TimescaleWindowOperator<I, V> {
       final Configuration conf = StaticNaiveMWOConfiguration.CONF
           .set(StaticNaiveMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
           .set(StaticNaiveMWOConfiguration.START_TIME, startTime+"")
+          .set(StaticNaiveMWOConfiguration.OUTPUT_LOOKUP_TABLE, DefaultOutputLookupTableImpl.class)
           .set(StaticNaiveMWOConfiguration.INITIAL_TIMESCALES, timescale.toString())
       .build();
       final Injector injector = Tang.Factory.getTang().newInjector(conf);

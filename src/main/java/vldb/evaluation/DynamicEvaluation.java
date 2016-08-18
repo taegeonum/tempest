@@ -19,9 +19,7 @@ import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.TimescaleParser;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicDPSelectionAlgorithm;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicMWO;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicMWOConfiguration;
+import vldb.operator.window.timescale.pafas.dynamic.*;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
@@ -84,6 +82,7 @@ public final class DynamicEvaluation {
         .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, timescaleList.get(0).toString())
         .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPSelectionAlgorithm.class)
+        .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicDPOutputLookupTableImpl.class)
         .set(DynamicMWOConfiguration.START_TIME, 0)
         .build();
 

@@ -18,7 +18,7 @@ package vldb.operator.window.timescale.common;
 import org.apache.reef.tang.annotations.DefaultImplementation;
 import vldb.operator.common.NotFoundException;
 
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * OutputLookupTable interface.
@@ -55,7 +55,7 @@ public interface OutputLookupTable<V> {
    * @throws NotFoundException throws NotFoundException
    *                           when it cannot find an output starting at startTime.
    */
-  ConcurrentSkipListMap<Long, V> lookup(long startTime) throws NotFoundException;
+  ConcurrentMap<Long, V> lookup(long startTime) throws NotFoundException;
 
   /**
    * Lookup an output having largest endTime within outputs which start at startTime.

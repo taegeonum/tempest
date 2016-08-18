@@ -18,7 +18,6 @@ package vldb.operator.window.timescale.pafas.dynamic;
 import org.apache.log4j.Logger;
 import vldb.operator.common.NotFoundException;
 import vldb.operator.window.timescale.Timescale;
-import vldb.operator.window.timescale.common.LongComparator;
 import vldb.operator.window.timescale.common.WindowTimeAndOutput;
 
 import javax.inject.Inject;
@@ -26,21 +25,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * It holds timescale outputs for computation reuse.
  */
-public final class DynamicOutputLookupTableImpl<V> {
-  private static final Logger LOG = Logger.getLogger(DynamicOutputLookupTableImpl.class.getName());
+public final class DynamicDPOutputLookupTableImpl<V> implements DynamicOutputLookupTable<V> {
+  private static final Logger LOG = Logger.getLogger(DynamicDPOutputLookupTableImpl.class.getName());
 
   /**
    * A data structure for saving outputs.
    */
-  public final ConcurrentMap<Long, ConcurrentSkipListMap<Long, Map<Timescale, V>>> table;
+  public final ConcurrentMap<Long, ConcurrentHashMap<Long, Map<Timescale, V>>> table;
 
   @Inject
-  private DynamicOutputLookupTableImpl() {
+  private DynamicDPOutputLookupTableImpl() {
     table = new ConcurrentHashMap<>();
   }
 
@@ -50,10 +48,11 @@ public final class DynamicOutputLookupTableImpl<V> {
    * @param endTime end time of the output
    * @param output an output
    */
+  @Override
   public void saveOutput(final long startTime, final long endTime, final Timescale timescale, final V output) {
-    ConcurrentSkipListMap<Long, Map<Timescale, V>> row = table.get(startTime);
+    ConcurrentHashMap<Long, Map<Timescale, V>> row = table.get(startTime);
     if (row == null) {
-      table.putIfAbsent(startTime, new ConcurrentSkipListMap<Long, Map<Timescale, V>>(new LongComparator()));
+      table.putIfAbsent(startTime, new ConcurrentHashMap<Long, Map<Timescale, V>>());
       row = table.get(startTime);
     }
 
@@ -72,6 +71,7 @@ public final class DynamicOutputLookupTableImpl<V> {
    * @return an output
    * @throws vldb.operator.common.NotFoundException when it cannot find an output ranging from startTime to endTime.
    */
+  @Override
   public V lookup(final long startTime, final long endTime, final Timescale ts) throws NotFoundException {
     final Map<Timescale, V> entry;
     try {
@@ -96,7 +96,8 @@ public final class DynamicOutputLookupTableImpl<V> {
    * @return outputs which start at the startTime.
    * @throws edu.snu.tempest.operator.common.NotFoundException
    */
-  public ConcurrentSkipListMap<Long, Map<Timescale, V>> lookup(final long startTime) throws NotFoundException {
+  @Override
+  public ConcurrentMap<Long, Map<Timescale, V>> lookup(final long startTime) throws NotFoundException {
     if (table.get(startTime) == null) {
       throw new NotFoundException("Not found startTime: " + startTime);
     }
@@ -113,26 +114,17 @@ public final class DynamicOutputLookupTableImpl<V> {
    * @return an output containing time information (startTime, endTime).
    * @throws vldb.operator.common.NotFoundException
    */
-  public WindowTimeAndOutput<V> lookupLargestSizeOutput(final long startTime, final long endTime, final Timescale timescale)
+  @Override
+  public WindowTimeAndOutput<V> lookupLargestSizeOutput(final long startTime, final long endTime)
       throws NotFoundException {
-    final ConcurrentSkipListMap<Long, Map<Timescale, V>> row = table.get(startTime);
-    if (row == null) {
-      throw new NotFoundException("Cannot lookup startTime " + startTime + " in lookupLargestSizeOutput");
-    }
-
-    final Long largestKey = row.floorKey(endTime);
-    if (largestKey == null) {
-      throw new NotFoundException(
-          "Cannot lookup endTime " + endTime  + "from " + startTime + " in lookupLargestSizeOutput");
-    } else {
-      return new WindowTimeAndOutput<V>(startTime, largestKey, row.get(largestKey).get(timescale));
-    }
+    throw new RuntimeException("Not support");
   }
 
   /**
    * Delete outputs which start at startTime.
    * @param startTime start time of the outputs.
    */
+  @Override
   public void deleteOutputs(final long startTime) {
     table.remove(startTime);
   }
@@ -142,8 +134,9 @@ public final class DynamicOutputLookupTableImpl<V> {
    * @param startTime start time of the output
    * @param endTime end time of the output
    */
+  @Override
   public void deleteOutput(final long startTime, final long endTime, final Timescale timescale){
-    ConcurrentSkipListMap<Long, Map<Timescale, V>> row = table.get(startTime);
+    ConcurrentHashMap<Long, Map<Timescale, V>> row = table.get(startTime);
     if (row != null){
       row.get(endTime).remove(timescale);
       if (row.get(endTime).size() == 0) {
@@ -152,8 +145,9 @@ public final class DynamicOutputLookupTableImpl<V> {
     }
   }
 
+  @Override
   public void deleteOutput(final long startTime, final long endTime, V value){
-    ConcurrentSkipListMap<Long, Map<Timescale, V>> row = table.get(startTime);
+    ConcurrentHashMap<Long, Map<Timescale, V>> row = table.get(startTime);
     if (row != null){
       final Map<Timescale, V> map = row.get(endTime);
       if (map != null) {

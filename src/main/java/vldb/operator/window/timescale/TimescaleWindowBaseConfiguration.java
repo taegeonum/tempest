@@ -44,6 +44,7 @@ public class TimescaleWindowBaseConfiguration extends ConfigurationModuleBuilder
    */
   public static final RequiredParameter<String> INITIAL_TIMESCALES = new RequiredParameter<>();
 
+
   public static final ConfigurationModule CONF = new TimescaleWindowBaseConfiguration()
       .bindNamedParameter(StartTime.class, START_TIME)
       .bindNamedParameter(TimescaleString.class, INITIAL_TIMESCALES)

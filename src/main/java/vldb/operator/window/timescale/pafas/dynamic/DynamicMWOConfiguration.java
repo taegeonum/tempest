@@ -31,10 +31,12 @@ import vldb.operator.window.timescale.pafas.PartialTimespans;
 public final class DynamicMWOConfiguration extends TimescaleWindowBaseConfiguration {
 
     public static final RequiredImpl<DependencyGraph.SelectionAlgorithm> SELECTION_ALGORITHM = new RequiredImpl<>();
+    public static final RequiredImpl<DynamicOutputLookupTable> OUTPUT_LOOKUP_TABLE = new RequiredImpl<>();
 
     public static final ConfigurationModule CONF = new DynamicMWOConfiguration()
         .merge(TimescaleWindowBaseConfiguration.CONF)
         .bindImplementation(DependencyGraph.SelectionAlgorithm.class, SELECTION_ALGORITHM)
+        .bindImplementation(DynamicOutputLookupTable.class, OUTPUT_LOOKUP_TABLE)
         .bindImplementation(SpanTracker.class, DynamicSpanTrackerImpl.class)
         .bindImplementation(TimescaleWindowOperator.class, DynamicMWO.class)
         .bindImplementation(PartialTimespans.class, DynamicPartialTimespans.class)
