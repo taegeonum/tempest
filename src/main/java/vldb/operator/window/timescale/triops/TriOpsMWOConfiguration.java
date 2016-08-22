@@ -16,28 +16,31 @@
 package vldb.operator.window.timescale.triops;
 
 import org.apache.reef.tang.formats.ConfigurationModule;
-import org.apache.reef.tang.formats.RequiredImpl;
 import vldb.operator.window.timescale.TimescaleWindowBaseConfiguration;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.common.FinalAggregator;
-import vldb.operator.window.timescale.common.OutputLookupTable;
 import vldb.operator.window.timescale.common.SingleThreadFinalAggregator;
 import vldb.operator.window.timescale.common.SpanTracker;
-import vldb.operator.window.timescale.pafas.*;
+import vldb.operator.window.timescale.pafas.DependencyGraph;
+import vldb.operator.window.timescale.pafas.PafasMWO;
+import vldb.operator.window.timescale.pafas.PartialTimespans;
+import vldb.operator.window.timescale.pafas.dynamic.DynamicDPOutputLookupTableImpl;
+import vldb.operator.window.timescale.pafas.dynamic.DynamicDependencyGraphImpl;
+import vldb.operator.window.timescale.pafas.dynamic.DynamicOutputLookupTable;
+import vldb.operator.window.timescale.pafas.dynamic.DynamicPartialTimespans;
 
 /**
  * A helper class for static MTS window configuration.
  */
 public final class TriOpsMWOConfiguration extends TimescaleWindowBaseConfiguration {
-    public static final RequiredImpl<OutputLookupTable> OUTPUT_LOOKUP_TABLE = new RequiredImpl<>();
 
     public static final ConfigurationModule CONF = new TriOpsMWOConfiguration()
       .merge(TimescaleWindowBaseConfiguration.CONF)
-        .bindImplementation(OutputLookupTable.class, OUTPUT_LOOKUP_TABLE)
+        .bindImplementation(DynamicOutputLookupTable.class, DynamicDPOutputLookupTableImpl.class)
       .bindImplementation(SpanTracker.class, TriOpSpanTrackerImpl.class)
       .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
-      .bindImplementation(PartialTimespans.class, DefaultPartialTimespans.class)
+      .bindImplementation(PartialTimespans.class, DynamicPartialTimespans.class)
       .bindImplementation(FinalAggregator.class, SingleThreadFinalAggregator.class)
-      .bindImplementation(DependencyGraph.class, StaticDependencyGraphImpl.class)
+      .bindImplementation(DependencyGraph.class, DynamicDependencyGraphImpl.class)
       .build();
 }

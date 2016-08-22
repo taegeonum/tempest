@@ -69,6 +69,7 @@ public final class DynamicPartialTimespans<T> implements PartialTimespans {
     this.currIndex = startTime + rebuildSize;
     this.windowManager = windowManager;
     createSliceQueue();
+    //System.out.println("CRAET: " + partialTimespanMap);
   }
 
   /**
@@ -160,7 +161,8 @@ public final class DynamicPartialTimespans<T> implements PartialTimespans {
   @Override
   public long getNextSliceTime(final long currTime) {
     // TODO: Incremental build
-    //System.out.println("currTiume : " + currTime + ", currIndex: " + currIndex);
+    //System.out.println(partialTimespanMap);
+    //System.out.println("currTiume : " + currTime + ", currIndex: " + currIndex + ", rebuildSize: " + rebuildSize);
     if (currTime + rebuildSize > currIndex) {
       buildSlice(currIndex, currTime + rebuildSize);
     }

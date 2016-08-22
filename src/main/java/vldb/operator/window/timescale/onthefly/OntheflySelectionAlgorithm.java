@@ -1,7 +1,6 @@
 package vldb.operator.window.timescale.onthefly;
 
 import org.apache.reef.tang.annotations.Parameter;
-import vldb.operator.window.timescale.common.OutputLookupTable;
 import vldb.operator.window.timescale.common.WindowTimeAndOutput;
 import vldb.operator.window.timescale.pafas.DependencyGraph;
 import vldb.operator.window.timescale.pafas.Node;
@@ -16,17 +15,14 @@ import java.util.List;
 public class OntheflySelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorithm<T> {
 
   private final PartialTimespans<T> partialTimespans;
-  private final OutputLookupTable<Node<T>> finalTimespans;
   private final long period;
   private final long startTime;
 
   @Inject
   private OntheflySelectionAlgorithm(final PartialTimespans<T> partialTimespans,
-                                     final OutputLookupTable<Node<T>> finalTimespans,
                                      final PeriodCalculator periodCalculator,
                                      @Parameter(StartTime.class) long startTime) {
     this.partialTimespans = partialTimespans;
-    this.finalTimespans = finalTimespans;
     this.startTime = startTime;
     this.period = periodCalculator.getPeriod();
   }
@@ -45,6 +41,7 @@ public class OntheflySelectionAlgorithm<T> implements DependencyGraph.SelectionA
         st = partialTimespanNode.end - period;
       } else {
         final Node<T> partialTimespanNode = partialTimespans.getNextPartialTimespanNode(st);
+        //System.out.println("start: " + start + ", " + end + ", st: " + st + ", " + partialTimespans);
         childNodes.add(partialTimespanNode);
         st = partialTimespanNode.end;
       }

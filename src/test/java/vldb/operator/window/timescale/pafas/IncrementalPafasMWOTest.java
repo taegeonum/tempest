@@ -8,11 +8,13 @@ import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
 import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
+import vldb.operator.window.timescale.pafas.dynamic.DynamicDPOutputLookupTableImpl;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicDPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicMWOConfiguration;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
+import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -67,25 +69,27 @@ public final class IncrementalPafasMWOTest {
         .set(StaticSingleMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("PAFAS-SINGLE-GREEDY");
-*/
 
+*/
     configurationList.add(DynamicMWOConfiguration.CONF
-        .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, "(10,1)(30,3)(60,6)")
+        .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, "(3,1)(5,2)(10,3)(15,2)(19,3)(31,10)")
         .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+        .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicDPOutputLookupTableImpl.class)
         .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPSelectionAlgorithm.class)
         .set(DynamicMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("Dynamic");
 
+    /*
     // single
     configurationList.add(StaticSingleMWOConfiguration.CONF
-        .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, "(10,1)(30,3)(60,6)")
+        .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(12,5)(16,3)")
         .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
         .set(StaticSingleMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("PAFAS-SINGLE-DP");
-
+*/
     // Infinite
     /*
     configurationList.add(InfiniteMWOConfiguration.CONF
@@ -104,15 +108,16 @@ public final class IncrementalPafasMWOTest {
         .set(OntheflyMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("OntheFly");
+*/
 
     // TriOPs
     configurationList.add(TriOpsMWOConfiguration.CONF
-        .set(TriOpsMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)")
+        .set(TriOpsMWOConfiguration.INITIAL_TIMESCALES, "(3,1)(5,2)(10,3)(15,2)(19,3)(31,10)")
         .set(TriOpsMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(TriOpsMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("TriOps");
-*/
+
     int i = 0;
     final List<TimescaleWindowOperator> mwos = new LinkedList<>();
     final List<AggregationCounter> aggregationCounters = new LinkedList<>();
@@ -134,9 +139,9 @@ public final class IncrementalPafasMWOTest {
     for (i = 1; i <= numInput; i++) {
       final int key = Math.abs(random.nextInt()%numKey);
       long cTickTime = System.nanoTime();
-      if (i % 300 == 0) {
+      if (i % 100 == 0) {
         for (final TimescaleWindowOperator mwo : mwos) {
-          //System.out.println("Tick " + tick);
+          System.out.println("Tick " + tick);
           mwo.execute(new WindowTimeEvent(tick));
         }
         tick += 1;

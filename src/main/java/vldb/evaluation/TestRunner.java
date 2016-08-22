@@ -130,7 +130,6 @@ public final class TestRunner {
         return TriOpsMWOConfiguration.CONF
             .set(TriOpsMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(TriOpsMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(TriOpsMWOConfiguration.OUTPUT_LOOKUP_TABLE, DefaultOutputLookupTableImpl.class)
             .set(TriOpsMWOConfiguration.START_TIME, "0")
             .build();
       case Naive:
