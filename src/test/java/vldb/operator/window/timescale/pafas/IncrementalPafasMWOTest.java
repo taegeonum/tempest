@@ -8,13 +8,13 @@ import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
 import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
+import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicDPOutputLookupTableImpl;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicDPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicMWOConfiguration;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
-import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -100,16 +100,16 @@ public final class IncrementalPafasMWOTest {
         .build());
     operatorIds.add("PAFAS-INF");
     */
-/*
+
     // On-the-fly operator
     configurationList.add(OntheflyMWOConfiguration.CONF
-        .set(OntheflyMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)")
+        .set(OntheflyMWOConfiguration.INITIAL_TIMESCALES, "(3,1)(5,2)(10,3)(15,2)(19,3)(31,10)")
         .set(OntheflyMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(OntheflyMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("OntheFly");
-*/
 
+/*
     // TriOPs
     configurationList.add(TriOpsMWOConfiguration.CONF
         .set(TriOpsMWOConfiguration.INITIAL_TIMESCALES, "(3,1)(5,2)(10,3)(15,2)(19,3)(31,10)")
@@ -117,7 +117,7 @@ public final class IncrementalPafasMWOTest {
         .set(TriOpsMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("TriOps");
-
+*/
     int i = 0;
     final List<TimescaleWindowOperator> mwos = new LinkedList<>();
     final List<AggregationCounter> aggregationCounters = new LinkedList<>();

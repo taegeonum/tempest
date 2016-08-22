@@ -122,7 +122,6 @@ public final class TestRunner {
         return OntheflyMWOConfiguration.CONF
             .set(OntheflyMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(OntheflyMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(OntheflyMWOConfiguration.OUTPUT_LOOKUP_TABLE, DefaultOutputLookupTableImpl.class)
             .set(OntheflyMWOConfiguration.START_TIME, "0")
             .build();
       case TriOps:
