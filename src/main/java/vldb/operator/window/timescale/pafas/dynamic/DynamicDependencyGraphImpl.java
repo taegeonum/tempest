@@ -304,6 +304,7 @@ public final class DynamicDependencyGraphImpl<T> implements DependencyGraph {
     for (final Node<T> child : prevChildNodes) {
       if (child.refCnt == 0) {
         if (child.end <= deleteTime) {
+          //System.out.println("Delete: " + child);
           if (child.partial) {
             partialTimespans.removeNode(child.start);
           } else {

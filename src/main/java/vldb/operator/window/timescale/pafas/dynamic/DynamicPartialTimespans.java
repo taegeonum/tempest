@@ -124,12 +124,15 @@ public final class DynamicPartialTimespans<T> implements PartialTimespans {
     //System.out.println("adjTime null:" + currTime + ", " + adjTime);
     final List<Long> sliceQueue = new LinkedList<>();
     for (final Timescale ts : timescales) {
-      long adjStartTime = start - (start - windowManager.timescaleStartTime(ts)) % ts.intervalSize;
+      final long tsStartTime = windowManager.timescaleStartTime(ts);
+      long adjStartTime = start - (start - tsStartTime) % ts.intervalSize;
       boolean odd = false;
       while (adjStartTime <= nextStep) {
         final long pairedB = ts.windowSize % ts.intervalSize;
         final long pairedA = ts.intervalSize - pairedB;
-        sliceQueue.add(adjStartTime);
+        if (adjStartTime >= tsStartTime) {
+          sliceQueue.add(adjStartTime);
+        }
         if (odd) {
           adjStartTime += pairedB;
         } else {
@@ -183,7 +186,7 @@ public final class DynamicPartialTimespans<T> implements PartialTimespans {
 
     // Create new partials
     rebuildSize = windowManager.getRebuildSize();
-    //System.out.println("Rebuild : " + prevSliceTime + ", " + time + rebuildSize);
+    //System.out.println("Rebuild : " + prevSliceTime + ", " + (time + rebuildSize));
     buildSlice(prevSliceTime, time + rebuildSize);
     //System.out.println("Rebuild " + partialTimespanMap);
   }
@@ -200,18 +203,23 @@ public final class DynamicPartialTimespans<T> implements PartialTimespans {
     rebuildSize = windowManager.getRebuildSize();
     buildSlice(time+1, time + rebuildSize);
 
-    // Adjust time slice
-    if (partialTimespanMap.get(time) != null) {
+    // Adjust that 6-12  18-20, the 12-18 can be empty
+    // [----------------------]
+    // prevSliceTime                    [---------]
+    //                     ^
+    //                   change
+    final Node<T> lastSliceNode = partialTimespanMap.get(prevSliceTime);
+    if (partialTimespanMap.get(lastSliceNode.end) == null) {
       // find next slice
-      long nextS = time;
+      long nextS = lastSliceNode.end;
       for (long s = nextS+1; s <= time + rebuildSize; s++) {
         if (partialTimespanMap.get(s) != null) {
           nextS = s;
           break;
         }
       }
-      partialTimespanMap.remove(time);
-      partialTimespanMap.put(time, new Node<T>(time, nextS, true));
+      partialTimespanMap.remove(prevSliceTime);
+      partialTimespanMap.put(prevSliceTime, new Node<T>(prevSliceTime, nextS, true));
     }
     //System.out.println("After rebuild: " + partialTimespanMap);
   }

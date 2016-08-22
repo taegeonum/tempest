@@ -154,16 +154,19 @@ public final class StaticDependencyGraphImpl<T> implements DependencyGraph {
     }
     //System.out.println("ORIGIN: " + timespan + ", ADJ: [" + adjStartTime + ", " + adjEndTime + ")");
 
+    if (timespan.timescale == null) {
+      final Node<T> partialTimespanNode = partialTimespans.getNextPartialTimespanNode(adjStartTime);
+      if (partialTimespanNode.end != adjEndTime) {
+        throw new RuntimeException("not found");
+      }
+      return partialTimespanNode;
+    }
+
     try {
       return finalTimespans.lookup(adjStartTime, adjEndTime);
     } catch (final NotFoundException e) {
       // find partial timespan
-      final Node<T> partialTimespanNode = partialTimespans.getNextPartialTimespanNode(adjStartTime);
-      if (partialTimespanNode.end != adjEndTime) {
-        e.printStackTrace();
-        throw new RuntimeException(e);
-      }
-      return partialTimespanNode;
+      throw new RuntimeException(e);
     }
   }
 

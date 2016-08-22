@@ -58,6 +58,14 @@ public final class TimescaleParser {
     return parseToTimescaleList(params);
   }
 
+  public static List<Timescale> parseFromStringNoSort(final String params) {
+    if (!params.matches(REGEX)) {
+      throw new InvalidParameterException("Invalid timescales: " + params + " The format should be " + REGEX);
+    }
+    return parseToTimescaleListNoSort(params);
+  }
+
+
   /**
    * Parse timescales to a string.
    * @param timescales a list of timescales
@@ -76,19 +84,22 @@ public final class TimescaleParser {
   }
 
   private static List<Timescale> parseToTimescaleList(final String params) {
+    final List<Timescale> ts = parseToTimescaleListNoSort(params);
+    Collections.sort(ts);
+    return ts;
+  }
+
+  private static List<Timescale> parseToTimescaleListNoSort(final String params) {
     final List<Timescale> ts = new ArrayList<>();
     // (1,2)(3,4) -> 1,2)3,4)
     final String trim = params.replace("(", "");
-    // 1,2)3,4) -> [ "1,2" , "3,4" ] 
+    // 1,2)3,4) -> [ "1,2" , "3,4" ]
     final String[] args = trim.split("\\)");
     for (final String arg : args) {
       final String[] windowAndInterval = arg.split(",");
       ts.add(new Timescale(Integer.valueOf(windowAndInterval[0]),
           Integer.valueOf(windowAndInterval[1]), TimeUnit.SECONDS, TimeUnit.SECONDS));
     }
-    Collections.sort(ts);
     return ts;
   }
-    
-  
 }

@@ -34,10 +34,10 @@ public final class DynamicMWOTEst {
     final long currTime = 0;
 
     final Configuration conf = DynamicMWOConfiguration.CONF
-        .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, "(30,3)")
+        .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, "(1800,180)")
         .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-        .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicGreedySelectionAlgorithm.class)
-        .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicGreedyOutputLookupTableImpl.class)
+        .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPSelectionAlgorithm.class)
+        .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicDPOutputLookupTableImpl.class)
         .set(DynamicMWOConfiguration.START_TIME, currTime)
         .build();
 
@@ -47,7 +47,8 @@ public final class DynamicMWOTEst {
     final DynamicMWO<Object, Map<String, Long>> mwo = injector.getInstance(DynamicMWO.class);
     final AggregationCounter aggregationCounter = injector.getInstance(AggregationCounter.class);
 
-    final List<Timescale> timescaleList = TimescaleParser.parseFromString("(30,3)(60,6)(120,12)(180,18)(300,30)(600,60)(900,90)(1200,120)(1500,150)(1800,180)");
+    final List<Timescale> timescaleList = TimescaleParser.parseFromStringNoSort("(1800,180)(1500,150)(1200,120)(900,90)(600,60)(300,30)(180,18)(120,12)(60,6)(30,3)");
+    System.out.println(timescaleList);
     final int numKey = 1000;
     final int numInput = 30000;
     final Random random = new Random();
@@ -59,27 +60,23 @@ public final class DynamicMWOTEst {
         System.out.println("Tick " + tick);
         mwo.execute(new WindowTimeEvent(tick));
 
+
         // Add window
-        if (tick <= 9) {
-          System.out.println("ADD WIndow " + tick);
-          mwo.addWindow(timescaleList.get((int)tick), tick);
+        if (tick <= 90 && tick % 10 == 0) {
+          final int index = (int)tick / 10;
+          System.out.println("ADD WIndow " + tick + ", " + timescaleList.get(index));
+          mwo.addWindow(timescaleList.get(index), tick);
         }
-        if (tick == 20) {
-          System.out.println("RM WIndow " + tick);
-          mwo.removeWindow(timescaleList.get(0), tick);
+
+
+        if (tick > 90 && tick <= 180 && tick % 10 == 0) {
+          int index = 9 - ((int)(tick/10)%10);
+          final Timescale ts = timescaleList.get(index);
+          System.out.println("RM WIndow " + tick + ", " + ts);
+          final long rmStartTime = System.nanoTime();
+          mwo.removeWindow(ts, tick);
         }
-        if (tick == 30) {
-          System.out.println("RM WIndow " + tick);
-          mwo.removeWindow(timescaleList.get(9), tick);
-        }
-        if (tick == 40) {
-          System.out.println("RM WIndow " + tick);
-          mwo.removeWindow(timescaleList.get(8), tick);
-        }
-        if (tick == 50) {
-          System.out.println("RM WIndow " + tick);
-          mwo.removeWindow(timescaleList.get(6), tick);
-        }
+
         tick += 1;
       } else {
         mwo.execute(Integer.toString(key));

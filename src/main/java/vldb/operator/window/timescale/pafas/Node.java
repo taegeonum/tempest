@@ -76,17 +76,14 @@ public final class Node<T> {
    * and resets the reference count to initial count
    * in order to reuse this node.
    */
-  public synchronized void decreaseRefCnt() {
+  public void decreaseRefCnt() {
     if (refCnt > 0) {
       refCnt--;
       if (refCnt == 0) {
         // Remove output
         final T prevOutput = output;
-        synchronized (prevOutput) {
-          output = null;
-          outputStored.set(false);
-          prevOutput.notifyAll();
-        }
+        output = null;
+        outputStored.set(false);
         refCnt = initialRefCnt;
       }
     }

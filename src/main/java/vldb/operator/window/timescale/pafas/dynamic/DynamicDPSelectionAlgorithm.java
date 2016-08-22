@@ -105,6 +105,7 @@ public class DynamicDPSelectionAlgorithm<T> implements DependencyGraph.Selection
       if (availablePartialNode != null) {
         availableNodes.add(availablePartialNode);
       }
+
       for (final Node<T> node : availableNodes) {
         final long beforeStart;
         if (node.start >= end) {

@@ -30,7 +30,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by taegeonum on 4/28/16.
@@ -195,12 +194,7 @@ public final class TestRunner {
     // FOR TIME
     //while (processedInput < inputRate * (totalTime)) {
     // FOR COUNT
-    long prevTickTime = System.nanoTime();
     long tick = 1;
-    while (tick <= period) {
-      mwo.execute(new WindowTimeEvent(tick));
-      tick += 1;
-    }
 
     while (tick <= totalTime) {
       //System.out.println("totalTime: " + (totalTime*1000) + ", elapsed: " + (System.currentTimeMillis() - currTime));
@@ -217,7 +211,6 @@ public final class TestRunner {
       if (processedInput % ((long)inputRate) == 0) {
         mwo.execute(new WindowTimeEvent(tick));
         tick += 1;
-        prevTickTime += TimeUnit.SECONDS.toNanos(1);
       }
 
 
