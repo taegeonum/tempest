@@ -18,6 +18,7 @@ package vldb.operator.window.timescale.pafas.dynamic;
 
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.common.NotFoundException;
+import vldb.operator.window.timescale.TimeMonitor;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.Timespan;
 import vldb.operator.window.timescale.pafas.DependencyGraph;
@@ -62,6 +63,8 @@ public final class DynamicDependencyGraphImpl<T> implements DependencyGraph {
   private final long period;
   private long rebuildSize;
   private final WindowManager windowManager;
+
+  private final TimeMonitor timeMonitor;
   /**
    * DependencyGraph constructor. This first builds the dependency graph.
    * @param startTime the initial start time of when the graph is built.
@@ -72,9 +75,11 @@ public final class DynamicDependencyGraphImpl<T> implements DependencyGraph {
                                      final DynamicOutputLookupTable<Node<T>> outputLookupTable,
                                      final SelectionAlgorithm<T> selectionAlgorithm,
                                      final WindowManager windowManager,
+                                     final TimeMonitor timeMonitor,
                                      final PeriodCalculator periodCalculator) {
     LOG.info("START " + this.getClass());
     this.windowManager = windowManager;
+    this.timeMonitor = timeMonitor;
     this.partialTimespans = partialTimespans;
     this.timescales = windowManager.timescales;
     this.startTime = startTime;
@@ -152,7 +157,10 @@ public final class DynamicDependencyGraphImpl<T> implements DependencyGraph {
     //System.out.println("GET_FINAL: " + t + ", rebuildSize: " + rebuildSize + ", currBuildingIndex; " + currBuildingIndex);
     if (t + rebuildSize > currBuildingIndex) {
       // Incremental build dependency graph
+      final long s = System.nanoTime();
       addOverlappingWindowNodeAndEdge(currBuildingIndex, t + rebuildSize);
+      final long e = System.nanoTime();
+      timeMonitor.continuousTime += (e-s);
       currBuildingIndex = t + rebuildSize;
     }
 

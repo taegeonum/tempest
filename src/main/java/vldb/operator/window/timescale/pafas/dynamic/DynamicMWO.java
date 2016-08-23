@@ -18,6 +18,7 @@ package vldb.operator.window.timescale.pafas.dynamic;
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.OutputEmitter;
 import vldb.operator.window.aggregator.CAAggregator;
+import vldb.operator.window.timescale.TimeMonitor;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.TimescaleWindowOutput;
@@ -68,6 +69,8 @@ public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
 
   private final AggregationCounter aggregationCounter;
 
+  private final TimeMonitor timeMonitor;
+
   /**
    * DefaultSlicedWindowOperatorImpl.
    * @param aggregator an aggregator for incremental aggregation
@@ -79,7 +82,8 @@ public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
       final DynamicSpanTrackerImpl<I, V> spanTracker,
       final FinalAggregator<V> finalAggregator,
       final AggregationCounter aggregationCounter,
-      @Parameter(StartTime.class) final Long startTime) {
+      @Parameter(StartTime.class) final Long startTime,
+      final TimeMonitor timeMonitor) {
     this.aggregationCounter = aggregationCounter;
     this.aggregator = aggregator;
     this.bucket = aggregator.init();
@@ -87,6 +91,7 @@ public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
     this.spanTracker = spanTracker;
     this.nextSliceTime = spanTracker.getNextSliceTime(startTime);
     this.finalAggregator = finalAggregator;
+    this.timeMonitor = timeMonitor;
   }
 
   private boolean isSliceTime(final long time) {
@@ -109,7 +114,10 @@ public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
         slice(prevSliceTime, nextSliceTime);
       }
     } else {
+      final long st = System.nanoTime();
       aggregator.incrementalAggregate(bucket, val);
+      final long et = System.nanoTime();
+      timeMonitor.partialTime += (et - st);
       aggregationCounter.incrementPartialAggregation();
     }
   }

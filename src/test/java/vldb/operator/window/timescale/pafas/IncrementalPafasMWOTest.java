@@ -6,8 +6,10 @@ import vldb.evaluation.parameter.EndTime;
 import vldb.example.DefaultExtractor;
 import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
 import vldb.operator.window.aggregator.impl.KeyExtractor;
+import vldb.operator.window.timescale.TimeMonitor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
+import vldb.operator.window.timescale.naive.NaiveMWOConfiguration;
 import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicDPOutputLookupTableImpl;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicDPSelectionAlgorithm;
@@ -15,6 +17,7 @@ import vldb.operator.window.timescale.pafas.dynamic.DynamicMWOConfiguration;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
+import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -71,14 +74,7 @@ public final class IncrementalPafasMWOTest {
     operatorIds.add("PAFAS-SINGLE-GREEDY");
 
 */
-    configurationList.add(DynamicMWOConfiguration.CONF
-        .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, "(3,1)(5,2)(10,3)(15,2)(19,3)(31,10)")
-        .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-        .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicDPOutputLookupTableImpl.class)
-        .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPSelectionAlgorithm.class)
-        .set(DynamicMWOConfiguration.START_TIME, currTime)
-        .build());
-    operatorIds.add("Dynamic");
+
 
     /*
     // single
@@ -109,7 +105,15 @@ public final class IncrementalPafasMWOTest {
         .build());
     operatorIds.add("OntheFly");
 
-/*
+    configurationList.add(DynamicMWOConfiguration.CONF
+        .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, "(3,1)(5,2)(10,3)(15,2)(19,3)(31,10)")
+        .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+        .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicDPOutputLookupTableImpl.class)
+        .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPSelectionAlgorithm.class)
+        .set(DynamicMWOConfiguration.START_TIME, currTime)
+        .build());
+    operatorIds.add("Dynamic");
+
     // TriOPs
     configurationList.add(TriOpsMWOConfiguration.CONF
         .set(TriOpsMWOConfiguration.INITIAL_TIMESCALES, "(3,1)(5,2)(10,3)(15,2)(19,3)(31,10)")
@@ -117,10 +121,18 @@ public final class IncrementalPafasMWOTest {
         .set(TriOpsMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("TriOps");
-*/
+
+    // Naive
+    configurationList.add(NaiveMWOConfiguration.CONF
+        .set(NaiveMWOConfiguration.INITIAL_TIMESCALES, "(3,1)(5,2)(10,3)(15,2)(19,3)(31,10)")
+        .set(NaiveMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+        .set(NaiveMWOConfiguration.START_TIME, currTime)
+        .build());
+    operatorIds.add("TriOps");
     int i = 0;
     final List<TimescaleWindowOperator> mwos = new LinkedList<>();
     final List<AggregationCounter> aggregationCounters = new LinkedList<>();
+    final List<TimeMonitor> timeMonitors = new LinkedList<>();
     for (final Configuration conf : configurationList) {
       final Injector injector = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), conf));
       injector.bindVolatileInstance(TimeWindowOutputHandler.class, new LoggingHandler<>(operatorIds.get(i)));
@@ -129,6 +141,9 @@ public final class IncrementalPafasMWOTest {
       mwos.add(mwo);
       final AggregationCounter aggregationCounter = injector.getInstance(AggregationCounter.class);
       aggregationCounters.add(aggregationCounter);
+
+      final TimeMonitor timeMonitor = injector.getInstance(TimeMonitor.class);
+      timeMonitors.add(timeMonitor);
       i += 1;
     }
 
@@ -162,9 +177,10 @@ public final class IncrementalPafasMWOTest {
       final AggregationCounter aggregationCounter = aggregationCounters.get(i);
       final long partialCount = aggregationCounter.getNumPartialAggregation();
       final long finalCount = aggregationCounter.getNumFinalAggregation();
+      final TimeMonitor timeMonitor = timeMonitors.get(i);
       final String id = operatorIds.get(i);
       LOG.info(id + " aggregation count: partial: " + partialCount + ", final: " + finalCount
-          + ", total: " + (partialCount + finalCount));
+          + ", total: " + (partialCount + finalCount) + ", " + timeMonitor);
       i += 1;
     }
   }

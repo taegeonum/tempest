@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Created by taegeonum on 4/25/16.
  */
-public final class RandomSlidingWindowGeneration {
+public final class RandomSlidingWindowGeneration2 {
 
   static final int minWindowSize = 10;
   static final int maxWindowSize = 1800;

@@ -16,6 +16,7 @@
 package vldb.operator.window.timescale.pafas.dynamic;
 
 import org.apache.reef.tang.annotations.Parameter;
+import vldb.operator.window.timescale.TimeMonitor;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.pafas.Node;
 import vldb.operator.window.timescale.pafas.PartialTimespans;
@@ -54,15 +55,19 @@ public final class DynamicPartialTimespans<T> implements PartialTimespans {
 
   private final WindowManager windowManager;
 
+  private final TimeMonitor timeMonitor;
+
   /**
    * StaticComputationReuserImpl Implementation.
    * @param startTime an initial start time
    */
   @Inject
   private DynamicPartialTimespans(final WindowManager windowManager,
-                                  @Parameter(StartTime.class) final long startTime) {
+                                  @Parameter(StartTime.class) final long startTime,
+                                  final TimeMonitor timeMonitor) {
     LOG.info("START " + this.getClass());
     this.timescales = windowManager.timescales;
+    this.timeMonitor = timeMonitor;
     this.startTime = startTime;
     this.partialTimespanMap = new HashMap<>();
     this.rebuildSize = windowManager.getRebuildSize();
@@ -164,7 +169,10 @@ public final class DynamicPartialTimespans<T> implements PartialTimespans {
     //System.out.println(partialTimespanMap);
     //System.out.println("currTiume : " + currTime + ", currIndex: " + currIndex + ", rebuildSize: " + rebuildSize);
     if (currTime + rebuildSize > currIndex) {
+      final long s = System.nanoTime();
       buildSlice(currIndex, currTime + rebuildSize);
+      final long e = System.nanoTime();
+      timeMonitor.continuousTime += (e-s);
     }
     Node<T> node = partialTimespanMap.get(currTime);
     if (node == null) {

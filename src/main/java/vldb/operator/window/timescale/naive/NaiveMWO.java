@@ -23,12 +23,8 @@ import vldb.evaluation.parameter.EndTime;
 import vldb.operator.OutputEmitter;
 import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
 import vldb.operator.window.aggregator.impl.KeyExtractor;
-import vldb.operator.window.timescale.TimeWindowOutputHandler;
-import vldb.operator.window.timescale.Timescale;
-import vldb.operator.window.timescale.TimescaleWindowOperator;
-import vldb.operator.window.timescale.TimescaleWindowOutput;
+import vldb.operator.window.timescale.*;
 import vldb.operator.window.timescale.common.DefaultOutputLookupTableImpl;
-import vldb.operator.window.timescale.common.SharedForkJoinPool;
 import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.pafas.PafasMWO;
 import vldb.operator.window.timescale.parameter.StartTime;
@@ -48,6 +44,9 @@ public final class NaiveMWO<I, V> implements TimescaleWindowOperator<I, V> {
   private static final Logger LOG = Logger.getLogger(NaiveMWO.class.getName());
 
   private final List<PafasMWO<I, V>> operators;
+
+  private final TimeMonitor timeMonitor;
+
   /**
    * Creates Pafas MWO.
    * @throws Exception
@@ -58,10 +57,11 @@ public final class NaiveMWO<I, V> implements TimescaleWindowOperator<I, V> {
       final AggregationCounter aggregationCounter,
       final KeyExtractor keyExtractor,
       final TimeWindowOutputHandler timeWindowOutputHandler,
-      final SharedForkJoinPool sharedForkJoinPool,
+      final TimeMonitor timeMonitor,
       @Parameter(StartTime.class) final long startTime,
       @Parameter(EndTime.class) final long endTime) throws Exception {
     this.operators = new LinkedList<>();
+    this.timeMonitor = timeMonitor;
     final List<Timescale> timescales = tsParser.timescales;
     for (final Timescale timescale : timescales) {
       final Configuration conf = StaticNaiveMWOConfiguration.CONF
@@ -75,6 +75,7 @@ public final class NaiveMWO<I, V> implements TimescaleWindowOperator<I, V> {
       injector.bindVolatileInstance(KeyExtractor.class, keyExtractor);
       injector.bindVolatileInstance(TimeWindowOutputHandler.class, timeWindowOutputHandler);
       injector.bindVolatileParameter(EndTime.class, endTime);
+      injector.bindVolatileInstance(TimeMonitor.class, timeMonitor);
       //injector.bindVolatileInstance(SharedForkJoinPool.class, sharedForkJoinPool);
       final PafasMWO<I, V> operator = injector.getInstance(PafasMWO.class);
       operators.add(operator);

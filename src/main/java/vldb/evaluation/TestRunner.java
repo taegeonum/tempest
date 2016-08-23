@@ -10,10 +10,7 @@ import vldb.example.DefaultExtractor;
 import vldb.operator.OutputEmitter;
 import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
 import vldb.operator.window.aggregator.impl.KeyExtractor;
-import vldb.operator.window.timescale.TimeWindowOutputHandler;
-import vldb.operator.window.timescale.Timescale;
-import vldb.operator.window.timescale.TimescaleWindowOperator;
-import vldb.operator.window.timescale.TimescaleWindowOutput;
+import vldb.operator.window.timescale.*;
 import vldb.operator.window.timescale.common.DefaultOutputLookupTableImpl;
 import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.naive.NaiveMWOConfiguration;
@@ -135,7 +132,6 @@ public final class TestRunner {
         return NaiveMWOConfiguration.CONF
             .set(NaiveMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(NaiveMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(NaiveMWOConfiguration.OUTPUT_LOOKUP_TABLE, DefaultOutputLookupTableImpl.class)
             .set(NaiveMWOConfiguration.START_TIME, "0")
             .build();
       default:
@@ -182,6 +178,7 @@ public final class TestRunner {
         new EvaluationHandler<>(operatorType.name(), countDownLatch, totalTime, writer, prefix));
     final TimescaleWindowOperator<Object, Map<String, Long>> mwo = newInjector.getInstance(TimescaleWindowOperator.class);
     final AggregationCounter aggregationCounter = newInjector.getInstance(AggregationCounter.class);
+    final TimeMonitor timeMonitor = newInjector.getInstance(TimeMonitor.class);
     final PeriodCalculator periodCalculator = newInjector.getInstance(PeriodCalculator.class);
     final long period = periodCalculator.getPeriod();
     i += 1;
@@ -226,17 +223,18 @@ public final class TestRunner {
     //writer.writeLine(outputPath+"/result", "PARTIAL="+partialCount);
     //writer.writeLine(outputPath+"/result", "FINAL=" + finalCount);
     //writer.writeLine(outputPath+"/result", "ELAPSED_TIME="+(endTime-currTime));
-    return new Result(partialCount, finalCount, processedInput, (endTime - currTime));
+    return new Result(partialCount, finalCount, processedInput, (endTime - currTime), timeMonitor);
   }
 
+
   public static Result runTest(final List<Timescale> timescales,
-                      final int numThreads,
-                      final long numKey,
-                      final OperatorType operatorType,
-                      final double inputRate,
-                      final long totalTime,
-                      final OutputWriter writer,
-                      final String prefix) throws Exception {
+                               final int numThreads,
+                               final long numKey,
+                               final OperatorType operatorType,
+                               final double inputRate,
+                               final long totalTime,
+                               final OutputWriter writer,
+                               final String prefix) throws Exception {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
     jcb.bindNamedParameter(NumThreads.class, numThreads+"");
@@ -296,7 +294,7 @@ public final class TestRunner {
     //writer.writeLine(outputPath+"/result", "PARTIAL="+partialCount);
     //writer.writeLine(outputPath+"/result", "FINAL=" + finalCount);
     //writer.writeLine(outputPath+"/result", "ELAPSED_TIME="+(endTime-currTime));
-    return new Result(partialCount, finalCount, 0, (endTime - currTime));
+    return new Result(partialCount, finalCount, 0, (endTime - currTime), null);
   }
 
   public static class Result {
@@ -304,15 +302,18 @@ public final class TestRunner {
     public final long finalCount;
     public final long elapsedTime;
     public final long processedInput;
+    public final TimeMonitor timeMonitor;
 
     public Result(final long partialCount,
                   final long finalCount,
                   final long processedInput,
-                  final long elapsedTime) {
+                  final long elapsedTime,
+                  final TimeMonitor timeMonitor) {
       this.partialCount = partialCount;
       this.finalCount = finalCount;
       this.processedInput = processedInput;
       this.elapsedTime = elapsedTime;
+      this.timeMonitor = timeMonitor;
     }
   }
 

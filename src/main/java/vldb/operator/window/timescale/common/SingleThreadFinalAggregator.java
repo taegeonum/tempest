@@ -19,6 +19,7 @@ import org.apache.reef.tang.annotations.Parameter;
 import vldb.evaluation.parameter.EndTime;
 import vldb.operator.OutputEmitter;
 import vldb.operator.window.aggregator.CAAggregator;
+import vldb.operator.window.timescale.TimeMonitor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOutput;
 import vldb.operator.window.timescale.parameter.NumThreads;
@@ -29,8 +30,6 @@ import javax.inject.Inject;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
@@ -66,7 +65,7 @@ public final class SingleThreadFinalAggregator<V> implements FinalAggregator<V> 
 
   private final CAAggregator<?, V> aggregateFunction;
 
-  private final ExecutorService executor = Executors.newSingleThreadExecutor();
+  private final TimeMonitor timeMonitor;
 
   //private final ConcurrentMap<Timescale, ExecutorService> executorServiceMap;
 
@@ -81,8 +80,10 @@ public final class SingleThreadFinalAggregator<V> implements FinalAggregator<V> 
                                       @Parameter(NumThreads.class) final int numThreads,
                                       @Parameter(StartTime.class) final long startTime,
                                       final AggregationCounter aggregationCounter,
+                                      final TimeMonitor timeMonitor,
                                       @Parameter(EndTime.class) final long endTime) {
     LOG.info("START " + this.getClass());
+    this.timeMonitor = timeMonitor;
     this.spanTracker = spanTracker;
     this.outputHandler = outputHandler;
     this.numThreads = numThreads;
@@ -114,7 +115,11 @@ public final class SingleThreadFinalAggregator<V> implements FinalAggregator<V> 
         //System.out.println("INC: " + timespan);
         try {
           //System.out.println("FINAL: (" + timespan.startTime + ", " + timespan.endTime + ")");
+          // Calculate elapsed time
+          final long st = System.nanoTime();
           final V finalResult = aggregateFunction.aggregate(aggregates);
+          final long et = System.nanoTime();
+          timeMonitor.finalTime += (et - st);
           //System.out.println("PUT_TIMESPAN: " + timespan);
           spanTracker.putAggregate(finalResult, timespan);
           outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,

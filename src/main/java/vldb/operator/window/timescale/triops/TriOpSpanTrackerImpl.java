@@ -21,8 +21,8 @@ import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.tang.exceptions.InjectionException;
 import vldb.operator.window.aggregator.CAAggregator;
+import vldb.operator.window.timescale.TimeMonitor;
 import vldb.operator.window.timescale.Timescale;
-import vldb.operator.window.timescale.common.SharedForkJoinPool;
 import vldb.operator.window.timescale.common.SpanTracker;
 import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.common.Timespan;
@@ -34,7 +34,6 @@ import vldb.operator.window.timescale.pafas.dynamic.DynamicDPOutputLookupTableIm
 import vldb.operator.window.timescale.pafas.dynamic.DynamicDependencyGraphImpl;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicOutputLookupTable;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicPartialTimespans;
-import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.StartTime;
 import vldb.operator.window.timescale.parameter.TimescaleString;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
@@ -71,6 +70,8 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
   private final long largestWindow;
 
   private long lastRemoved;
+
+  private final TimeMonitor timeMonitor;
   /**
    * DependencyGraphComputationReuser constructor.
    * @param tsParser timescale parser
@@ -80,10 +81,10 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
                                @Parameter(StartTime.class) final long startTime,
                                final TriWeave triWeave,
                                final DynamicPartialTimespans<T> sharedPartialTimespans,
-                               @Parameter(NumThreads.class) final int numThreads,
                                final CAAggregator<I, T> caAggregator,
                                final AggregationCounter aggregationCounter,
-                               final SharedForkJoinPool sharedForkJoinPool) throws InjectionException {
+                               final TimeMonitor timeMonitor) throws InjectionException {
+    this.timeMonitor = timeMonitor;
     this.partialTimespans = new LinkedList<>();
     this.timescales = tsParser.timescales;
     this.lastRemoved = startTime;
@@ -194,7 +195,13 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
               }
               // Get the intermediate result.
               //aggregationCounter.incrementFinalAggregation(realEnd, (List<Map>)intermediateAggregates);
+
+              // Calculate processing time
+              final long s = System.nanoTime();
               final T intermediateResult = caAggregator.aggregate(intermediateAggregates);
+              final long e = System.nanoTime();
+              timeMonitor.finalTime += (e - s);
+
               dependentNode.saveOutput(intermediateResult);
               aggregates.add(dependentNode.getOutput());
               dependentNode.refCnt -= 1;
@@ -218,7 +225,11 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
               aggregates.add(dependentNode.getOutput());
               dependentNode.refCnt -= 1;
               if (dependentNode.refCnt == 0) {
-                dependencyGraph.removeNode(dependentNode);
+                if (dependentNode.partial) {
+                  pt.removeNode(dependentNode.start);
+                } else {
+                  dependencyGraph.removeNode(dependentNode);
+                }
               }
               dependentNode.parents.remove(node);
               //dependentNode.decreaseRefCnt();
