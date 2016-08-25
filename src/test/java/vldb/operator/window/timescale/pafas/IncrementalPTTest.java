@@ -8,8 +8,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import vldb.evaluation.util.RandomSlidingWindowGenerator;
 import vldb.operator.window.timescale.Timescale;
-import vldb.operator.window.timescale.common.TimescaleParser;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicPartialTimespans;
+import vldb.operator.window.timescale.pafas.dynamic.DynamicOptimizedPartialTimespans;
 import vldb.operator.window.timescale.parameter.TimescaleString;
 
 import java.util.HashSet;
@@ -35,11 +34,11 @@ public class IncrementalPTTest {
 
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     final List<Timescale> timescales = swg.generateSlidingWindows(10);
-    jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(timescales));
     //jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(timescales));
+    jcb.bindNamedParameter(TimescaleString.class, "(7,3)(10,5)(20,8)");
 
     final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
-    final PartialTimespans<Integer> partialTimespans = injector.getInstance(DynamicPartialTimespans.class);
+    final PartialTimespans<Integer> partialTimespans = injector.getInstance(DynamicOptimizedPartialTimespans.class);
     final PartialTimespans<Integer> defaultPT = injector.getInstance(DefaultPartialTimespans.class);
     long time = 0;
     long time2 = 0;

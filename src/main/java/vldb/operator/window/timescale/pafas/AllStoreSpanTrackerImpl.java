@@ -20,6 +20,8 @@ import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.SpanTracker;
 import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.common.Timespan;
+import vldb.operator.window.timescale.pafas.dynamic.DynamicDependencyGraph;
+import vldb.operator.window.timescale.pafas.dynamic.DynamicPartialTimespans;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
@@ -49,8 +51,8 @@ public final class AllStoreSpanTrackerImpl<I, T> implements SpanTracker<T> {
   @Inject
   private AllStoreSpanTrackerImpl(final TimescaleParser tsParser,
                                   @Parameter(StartTime.class) final long startTime,
-                                  final DependencyGraph<T> dependencyGraph,
-                                  final PartialTimespans partialTimespans) {
+                                  final DynamicDependencyGraph<T> dependencyGraph,
+                                  final DynamicPartialTimespans partialTimespans) {
     this.timescales = tsParser.timescales;
     this.partialTimespans = partialTimespans;
     this.dependencyGraph = dependencyGraph;

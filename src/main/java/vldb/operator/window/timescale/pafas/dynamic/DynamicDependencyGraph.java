@@ -13,21 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package vldb.operator.window.timescale.pafas.dynamic;
 
 import vldb.operator.window.timescale.Timescale;
-import vldb.operator.window.timescale.pafas.PartialTimespans;
+import vldb.operator.window.timescale.pafas.DependencyGraph;
+import vldb.operator.window.timescale.pafas.Node;
 
-/** This implementation is based on "On-the-fly Sharing for Streamed Aggregation" paper.
- * Reference: S. Krishnamurthy, C. Wu, and M. Franklin. On-the-fly sharing
- * for streamed aggregation. In ACM SIGMOD, 2006
- * It returns next slice time for slicing input stream into paired sliced window.
+/**
+ * DependencyGraph shows which nodes are related to each other. This is used so that unnecessary outputs are not saved.
  */
-public interface DynamicPartialTimespans<T> extends PartialTimespans {
+public interface DynamicDependencyGraph<T> extends DependencyGraph {
 
-  public void addWindow(final Timescale window, final long prevSliceTime, final long time);
+  public void removeSlidingWindow(final Timescale ts, final long tsStartTime, final long deleteTime);
 
-  public void removeWindow(final Timescale window, final long prevSliceTime, final long time, long windowStartTime);
+  public void removeNode(final Node<T> node);
 
-  public void removeNode(final long startTime);
 }

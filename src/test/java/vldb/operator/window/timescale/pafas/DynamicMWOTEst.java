@@ -14,6 +14,7 @@ import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -33,21 +34,48 @@ public final class DynamicMWOTEst {
 
     final long currTime = 0;
 
-    final Configuration conf = DynamicMWOConfiguration.CONF
-        .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, "(1800,180)")
+    final List<Configuration> configurationList = new LinkedList<>();
+    final List<String> operatorIds = new LinkedList<>();
+
+    /*
+    configurationList.add(DynamicMWOConfiguration.CONF
+        .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, "(30,3)(60,6)(120,12)(80,7)(50,7)(180,18)(300,30)(600,60)(900,90)(1200,120)(1500,150)(1800,180)")
         .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPSelectionAlgorithm.class)
         .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicDPOutputLookupTableImpl.class)
+        .set(DynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicDependencyGraphImpl.class)
+        .set(DynamicMWOConfiguration.DYNAMIC_PARTIAL, DynamicPartialTimespansImpl.class)
         .set(DynamicMWOConfiguration.START_TIME, currTime)
-        .build();
+        .build());
+    operatorIds.add("Dynamic");
+*/
 
-    final Injector injector = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), conf));
-    injector.bindVolatileInstance(TimeWindowOutputHandler.class, new LoggingHandler<>("DynamicMWO"));
-    injector.bindVolatileParameter(EndTime.class, 500L);
-    final DynamicMWO<Object, Map<String, Long>> mwo = injector.getInstance(DynamicMWO.class);
-    final AggregationCounter aggregationCounter = injector.getInstance(AggregationCounter.class);
+    configurationList.add(DynamicMWOConfiguration.CONF
+        .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, "(1575,147)")
+        .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+        .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicGreedySelectionAlgorithm.class)
+        .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicGreedyOutputLookupTableImpl.class)
+        .set(DynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicOptimizedDependencyGraphImpl.class)
+        .set(DynamicMWOConfiguration.DYNAMIC_PARTIAL, DynamicOptimizedPartialTimespans.class)
+        .set(DynamicMWOConfiguration.START_TIME, currTime)
+        .build());
+    operatorIds.add("Dynamic-OPT");
 
-    final List<Timescale> timescaleList = TimescaleParser.parseFromStringNoSort("(1800,180)(1500,150)(1200,120)(900,90)(600,60)(300,30)(180,18)(120,12)(60,6)(30,3)");
+    int hn = 0;
+    final List<DynamicMWO> mwos = new LinkedList<>();
+    final List<AggregationCounter> aggregationCounters = new LinkedList<>();
+    for (final Configuration conf : configurationList) {
+      final Injector injector = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), conf));
+      injector.bindVolatileInstance(TimeWindowOutputHandler.class, new LoggingHandler<>(operatorIds.get(hn)));
+      injector.bindVolatileParameter(EndTime.class, 500L);
+      final DynamicMWO<Object, Map<String, Long>> mwo = injector.getInstance(DynamicMWO.class);
+      mwos.add(mwo);
+      final AggregationCounter aggregationCounter = injector.getInstance(AggregationCounter.class);
+      aggregationCounters.add(aggregationCounter);
+      hn += 1;
+    }
+
+    final List<Timescale> timescaleList = TimescaleParser.parseFromStringNoSort("(1575,147)(690,94)(334,58)(429,23)(1585,390)(870,184)(422,122)(704,139)(950,265)(269,66)");
     System.out.println(timescaleList);
     final int numKey = 1000;
     final int numInput = 30000;
@@ -58,15 +86,21 @@ public final class DynamicMWOTEst {
       long cTickTime = System.nanoTime();
       if (i % 100 == 0) {
         System.out.println("Tick " + tick);
-        mwo.execute(new WindowTimeEvent(tick));
-
+        for (final DynamicMWO mwo : mwos) {
+          mwo.execute(new WindowTimeEvent(tick));
+        }
 
         // Add window
+
         if (tick <= 90 && tick % 10 == 0) {
           final int index = (int)tick / 10;
           System.out.println("ADD WIndow " + tick + ", " + timescaleList.get(index));
-          mwo.addWindow(timescaleList.get(index), tick);
+          for (final DynamicMWO mwo : mwos) {
+            mwo.addWindow(timescaleList.get(index), tick);
+          }
         }
+
+
 
 
         if (tick > 90 && tick <= 180 && tick % 10 == 0) {
@@ -74,16 +108,23 @@ public final class DynamicMWOTEst {
           final Timescale ts = timescaleList.get(index);
           System.out.println("RM WIndow " + tick + ", " + ts);
           final long rmStartTime = System.nanoTime();
-          mwo.removeWindow(ts, tick);
+          for (final DynamicMWO mwo : mwos) {
+            mwo.removeWindow(ts, tick);
+          }
         }
+
 
         tick += 1;
       } else {
-        mwo.execute(Integer.toString(key));
+        for (final DynamicMWO mwo : mwos) {
+          mwo.execute(Integer.toString(key));
+        }
       }
       Thread.sleep(1);
     }
 
-    mwo.close();
+    for (final DynamicMWO mwo : mwos) {
+      mwo.close();
+    }
   }
 }

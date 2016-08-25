@@ -30,10 +30,7 @@ import vldb.operator.window.timescale.onthefly.OntheflySelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.DependencyGraph;
 import vldb.operator.window.timescale.pafas.Node;
 import vldb.operator.window.timescale.pafas.PartialTimespans;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicDPOutputLookupTableImpl;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicDependencyGraphImpl;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicOutputLookupTable;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicPartialTimespans;
+import vldb.operator.window.timescale.pafas.dynamic.*;
 import vldb.operator.window.timescale.parameter.StartTime;
 import vldb.operator.window.timescale.parameter.TimescaleString;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
@@ -107,12 +104,12 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
       jcb.bindImplementation(DependencyGraph.SelectionAlgorithm.class, OntheflySelectionAlgorithm.class);
       jcb.bindNamedParameter(StartTime.class, startTime+"");
       jcb.bindNamedParameter(TimescaleString.class, TimescaleParser.parseToString(tss));
-      jcb.bindImplementation(PartialTimespans.class, DynamicPartialTimespans.class);
+      jcb.bindImplementation(DynamicPartialTimespans.class, DynamicPartialTimespansImpl.class);
       jcb.bindImplementation(DynamicOutputLookupTable.class, DynamicDPOutputLookupTableImpl.class);
 
       final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
       final DynamicDependencyGraphImpl<T> dependencyGraph = injector.getInstance(DynamicDependencyGraphImpl.class);
-      final DynamicPartialTimespans pt = injector.getInstance(DynamicPartialTimespans.class);
+      final DynamicPartialTimespans pt = injector.getInstance(DynamicPartialTimespansImpl.class);
       partialTimespans.add(pt);
       dependencyGraphs.add(dependencyGraph);
       for (final Timescale ts : tss) {

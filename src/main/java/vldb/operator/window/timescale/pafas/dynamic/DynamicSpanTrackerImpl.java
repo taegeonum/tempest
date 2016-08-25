@@ -41,7 +41,7 @@ public final class DynamicSpanTrackerImpl<I, T> implements SpanTracker<T> {
 
   private final DynamicPartialTimespans<T> partialTimespans;
 
-  private final DynamicDependencyGraphImpl dependencyGraph;
+  private final DynamicDependencyGraph dependencyGraph;
 
   private final WindowManager windowManager;
 
@@ -53,7 +53,7 @@ public final class DynamicSpanTrackerImpl<I, T> implements SpanTracker<T> {
   @Inject
   private DynamicSpanTrackerImpl(final TimescaleParser tsParser,
                                  @Parameter(StartTime.class) final long startTime,
-                                 final DynamicDependencyGraphImpl<T> dependencyGraph,
+                                 final DynamicDependencyGraph<T> dependencyGraph,
                                  final WindowManager windowManager,
                                  final DynamicPartialTimespans partialTimespans) {
     this.timescales = tsParser.timescales;
@@ -104,6 +104,7 @@ public final class DynamicSpanTrackerImpl<I, T> implements SpanTracker<T> {
               if (dependentNode.refCnt == 0) {
                 // Remove
                 if (dependentNode.partial) {
+                  //System.out.println("DELETE!!: " + dependentNode + ", for: " + timespan);
                   partialTimespans.removeNode(dependentNode.start);
                 } else {
                   dependencyGraph.removeNode(dependentNode);
@@ -126,11 +127,12 @@ public final class DynamicSpanTrackerImpl<I, T> implements SpanTracker<T> {
     //if (timespan.timescale == null) {
     //  System.out.println("PUT_PARTIAL: " + timespan.startTime + ", " + timespan.endTime + " node: " + node.start + ", " + node.end);
     //}
-    if (node.getInitialRefCnt() != 0) {
+    //System.out.println("PUT " + timespan +", to " + node);
+    if (node.refCnt != 0) {
       synchronized (node) {
-        if (node.getInitialRefCnt() != 0) {
+        if (node.refCnt != 0) {
           node.saveOutput(agg);
-          //System.out.println("PUT_AGG: " + timespan + ", " + node);
+          //System.out.println("PUT " + timespan +", to " + node);
           // after saving the output, notify the thread that is waiting for this output.
           node.notifyAll();
         }
@@ -152,7 +154,7 @@ public final class DynamicSpanTrackerImpl<I, T> implements SpanTracker<T> {
   public void removeSlidingWindow(final Timescale ts, final long deleteTime) {
     final long stTime = windowManager.timescaleStartTime(ts);
     windowManager.removeWindow(ts, deleteTime);
-    partialTimespans.removeWindow(ts, prevSliceTime, deleteTime);
+    partialTimespans.removeWindow(ts, prevSliceTime, deleteTime, stTime);
     dependencyGraph.removeSlidingWindow(ts, stTime, deleteTime);
   }
 }

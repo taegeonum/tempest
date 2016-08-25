@@ -111,6 +111,7 @@ public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
   public void execute(final I val) {
     if (val instanceof WindowTimeEvent) {
       if (isSliceTime(((WindowTimeEvent) val).time)) {
+        //System.out.println("SLICE: " + prevSliceTime + ", " + nextSliceTime);
         slice(prevSliceTime, nextSliceTime);
       }
     } else {
@@ -126,8 +127,10 @@ public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
     final V partialAggregation = bucket;
     bucket = aggregator.init();
     //System.out.println("PARTIAL_SIZE: " + ((Map)partialAggregation).size() + "\t" + (prevSliceTime) + "-" + (nextSliceTime));
+    //System.out.println("SLICE: " + prev + ", " + next);
     prevSliceTime = next;
     nextSliceTime = spanTracker.getNextSliceTime(prevSliceTime);
+    //System.out.println("SLICE changed: " + prevSliceTime + ", " + nextSliceTime);
     spanTracker.putAggregate(partialAggregation, new Timespan(prev, next, null));
     final List<Timespan> finalTimespans = spanTracker.getFinalTimespans(next);
     //System.out.println("final timespans at " + next  + ": " + finalTimespans);
@@ -159,5 +162,6 @@ public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
     spanTracker.removeSlidingWindow(window, time);
     // 2) Update next slice time
     nextSliceTime = spanTracker.getNextSliceTime(prevSliceTime);
+    //System.out.println("prevslice : " + prevSliceTime + ", nextSlice: " + nextSliceTime);
   }
 }

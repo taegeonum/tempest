@@ -6,6 +6,7 @@ import vldb.operator.window.timescale.pafas.DependencyGraph;
 import vldb.operator.window.timescale.pafas.Node;
 import vldb.operator.window.timescale.pafas.PartialTimespans;
 import vldb.operator.window.timescale.pafas.PeriodCalculator;
+import vldb.operator.window.timescale.pafas.dynamic.DynamicPartialTimespans;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
@@ -19,7 +20,7 @@ public class OntheflySelectionAlgorithm<T> implements DependencyGraph.SelectionA
   private final long startTime;
 
   @Inject
-  private OntheflySelectionAlgorithm(final PartialTimespans<T> partialTimespans,
+  private OntheflySelectionAlgorithm(final DynamicPartialTimespans<T> partialTimespans,
                                      final PeriodCalculator periodCalculator,
                                      @Parameter(StartTime.class) long startTime) {
     this.partialTimespans = partialTimespans;

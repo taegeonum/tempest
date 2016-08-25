@@ -30,7 +30,7 @@ public class DynamicDPSelectionAlgorithm<T> implements DependencyGraph.Selection
   private final long gcd;
 
   @Inject
-  private DynamicDPSelectionAlgorithm(final PartialTimespans<T> partialTimespans,
+  private DynamicDPSelectionAlgorithm(final DynamicPartialTimespans<T> partialTimespans,
                                       final DynamicOutputLookupTable<Node<T>> finalTimespans,
                                       final PeriodCalculator periodCalculator,
                                       @Parameter(StartTime.class) long startTime,
@@ -105,6 +105,10 @@ public class DynamicDPSelectionAlgorithm<T> implements DependencyGraph.Selection
       if (availablePartialNode != null) {
         availableNodes.add(availablePartialNode);
       }
+
+      //if (start == 1252 && end == 1586) {
+      //  System.out.println("available nodes: " + availableNodes);
+      //}
 
       for (final Node<T> node : availableNodes) {
         final long beforeStart;

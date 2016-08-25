@@ -22,11 +22,13 @@ import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
 import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
 
-import java.io.IOException;
+import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by taegeonum on 4/28/16.
@@ -37,6 +39,9 @@ public final class TestRunner {
   public enum OperatorType {
     DYNAMIC_DP,
     DYNAMIC_GREEDY,
+    DYNAMIC_ADAPTIVE,
+    DYNAMIC_WINDOW_GREEDY,
+    DYNAMIC_WINDOW_DP,
     PAFAS,
     PAFAS_DP,
     PAFAS_SINGLE,
@@ -61,16 +66,30 @@ public final class TestRunner {
         return DynamicMWOConfiguration.CONF
           .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
           .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-          .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPSelectionAlgorithm.class)
-          .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicDPOutputLookupTableImpl.class)
+            .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPSelectionAlgorithm.class)
+            .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicDPOutputLookupTableImpl.class)
+            .set(DynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicOptimizedDependencyGraphImpl.class)
+            .set(DynamicMWOConfiguration.DYNAMIC_PARTIAL, DynamicOptimizedPartialTimespans.class)
           .set(DynamicMWOConfiguration.START_TIME, "0")
           .build();
+      case DYNAMIC_ADAPTIVE:
+        return DynamicMWOConfiguration.CONF
+            .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPSelectionAlgorithm.class)
+            .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicGreedyOutputLookupTableImpl.class)
+            .set(DynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicAdaptiveOptimizedDependencyGraphImpl.class)
+            .set(DynamicMWOConfiguration.DYNAMIC_PARTIAL, DynamicOptimizedPartialTimespans.class)
+            .set(DynamicMWOConfiguration.START_TIME, "0")
+            .build();
       case DYNAMIC_GREEDY:
         return DynamicMWOConfiguration.CONF
             .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicGreedySelectionAlgorithm.class)
             .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicGreedyOutputLookupTableImpl.class)
+            .set(DynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicOptimizedDependencyGraphImpl.class)
+            .set(DynamicMWOConfiguration.DYNAMIC_PARTIAL, DynamicOptimizedPartialTimespans.class)
             .set(DynamicMWOConfiguration.START_TIME, "0")
             .build();
       case PAFAS_SINGLE:
@@ -139,6 +158,145 @@ public final class TestRunner {
     }
   }
 
+
+  public static Result runFileWordDynamicTest(final String timescaleString,
+                                       final int numThreads,
+                                       final String filePath,
+                                       final OperatorType operatorType,
+                                       final double inputRate,
+                                       final long totalTime,
+                                       final OutputWriter writer,
+                                       final String prefix) throws Exception {
+    final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
+    jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
+    jcb.bindNamedParameter(NumThreads.class, numThreads+"");
+    jcb.bindNamedParameter(FileWordGenerator.FileDataPath.class, filePath);
+    jcb.bindNamedParameter(EndTime.class, totalTime+"");
+
+    final List<Timescale> timescales = TimescaleParser.parseFromStringNoSort(timescaleString);
+    //Collections.sort(timescales);
+
+    /*
+    writer.writeLine(outputPath+"/result", "-------------------------------------");
+    writer.writeLine(outputPath+"/result", "@NumWindows=" + timescales.size());
+    writer.writeLine(outputPath+"/result", "@Windows="+timescaleString);
+    writer.writeLine(outputPath+"/result", "-------------------------------------");
+    */
+    int i = 0;
+    Configuration conf = null;
+    if (operatorType == OperatorType.DYNAMIC_WINDOW_GREEDY) {
+      conf = DynamicMWOConfiguration.CONF
+          .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, timescales.get(0).toString())
+          .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+          .set(DynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicOptimizedDependencyGraphImpl.class)
+          .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicGreedyOutputLookupTableImpl.class)
+          .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicGreedySelectionAlgorithm.class)
+          .set(DynamicMWOConfiguration.DYNAMIC_PARTIAL, DynamicOptimizedPartialTimespans.class)
+          .set(DynamicMWOConfiguration.START_TIME, 0)
+          .build();
+    } else if (operatorType == OperatorType.DYNAMIC_WINDOW_DP) {
+      conf = DynamicMWOConfiguration.CONF
+          .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, timescales.get(0).toString())
+          .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+          .set(DynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicOptimizedDependencyGraphImpl.class)
+          .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicDPOutputLookupTableImpl.class)
+          .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPSelectionAlgorithm.class)
+          .set(DynamicMWOConfiguration.DYNAMIC_PARTIAL, DynamicOptimizedPartialTimespans.class)
+          .set(DynamicMWOConfiguration.START_TIME, 0)
+          .build();
+    }
+
+    //writer.writeLine(outputPath+"/result", "=================\nOperator=" + operatorType.name());
+    final Injector newInjector = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), conf));
+    final Generator wordGenerator = newInjector.getInstance(FileWordGenerator.class);
+
+    newInjector.bindVolatileInstance(TimeWindowOutputHandler.class,
+        new EvaluationHandler<>(operatorType.name(), null, totalTime, writer, prefix));
+    final DynamicMWO<Object, Map<String, Long>> mwo = newInjector.getInstance(DynamicMWO.class);
+    final AggregationCounter aggregationCounter = newInjector.getInstance(AggregationCounter.class);
+    final TimeMonitor timeMonitor = newInjector.getInstance(TimeMonitor.class);
+    final PeriodCalculator periodCalculator = newInjector.getInstance(PeriodCalculator.class);
+    final long period = periodCalculator.getPeriod();
+    i += 1;
+
+    final long currTime = System.currentTimeMillis();
+    long processedInput = 1;
+    //Thread.sleep(period);
+    // FOR TIME
+    //while (processedInput < inputRate * (totalTime)) {
+    // FOR COUNT
+    long tick = 1;
+
+    long currInputRate = (long)inputRate;
+    Scanner poissonFile = null;
+    if (inputRate == 0) {
+      poissonFile = new Scanner(new File("./dataset/poisson.txt"));
+      currInputRate = Long.valueOf(poissonFile.nextLine());
+    }
+
+    long currInput = 0;
+    while (tick <= totalTime) {
+      //System.out.println("totalTime: " + (totalTime*1000) + ", elapsed: " + (System.currentTimeMillis() - currTime));
+      final String word = wordGenerator.nextString();
+      final long cTime = System.nanoTime();
+      //System.out.println("word: " + word);
+      if (word == null) {
+        // End of input
+        break;
+      }
+
+      mwo.execute(word);
+      currInput += 1;
+
+      int tickSize = 10;
+      if (currInput >= 3 /*currInputRate*/) {
+        mwo.execute(new WindowTimeEvent(tick));
+        // Add window
+        if (tick < timescales.size() * tickSize && tick % tickSize == 0) {
+          final int index = (int) tick / tickSize;
+          final Timescale ts = timescales.get(index);
+          System.out.println("ADD: " + ts + ", " + tick);
+          final long addStartTime = System.nanoTime();
+          mwo.addWindow(ts, tick);
+          final long addEndTime = System.nanoTime();
+          final long elapsed = TimeUnit.NANOSECONDS.toMillis(addEndTime - addStartTime);
+          writer.writeLine(prefix + "_result", "ADD\t" + ts + "\t" + elapsed);
+        }
+
+        if (tick > timescales.size() * tickSize && tick < timescales.size() * 2 * tickSize && tick % 10 == 0) {
+          int index = timescales.size() - ((int) (tick / tickSize) % timescales.size());
+          final Timescale ts = timescales.get(index);
+          System.out.println("RM: " + ts + ", " + tick);
+          final long rmStartTime = System.nanoTime();
+          mwo.removeWindow(ts, tick);
+          final long rmEndTime = System.nanoTime();
+          final long elapsed = TimeUnit.NANOSECONDS.toMillis(rmEndTime - rmStartTime);
+          writer.writeLine(prefix + "_result", "REMOVE\t" + ts + "\t" + elapsed);
+        }
+        tick += 1;
+        currInput = 0;
+        if (inputRate == 0) {
+          currInputRate = Long.valueOf(poissonFile.nextLine());
+        }
+      }
+
+      processedInput += 1;
+      //while (System.nanoTime() - cTime < 1000000000*(1.0/inputRate)) {
+      // adjust input rate
+      //}
+    }
+    final long endTime = System.currentTimeMillis();
+    mwo.close();
+    wordGenerator.close();
+    final long partialCount = aggregationCounter.getNumPartialAggregation();
+    final long finalCount = aggregationCounter.getNumFinalAggregation();
+    //writer.writeLine(outputPath+"/result", "PARTIAL="+partialCount);
+    //writer.writeLine(outputPath+"/result", "FINAL=" + finalCount);
+    //writer.writeLine(outputPath+"/result", "ELAPSED_TIME="+(endTime-currTime));
+    return new Result(partialCount, finalCount, processedInput, (endTime - currTime), timeMonitor);
+  }
+
+
   public static Result runFileWordTest(final List<Timescale> timescales,
                                        final int numThreads,
                                        final String filePath,
@@ -191,6 +349,14 @@ public final class TestRunner {
     // FOR COUNT
     long tick = 1;
 
+    long currInputRate = (long)inputRate;
+    Scanner poissonFile = null;
+    if (inputRate == 0) {
+       poissonFile = new Scanner(new File("./dataset/poisson.txt"));
+      currInputRate = Long.valueOf(poissonFile.nextLine());
+    }
+
+    long currInput = 0;
     while (tick <= totalTime) {
       //System.out.println("totalTime: " + (totalTime*1000) + ", elapsed: " + (System.currentTimeMillis() - currTime));
       final String word = wordGenerator.nextString();
@@ -202,12 +368,16 @@ public final class TestRunner {
       }
 
       mwo.execute(word);
+      currInput += 1;
 
-      if (processedInput % ((long)inputRate) == 0) {
+      if (currInput >= currInputRate) {
         mwo.execute(new WindowTimeEvent(tick));
         tick += 1;
+        currInput = 0;
+        if (inputRate == 0) {
+          currInputRate = Long.valueOf(poissonFile.nextLine());
+        }
       }
-
 
       processedInput += 1;
       //while (System.nanoTime() - cTime < 1000000000*(1.0/inputRate)) {
@@ -339,16 +509,30 @@ public final class TestRunner {
     @Override
     public void execute(final TimescaleWindowOutput<I> val) {
       if (val.endTime <= totalTime) {
-        countDownLatch.countDown();
+        if (countDownLatch != null) {
+          countDownLatch.countDown();
+        }
       }
+      /*
       try {
         writer.writeLine(prefix + "/" + val.timescale, System.currentTimeMillis()+"\t" + val.startTime + "\t" + val.endTime);
       } catch (IOException e) {
         e.printStackTrace();
         throw new RuntimeException(e);
       }
-      System.out.println(id + " ts: " + val.timescale +
-          ", timespan: [" + val.startTime + ", " + val.endTime + ")");
+      */
+      if (val.endTime % 10 == 0) {
+        final StringBuilder sb = new StringBuilder();
+        sb.append(id);
+        sb.append(" ts: ");
+        sb.append(val.timescale);
+        sb.append(", timespan: [");
+        sb.append(val.startTime);
+        sb.append(", ");
+        sb.append(val.endTime);
+        sb.append(")");
+        System.out.println(sb.toString());
+      }
     }
 
     @Override

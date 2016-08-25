@@ -61,9 +61,9 @@ public final class TwitterEvaluation {
     final Injector injector = Tang.Factory.getTang().newInjector(commandLineConf);
 
     // Parameters
+    final String timescaleString = injector.getNamedInstance(TimescaleString.class);
     final String outputPath = injector.getNamedInstance(OutputPath.class);
-    final List<Timescale> timescales = TimescaleParser.parseFromString(
-        injector.getNamedInstance(TimescaleString.class));
+    final List<Timescale> timescales = TimescaleParser.parseFromString(timescaleString);
     final int numThreads = injector.getNamedInstance(NumThreads.class);
     final double inputRate = injector.getNamedInstance(InputRate.class);
     final String variable = injector.getNamedInstance(Variable.class);
@@ -96,8 +96,14 @@ public final class TwitterEvaluation {
       }
     }, 1, 1, TimeUnit.SECONDS);
 
-    final TestRunner.Result result = TestRunner.runFileWordTest(timescales,
-        numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix);
+    TestRunner.Result result = null;
+    if (operatorType == TestRunner.OperatorType.DYNAMIC_WINDOW_DP || operatorType == TestRunner.OperatorType.DYNAMIC_WINDOW_GREEDY) {
+      result = TestRunner.runFileWordDynamicTest(timescaleString,
+          numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix);
+    } else {
+      result = TestRunner.runFileWordTest(timescales,
+          numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix);
+    }
     writer.writeLine(prefix + "_result", operatorType.name() + "\t" + variable + "\t" + result.partialCount + "\t" + result.finalCount + "\t" + result.processedInput + "\t" + result.elapsedTime + result.timeMonitor);
 
     // End of experiments

@@ -21,7 +21,7 @@ public class DynamicGreedySelectionAlgorithm<T> implements DependencyGraph.Selec
   private final long startTime;
 
   @Inject
-  private DynamicGreedySelectionAlgorithm(final PartialTimespans<T> partialTimespans,
+  private DynamicGreedySelectionAlgorithm(final DynamicPartialTimespans<T> partialTimespans,
                                           final DynamicOutputLookupTable<Node<T>> finalTimespans,
                                           final PeriodCalculator periodCalculator,
                                           @Parameter(StartTime.class) long startTime) {
@@ -81,7 +81,6 @@ public class DynamicGreedySelectionAlgorithm<T> implements DependencyGraph.Selec
       }
 
       // No relations among final timespans, so find from partial timespans
-      //System.out.println("PARTIAL ST: " + st);
       if (elem == null) {
         if (st < startTime) {
           final Node<T> partialTimespanNode = partialTimespans.getNextPartialTimespanNode(st + period);
@@ -90,6 +89,9 @@ public class DynamicGreedySelectionAlgorithm<T> implements DependencyGraph.Selec
           st = partialTimespanNode.end - period;
         } else {
           final Node<T> partialTimespanNode = partialTimespans.getNextPartialTimespanNode(st);
+          if (partialTimespanNode == null) {
+            System.out.println("find: " + start + ", " + end + ", PARTIAL ST: " + st + ", " + childNodes);
+          }
           childNodes.add(partialTimespanNode);
           st = partialTimespanNode.end;
         }

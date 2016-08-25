@@ -97,7 +97,7 @@ public final class ComputeByKeyAggregator<I, K, V> implements CAAggregator<I, Ma
   @Override
   public Map<K, V> aggregate(final Collection<Map<K, V>> partials) {
     final Map<K, V> result = new HashMap<>();
-    long numAgg = 0;
+    //long numAgg = 0;
     //System.out.print("FINAL_PARTIALS ");
     for (final Map<K, V> partial : partials) {
       //System.out.print(partial.size() + ", ");
@@ -107,14 +107,14 @@ public final class ComputeByKeyAggregator<I, K, V> implements CAAggregator<I, Ma
           //oldVal = computeFunc.init();
           result.put(entry.getKey(), entry.getValue());
         } else {
-          numAgg += 1;
+          //numAgg += 1;
           result.put(entry.getKey(), computeFunc.compute(oldVal, entry.getValue()));
           //aggregationCounter.incrementFinalAggregation();
         }
       }
     }
     //System.out.println("NUMAGG: " + numAgg);
-    aggregationCounter.incrementFinalAggregation(numAgg);
+    //aggregationCounter.incrementFinalAggregation(numAgg);
     return result;
   }
 

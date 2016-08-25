@@ -23,7 +23,6 @@ import vldb.operator.window.timescale.common.FinalAggregator;
 import vldb.operator.window.timescale.common.SingleThreadFinalAggregator;
 import vldb.operator.window.timescale.common.SpanTracker;
 import vldb.operator.window.timescale.pafas.DependencyGraph;
-import vldb.operator.window.timescale.pafas.PartialTimespans;
 
 /**
  * A helper class for static MTS window configuration.
@@ -32,15 +31,17 @@ public final class DynamicMWOConfiguration extends TimescaleWindowBaseConfigurat
 
     public static final RequiredImpl<DependencyGraph.SelectionAlgorithm> SELECTION_ALGORITHM = new RequiredImpl<>();
     public static final RequiredImpl<DynamicOutputLookupTable> OUTPUT_LOOKUP_TABLE = new RequiredImpl<>();
+    public static final RequiredImpl<DynamicPartialTimespans> DYNAMIC_PARTIAL = new RequiredImpl<>();
+    public static final RequiredImpl<DynamicDependencyGraph> DYNAMIC_DEPENDENCY = new RequiredImpl<>();
 
     public static final ConfigurationModule CONF = new DynamicMWOConfiguration()
         .merge(TimescaleWindowBaseConfiguration.CONF)
         .bindImplementation(DependencyGraph.SelectionAlgorithm.class, SELECTION_ALGORITHM)
         .bindImplementation(DynamicOutputLookupTable.class, OUTPUT_LOOKUP_TABLE)
+        .bindImplementation(DynamicDependencyGraph.class, DYNAMIC_DEPENDENCY)
+        .bindImplementation(DynamicPartialTimespans.class, DYNAMIC_PARTIAL)
         .bindImplementation(SpanTracker.class, DynamicSpanTrackerImpl.class)
         .bindImplementation(TimescaleWindowOperator.class, DynamicMWO.class)
-        .bindImplementation(PartialTimespans.class, DynamicPartialTimespans.class)
         .bindImplementation(FinalAggregator.class, SingleThreadFinalAggregator.class)
-        .bindImplementation(DependencyGraph.class, DynamicDependencyGraphImpl.class)
         .build();
 }

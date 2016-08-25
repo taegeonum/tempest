@@ -81,8 +81,10 @@ public final class DynamicEvaluation {
     final Configuration conf = DynamicMWOConfiguration.CONF
         .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, timescaleList.get(0).toString())
         .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-        .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPSelectionAlgorithm.class)
+        .set(DynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicOptimizedDependencyGraphImpl.class)
         .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicDPOutputLookupTableImpl.class)
+        .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPSelectionAlgorithm.class)
+        .set(DynamicMWOConfiguration.DYNAMIC_PARTIAL, DynamicOptimizedPartialTimespans.class)
         .set(DynamicMWOConfiguration.START_TIME, 0)
         .build();
 
@@ -104,12 +106,12 @@ public final class DynamicEvaluation {
     long input = 1;
     while (tick <= endTime) {
       final int key = Math.abs(random.nextInt() % numKey);
-      if (input % 1000 == 0) {
+      if (input % 10 == 0) {
         //System.out.println("Tick " + tick);
         mwo.execute(new WindowTimeEvent(tick));
 
         // Add window
-        if (tick <= 90 && tick % 10 == 0) {
+        if (tick < timescaleList.size() * 10 && tick % 10 == 0) {
           final int index = (int)tick/10;
           final Timescale ts = timescaleList.get(index);
           final long addStartTime = System.nanoTime();
@@ -119,8 +121,8 @@ public final class DynamicEvaluation {
           writer.writeLine(prefix + "_result", "ADD\t" + ts + "\t" + elapsed);
         }
 
-        if (tick > 90 && tick <= 180 && tick % 10 == 0) {
-          int index = 9 - ((int)(tick/10)%10);
+        if (tick > timescaleList.size() * 10 && tick <= timescaleList.size() * 2 * 10 && tick % 10 == 0) {
+          int index = timescaleList.size() - 1 - ((int)(tick/10)%10);
           final Timescale ts = timescaleList.get(index);
           final long rmStartTime = System.nanoTime();
           mwo.removeWindow(ts, tick);

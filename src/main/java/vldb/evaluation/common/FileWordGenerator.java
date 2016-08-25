@@ -19,7 +19,7 @@ public final class FileWordGenerator extends Generator {
     sc.close();
   }
 
-  @NamedParameter(short_name = "data_path", default_value="./dataset/hashtag.txt")
+  @NamedParameter(short_name = "data_path", default_value="./dataset/movie_hashtag.txt")
   public final static class FileDataPath implements Name<String> {}
 
   private final File inputFile;
