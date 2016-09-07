@@ -15,11 +15,15 @@
  */
 package vldb.operator.window.aggregator.impl;
 
+import org.apache.reef.tang.annotations.DefaultImplementation;
+import vldb.example.DefaultExtractor;
+
 /**
  * Extract key from input.
  * @param <I> input
  * @param <K> key
  */
+@DefaultImplementation(DefaultExtractor.class)
 public interface KeyExtractor<I, K> {
   /**
    * Get key from the input.

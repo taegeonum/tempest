@@ -27,7 +27,6 @@ import vldb.operator.window.timescale.parameter.StartTime;
 import javax.inject.Inject;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -116,7 +115,7 @@ public final class DynamicSpanTrackerImpl<I, T> implements SpanTracker<T> {
               dependentNode.parents.remove(node);
               if (dependentNode.refCnt == 0) {
                 // Remove
-                timeMonitor.storedKey -= ((Map)dependentNode.getOutput()).size();
+                //timeMonitor.storedKey -= ((Map)dependentNode.getOutput()).size();
                 if (dependentNode.partial) {
                   //System.out.println("DELETE!!: " + dependentNode + ", for: " + timespan);
                   partialTimespans.removeNode(dependentNode.start);
@@ -145,7 +144,7 @@ public final class DynamicSpanTrackerImpl<I, T> implements SpanTracker<T> {
     if (node.refCnt != 0) {
       synchronized (node) {
         if (node.refCnt != 0) {
-          timeMonitor.storedKey += ((Map)agg).size();
+          //timeMonitor.storedKey += ((Map)agg).size();
           node.saveOutput(agg);
           //System.out.println("PUT " + timespan +", to " + node);
           // after saving the output, notify the thread that is waiting for this output.

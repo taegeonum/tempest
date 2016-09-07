@@ -41,6 +41,7 @@ public final class TestRunner {
 
   public enum OperatorType {
     DYNAMIC_DP,
+    SCALABLE_DP,
     DYNAMIC_GREEDY,
     DYNAMIC_ADAPTIVE,
     DYNAMIC_WINDOW_GREEDY,
@@ -69,8 +70,16 @@ public final class TestRunner {
   public static class WindowChangePeriod implements Name<Integer> {}
 
   private static Configuration getOperatorConf(final OperatorType operatorType,
-                                               final String timescaleString) {
+                                               final String timescaleString,
+                                               final int numThreads) {
     switch (operatorType) {
+      case SCALABLE_DP:
+        return ScalableDynamicMWOConfiguration.CONF
+            .set(ScalableDynamicMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(ScalableDynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(ScalableDynamicMWOConfiguration.START_TIME, "0")
+            .set(ScalableDynamicMWOConfiguration.NUM_THREADS, numThreads)
+            .build();
       case DYNAMIC_DP:
         return DynamicMWOConfiguration.CONF
           .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
@@ -343,7 +352,7 @@ public final class TestRunner {
                                        final String prefix) throws Exception {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
-    jcb.bindNamedParameter(NumThreads.class, numThreads+"");
+    //jcb.bindNamedParameter(NumThreads.class, numThreads+"");
     jcb.bindNamedParameter(FileWordGenerator.FileDataPath.class, filePath);
     jcb.bindNamedParameter(EndTime.class, totalTime+"");
 
@@ -362,7 +371,7 @@ public final class TestRunner {
     writer.writeLine(outputPath+"/result", "-------------------------------------");
     */
     int i = 0;
-    final Configuration conf = getOperatorConf(operatorType, timescaleString);
+    final Configuration conf = getOperatorConf(operatorType, timescaleString, numThreads);
 
     //writer.writeLine(outputPath+"/result", "=================\nOperator=" + operatorType.name());
     final Injector newInjector = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), conf));
@@ -377,7 +386,6 @@ public final class TestRunner {
     final long period = periodCalculator.getPeriod();
     i += 1;
 
-    final long currTime = System.currentTimeMillis();
     long processedInput = 1;
     //Thread.sleep(period);
     // FOR TIME
@@ -392,6 +400,7 @@ public final class TestRunner {
       currInputRate = Long.valueOf(poissonFile.nextLine());
     }
 
+    final long currTime = System.currentTimeMillis();
     long currInput = 0;
     while (tick <= totalTime) {
       //System.out.println("totalTime: " + (totalTime*1000) + ", elapsed: " + (System.currentTimeMillis() - currTime));
@@ -421,9 +430,9 @@ public final class TestRunner {
         // adjust input rate
       //}
     }
-    final long endTime = System.currentTimeMillis();
-    countDownLatch.await();
+    //countDownLatch.await();
     mwo.close();
+    final long endTime = System.currentTimeMillis();
     wordGenerator.close();
     final long partialCount = aggregationCounter.getNumPartialAggregation();
     final long finalCount = aggregationCounter.getNumFinalAggregation();
@@ -463,7 +472,7 @@ public final class TestRunner {
     writer.writeLine(outputPath+"/result", "-------------------------------------");
     */
     int i = 0;
-    final Configuration conf = getOperatorConf(operatorType, timescaleString);
+    final Configuration conf = getOperatorConf(operatorType, timescaleString, numThreads);
 
     //writer.writeLine(outputPath+"/result", "=================\nOperator=" + operatorType.name());
     final Injector newInjector = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), conf));
@@ -545,11 +554,11 @@ public final class TestRunner {
 
     @Override
     public void execute(final TimescaleWindowOutput<I> val) {
-      if (val.endTime <= totalTime) {
+      /*if (val.endTime <= totalTime) {
         if (countDownLatch != null) {
           countDownLatch.countDown();
         }
-      }
+      }*/
       /*
       try {
         writer.writeLine(prefix + "/" + val.timescale, System.currentTimeMillis()+"\t" + val.startTime + "\t" + val.endTime);

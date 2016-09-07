@@ -9,15 +9,9 @@ import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.TimeMonitor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
-import vldb.operator.window.timescale.naive.NaiveMWOConfiguration;
-import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicDPOutputLookupTableImpl;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicDPSelectionAlgorithm;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicMWOConfiguration;
+import vldb.operator.window.timescale.pafas.dynamic.*;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
-import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
-import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -35,7 +29,7 @@ public final class IncrementalPafasMWOTest {
   public void testPafasMWO() throws Exception {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
-    jcb.bindNamedParameter(NumThreads.class, "4");
+    //jcb.bindNamedParameter(NumThreads.class, "4");
 
     final long currTime = 0;
     final List<Configuration> configurationList = new LinkedList<>();
@@ -95,7 +89,7 @@ public final class IncrementalPafasMWOTest {
         .set(InfiniteMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("PAFAS-INF");
-    */
+
 
     // On-the-fly operator
     configurationList.add(OntheflyMWOConfiguration.CONF
@@ -104,16 +98,28 @@ public final class IncrementalPafasMWOTest {
         .set(OntheflyMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("OntheFly");
+    */
+
+    configurationList.add(ScalableDynamicMWOConfiguration.CONF
+        .set(ScalableDynamicMWOConfiguration.INITIAL_TIMESCALES, "(3,1)(5,2)(10,3)(15,2)(19,3)(31,10)")
+        .set(ScalableDynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+        .set(ScalableDynamicMWOConfiguration.START_TIME, "0")
+        .set(ScalableDynamicMWOConfiguration.NUM_THREADS, "4")
+        .build());
+    operatorIds.add("Scalable");
 
     configurationList.add(DynamicMWOConfiguration.CONF
         .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, "(3,1)(5,2)(10,3)(15,2)(19,3)(31,10)")
         .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-        .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicDPOutputLookupTableImpl.class)
         .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPSelectionAlgorithm.class)
-        .set(DynamicMWOConfiguration.START_TIME, currTime)
+        .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicDPOutputLookupTableImpl.class)
+        .set(DynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicOptimizedDependencyGraphImpl.class)
+        .set(DynamicMWOConfiguration.DYNAMIC_PARTIAL, DynamicOptimizedPartialTimespans.class)
+        .set(DynamicMWOConfiguration.START_TIME, "0")
         .build());
     operatorIds.add("Dynamic");
 
+    /*
     // TriOPs
     configurationList.add(TriOpsMWOConfiguration.CONF
         .set(TriOpsMWOConfiguration.INITIAL_TIMESCALES, "(3,1)(5,2)(10,3)(15,2)(19,3)(31,10)")
@@ -128,7 +134,8 @@ public final class IncrementalPafasMWOTest {
         .set(NaiveMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(NaiveMWOConfiguration.START_TIME, currTime)
         .build());
-    operatorIds.add("TriOps");
+    operatorIds.add("Naive");
+    */
     int i = 0;
     final List<TimescaleWindowOperator> mwos = new LinkedList<>();
     final List<AggregationCounter> aggregationCounters = new LinkedList<>();
@@ -137,7 +144,7 @@ public final class IncrementalPafasMWOTest {
       final Injector injector = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), conf));
       injector.bindVolatileInstance(TimeWindowOutputHandler.class, new LoggingHandler<>(operatorIds.get(i)));
       injector.bindVolatileParameter(EndTime.class, 500L);
-      final TimescaleWindowOperator<Object, Map<String, Long>> mwo = injector.getInstance(PafasMWO.class);
+      final TimescaleWindowOperator<Object, Map<String, Long>> mwo = injector.getInstance(TimescaleWindowOperator.class);
       mwos.add(mwo);
       final AggregationCounter aggregationCounter = injector.getInstance(AggregationCounter.class);
       aggregationCounters.add(aggregationCounter);
@@ -148,7 +155,7 @@ public final class IncrementalPafasMWOTest {
     }
 
     final int numKey = 1000;
-    final int numInput = 30000;
+    final int numInput = 300;
     final Random random = new Random();
     long tick = 1;
     for (i = 1; i <= numInput; i++) {
