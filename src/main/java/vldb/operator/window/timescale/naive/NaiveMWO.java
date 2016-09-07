@@ -19,7 +19,9 @@ import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.annotations.Parameter;
+import org.apache.reef.tang.exceptions.InjectionException;
 import vldb.evaluation.parameter.EndTime;
+import vldb.operator.Operator;
 import vldb.operator.OutputEmitter;
 import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
 import vldb.operator.window.aggregator.impl.KeyExtractor;
@@ -31,8 +33,10 @@ import vldb.operator.window.timescale.parameter.StartTime;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
 
 import javax.inject.Inject;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -45,8 +49,17 @@ public final class NaiveMWO<I, V> implements TimescaleWindowOperator<I, V> {
 
   private final List<PafasMWO<I, V>> operators;
 
+  private final AggregationCounter aggregationCounter;
+
+  private final KeyExtractor keyExtractor;
+
+  private final TimeWindowOutputHandler timeWindowOutputHandler;
+
   private final TimeMonitor timeMonitor;
 
+  private final long endTime;
+
+  private final Map<Timescale, Operator> timescaleOperatorMap = new HashMap<>();
   /**
    * Creates Pafas MWO.
    * @throws Exception
@@ -62,6 +75,10 @@ public final class NaiveMWO<I, V> implements TimescaleWindowOperator<I, V> {
       @Parameter(EndTime.class) final long endTime) throws Exception {
     this.operators = new LinkedList<>();
     this.timeMonitor = timeMonitor;
+    this.aggregationCounter = aggregationCounter;
+    this.keyExtractor = keyExtractor;
+    this.timeWindowOutputHandler = timeWindowOutputHandler;
+    this.endTime = endTime;
     final List<Timescale> timescales = tsParser.timescales;
     for (final Timescale timescale : timescales) {
       final Configuration conf = StaticNaiveMWOConfiguration.CONF
@@ -78,6 +95,7 @@ public final class NaiveMWO<I, V> implements TimescaleWindowOperator<I, V> {
       injector.bindVolatileInstance(TimeMonitor.class, timeMonitor);
       //injector.bindVolatileInstance(SharedForkJoinPool.class, sharedForkJoinPool);
       final PafasMWO<I, V> operator = injector.getInstance(PafasMWO.class);
+      timescaleOperatorMap.put(timescale, operator);
       operators.add(operator);
     }
   }
@@ -108,5 +126,35 @@ public final class NaiveMWO<I, V> implements TimescaleWindowOperator<I, V> {
     for (final PafasMWO<I, V> operator : operators) {
       operator.close();
     }
+  }
+
+  @Override
+  public void addWindow(final Timescale ts, final long time) {
+      final Configuration conf = StaticNaiveMWOConfiguration.CONF
+          .set(StaticNaiveMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+          .set(StaticNaiveMWOConfiguration.START_TIME, time+"")
+          .set(StaticNaiveMWOConfiguration.OUTPUT_LOOKUP_TABLE, DefaultOutputLookupTableImpl.class)
+          .set(StaticNaiveMWOConfiguration.INITIAL_TIMESCALES, ts.toString())
+          .build();
+      final Injector injector = Tang.Factory.getTang().newInjector(conf);
+      injector.bindVolatileInstance(AggregationCounter.class, aggregationCounter);
+      injector.bindVolatileInstance(KeyExtractor.class, keyExtractor);
+      injector.bindVolatileInstance(TimeWindowOutputHandler.class, timeWindowOutputHandler);
+      injector.bindVolatileParameter(EndTime.class, endTime);
+      injector.bindVolatileInstance(TimeMonitor.class, timeMonitor);
+      //injector.bindVolatileInstance(SharedForkJoinPool.class, sharedForkJoinPool);
+    try {
+      final PafasMWO<I, V> operator = injector.getInstance(PafasMWO.class);
+      operators.add(operator);
+      timescaleOperatorMap.put(ts, operator);
+    } catch (InjectionException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public void removeWindow(final Timescale ts, final long time) {
+    final Operator operator = timescaleOperatorMap.remove(ts);
+    operators.remove(operator);
   }
 }

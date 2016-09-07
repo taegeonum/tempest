@@ -23,4 +23,8 @@ import vldb.operator.Operator;
  * It receives input and produces window output every interval.
  */
 public interface TimescaleWindowOperator<I, V> extends Operator<I, TimescaleWindowOutput<V>>, AutoCloseable {
+
+  public void addWindow(Timescale ts, long time);
+
+  public void removeWindow(Timescale ts, long time);
 }

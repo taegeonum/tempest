@@ -22,8 +22,6 @@ import vldb.operator.window.timescale.common.FinalAggregator;
 import vldb.operator.window.timescale.common.SingleThreadFinalAggregator;
 import vldb.operator.window.timescale.common.SpanTracker;
 import vldb.operator.window.timescale.pafas.DependencyGraph;
-import vldb.operator.window.timescale.pafas.PafasMWO;
-import vldb.operator.window.timescale.pafas.PartialTimespans;
 import vldb.operator.window.timescale.pafas.dynamic.*;
 
 /**
@@ -35,10 +33,10 @@ public final class OntheflyMWOConfiguration extends TimescaleWindowBaseConfigura
       .merge(TimescaleWindowBaseConfiguration.CONF)
       .bindImplementation(DynamicOutputLookupTable.class, DynamicDPOutputLookupTableImpl.class)
       .bindImplementation(SpanTracker.class, DynamicSpanTrackerImpl.class)
-      .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
+      .bindImplementation(TimescaleWindowOperator.class, DynamicMWO.class)
       .bindImplementation(DependencyGraph.SelectionAlgorithm.class, OntheflySelectionAlgorithm.class)
-      .bindImplementation(PartialTimespans.class, DynamicPartialTimespans.class)
+      .bindImplementation(DynamicPartialTimespans.class, DynamicOptimizedPartialTimespans.class)
       .bindImplementation(FinalAggregator.class, SingleThreadFinalAggregator.class)
-      .bindImplementation(DependencyGraph.class, DynamicDependencyGraphImpl.class)
+      .bindImplementation(DynamicDependencyGraph.class, DynamicOptimizedDependencyGraphImpl.class)
       .build();
 }

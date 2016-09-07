@@ -11,6 +11,7 @@ public final class TimeMonitor {
   public long finalTime = 0;
   public long partialTime = 0;
   public long continuousTime = 0;
+  public long storedKey = 0;
 
   @Inject
   private TimeMonitor() {

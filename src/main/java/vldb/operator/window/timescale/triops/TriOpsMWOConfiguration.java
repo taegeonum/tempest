@@ -35,8 +35,8 @@ public final class TriOpsMWOConfiguration extends TimescaleWindowBaseConfigurati
         .bindImplementation(DynamicOutputLookupTable.class, DynamicDPOutputLookupTableImpl.class)
       .bindImplementation(SpanTracker.class, TriOpSpanTrackerImpl.class)
       .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
-      .bindImplementation(DynamicPartialTimespans.class, DynamicPartialTimespansImpl.class)
+      .bindImplementation(DynamicPartialTimespans.class, DynamicOptimizedPartialTimespans.class)
       .bindImplementation(FinalAggregator.class, SingleThreadFinalAggregator.class)
-      .bindImplementation(DependencyGraph.class, DynamicDependencyGraphImpl.class)
+      .bindImplementation(DependencyGraph.class, DynamicOptimizedDependencyGraphImpl.class)
       .build();
 }

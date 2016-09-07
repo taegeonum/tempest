@@ -146,6 +146,7 @@ public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
   public void close() throws Exception {
   }
 
+  @Override
   public void addWindow(final Timescale window, final long time) {
     spanTracker.addSlidingWindow(window, time);
     // 1) Update next slice time
@@ -158,6 +159,7 @@ public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
     }
   }
 
+  @Override
   public void removeWindow(final Timescale window, final long time) {
     spanTracker.removeSlidingWindow(window, time);
     // 2) Update next slice time

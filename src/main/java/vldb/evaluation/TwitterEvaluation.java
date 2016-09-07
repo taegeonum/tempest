@@ -11,7 +11,6 @@ import org.apache.reef.tang.formats.AvroConfigurationSerializer;
 import org.apache.reef.tang.formats.CommandLine;
 import vldb.evaluation.common.FileWordGenerator;
 import vldb.evaluation.parameter.*;
-import vldb.evaluation.util.Profiler;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.parameter.NumThreads;
@@ -19,9 +18,6 @@ import vldb.operator.window.timescale.parameter.TimescaleString;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -48,6 +44,7 @@ public final class TwitterEvaluation {
         .registerShortNameOfClass(Variable.class)
         .registerShortNameOfClass(EndTime.class)
         .registerShortNameOfClass(TestName.class)
+            .registerShortNameOfClass(TestRunner.WindowChangePeriod.class)
         //.registerShortNameOfClass(NumOfKey.class)
         .processCommandLine(args);
 
@@ -70,6 +67,7 @@ public final class TwitterEvaluation {
     final long endTime = injector.getNamedInstance(EndTime.class);
     final String testName = injector.getNamedInstance(TestName.class);
     final String dataPath = injector.getNamedInstance(FileWordGenerator.FileDataPath.class);
+    final int windowChangePeriod = injector.getNamedInstance(TestRunner.WindowChangePeriod.class);
     //final long numKey = injector.getNamedInstance(NumOfKey.class);
 
     final TestRunner.OperatorType operatorType = TestRunner.OperatorType.valueOf(
@@ -83,6 +81,7 @@ public final class TwitterEvaluation {
         + serializer.toString(commandLineConf) + "--------------------------------");
 
     // Profiler
+    /*
     final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
     executorService.scheduleAtFixedRate(new Runnable() {
       @Override
@@ -95,11 +94,13 @@ public final class TwitterEvaluation {
         }
       }
     }, 1, 1, TimeUnit.SECONDS);
+*/
 
     TestRunner.Result result = null;
-    if (operatorType == TestRunner.OperatorType.DYNAMIC_WINDOW_DP || operatorType == TestRunner.OperatorType.DYNAMIC_WINDOW_GREEDY) {
+    if (operatorType == TestRunner.OperatorType.DYNAMIC_WINDOW_DP || operatorType == TestRunner.OperatorType.DYNAMIC_WINDOW_GREEDY
+        || operatorType == TestRunner.OperatorType.DYNAMIC_NAIVE || operatorType == TestRunner.OperatorType.DYNAMIC_OnTheFly) {
       result = TestRunner.runFileWordDynamicTest(timescaleString,
-          numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix);
+          numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix, windowChangePeriod);
     } else {
       result = TestRunner.runFileWordTest(timescales,
           numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix);
@@ -108,7 +109,7 @@ public final class TwitterEvaluation {
 
     // End of experiments
     Thread.sleep(2000);
-    executorService.shutdownNow();
+    //executorService.shutdownNow();
     writer.close();
     Runtime.getRuntime().halt(1);
   }

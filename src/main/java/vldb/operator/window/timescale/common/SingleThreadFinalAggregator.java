@@ -108,7 +108,7 @@ public final class SingleThreadFinalAggregator<V> implements FinalAggregator<V> 
     Collections.sort(finalTimespans, timespanComparator);
     for (final Timespan timespan : finalTimespans) {
       //System.out.println("BEFORE_GET: " + timespan);
-      if (timespan.endTime <= endTime) {
+      //if (timespan.endTime <= endTime) {
         final List<V> aggregates = spanTracker.getDependentAggregates(timespan);
         //System.out.println("AFTER_GET: " + timespan);
         //aggregationCounter.incrementFinalAggregation(timespan.endTime, (List<Map>)aggregates);
@@ -129,7 +129,7 @@ public final class SingleThreadFinalAggregator<V> implements FinalAggregator<V> 
           e.printStackTrace();
           System.out.println(e);
         }
-      }
+      //}
     }
   }
 

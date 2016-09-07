@@ -2,10 +2,13 @@ package vldb.evaluation;
 
 import edu.snu.tempest.example.util.writer.OutputWriter;
 import org.apache.reef.tang.*;
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
 import vldb.evaluation.common.FileWordGenerator;
 import vldb.evaluation.common.Generator;
 import vldb.evaluation.common.ZipfianGenerator;
 import vldb.evaluation.parameter.EndTime;
+import vldb.evaluation.util.Profiler;
 import vldb.example.DefaultExtractor;
 import vldb.operator.OutputEmitter;
 import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
@@ -42,6 +45,9 @@ public final class TestRunner {
     DYNAMIC_ADAPTIVE,
     DYNAMIC_WINDOW_GREEDY,
     DYNAMIC_WINDOW_DP,
+    DYNAMIC_ALL_STORE,
+    DYNAMIC_NAIVE,
+    DYNAMIC_OnTheFly,
     PAFAS,
     PAFAS_DP,
     PAFAS_SINGLE,
@@ -58,6 +64,9 @@ public final class TestRunner {
     OnTheFly,
     Naive
   }
+
+  @NamedParameter(short_name="window_change_period", default_value = "10")
+  public static class WindowChangePeriod implements Name<Integer> {}
 
   private static Configuration getOperatorConf(final OperatorType operatorType,
                                                final String timescaleString) {
@@ -91,6 +100,16 @@ public final class TestRunner {
             .set(DynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicOptimizedDependencyGraphImpl.class)
             .set(DynamicMWOConfiguration.DYNAMIC_PARTIAL, DynamicOptimizedPartialTimespans.class)
             .set(DynamicMWOConfiguration.START_TIME, "0")
+            .build();
+      case DYNAMIC_ALL_STORE:
+        return DynamicAllStoreMWOConfiguration.CONF
+            .set(DynamicAllStoreMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(DynamicAllStoreMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(DynamicAllStoreMWOConfiguration.SELECTION_ALGORITHM, DynamicGreedySelectionAlgorithm.class)
+            .set(DynamicAllStoreMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicGreedyOutputLookupTableImpl.class)
+            .set(DynamicAllStoreMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicOptimizedDependencyGraphImpl.class)
+            .set(DynamicAllStoreMWOConfiguration.DYNAMIC_PARTIAL, DynamicOptimizedPartialTimespans.class)
+            .set(DynamicAllStoreMWOConfiguration.START_TIME, "0")
             .build();
       case PAFAS_SINGLE:
         return StaticSingleMWOConfiguration.CONF
@@ -166,7 +185,8 @@ public final class TestRunner {
                                        final double inputRate,
                                        final long totalTime,
                                        final OutputWriter writer,
-                                       final String prefix) throws Exception {
+                                       final String prefix,
+                                       final int windowChangePeriod) throws Exception {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
     jcb.bindNamedParameter(NumThreads.class, numThreads+"");
@@ -204,6 +224,18 @@ public final class TestRunner {
           .set(DynamicMWOConfiguration.DYNAMIC_PARTIAL, DynamicOptimizedPartialTimespans.class)
           .set(DynamicMWOConfiguration.START_TIME, 0)
           .build();
+    } else if (operatorType == OperatorType.DYNAMIC_OnTheFly) {
+      conf = OntheflyMWOConfiguration.CONF
+          .set(OntheflyMWOConfiguration.INITIAL_TIMESCALES, timescales.get(0).toString())
+          .set(OntheflyMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+          .set(OntheflyMWOConfiguration.START_TIME, 0)
+          .build();
+    } else if (operatorType == OperatorType.DYNAMIC_NAIVE) {
+      conf = NaiveMWOConfiguration.CONF
+          .set(NaiveMWOConfiguration.INITIAL_TIMESCALES, timescales.get(0).toString())
+          .set(NaiveMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+          .set(NaiveMWOConfiguration.START_TIME, 0)
+          .build();
     }
 
     //writer.writeLine(outputPath+"/result", "=================\nOperator=" + operatorType.name());
@@ -212,12 +244,13 @@ public final class TestRunner {
 
     newInjector.bindVolatileInstance(TimeWindowOutputHandler.class,
         new EvaluationHandler<>(operatorType.name(), null, totalTime, writer, prefix));
-    final DynamicMWO<Object, Map<String, Long>> mwo = newInjector.getInstance(DynamicMWO.class);
+    final TimescaleWindowOperator<Object, Map<String, Long>> mwo = newInjector.getInstance(TimescaleWindowOperator.class);
     final AggregationCounter aggregationCounter = newInjector.getInstance(AggregationCounter.class);
     final TimeMonitor timeMonitor = newInjector.getInstance(TimeMonitor.class);
     final PeriodCalculator periodCalculator = newInjector.getInstance(PeriodCalculator.class);
     final long period = periodCalculator.getPeriod();
     i += 1;
+
 
     final long currTime = System.currentTimeMillis();
     long processedInput = 1;
@@ -235,7 +268,8 @@ public final class TestRunner {
     }
 
     long currInput = 0;
-    while (tick <= totalTime) {
+    long rebuildingTime = 0;
+    while (tick <= windowChangePeriod * timescales.size() * 2) {
       //System.out.println("totalTime: " + (totalTime*1000) + ", elapsed: " + (System.currentTimeMillis() - currTime));
       final String word = wordGenerator.nextString();
       final long cTime = System.nanoTime();
@@ -248,29 +282,30 @@ public final class TestRunner {
       mwo.execute(word);
       currInput += 1;
 
-      int tickSize = 10;
-      if (currInput >= 3 /*currInputRate*/) {
+      if (currInput >= currInputRate) {
         mwo.execute(new WindowTimeEvent(tick));
         // Add window
-        if (tick < timescales.size() * tickSize && tick % tickSize == 0) {
-          final int index = (int) tick / tickSize;
+        if (tick < timescales.size() * windowChangePeriod && tick % windowChangePeriod == 0) {
+          final int index = (int) tick / windowChangePeriod;
           final Timescale ts = timescales.get(index);
           System.out.println("ADD: " + ts + ", " + tick);
           final long addStartTime = System.nanoTime();
           mwo.addWindow(ts, tick);
           final long addEndTime = System.nanoTime();
           final long elapsed = TimeUnit.NANOSECONDS.toMillis(addEndTime - addStartTime);
+          rebuildingTime += elapsed;
           writer.writeLine(prefix + "_result", "ADD\t" + ts + "\t" + elapsed);
         }
 
-        if (tick > timescales.size() * tickSize && tick < timescales.size() * 2 * tickSize && tick % 10 == 0) {
-          int index = timescales.size() - ((int) (tick / tickSize) % timescales.size());
+        if (tick > timescales.size() * windowChangePeriod && tick < timescales.size() * 2 * windowChangePeriod && tick % windowChangePeriod == 0) {
+          int index = timescales.size() - 1 - ((int) (tick / windowChangePeriod) % timescales.size());
           final Timescale ts = timescales.get(index);
           System.out.println("RM: " + ts + ", " + tick);
           final long rmStartTime = System.nanoTime();
           mwo.removeWindow(ts, tick);
           final long rmEndTime = System.nanoTime();
           final long elapsed = TimeUnit.NANOSECONDS.toMillis(rmEndTime - rmStartTime);
+          rebuildingTime += elapsed;
           writer.writeLine(prefix + "_result", "REMOVE\t" + ts + "\t" + elapsed);
         }
         tick += 1;
@@ -290,6 +325,7 @@ public final class TestRunner {
     wordGenerator.close();
     final long partialCount = aggregationCounter.getNumPartialAggregation();
     final long finalCount = aggregationCounter.getNumFinalAggregation();
+    writer.writeLine(prefix + "_result", "REBUILDING_TIME\t" + rebuildingTime);
     //writer.writeLine(outputPath+"/result", "PARTIAL="+partialCount);
     //writer.writeLine(outputPath+"/result", "FINAL=" + finalCount);
     //writer.writeLine(outputPath+"/result", "ELAPSED_TIME="+(endTime-currTime));
@@ -372,6 +408,7 @@ public final class TestRunner {
 
       if (currInput >= currInputRate) {
         mwo.execute(new WindowTimeEvent(tick));
+        writer.writeLine(prefix + "_memory", System.currentTimeMillis() + "\t" + Profiler.getMemoryUsage() + "\t" + timeMonitor.storedKey);
         tick += 1;
         currInput = 0;
         if (inputRate == 0) {

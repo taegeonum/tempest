@@ -33,8 +33,8 @@ import java.util.logging.Logger;
 /**
  * A SpanTracker using Greedy selection algorithm.
  */
-public final class DynamicSpanTrackerImpl<I, T> implements SpanTracker<T> {
-  private static final Logger LOG = Logger.getLogger(DynamicSpanTrackerImpl.class.getName());
+public final class DynamicAllStoreSpanTrackerImpl<I, T> implements SpanTracker<T> {
+  private static final Logger LOG = Logger.getLogger(DynamicAllStoreSpanTrackerImpl.class.getName());
 
   /**
    * The list of timescale.
@@ -47,11 +47,11 @@ public final class DynamicSpanTrackerImpl<I, T> implements SpanTracker<T> {
 
   private final WindowManager windowManager;
 
-  private long lastRemoved;
-
   private long prevSliceTime;
 
-  private long largestWindowSize;
+  private final long largestWindowSize;
+
+  private long latestRemoved;
 
   private final TimeMonitor timeMonitor;
   /**
@@ -59,25 +59,39 @@ public final class DynamicSpanTrackerImpl<I, T> implements SpanTracker<T> {
    * @param tsParser timescale parser
    */
   @Inject
-  private DynamicSpanTrackerImpl(final TimescaleParser tsParser,
-                                 @Parameter(StartTime.class) final long startTime,
-                                 final DynamicDependencyGraph<T> dependencyGraph,
-                                 final WindowManager windowManager,
-                                 final TimeMonitor timeMonitor,
-                                 final DynamicPartialTimespans partialTimespans) {
+  private DynamicAllStoreSpanTrackerImpl(final TimescaleParser tsParser,
+                                         @Parameter(StartTime.class) final long startTime,
+                                         final DynamicDependencyGraph<T> dependencyGraph,
+                                         final WindowManager windowManager,
+                                         final TimeMonitor timeMonitor,
+                                         final DynamicPartialTimespans partialTimespans) {
     this.timescales = tsParser.timescales;
     this.partialTimespans = partialTimespans;
+    this.latestRemoved = startTime;
+    this.timeMonitor = timeMonitor;
+    this.largestWindowSize = timescales.get(timescales.size()-1).windowSize;
     this.windowManager = windowManager;
     this.prevSliceTime = startTime;
-    this.lastRemoved = startTime;
-    this.largestWindowSize = timescales.get(timescales.size()-1).windowSize;
     this.dependencyGraph = dependencyGraph;
-    this.timeMonitor = timeMonitor;
   }
 
   @Override
   public long getNextSliceTime(final long st) {
     //System.out.println("GET_NEXT_SLICE_TIME: " + st);
+    while (latestRemoved < st - largestWindowSize) {
+      final Node<T> partial = partialTimespans.getNextPartialTimespanNode(latestRemoved);
+      timeMonitor.storedKey -= ((Map)partial.getOutput()).size();
+      partialTimespans.removeNode(partial.start);
+      latestRemoved = partial.end;
+
+      // Remove final
+      final List<Timespan> finals = dependencyGraph.getFinalTimespans(latestRemoved);
+      for (final Timespan timespan : finals) {
+        final Node<T> node = dependencyGraph.getNode(timespan);
+        timeMonitor.storedKey -= ((Map)node.getOutput()).size();
+        dependencyGraph.removeNode(node);
+      }
+    }
     prevSliceTime = st;
     return partialTimespans.getNextSliceTime(st);
   }
@@ -85,7 +99,6 @@ public final class DynamicSpanTrackerImpl<I, T> implements SpanTracker<T> {
   @Override
   public List<Timespan> getFinalTimespans(final long t) {
     //System.out.println("Get final timespan: " + t);
-    // Remove partial and final
     return dependencyGraph.getFinalTimespans(t);
   }
 
@@ -138,24 +151,8 @@ public final class DynamicSpanTrackerImpl<I, T> implements SpanTracker<T> {
   @Override
   public void putAggregate(final T agg, final Timespan timespan) {
     final Node<T> node = dependencyGraph.getNode(timespan);
-    //if (timespan.timescale == null) {
-    //  System.out.println("PUT_PARTIAL: " + timespan.startTime + ", " + timespan.endTime + " node: " + node.start + ", " + node.end);
-    //}
-    //System.out.println("PUT " + timespan +", to " + node);
-    if (node.refCnt != 0) {
-      synchronized (node) {
-        if (node.refCnt != 0) {
-          timeMonitor.storedKey += ((Map)agg).size();
-          node.saveOutput(agg);
-          //System.out.println("PUT " + timespan +", to " + node);
-          // after saving the output, notify the thread that is waiting for this output.
-          node.notifyAll();
-        }
-      }
-    } else {
-      // Remove the node from DAG if it is no use.
-      dependencyGraph.removeNode(node);
-    }
+    timeMonitor.storedKey += ((Map)agg).size();
+    node.saveOutput(agg);
   }
 
   @Override

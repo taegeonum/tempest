@@ -17,6 +17,7 @@ package vldb.operator.window.timescale.pafas;
 
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.OutputEmitter;
+import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.TimescaleWindowOutput;
 import vldb.operator.window.timescale.common.FinalAggregator;
@@ -99,5 +100,15 @@ public final class PafasMWO<I, V> implements TimescaleWindowOperator<I, V> {
   public void close() throws Exception {
     partialAggregator.close();
     finalAggregator.close();
+  }
+
+  @Override
+  public void addWindow(final Timescale ts, final long time) {
+    throw new RuntimeException("No addWindow");
+  }
+
+  @Override
+  public void removeWindow(final Timescale ts, final long time) {
+    throw new RuntimeException("No removeWindow");
   }
 }
