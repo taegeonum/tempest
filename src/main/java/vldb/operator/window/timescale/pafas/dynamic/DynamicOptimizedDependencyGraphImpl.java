@@ -20,13 +20,18 @@ import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.common.NotFoundException;
 import vldb.operator.window.timescale.TimeMonitor;
 import vldb.operator.window.timescale.Timescale;
+import vldb.operator.window.timescale.common.SharedWorkStealingPool;
 import vldb.operator.window.timescale.common.Timespan;
 import vldb.operator.window.timescale.pafas.Node;
 import vldb.operator.window.timescale.pafas.PeriodCalculator;
+import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -62,6 +67,7 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
   private final WindowManager windowManager;
 
   private final TimeMonitor timeMonitor;
+  private final ExecutorService workStealingPool;
   /**
    * DependencyGraph constructor. This first builds the dependency graph.
    * @param startTime the initial start time of when the graph is built.
@@ -73,10 +79,13 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
                                               final SelectionAlgorithm<T> selectionAlgorithm,
                                               final WindowManager windowManager,
                                               final TimeMonitor timeMonitor,
-                                              final PeriodCalculator periodCalculator) {
+                                              final SharedWorkStealingPool sharedWorkStealingPool,
+                                              @Parameter(NumThreads.class) final int numThreads,
+             final PeriodCalculator periodCalculator) {
     LOG.info("START " + this.getClass());
     this.windowManager = windowManager;
     this.timeMonitor = timeMonitor;
+    this.workStealingPool = sharedWorkStealingPool.getWorkStealingPool();
     this.partialTimespans = partialTimespans;
     this.timescales = windowManager.timescales;
     this.startTime = startTime;
@@ -120,14 +129,32 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
 
   private void addEdges(final Collection<Node<T>> parentNodes) {
     // Add edges
+    final List<Future> tasks = new LinkedList<>();
+
     for (final Node parent : parentNodes) {
       //final List<Node<T>> childNodes = selectionAlgorithm.selection(Math.max(parent.start, startTime), parent.end);
       //System.out.println("FInd node: " + parent + ", " + parent.getDependencies());
-      final List<Node<T>> childNodes = selectionAlgorithm.selection(parent.start, parent.end);
-      LOG.log(Level.FINE, "(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
-      //System.out.println("(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
-      for (final Node<T> elem : childNodes) {
-        parent.addDependency(elem);
+      tasks.add(workStealingPool.submit(new Runnable() {
+        @Override
+        public void run() {
+          final List<Node<T>> childNodes = selectionAlgorithm.selection(parent.start, parent.end);
+          LOG.log(Level.FINE, "(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
+          //System.out.println("(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
+          for (final Node<T> elem : childNodes) {
+            parent.addDependency(elem);
+          }
+        }
+      }));
+    }
+
+    for (final Future task : tasks) {
+      try {
+        task.get();
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      } catch (ExecutionException e) {
+        e.printStackTrace();
+        throw new RuntimeException(e);
       }
     }
   }

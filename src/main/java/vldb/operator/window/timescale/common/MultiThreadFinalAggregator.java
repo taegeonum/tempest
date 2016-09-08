@@ -27,20 +27,21 @@ import vldb.operator.window.timescale.parameter.StartTime;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
 
 import javax.inject.Inject;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 /**
  * This performs final aggregation.
  */
-public final class SingleThreadFinalAggregator<V> implements FinalAggregator<V> {
-  private static final Logger LOG = Logger.getLogger(SingleThreadFinalAggregator.class.getName());
+public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
+  private static final Logger LOG = Logger.getLogger(MultiThreadFinalAggregator.class.getName());
 
-  private final SpanTracker<V> spanTracker;
+  private final SpanTracker<List<V>> spanTracker;
 
   /**
    * An output handler for window output.
@@ -68,6 +69,11 @@ public final class SingleThreadFinalAggregator<V> implements FinalAggregator<V> 
 
   private final TimeMonitor timeMonitor;
 
+  //private final ExecutorService executorService;
+
+  private final ForkJoinPool forkJoinPool;
+  private final ParallelTreeAggregator<?, V> parallelAggregator;
+
   //private final ConcurrentMap<Timescale, ExecutorService> executorServiceMap;
 
   /**
@@ -75,19 +81,23 @@ public final class SingleThreadFinalAggregator<V> implements FinalAggregator<V> 
    * @param spanTracker a computation reuser for final aggregation
    */
   @Inject
-  private SingleThreadFinalAggregator(final SpanTracker<V> spanTracker,
-                                      final TimeWindowOutputHandler<V, ?> outputHandler,
-                                      final CAAggregator<?, V> aggregateFunction,
-                                      @Parameter(NumThreads.class) final int numThreads,
-                                      @Parameter(StartTime.class) final long startTime,
-                                      final AggregationCounter aggregationCounter,
-                                      final TimeMonitor timeMonitor,
-                                      @Parameter(EndTime.class) final long endTime) {
+  private MultiThreadFinalAggregator(final SpanTracker<List<V>> spanTracker,
+                                     final TimeWindowOutputHandler<V, ?> outputHandler,
+                                     final CAAggregator<?, V> aggregateFunction,
+                                     @Parameter(NumThreads.class) final int numThreads,
+                                     @Parameter(StartTime.class) final long startTime,
+                                     final AggregationCounter aggregationCounter,
+                                     final TimeMonitor timeMonitor,
+                                     final SharedForkJoinPool sharedForkJoinPool,
+                                     @Parameter(EndTime.class) final long endTime) {
     LOG.info("START " + this.getClass());
     this.timeMonitor = timeMonitor;
     this.spanTracker = spanTracker;
+    this.forkJoinPool = sharedForkJoinPool.getForkJoinPool();
     this.outputHandler = outputHandler;
+    this.parallelAggregator = new ParallelTreeAggregator<>(numThreads, 50, aggregateFunction, forkJoinPool);
     this.numThreads = numThreads;
+    //this.executorService = Executors.newFixedThreadPool(numThreads);
     this.aggregateFunction = aggregateFunction;
     //this.executorServiceMap = new ConcurrentHashMap<>();
     this.startTime = startTime;
@@ -110,34 +120,59 @@ public final class SingleThreadFinalAggregator<V> implements FinalAggregator<V> 
     for (final Timespan timespan : finalTimespans) {
       //System.out.println("BEFORE_GET: " + timespan);
       //if (timespan.endTime <= endTime) {
-        final List<V> aggregates = spanTracker.getDependentAggregates(timespan);
-        //System.out.println("AFTER_GET: " + timespan);
-        //aggregationCounter.incrementFinalAggregation(timespan.endTime, (List<Map>)aggregates);
-        //System.out.println("INC: " + timespan);
+      final List<List<V>> aggregates = spanTracker.getDependentAggregates(timespan);
+      final List<V> finalResult = new LinkedList<>();
+      final List<Future<V>> futures = new LinkedList<>();
+      final int size = aggregates.size();
+
+      // Start aggregate
+      final long st = System.nanoTime();
+
+      for (int i = 0; i < numThreads; i++) {
+        final int index = i;
+        futures.add(forkJoinPool.submit(new Callable<V>() {
+          public V call() {
+            final List<V> subAggregates = new LinkedList<V>();
+            for (int j = 0; j < size; j++) {
+              subAggregates.add(aggregates.get(j).get(index));
+            }
+            //return parallelAggregator.doParallelAggregation(subAggregates);
+            return aggregateFunction.aggregate(subAggregates);
+          }
+        }));
+      }
+
+      for (final Future<V> future : futures) {
         try {
-          //System.out.println("FINAL: (" + timespan.startTime + ", " + timespan.endTime + ")");
-          // Calculate elapsed time
-          final long st = System.nanoTime();
-          final V finalResult = aggregateFunction.aggregate(aggregates);
-          final long et = System.nanoTime();
-          timeMonitor.finalTime += (et - st);
-          timeMonitor.storedKey += ((Map)finalResult).size();
-          //System.out.println("PUT_TIMESPAN: " + timespan);
-          spanTracker.putAggregate(finalResult, timespan);
-          outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,
-              new DepOutputAndResult<V>(aggregates.size(), finalResult),
-              timespan.startTime, timespan.endTime, timespan.startTime >= startTime));
-        } catch (Exception e) {
+          finalResult.add(future.get());
+        } catch (InterruptedException e) {
           e.printStackTrace();
-          System.out.println(e);
+        } catch (ExecutionException e) {
+          e.printStackTrace();
+          throw new RuntimeException(e);
         }
-      //}
+      }
+
+      // End aggregate
+      final long et = System.nanoTime();
+      timeMonitor.finalTime += (et - st);
+
+      long numKey = 0;
+      for (final V agg : finalResult) {
+        numKey += ((Map)agg).size();
+      }
+      timeMonitor.storedKey += numKey;
+      spanTracker.putAggregate(finalResult, timespan);
+      outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,
+          new DepOutputAndResult<V>(aggregates.size(), finalResult.get(0)),
+          timespan.startTime, timespan.endTime, timespan.startTime >= startTime));
     }
   }
 
   @Override
   public void close() throws Exception {
     if (closed.compareAndSet(false, true)) {
+      forkJoinPool.shutdown();
     }
   }
 

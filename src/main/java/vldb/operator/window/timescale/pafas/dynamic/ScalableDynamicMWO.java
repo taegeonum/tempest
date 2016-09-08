@@ -51,7 +51,7 @@ public final class ScalableDynamicMWO<I, V> implements TimescaleWindowOperator<I
 
   private final int numThreads;
 
-  private final List<DynamicMWO<I, V>> dynamicMWOList;
+  private final List<MultiThreadDynamicMWO<I, V>> dynamicMWOList;
   private final List<Thread> threads;
   private final List<BlockingQueue<I>> queueList = new LinkedList<>();
   private final List<AtomicBoolean> closedList = new LinkedList<>();
@@ -90,9 +90,9 @@ public final class ScalableDynamicMWO<I, V> implements TimescaleWindowOperator<I
         public void run() {
           final Injector injector = Tang.Factory.getTang().newInjector(conf);
           injector.bindVolatileInstance(TimeWindowOutputHandler.class, timeWindowOutputHandler);
-          final DynamicMWO<I,V> mwo;
+          final MultiThreadDynamicMWO<I,V> mwo;
           try {
-            mwo = injector.getInstance(DynamicMWO.class);
+            mwo = injector.getInstance(MultiThreadDynamicMWO.class);
           } catch (InjectionException e) {
             e.printStackTrace();
             throw new RuntimeException(e);

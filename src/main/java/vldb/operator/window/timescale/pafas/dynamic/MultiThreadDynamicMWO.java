@@ -30,6 +30,7 @@ import vldb.operator.window.timescale.parameter.StartTime;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
 
 import javax.inject.Inject;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -38,8 +39,8 @@ import java.util.logging.Logger;
  * @param <I> input
  * @param <V> aggregated result
  */
-public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
-  private static final Logger LOG = Logger.getLogger(DynamicMWO.class.getName());
+public final class MultiThreadDynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
+  private static final Logger LOG = Logger.getLogger(MultiThreadDynamicMWO.class.getName());
 
   /**
    * Aggregator for incremental aggregation.
@@ -60,9 +61,9 @@ public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
    * A bucket for incremental aggregation.
    * It saves aggregated results for partial aggregation.
    */
-  private V bucket;
+  private List<V> buckets;
 
-  private final DynamicSpanTrackerImpl<I, V> spanTracker;
+  private final DynamicSpanTrackerImpl<I, List<V>> spanTracker;
 
   private final FinalAggregator<V> finalAggregator;
 
@@ -80,9 +81,9 @@ public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
    * @param startTime a start time of the mts operator
    */
   @Inject
-  private DynamicMWO(
+  private MultiThreadDynamicMWO(
       final CAAggregator<I, V> aggregator,
-      final DynamicSpanTrackerImpl<I, V> spanTracker,
+      final DynamicSpanTrackerImpl<I, List<V>> spanTracker,
       final FinalAggregator<V> finalAggregator,
       final AggregationCounter aggregationCounter,
       @Parameter(NumThreads.class) final int numThreads,
@@ -91,7 +92,7 @@ public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
     this.aggregationCounter = aggregationCounter;
     this.aggregator = aggregator;
     this.numThreads = numThreads;
-    this.bucket = initBucket();
+    this.buckets = initBucket();
     this.prevSliceTime = startTime;
     this.spanTracker = spanTracker;
     this.nextSliceTime = spanTracker.getNextSliceTime(startTime);
@@ -107,8 +108,12 @@ public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
     }
   }
 
-  private V initBucket() {
-    return aggregator.init();
+  private List<V> initBucket() {
+    final List<V> bcks = new LinkedList<>();
+    for (int i = 0; i < numThreads; i++) {
+      bcks.add(aggregator.init());
+    }
+    return bcks;
   }
 
   private int hashing(final I val) {
@@ -128,7 +133,8 @@ public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
       }
     } else {
       final long st = System.nanoTime();
-      aggregator.incrementalAggregate(bucket, val);
+      final int index = hashing(val);
+      aggregator.incrementalAggregate(buckets.get(index), val);
       final long et = System.nanoTime();
       timeMonitor.partialTime += (et - st);
       aggregationCounter.incrementPartialAggregation();
@@ -136,14 +142,14 @@ public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
   }
 
   private void slice(final long prev, final long next) {
-    final V partialAggregation = bucket;
-    bucket = initBucket();
+    final List<V> partialAggregations = buckets;
+    buckets = initBucket();
     //System.out.println("PARTIAL_SIZE: " + ((Map)partialAggregation).size() + "\t" + (prevSliceTime) + "-" + (nextSliceTime));
     //System.out.println("SLICE: " + prev + ", " + next);
     prevSliceTime = next;
     nextSliceTime = spanTracker.getNextSliceTime(prevSliceTime);
     //System.out.println("SLICE changed: " + prevSliceTime + ", " + nextSliceTime);
-    spanTracker.putAggregate(partialAggregation, new Timespan(prev, next, null));
+    spanTracker.putAggregate(partialAggregations, new Timespan(prev, next, null));
     final List<Timespan> finalTimespans = spanTracker.getFinalTimespans(next);
     //System.out.println("final timespans at " + next  + ": " + finalTimespans);
     finalAggregator.triggerFinalAggregation(finalTimespans);

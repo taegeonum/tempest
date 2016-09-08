@@ -11,7 +11,9 @@ import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.pafas.dynamic.*;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
+import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
+import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -29,7 +31,7 @@ public final class IncrementalPafasMWOTest {
   public void testPafasMWO() throws Exception {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
-    //jcb.bindNamedParameter(NumThreads.class, "4");
+    jcb.bindNamedParameter(NumThreads.class, "4");
 
     final long currTime = 0;
     final List<Configuration> configurationList = new LinkedList<>();
@@ -100,6 +102,7 @@ public final class IncrementalPafasMWOTest {
     operatorIds.add("OntheFly");
     */
 
+    /*
     configurationList.add(ScalableDynamicMWOConfiguration.CONF
         .set(ScalableDynamicMWOConfiguration.INITIAL_TIMESCALES, "(3,1)(5,2)(10,3)(15,2)(19,3)(31,10)")
         .set(ScalableDynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
@@ -107,6 +110,7 @@ public final class IncrementalPafasMWOTest {
         .set(ScalableDynamicMWOConfiguration.NUM_THREADS, "4")
         .build());
     operatorIds.add("Scalable");
+    */
 
     configurationList.add(DynamicMWOConfiguration.CONF
         .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, "(3,1)(5,2)(10,3)(15,2)(19,3)(31,10)")
@@ -119,7 +123,7 @@ public final class IncrementalPafasMWOTest {
         .build());
     operatorIds.add("Dynamic");
 
-    /*
+
     // TriOPs
     configurationList.add(TriOpsMWOConfiguration.CONF
         .set(TriOpsMWOConfiguration.INITIAL_TIMESCALES, "(3,1)(5,2)(10,3)(15,2)(19,3)(31,10)")
@@ -127,7 +131,7 @@ public final class IncrementalPafasMWOTest {
         .set(TriOpsMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("TriOps");
-
+/*
     // Naive
     configurationList.add(NaiveMWOConfiguration.CONF
         .set(NaiveMWOConfiguration.INITIAL_TIMESCALES, "(3,1)(5,2)(10,3)(15,2)(19,3)(31,10)")
@@ -155,7 +159,7 @@ public final class IncrementalPafasMWOTest {
     }
 
     final int numKey = 1000;
-    final int numInput = 300;
+    final int numInput = 30000;
     final Random random = new Random();
     long tick = 1;
     for (i = 1; i <= numInput; i++) {

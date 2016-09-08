@@ -16,7 +16,7 @@ import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicDPOutputLookupTableImpl;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicDPSelectionAlgorithm;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicMWO;
+import vldb.operator.window.timescale.pafas.dynamic.MultiThreadDynamicMWO;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicMWOConfiguration;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;
@@ -85,7 +85,7 @@ public final class DynamicIncrementalEvaluation {
     final Generator wordGenerator = injector.getInstance(FileWordGenerator.class);
 
     injector.bindVolatileInstance(TimeWindowOutputHandler.class, new LoggingHandler<>("DynamicMWO"));
-    final DynamicMWO<Object, Map<String, Long>> mwo = injector.getInstance(DynamicMWO.class);
+    final MultiThreadDynamicMWO<Object, Map<String, Long>> mwo = injector.getInstance(MultiThreadDynamicMWO.class);
     final AggregationCounter aggregationCounter = injector.getInstance(AggregationCounter.class);
 
     final AvroConfigurationSerializer serializer = injector.getInstance(AvroConfigurationSerializer.class);

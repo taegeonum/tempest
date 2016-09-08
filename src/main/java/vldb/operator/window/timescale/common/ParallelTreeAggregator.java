@@ -3,10 +3,11 @@ package vldb.operator.window.timescale.common;
 
 import vldb.operator.window.aggregator.CAAggregator;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.RecursiveTask;
 import java.util.logging.Logger;
 
 /**
@@ -28,7 +29,7 @@ public final class ParallelTreeAggregator<I, T> implements AutoCloseable {
   /**
    * The minimum size which triggers parallel aggregation.
    */
-  private final int sequentialThreshold;
+  private final int minNumber;
 
   /**
    * A fork join pool executing parallel aggregation.
@@ -38,20 +39,20 @@ public final class ParallelTreeAggregator<I, T> implements AutoCloseable {
   /**
    * ParallelTreeAggregator for final aggregation.
    * @param numOfParallelThreads the number of threads
-   * @param sequentialThreshold the minimum size which triggers parallel aggregation
+   * @param minNumber the minimum size which triggers parallel aggregation
    * @param finalAggregator final aggregator
    */
   public ParallelTreeAggregator(final int numOfParallelThreads,
-                                final int sequentialThreshold,
+                                final int minNumber,
                                 final CAAggregator<I, T> finalAggregator) {
-    this(numOfParallelThreads, sequentialThreshold, finalAggregator, new ForkJoinPool(numOfParallelThreads));
+    this(numOfParallelThreads, minNumber, finalAggregator, new ForkJoinPool(numOfParallelThreads));
   }
 
   public ParallelTreeAggregator(final int numOfParallelThreads,
-                                final int sequentialThreshold,
+                                final int minNumber,
                                 final CAAggregator<I, T> finalAggregator,
                                 final ForkJoinPool pool) {
-    this.sequentialThreshold = sequentialThreshold;
+    this.minNumber = minNumber;
     this.finalAggregator = finalAggregator;
     this.pool = pool;
     this.numOfParallelThreads = numOfParallelThreads;
@@ -68,27 +69,10 @@ public final class ParallelTreeAggregator<I, T> implements AutoCloseable {
 
     final T finalResult;
     // do parallel two-level tree aggregation if dependent size is large enough.
-    if (dependentOutputs.size() >= sequentialThreshold && numOfParallelThreads > 1) {
+    if (dependentOutputs.size() >= minNumber * 2 && numOfParallelThreads > 1) {
       finalResult = pool.invoke(new Aggregate(dependentOutputs, 0, dependentOutputs.size()));
     } else {
-      try {
-        finalResult = pool.submit(new Callable<T>() {
-          @Override
-          public T call() throws Exception {
-            return finalAggregator.aggregate(dependentOutputs);
-          }
-        }).get();
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        System.out.println("InterruptedException");
-        return (T)new HashMap<>();
-        //throw new RuntimeException(e);
-      } catch (final ExecutionException e) {
-        System.out.println("ExecutionException");
-        e.printStackTrace();
-        return (T)new HashMap<>();
-        //throw new RuntimeException(e);
-      }
+      return finalAggregator.aggregate(dependentOutputs);
     }
     //pool.shutdown();
     return finalResult;
@@ -132,8 +116,9 @@ public final class ParallelTreeAggregator<I, T> implements AutoCloseable {
       if (end - start == list.size()) {
         // root node
         final List<ForkJoinTask<T>> tasks = new LinkedList<>();
-        final int hop = Math.max(2, list.size() / numOfParallelThreads);
-        final int numParallelism = list.size()/numOfParallelThreads < 2 ? (list.size()/2) : numOfParallelThreads;
+        final int numThreads = Math.min(numOfParallelThreads, list.size()/ minNumber);
+        final int hop = list.size()/numThreads;
+        final int numParallelism = numThreads;
         // splits the dependent outputs and uses multiple threads for the aggregation of split outputs.
         for (int i = 0; i < numParallelism; i++) {
           final int startIndex = i * hop;

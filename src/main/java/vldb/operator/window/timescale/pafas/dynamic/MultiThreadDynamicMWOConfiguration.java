@@ -20,28 +20,28 @@ import org.apache.reef.tang.formats.RequiredImpl;
 import vldb.operator.window.timescale.TimescaleWindowBaseConfiguration;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.common.FinalAggregator;
-import vldb.operator.window.timescale.common.SingleThreadFinalAggregator;
+import vldb.operator.window.timescale.common.MultiThreadFinalAggregator;
 import vldb.operator.window.timescale.common.SpanTracker;
 import vldb.operator.window.timescale.pafas.DependencyGraph;
 
 /**
  * A helper class for static MTS window configuration.
  */
-public final class DynamicAllStoreMWOConfiguration extends TimescaleWindowBaseConfiguration {
+public final class MultiThreadDynamicMWOConfiguration extends TimescaleWindowBaseConfiguration {
 
     public static final RequiredImpl<DependencyGraph.SelectionAlgorithm> SELECTION_ALGORITHM = new RequiredImpl<>();
     public static final RequiredImpl<DynamicOutputLookupTable> OUTPUT_LOOKUP_TABLE = new RequiredImpl<>();
     public static final RequiredImpl<DynamicPartialTimespans> DYNAMIC_PARTIAL = new RequiredImpl<>();
     public static final RequiredImpl<DynamicDependencyGraph> DYNAMIC_DEPENDENCY = new RequiredImpl<>();
 
-    public static final ConfigurationModule CONF = new DynamicAllStoreMWOConfiguration()
+    public static final ConfigurationModule CONF = new MultiThreadDynamicMWOConfiguration()
         .merge(TimescaleWindowBaseConfiguration.CONF)
         .bindImplementation(DependencyGraph.SelectionAlgorithm.class, SELECTION_ALGORITHM)
         .bindImplementation(DynamicOutputLookupTable.class, OUTPUT_LOOKUP_TABLE)
         .bindImplementation(DynamicDependencyGraph.class, DYNAMIC_DEPENDENCY)
         .bindImplementation(DynamicPartialTimespans.class, DYNAMIC_PARTIAL)
-        .bindImplementation(SpanTracker.class, DynamicAllStoreSpanTrackerImpl.class)
+        .bindImplementation(SpanTracker.class, DynamicSpanTrackerImpl.class)
         .bindImplementation(TimescaleWindowOperator.class, MultiThreadDynamicMWO.class)
-        .bindImplementation(FinalAggregator.class, SingleThreadFinalAggregator.class)
+        .bindImplementation(FinalAggregator.class, MultiThreadFinalAggregator.class)
         .build();
 }

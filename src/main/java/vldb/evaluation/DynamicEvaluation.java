@@ -91,7 +91,7 @@ public final class DynamicEvaluation {
     final Injector injector = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), conf));
 
     injector.bindVolatileInstance(TimeWindowOutputHandler.class, new LoggingHandler<>("DynamicMWO"));
-    final DynamicMWO<Object, Map<String, Long>> mwo = injector.getInstance(DynamicMWO.class);
+    final MultiThreadDynamicMWO<Object, Map<String, Long>> mwo = injector.getInstance(MultiThreadDynamicMWO.class);
     final AggregationCounter aggregationCounter = injector.getInstance(AggregationCounter.class);
 
     final AvroConfigurationSerializer serializer = injector.getInstance(AvroConfigurationSerializer.class);
