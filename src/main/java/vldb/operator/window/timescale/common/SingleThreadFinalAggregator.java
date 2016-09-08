@@ -30,7 +30,6 @@ import javax.inject.Inject;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
@@ -121,7 +120,6 @@ public final class SingleThreadFinalAggregator<V> implements FinalAggregator<V> 
           final V finalResult = aggregateFunction.aggregate(aggregates);
           final long et = System.nanoTime();
           timeMonitor.finalTime += (et - st);
-          timeMonitor.storedKey += ((Map)finalResult).size();
           //System.out.println("PUT_TIMESPAN: " + timespan);
           spanTracker.putAggregate(finalResult, timespan);
           outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,

@@ -41,7 +41,7 @@ public final class DynamicAllStoreMWOConfiguration extends TimescaleWindowBaseCo
         .bindImplementation(DynamicDependencyGraph.class, DYNAMIC_DEPENDENCY)
         .bindImplementation(DynamicPartialTimespans.class, DYNAMIC_PARTIAL)
         .bindImplementation(SpanTracker.class, DynamicAllStoreSpanTrackerImpl.class)
-        .bindImplementation(TimescaleWindowOperator.class, MultiThreadDynamicMWO.class)
+        .bindImplementation(TimescaleWindowOperator.class, DynamicMWO.class)
         .bindImplementation(FinalAggregator.class, SingleThreadFinalAggregator.class)
         .build();
 }

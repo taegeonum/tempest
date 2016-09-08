@@ -148,7 +148,7 @@ public final class DynamicSpanTrackerImpl<I, T> implements SpanTracker<T> {
     if (node.refCnt != 0) {
       synchronized (node) {
         if (node.refCnt != 0) {
-          if (!(agg instanceof List)) {
+          if (agg instanceof Map) {
             timeMonitor.storedKey += ((Map) agg).size();
           }
           node.saveOutput(agg);
