@@ -42,6 +42,7 @@ public final class TestRunner {
   public enum OperatorType {
     DYNAMIC_DP,
     SCALABLE_DP,
+    SCALABLE_GREEDY,
     DYNAMIC_GREEDY,
     DYNAMIC_ADAPTIVE,
     DYNAMIC_WINDOW_GREEDY,
@@ -88,6 +89,16 @@ public final class TestRunner {
             .set(MultiThreadDynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(MultiThreadDynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPSelectionAlgorithm.class)
             .set(MultiThreadDynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicDPOutputLookupTableImpl.class)
+            .set(MultiThreadDynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicOptimizedDependencyGraphImpl.class)
+            .set(MultiThreadDynamicMWOConfiguration.DYNAMIC_PARTIAL, DynamicOptimizedPartialTimespans.class)
+            .set(MultiThreadDynamicMWOConfiguration.START_TIME, "0")
+            .build();
+      case SCALABLE_GREEDY:
+        return MultiThreadDynamicMWOConfiguration.CONF
+            .set(MultiThreadDynamicMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(MultiThreadDynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(MultiThreadDynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicGreedySelectionAlgorithm.class)
+            .set(MultiThreadDynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicGreedyOutputLookupTableImpl.class)
             .set(MultiThreadDynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicOptimizedDependencyGraphImpl.class)
             .set(MultiThreadDynamicMWOConfiguration.DYNAMIC_PARTIAL, DynamicOptimizedPartialTimespans.class)
             .set(MultiThreadDynamicMWOConfiguration.START_TIME, "0")
@@ -419,10 +430,14 @@ public final class TestRunner {
 
       if (currInput >= currInputRate) {
         mwo.execute(new WindowTimeEvent(tick));
-        writer.writeLine(prefix + "_memory", System.currentTimeMillis() + "\t" + Profiler.getMemoryUsage() + "\t" + timeMonitor.storedKey);
+        final StringBuilder sb1 = new StringBuilder();
+        sb1.append(System.currentTimeMillis()); sb1.append("\t"); sb1.append(Profiler.getMemoryUsage()); sb1.append("\t");
+        sb1.append(timeMonitor.storedKey);
+        writer.writeLine(prefix + "_memory", sb1.toString());
         tick += 1;
-        System.out.println("TICK " + tick);
-        currInput = 0;
+        final StringBuilder sb = new StringBuilder("TICK");
+        sb.append(tick);
+        System.out.println(sb.toString());        currInput = 0;
         if (inputRate == 0) {
           currInputRate = Long.valueOf(poissonFile.nextLine());
         }
@@ -505,7 +520,7 @@ public final class TestRunner {
 
     final long currTime = System.currentTimeMillis();
     long currInput = 0;
-    final int numKey = 10000;
+    final int numKey = 20000;
     while (tick <= totalTime) {
       //System.out.println("totalTime: " + (totalTime*1000) + ", elapsed: " + (System.currentTimeMillis() - currTime));
       final long cTime = System.nanoTime();
@@ -516,7 +531,9 @@ public final class TestRunner {
 
       if (currInput >= currInputRate) {
         mwo.execute(new WindowTimeEvent(tick));
-        System.out.println("TICK " + tick);
+        final StringBuilder sb = new StringBuilder("TICK");
+        sb.append(tick);
+        System.out.println(sb.toString());
         //writer.writeLine(prefix + "_memory", System.currentTimeMillis() + "\t" + Profiler.getMemoryUsage() + "\t" + timeMonitor.storedKey);
         tick += 1;
         currInput = 0;

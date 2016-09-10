@@ -225,7 +225,7 @@ public final class DynamicDependencyGraphImpl<T> implements DynamicDependencyGra
         final Node<T> parentNode = finalTimespans.lookup(timespan.startTime, timespan.endTime, timespan.timescale);
         for (final Node<T> child : parentNode.getDependencies()) {
           // Decrease RefCnt
-          child.refCnt -= 1;
+          child.refCnt.decrementAndGet();
           child.parents.remove(parentNode);
           prevChildNodes.add(child);
         }
@@ -242,7 +242,7 @@ public final class DynamicDependencyGraphImpl<T> implements DynamicDependencyGra
 
     // Remove child nodes which have zero reference count
     for (final Node<T> child : prevChildNodes) {
-      if (child.refCnt == 0) {
+      if (child.refCnt.get() == 0) {
         if (child.end <= addTime) {
           if (child.partial) {
             partialTimespans.removeNode(child.start);
@@ -291,7 +291,7 @@ public final class DynamicDependencyGraphImpl<T> implements DynamicDependencyGra
         final Node<T> parentNode = finalTimespans.lookup(timespan.startTime, timespan.endTime, timespan.timescale);
         for (final Node<T> child : parentNode.getDependencies()) {
           // Decrease RefCnt
-          child.refCnt -= 1;
+          child.refCnt.decrementAndGet();
           child.parents.remove(parentNode);
           prevChildNodes.add(child);
         }
@@ -309,7 +309,7 @@ public final class DynamicDependencyGraphImpl<T> implements DynamicDependencyGra
 
     // Remove child nodes which have zero reference count
     for (final Node<T> child : prevChildNodes) {
-      if (child.refCnt == 0) {
+      if (child.refCnt.get() == 0) {
         if (child.end <= deleteTime) {
           //System.out.println("Delete: " + child);
           if (child.partial) {

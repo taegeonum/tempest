@@ -57,7 +57,7 @@ public class DynamicDPSelectionAlgorithm<T> implements DependencyGraph.Selection
       final long scanStartPoint, scanEndPoint;
       scanStartPoint = currentStart;
       final List<Node<T>> availableNodes = new LinkedList<>();
-      ConcurrentMap<Long, Map<Timescale, Node<T>>> availableFinalNodes = null;
+      ConcurrentMap<Long, ConcurrentMap<Timescale, Node<T>>> availableFinalNodes = null;
       try {
         availableFinalNodes = finalTimespans.lookup(scanStartPoint);
       } catch (final NotFoundException nf1) {
@@ -66,7 +66,7 @@ public class DynamicDPSelectionAlgorithm<T> implements DependencyGraph.Selection
         // Add startTime + period nodes
         if (scanStartPoint < startTime) {
           try {
-            final Map<Long, Map<Timescale, Node<T>>> additionalNodes = finalTimespans.lookup(scanStartPoint + period);
+            final Map<Long, ConcurrentMap<Timescale, Node<T>>> additionalNodes = finalTimespans.lookup(scanStartPoint + period);
             //LOG.info("@@@ after: " + additionalNodes);
             if (additionalNodes != null) {
               availableFinalNodes.putAll(additionalNodes);
@@ -78,7 +78,7 @@ public class DynamicDPSelectionAlgorithm<T> implements DependencyGraph.Selection
         }
       }
 
-      for (final Map.Entry<Long, Map<Timescale, Node<T>>> entry: availableFinalNodes.entrySet()) {
+      for (final Map.Entry<Long, ConcurrentMap<Timescale, Node<T>>> entry: availableFinalNodes.entrySet()) {
         final long endTime = entry.getKey();
         // [s    |i             e]
         //                   [p--]

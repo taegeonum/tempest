@@ -203,8 +203,7 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
               timeMonitor.finalTime += (e - s);
 
               aggregates.add(intermediateResult);
-              dependentNode.refCnt -= 1;
-              if (dependentNode.refCnt == 0) {
+              if (dependentNode.refCnt.decrementAndGet() == 0) {
                 dependentNode.saveOutput(null);
                 pt.removeNode(dependentNode.start);
               } else {
@@ -226,8 +225,7 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
             } else {
               //System.out.println("DEP_NODE: " + dependentNode + ", V: " + dependentNode.getOutput());
               aggregates.add(dependentNode.getOutput());
-              dependentNode.refCnt -= 1;
-              if (dependentNode.refCnt <= 0) {
+              if (dependentNode.refCnt.decrementAndGet() <= 0) {
                 timeMonitor.storedKey -= ((Map)dependentNode.getOutput()).size();
                 dependentNode.saveOutput(null);
                 if (dependentNode.partial) {
@@ -247,6 +245,13 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
     node.getDependencies().clear();
     //System.out.println("RETURN: " + aggregates);
     return aggregates;
+  }
+
+  @Override
+  public List<Node<T>> getDependentNodes(final Timespan timespan) {
+    final DynamicDependencyGraph<T> dependencyGraph = timescaleGraphMap.get(timespan.timescale);
+    final Node<T> node = dependencyGraph.getNode(timespan);
+    return node.getDependencies();
   }
 
   @Override

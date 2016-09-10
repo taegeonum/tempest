@@ -83,4 +83,9 @@ public final class CountByKeyAggregator<I, K> implements CAAggregator<I, Map<K, 
   public Map<K, Long> aggregate(final Collection<Map<K, Long>> partials) {
     return this.aggregator.aggregate(partials);
   }
+
+  @Override
+  public Map<K, Long> rollup(final Map<K, Long> first, final Map<K, Long> second) {
+    return this.aggregator.rollup(first, second);
+  }
 }

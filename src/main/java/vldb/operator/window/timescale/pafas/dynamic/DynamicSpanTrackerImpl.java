@@ -27,7 +27,6 @@ import vldb.operator.window.timescale.parameter.StartTime;
 import javax.inject.Inject;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -97,39 +96,13 @@ public final class DynamicSpanTrackerImpl<I, T> implements SpanTracker<T> {
     //System.out.println(timespan + " DEP_NODES: " + dependentNodes);
     final List<T> aggregates = new LinkedList<>();
     for (final Node<T> dependentNode : dependentNodes) {
-      if (dependentNode.end <= timespan.endTime) {
-        // Do not count first outgoing edge
-        while (true) {
-          synchronized (dependentNode) {
-            if (!dependentNode.outputStored.get()) {
-              // null
-              try {
-                System.out.println("WAIT: " + dependentNode +", final: " + timespan + ", " + timespan.timescale);
-                dependentNode.wait();
-                //System.out.println("AWAKE: " + dependentNode);
-              } catch (InterruptedException e) {
-                e.printStackTrace();
-              }
-            } else {
-              aggregates.add(dependentNode.getOutput());
-              dependentNode.refCnt -= 1;
-              dependentNode.parents.remove(node);
-              if (dependentNode.refCnt == 0) {
-                // Remove
-                if (dependentNode.getOutput() instanceof Map) {
-                  //System.out.println("DELETE");
-                  timeMonitor.storedKey -= ((Map) dependentNode.getOutput()).size();
-                }
-                if (dependentNode.partial) {
-                  //System.out.println("DELETE!!: " + dependentNode + ", for: " + timespan);
-                  partialTimespans.removeNode(dependentNode.start);
-                } else {
-                  dependencyGraph.removeNode(dependentNode);
-                }
-              }
-              break;
-            }
-          }
+      aggregates.add(dependentNode.getOutput());
+      dependentNode.parents.remove(node);
+      if (dependentNode.refCnt.decrementAndGet() == 0) {
+        if (dependentNode.partial) {
+          partialTimespans.removeNode(dependentNode.start);
+        } else {
+          dependencyGraph.removeNode(dependentNode);
         }
       }
     }
@@ -139,24 +112,21 @@ public final class DynamicSpanTrackerImpl<I, T> implements SpanTracker<T> {
   }
 
   @Override
+  public List<Node<T>> getDependentNodes(final Timespan timespan) {
+    final Node<T> node = dependencyGraph.getNode(timespan);
+    //System.out.println("PARENT NODE: " + node);
+    return node.getDependencies();
+  }
+
+  @Override
   public void putAggregate(final T agg, final Timespan timespan) {
     final Node<T> node = dependencyGraph.getNode(timespan);
     //if (timespan.timescale == null) {
     //  System.out.println("PUT_PARTIAL: " + timespan.startTime + ", " + timespan.endTime + " node: " + node.start + ", " + node.end);
     //}
     //System.out.println("PUT " + timespan +", to " + node);
-    if (node.refCnt != 0) {
-      synchronized (node) {
-        if (node.refCnt != 0) {
-          if (agg instanceof Map) {
-            timeMonitor.storedKey += ((Map) agg).size();
-          }
-          node.saveOutput(agg);
-          //System.out.println("PUT " + timespan +", to " + node);
-          // after saving the output, notify the thread that is waiting for this output.
-          node.notifyAll();
-        }
-      }
+    if (node.refCnt.get() != 0) {
+      node.saveOutput(agg);
     } else {
       // Remove the node from DAG if it is no use.
       dependencyGraph.removeNode(node);

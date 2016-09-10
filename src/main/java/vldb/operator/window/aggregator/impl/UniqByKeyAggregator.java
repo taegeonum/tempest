@@ -63,4 +63,9 @@ public final class UniqByKeyAggregator<I, K, V extends Comparable> implements CA
   public Map<K, Set<V>> aggregate(final Collection<Map<K, Set<V>>> partials) {
     return this.aggregator.aggregate(partials);
   }
+
+  @Override
+  public Map<K, Set<V>> rollup(final Map<K, Set<V>> first, final Map<K, Set<V>> second) {
+    return this.aggregator.rollup(first, second);
+  }
 }

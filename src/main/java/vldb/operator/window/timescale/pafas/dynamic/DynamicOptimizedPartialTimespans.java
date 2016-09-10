@@ -22,10 +22,9 @@ import vldb.operator.window.timescale.pafas.Node;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Logger;
 
 /** This implementation is based on "On-the-fly Sharing for Streamed Aggregation" paper.
@@ -49,7 +48,7 @@ public final class DynamicOptimizedPartialTimespans<T> implements DynamicPartial
   /**
    * Map of start_time and next timespan map.
    */
-  private final Map<Long, Node<T>> partialTimespanMap;
+  private final ConcurrentMap<Long, Node<T>> partialTimespanMap;
 
   private final Map<Long, Node<T>> endTimePartialMap;
 
@@ -72,7 +71,7 @@ public final class DynamicOptimizedPartialTimespans<T> implements DynamicPartial
     this.timescales = windowManager.timescales;
     this.timeMonitor = timeMonitor;
     this.startTime = startTime;
-    this.partialTimespanMap = new HashMap<>();
+    this.partialTimespanMap = new ConcurrentHashMap<>();
     this.endTimePartialMap = new HashMap<>();
     this.rebuildSize = windowManager.getRebuildSize();
     this.currIndex = startTime + rebuildSize;
@@ -168,7 +167,7 @@ public final class DynamicOptimizedPartialTimespans<T> implements DynamicPartial
       //System.out.println("CREATE PARTIAL2: " + splitTime + ", " + node.end);
       partialTimespanMap.put(splitTime, newNode);
       node.end = splitTime;
-      final List<Node<T>> parents = node.parents;
+      final Set<Node<T>> parents = node.parents;
       for (final Node<T> parent : parents) {
         parent.addDependency(newNode);
       }

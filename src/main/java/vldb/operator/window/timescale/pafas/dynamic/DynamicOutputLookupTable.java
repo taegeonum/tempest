@@ -19,7 +19,6 @@ import vldb.operator.common.NotFoundException;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.WindowTimeAndOutput;
 
-import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 /**
@@ -50,7 +49,7 @@ public interface DynamicOutputLookupTable<V> {
    * @return outputs which start at the startTime.
    * @throws edu.snu.tempest.operator.common.NotFoundException
    */
-  ConcurrentMap<Long, Map<Timescale, V>> lookup(final long startTime) throws NotFoundException;
+  ConcurrentMap<Long, ConcurrentMap<Timescale, V>> lookup(final long startTime) throws NotFoundException;
 
   /**
    * Lookup an output having largest endTime within outputs which start at startTime.

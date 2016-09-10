@@ -130,6 +130,13 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
   }
 
   @Override
+  public List<Node<T>> getDependentNodes(final Timespan timespan) {
+    final Node<T> node = dependencyGraph.getNode(timespan);
+    //System.out.println("PARENT NODE: " + node);
+    return node.getDependencies();
+  }
+
+  @Override
   public void addSlidingWindow(final Timescale ts, final long addTime) {
     throw new RuntimeException("Not implemented");
   }

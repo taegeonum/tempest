@@ -29,9 +29,7 @@ import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -68,6 +66,10 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
 
   private final TimeMonitor timeMonitor;
   private final ExecutorService workStealingPool;
+
+  private final int numAddNodeThreads;
+  private int numTimescalesPerAddNode = 20;
+
   /**
    * DependencyGraph constructor. This first builds the dependency graph.
    * @param startTime the initial start time of when the graph is built.
@@ -89,6 +91,8 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
     this.partialTimespans = partialTimespans;
     this.timescales = windowManager.timescales;
     this.startTime = startTime;
+    this.numAddNodeThreads = Math.min(numThreads, timescales.size()/numTimescalesPerAddNode);
+    this.numTimescalesPerAddNode = timescales.size() / numAddNodeThreads;
     this.currBuildingIndex = startTime + windowManager.getRebuildSize();
     this.rebuildSize = windowManager.getRebuildSize();
     this.finalTimespans = outputLookupTable;
@@ -105,6 +109,32 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
     //System.out.println("curr: " + curr + ", until: " + until);
     final List<Node<T>> addedNodes = new LinkedList<>();
     currBuildingIndex = until;
+
+
+    /*
+    final List<Future<List<Node<T>>>> futures = new LinkedList<>();
+    for (int i = 0; i < numAddNodeThreads; i++) {
+      final int start = i * numTimescalesPerAddNode;
+      final int end = i == numAddNodeThreads - 1 ? timescales.size() : (i+1) * numTimescalesPerAddNode;
+      final List<Timescale> subTs = timescales.subList(start, end);
+      futures.add(workStealingPool.submit(new NodeAdditionTask(subTs, (int) curr, (int) until)));
+    }
+
+    final List<Collection<Node<T>>> addedNodeList = new LinkedList<>();
+    for (final Future<List<Node<T>>> future : futures) {
+      try {
+        addedNodeList.add(future.get());
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      } catch (ExecutionException e) {
+        e.printStackTrace();
+        throw new RuntimeException(e);
+      }
+    }
+    */
+
+
+    final long st = System.nanoTime();
     for (final Timescale timescale : timescales) {
       final long align = curr + (timescale.intervalSize - (curr - windowManager.timescaleStartTime(timescale)) % timescale.intervalSize);
       for (long time = align; time <= until; time += timescale.intervalSize) {
@@ -113,7 +143,7 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
         //System.out.println("aa: (" + start + ", " + time + "), " + "curr: " + curr + ", until: " + until + ", ts: " + timescale);
         Node<T> parent;
           //System.out.println("ADD Node (" + start + ", " + time + ")" + ", curr: " + curr + ", until: " + until);
-        parent = new Node(start, time, false);
+        parent = new Node(start, time, false, timescale);
         finalTimespans.saveOutput(start, time, timescale, parent);
         addedNodes.add(parent);
         //System.out.println("ADD: " + start + "-" + time);
@@ -122,19 +152,52 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
         LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
       }
     }
+    final long et = System.nanoTime();
+    timeMonitor.nodeAdditionTime += (et - st);
 
     // Add edges
     addEdges(addedNodes);
   }
 
+  private void addEdges(final List<Collection<Node<T>>> parentNodes) {
+    final List<Future> futures = new LinkedList<>();
+    for (final Collection<Node<T>> nodes : parentNodes) {
+      futures.add(workStealingPool.submit(new Runnable() {
+        @Override
+        public void run() {
+          addEdges(nodes);
+        }
+      }));
+    }
+
+    for (final Future future : futures) {
+      try {
+        future.get();
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      } catch (ExecutionException e) {
+        e.printStackTrace();
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
   private void addEdges(final Collection<Node<T>> parentNodes) {
     // Add edges
-    final List<Future> tasks = new LinkedList<>();
+    final List<Future> futures = new LinkedList<>();
 
+    final long st = System.nanoTime();
     for (final Node parent : parentNodes) {
-      //final List<Node<T>> childNodes = selectionAlgorithm.selection(Math.max(parent.start, startTime), parent.end);
-      //System.out.println("FInd node: " + parent + ", " + parent.getDependencies());
-      tasks.add(workStealingPool.submit(new Runnable() {
+
+      /*
+      final List<Node<T>> childNodes = selectionAlgorithm.selection(parent.start, parent.end);
+      LOG.log(Level.FINE, "(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
+      //System.out.println("(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
+      for (final Node<T> elem : childNodes) {
+        parent.addDependency(elem);
+      }*/
+
+      futures.add(workStealingPool.submit(new Runnable() {
         @Override
         public void run() {
           final List<Node<T>> childNodes = selectionAlgorithm.selection(parent.start, parent.end);
@@ -145,11 +208,13 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
           }
         }
       }));
+
     }
 
-    for (final Future task : tasks) {
+
+    for (final Future future : futures) {
       try {
-        task.get();
+        future.get();
       } catch (InterruptedException e) {
         e.printStackTrace();
       } catch (ExecutionException e) {
@@ -157,6 +222,8 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
         throw new RuntimeException(e);
       }
     }
+    final long et = System.nanoTime();
+    timeMonitor.edgeAdditionTime += (et - st);
   }
 
   @Override
@@ -251,7 +318,7 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
         findEdgeNodes.add(parentNode);
         for (final Node<T> child : parentNode.getDependencies()) {
           // Decrease RefCnt
-          child.refCnt -= 1;
+          child.refCnt.decrementAndGet();
           child.parents.remove(parentNode);
           prevChildNodes.add(child);
         }
@@ -268,7 +335,7 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
     for (long timespanET = st; timespanET <= currBuildingIndex; timespanET += ts.intervalSize) {
       final long start_ts = Math.max(timespanET - ts.windowSize, addTime);
       final long end_ts = timespanET;
-      final Node<T> node =  new Node<T>(start_ts, end_ts, false);
+      final Node<T> node =  new Node<T>(start_ts, end_ts, false, ts);
       findEdgeNodes.add(node);
       finalTimespans.saveOutput(Math.max(timespanET - ts.windowSize, addTime), timespanET, ts, node);
     }
@@ -287,7 +354,7 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
 
     // Remove child nodes which have zero reference count
     for (final Node<T> child : prevChildNodes) {
-      if (child.refCnt == 0) {
+      if (child.refCnt.get() == 0) {
         if (child.end <= addTime) {
           if (child.partial) {
             partialTimespans.removeNode(child.start);
@@ -341,7 +408,7 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
           final Node<T> deleteNode = finalTimespans.lookup(timespan.startTime, timespan.endTime, timespan.timescale);
           for (final Node<T> child : deleteNode.getDependencies()) {
             // Decrease RefCnt
-            child.refCnt -= 1;
+            child.refCnt.decrementAndGet();
             child.parents.remove(deleteNode);
             prevChildNodes.add(child);
           }
@@ -378,7 +445,7 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
         findingEdgeNodes.addAll(deleteNode.parents);
         for (final Node<T> child : deleteNode.getDependencies()) {
           // Decrease RefCnt
-          child.refCnt -= 1;
+          child.refCnt.decrementAndGet();
           child.parents.remove(deleteNode);
           prevChildNodes.add(child);
         }
@@ -394,7 +461,7 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
     for (final Node<T> parentNode : findingEdgeNodes) {
       for (final Node<T> child : parentNode.getDependencies()) {
         // Decrease RefCnt
-        child.refCnt -= 1;
+        child.refCnt.decrementAndGet();
         child.parents.remove(parentNode);
         prevChildNodes.add(child);
       }
@@ -407,7 +474,7 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
 
     // Remove child nodes which have zero reference count
     for (final Node<T> child : prevChildNodes) {
-      if (child.refCnt == 0) {
+      if (child.refCnt.get() == 0) {
         if (child.end <= deleteTime) {
           //System.out.println("Delete: " + child);
           if (child.partial) {
@@ -425,4 +492,40 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
     finalTimespans.deleteOutput(node.start, node.end, node);
   }
 
+  final class NodeAdditionTask implements Callable<List<Node<T>>> {
+    private final List<Timescale> timescales;
+    private final List<Node<T>> result = new LinkedList<>();
+    private final int curr;
+    private final int until;
+
+    public NodeAdditionTask(final List<Timescale> timescales,
+                            final int curr,
+                            final int until) {
+      this.timescales = timescales;
+      this.curr = curr;
+      this.until = until;
+    }
+
+    @Override
+    public List<Node<T>> call() {
+      for (final Timescale timescale : timescales) {
+        final long align = curr + (timescale.intervalSize - (curr - windowManager.timescaleStartTime(timescale)) % timescale.intervalSize);
+        for (long time = align; time <= until; time += timescale.intervalSize) {
+          // create vertex and add it to the table cell of (time, windowsize)
+          final long start = Math.max(time - timescale.windowSize, windowManager.timescaleStartTime(timescale));
+          //System.out.println("aa: (" + start + ", " + time + "), " + "curr: " + curr + ", until: " + until + ", ts: " + timescale);
+          Node<T> parent;
+          //System.out.println("ADD Node (" + start + ", " + time + ")" + ", curr: " + curr + ", until: " + until);
+          parent = new Node(start, time, false, timescale);
+          finalTimespans.saveOutput(start, time, timescale, parent);
+          result.add(parent);
+          //System.out.println("ADD: " + start + "-" + time);
+          //System.out.println("SAVE: [" + start + "-" + time + ")");
+
+          LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
+        }
+      }
+      return result;
+    }
+  }
 }

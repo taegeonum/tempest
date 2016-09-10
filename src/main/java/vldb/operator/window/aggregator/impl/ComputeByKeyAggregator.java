@@ -101,21 +101,27 @@ public final class ComputeByKeyAggregator<I, K, V> implements CAAggregator<I, Ma
     //System.out.print("FINAL_PARTIALS ");
     for (final Map<K, V> partial : partials) {
       //System.out.print(partial.size() + ", ");
-      for (final Map.Entry<K, V> entry : partial.entrySet()) {
-        V oldVal = result.get(entry.getKey());
-        if (oldVal == null) {
-          //oldVal = computeFunc.init();
-          result.put(entry.getKey(), entry.getValue());
-        } else {
-          //numAgg += 1;
-          result.put(entry.getKey(), computeFunc.compute(oldVal, entry.getValue()));
-          //aggregationCounter.incrementFinalAggregation();
-        }
-      }
+      rollup(result, partial);
     }
     //System.out.println("NUMAGG: " + numAgg);
     //aggregationCounter.incrementFinalAggregation(numAgg);
     return result;
+  }
+
+  @Override
+  public Map<K, V> rollup(final Map<K, V> first, final Map<K, V> second) {
+    for (final Map.Entry<K, V> entry : second.entrySet()) {
+      V oldVal = first.get(entry.getKey());
+      if (oldVal == null) {
+        //oldVal = computeFunc.init();
+        first.put(entry.getKey(), entry.getValue());
+      } else {
+        //numAgg += 1;
+        first.put(entry.getKey(), computeFunc.compute(oldVal, entry.getValue()));
+        //aggregationCounter.incrementFinalAggregation();
+      }
+    }
+    return first;
   }
 
   /**

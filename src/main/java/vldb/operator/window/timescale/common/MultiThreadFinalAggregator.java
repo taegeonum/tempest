@@ -22,16 +22,15 @@ import vldb.operator.window.aggregator.CAAggregator;
 import vldb.operator.window.timescale.TimeMonitor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOutput;
+import vldb.operator.window.timescale.pafas.Node;
+import vldb.operator.window.timescale.pafas.dynamic.DynamicDependencyGraph;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.StartTime;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
 
 import javax.inject.Inject;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
@@ -73,6 +72,7 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
 
   private final ForkJoinPool forkJoinPool;
   private final ParallelTreeAggregator<?, V> parallelAggregator;
+  private final DynamicDependencyGraph<List<V>> dependencyGraph;
 
   //private final ConcurrentMap<Timescale, ExecutorService> executorServiceMap;
 
@@ -82,6 +82,7 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
    */
   @Inject
   private MultiThreadFinalAggregator(final SpanTracker<List<V>> spanTracker,
+                                     final DynamicDependencyGraph<List<V>> dependencyGraph,
                                      final TimeWindowOutputHandler<V, ?> outputHandler,
                                      final CAAggregator<?, V> aggregateFunction,
                                      @Parameter(NumThreads.class) final int numThreads,
@@ -91,11 +92,12 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
                                      final SharedForkJoinPool sharedForkJoinPool,
                                      @Parameter(EndTime.class) final long endTime) {
     LOG.info("START " + this.getClass());
+    this.dependencyGraph = dependencyGraph;
     this.timeMonitor = timeMonitor;
     this.spanTracker = spanTracker;
     this.forkJoinPool = sharedForkJoinPool.getForkJoinPool();
     this.outputHandler = outputHandler;
-    this.parallelAggregator = new ParallelTreeAggregator<>(numThreads, 50, aggregateFunction, forkJoinPool);
+    this.parallelAggregator = new ParallelTreeAggregator<>(numThreads, 30 * numThreads, aggregateFunction, forkJoinPool);
     this.numThreads = numThreads;
     //this.executorService = Executors.newFixedThreadPool(numThreads);
     this.aggregateFunction = aggregateFunction;
@@ -117,56 +119,60 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
   @Override
   public void triggerFinalAggregation(final List<Timespan> finalTimespans) {
     Collections.sort(finalTimespans, timespanComparator);
+    final Map<Node<List<V>>, DependencyGroup> timespanGroupMap = new HashMap<>(finalTimespans.size());
+    final List<DependencyGroup> groups = new LinkedList<>();
+
+    final long st = System.nanoTime();
+
+    // Split dependencies
+    //System.out.println("TS: " + finalTimespans);
+    int groupId = 0;
     for (final Timespan timespan : finalTimespans) {
-      //System.out.println("BEFORE_GET: " + timespan);
-      //if (timespan.endTime <= endTime) {
-      final List<List<V>> aggregates = spanTracker.getDependentAggregates(timespan);
-      final List<V> finalResult = new LinkedList<>();
-      final List<Future<V>> futures = new LinkedList<>();
-      final int size = aggregates.size();
-
-      // Start aggregate
-      final long st = System.nanoTime();
-
-      for (int i = 0; i < numThreads; i++) {
-        final int index = i;
-        futures.add(forkJoinPool.submit(new Callable<V>() {
-          public V call() {
-            final List<V> subAggregates = new LinkedList<V>();
-            for (int j = 0; j < size; j++) {
-              subAggregates.add(aggregates.get(j).get(index));
-            }
-            //return parallelAggregator.doParallelAggregation(subAggregates);
-            return aggregateFunction.aggregate(subAggregates);
-          }
-        }));
-      }
-
-      for (final Future<V> future : futures) {
-        try {
-          finalResult.add(future.get());
-        } catch (InterruptedException e) {
-          e.printStackTrace();
-        } catch (ExecutionException e) {
-          e.printStackTrace();
-          throw new RuntimeException(e);
+      final Node<List<V>> myNode = dependencyGraph.getNode(timespan);
+      final Node<List<V>> lastChildNode = myNode.lastChildNode;
+      if (lastChildNode.end == timespan.endTime && !lastChildNode.partial) {
+        // Add my node to the child group
+        //System.out.println(myNode + " FIND CN: " + lastChildNode);
+        final DependencyGroup childGroup = timespanGroupMap.get(lastChildNode);
+        childGroup.add(myNode);
+        timespanGroupMap.put(myNode, childGroup);
+      } else {
+        // Create my group
+        DependencyGroup group = timespanGroupMap.get(myNode);
+        if (group == null) {
+          group = new DependencyGroup(groupId);
+          timespanGroupMap.put(myNode, group);
+          group.add(myNode);
+          groups.add(group);
+          //System.out.println("ADD NODE TO GROUP: " + myNode);
+          groupId += 1;
         }
       }
-
-      // End aggregate
-      final long et = System.nanoTime();
-      timeMonitor.finalTime += (et - st);
-
-      long numKey = 0;
-      for (final V agg : finalResult) {
-        numKey += ((Map)agg).size();
-      }
-      timeMonitor.storedKey += numKey;
-      spanTracker.putAggregate(finalResult, timespan);
-      outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,
-          new DepOutputAndResult<V>(aggregates.size(), finalResult.get(0)),
-          timespan.startTime, timespan.endTime, timespan.startTime >= startTime));
     }
+    final long gtEnd = System.nanoTime();
+    timeMonitor.groupingTime += (gtEnd - st);
+
+    //System.out.println("GROUPS" + groups);
+    // Parallelize groups
+    final List<ForkJoinTask<Integer>> forkJoinTasks = new ArrayList<>(groups.size());
+    for (final DependencyGroup group : groups) {
+      forkJoinTasks.add(forkJoinPool.submit(new AggregateTask(group)));
+    }
+
+    for (final ForkJoinTask<Integer> forkJoinTask : forkJoinTasks) {
+      try {
+        forkJoinTask.get();
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      } catch (ExecutionException e) {
+        e.printStackTrace();
+        throw new RuntimeException(e);
+      }
+    }
+
+    // End aggregate
+    final long et = System.nanoTime();
+    timeMonitor.finalTime += (et - st);
   }
 
   @Override
@@ -187,6 +193,125 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
       } else {
         return 1;
       }
+    }
+  }
+
+  final class AggregateTask extends ForkJoinTask<Integer> {
+    private Integer result;
+
+    private final DependencyGroup group;
+
+    public AggregateTask(final DependencyGroup group) {
+      this.group = group;
+    }
+    @Override
+    public Integer getRawResult() {
+      return result;
+    }
+
+    @Override
+    protected void setRawResult(final Integer value) {
+      this.result = value;
+    }
+
+    @Override
+    protected boolean exec() {
+      for (final Node<List<V>> myNode : group.group) {
+        final Timespan timespan = new Timespan(myNode.start, myNode.end, myNode.timescale);
+        final List<List<V>> aggregates = spanTracker.getDependentAggregates(timespan);
+        // Start aggregate
+        final List<ForkJoinTask<V>> forkJoinTasks = new ArrayList<>(numThreads);
+        for (int i = 0; i < numThreads; i++) {
+          forkJoinTasks.add(new Task2(i, aggregates).fork());
+        }
+        final List<V> finalResult = new ArrayList<>(numThreads);
+        for (final ForkJoinTask<V> forkJoinTask : forkJoinTasks) {
+          finalResult.add(forkJoinTask.join());
+        }
+        spanTracker.putAggregate(finalResult, timespan);
+        outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,
+            new DepOutputAndResult<V>(aggregates.size(), finalResult.get(0)),
+            timespan.startTime, timespan.endTime, timespan.startTime >= startTime));
+      }
+      setRawResult(1);
+      return true;
+    }
+  }
+
+  final class Task2 extends ForkJoinTask<V> {
+
+    private final int index;
+    private final List<List<V>> aggregates;
+
+    private V result;
+
+    public Task2(final int index,
+                 final List<List<V>> aggregates) {
+      this.index = index;
+      this.aggregates = aggregates;
+    }
+
+    @Override
+    public V getRawResult() {
+      return result;
+    }
+
+    @Override
+    protected void setRawResult(final V value) {
+      this.result = value;
+    }
+
+    @Override
+    protected boolean exec() {
+      final List<V> subAggregates = new ArrayList<V>(aggregates.size());
+      for (int j = 0; j < aggregates.size(); j++) {
+        subAggregates.add(aggregates.get(j).get(index));
+      }
+      final V result = aggregateFunction.aggregate(subAggregates);
+      //final V result = parallelAggregator.doParallelAggregation(subAggregates);
+      setRawResult(result);
+      return true;
+    }
+  }
+
+  final class DependencyGroup {
+    private final int id;
+    public final List<Node<List<V>>> group;
+    public DependencyGroup(final int id) {
+      this.id = id;
+      this.group = new LinkedList<>();
+    }
+
+    public void add(final Node<List<V>> timespan) {
+      group.add(timespan);
+    }
+
+    @Override
+    public String toString() {
+      return "GID: " + id + ", " + group;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+
+      final DependencyGroup that = (DependencyGroup) o;
+
+      if (id != that.id) {
+        return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return id;
     }
   }
 }

@@ -65,4 +65,9 @@ public final class LinregByKeyAggregator<I, K> implements CAAggregator<I, Map<K,
   public Map<K, LinregVal> aggregate(final Collection<Map<K, LinregVal>> partials) {
     return this.aggregator.aggregate(partials);
   }
+
+  @Override
+  public Map<K, LinregVal> rollup(final Map<K, LinregVal> first, final Map<K, LinregVal> second) {
+    return this.aggregator.rollup(first, second);
+  }
 }

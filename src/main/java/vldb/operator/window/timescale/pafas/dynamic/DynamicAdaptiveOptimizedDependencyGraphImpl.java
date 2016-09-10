@@ -252,7 +252,7 @@ public final class DynamicAdaptiveOptimizedDependencyGraphImpl<T> implements Dyn
         findEdgeNodes.add(parentNode);
         for (final Node<T> child : parentNode.getDependencies()) {
           // Decrease RefCnt
-          child.refCnt -= 1;
+          child.refCnt.decrementAndGet();
           child.parents.remove(parentNode);
           prevChildNodes.add(child);
         }
@@ -287,7 +287,7 @@ public final class DynamicAdaptiveOptimizedDependencyGraphImpl<T> implements Dyn
 
     // Remove child nodes which have zero reference count
     for (final Node<T> child : prevChildNodes) {
-      if (child.refCnt == 0) {
+      if (child.refCnt.get() == 0) {
         if (child.end <= addTime) {
           if (child.partial) {
             partialTimespans.removeNode(child.start);
@@ -340,7 +340,7 @@ public final class DynamicAdaptiveOptimizedDependencyGraphImpl<T> implements Dyn
           final Node<T> deleteNode = finalTimespans.lookup(timespan.startTime, timespan.endTime, timespan.timescale);
           for (final Node<T> child : deleteNode.getDependencies()) {
             // Decrease RefCnt
-            child.refCnt -= 1;
+            child.refCnt.decrementAndGet();
             child.parents.remove(deleteNode);
             prevChildNodes.add(child);
           }
@@ -371,7 +371,7 @@ public final class DynamicAdaptiveOptimizedDependencyGraphImpl<T> implements Dyn
         findingEdgeNodes.addAll(deleteNode.parents);
         for (final Node<T> child : deleteNode.getDependencies()) {
           // Decrease RefCnt
-          child.refCnt -= 1;
+          child.refCnt.decrementAndGet();
           child.parents.remove(deleteNode);
           prevChildNodes.add(child);
         }
@@ -386,7 +386,7 @@ public final class DynamicAdaptiveOptimizedDependencyGraphImpl<T> implements Dyn
     for (final Node<T> parentNode : findingEdgeNodes) {
       for (final Node<T> child : parentNode.getDependencies()) {
         // Decrease RefCnt
-        child.refCnt -= 1;
+        child.refCnt.decrementAndGet();
         child.parents.remove(parentNode);
         prevChildNodes.add(child);
       }
@@ -398,7 +398,7 @@ public final class DynamicAdaptiveOptimizedDependencyGraphImpl<T> implements Dyn
 
     // Remove child nodes which have zero reference count
     for (final Node<T> child : prevChildNodes) {
-      if (child.refCnt == 0) {
+      if (child.refCnt.get() == 0) {
         if (child.end <= deleteTime) {
           //System.out.println("Delete: " + child);
           if (child.partial) {

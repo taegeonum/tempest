@@ -27,4 +27,6 @@ public interface Aggregator<I, V> {
    * @param data collection of window data.
    */
   V aggregate(final Collection<I> data);
+
+  V rollup(V first, V second);
 }

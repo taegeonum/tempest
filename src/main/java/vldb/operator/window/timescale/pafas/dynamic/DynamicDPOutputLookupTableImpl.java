@@ -21,7 +21,6 @@ import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.WindowTimeAndOutput;
 
 import javax.inject.Inject;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -35,7 +34,7 @@ public final class DynamicDPOutputLookupTableImpl<V> implements DynamicOutputLoo
   /**
    * A data structure for saving outputs.
    */
-  public final ConcurrentMap<Long, ConcurrentHashMap<Long, Map<Timescale, V>>> table;
+  public final ConcurrentMap<Long, ConcurrentHashMap<Long, ConcurrentMap<Timescale, V>>> table;
 
   @Inject
   private DynamicDPOutputLookupTableImpl() {
@@ -50,17 +49,18 @@ public final class DynamicDPOutputLookupTableImpl<V> implements DynamicOutputLoo
    */
   @Override
   public void saveOutput(final long startTime, final long endTime, final Timescale timescale, final V output) {
-    ConcurrentHashMap<Long, Map<Timescale, V>> row = table.get(startTime);
+    ConcurrentHashMap<Long, ConcurrentMap<Timescale, V>> row = table.get(startTime);
     if (row == null) {
-      table.putIfAbsent(startTime, new ConcurrentHashMap<Long, Map<Timescale, V>>());
+      table.putIfAbsent(startTime, new ConcurrentHashMap<Long, ConcurrentMap<Timescale, V>>());
       row = table.get(startTime);
     }
 
-    Map<Timescale, V> map = row.get(endTime);
+    ConcurrentMap<Timescale, V> map = row.get(endTime);
     if (map == null) {
-      map = new HashMap<>();
-      row.put(endTime, map);
+      map = new ConcurrentHashMap<>();
+      row.putIfAbsent(endTime, map);
     }
+    map = row.get(endTime);
     map.put(timescale, output);
   }
 
@@ -97,7 +97,7 @@ public final class DynamicDPOutputLookupTableImpl<V> implements DynamicOutputLoo
    * @throws edu.snu.tempest.operator.common.NotFoundException
    */
   @Override
-  public ConcurrentMap<Long, Map<Timescale, V>> lookup(final long startTime) throws NotFoundException {
+  public ConcurrentMap<Long, ConcurrentMap<Timescale, V>> lookup(final long startTime) throws NotFoundException {
     if (table.get(startTime) == null) {
       throw new NotFoundException("Not found startTime: " + startTime);
     }
@@ -136,20 +136,21 @@ public final class DynamicDPOutputLookupTableImpl<V> implements DynamicOutputLoo
    */
   @Override
   public void deleteOutput(final long startTime, final long endTime, final Timescale timescale){
-    ConcurrentHashMap<Long, Map<Timescale, V>> row = table.get(startTime);
-    if (row != null){
-      row.get(endTime).remove(timescale);
-      if (row.get(endTime).size() == 0) {
-        row.remove(endTime);
+    ConcurrentHashMap<Long, ConcurrentMap<Timescale, V>> row = table.get(startTime);
+    if (row != null) {
+      final ConcurrentMap<Timescale, V> col = row.get(endTime);
+      col.remove(timescale);
+      if (col.size() == 0) {
+        col.remove(endTime);
       }
     }
   }
 
   @Override
   public void deleteOutput(final long startTime, final long endTime, V value){
-    ConcurrentHashMap<Long, Map<Timescale, V>> row = table.get(startTime);
+    ConcurrentHashMap<Long, ConcurrentMap<Timescale, V>> row = table.get(startTime);
     if (row != null){
-      final Map<Timescale, V> map = row.get(endTime);
+      final ConcurrentMap<Timescale, V> map = row.get(endTime);
       if (map != null) {
         for (final Map.Entry<Timescale, V> entry : map.entrySet()) {
           if (entry.getValue() == value) {

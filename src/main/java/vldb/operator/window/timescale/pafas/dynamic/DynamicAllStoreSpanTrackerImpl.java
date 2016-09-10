@@ -125,9 +125,8 @@ public final class DynamicAllStoreSpanTrackerImpl<I, T> implements SpanTracker<T
               }
             } else {
               aggregates.add(dependentNode.getOutput());
-              dependentNode.refCnt -= 1;
               dependentNode.parents.remove(node);
-              if (dependentNode.refCnt == 0) {
+              if (dependentNode.refCnt.decrementAndGet() == 0) {
                 // Remove
                 timeMonitor.storedKey -= ((Map)dependentNode.getOutput()).size();
                 if (dependentNode.partial) {
@@ -146,6 +145,14 @@ public final class DynamicAllStoreSpanTrackerImpl<I, T> implements SpanTracker<T
     // Remove dependencies because it is no use any more
     node.getDependencies().clear();
     return aggregates;
+  }
+
+
+  @Override
+  public List<Node<T>> getDependentNodes(final Timespan timespan) {
+    final Node<T> node = dependencyGraph.getNode(timespan);
+    //System.out.println("PARENT NODE: " + node);
+    return node.getDependencies();
   }
 
   @Override

@@ -1,8 +1,15 @@
 package vldb.operator.window.timescale.pafas;
 
+import io.netty.util.internal.ConcurrentSet;
+import vldb.operator.window.timescale.Timescale;
+
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
    * DependencyGraphNode.
@@ -13,21 +20,23 @@ public final class Node<T> {
    */
   private final List<Node<T>> dependencies;
 
-  public final List<Node<T>> parents;
+  public final Set<Node<T>> parents;
   /**
    * A reference count to be referenced by other nodes.
    */
-  public int refCnt;
+  public AtomicInteger refCnt;
 
   /**
    * An initial reference count.
    */
-  private int initialRefCnt;
+  private AtomicInteger initialRefCnt;
 
   /**
    * An output.
    */
   private T output;
+
+  public final Timescale timescale;
 
   public final AtomicBoolean outputStored = new AtomicBoolean(false);
 
@@ -42,20 +51,28 @@ public final class Node<T> {
   public long end;
 
   public final boolean partial;
+
+  public Node<T> lastChildNode;
   /**
    * DependencyGraphNode.
    * @param start the start time of the node.
    * @param end tbe end time of the node.
    */
   public Node(final long start, final long end, boolean partial) {
+    this(start, end, partial, null);
+  }
+
+  public Node(final long start, final long end, boolean partial, final Timescale ts) {
     this.dependencies = new LinkedList<>();
-    this.parents = new LinkedList<>();
-    this.refCnt = 0;
-    this.initialRefCnt = 0;
+    this.parents = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    this.refCnt = new AtomicInteger(0);
+    this.initialRefCnt = new AtomicInteger(0);
     this.start = start;
     this.end = end;
     this.partial = partial;
+    this.timescale = ts;
   }
+
 
 
   /**
@@ -63,11 +80,12 @@ public final class Node<T> {
    */
   public Node(final long start, final long end, final int refCnt, boolean partial) {
     this.dependencies = new LinkedList<>();
-    this.parents = new LinkedList<>();
-    this.refCnt = refCnt;
+    this.parents = new ConcurrentSet<>();
+    this.refCnt = new AtomicInteger(refCnt);
     this.start = start;
     this.end = end;
     this.partial = partial;
+    this.timescale = null;
   }
 
   /**
@@ -77,14 +95,14 @@ public final class Node<T> {
    * in order to reuse this node.
    */
   public void decreaseRefCnt() {
-    if (refCnt > 0) {
-      refCnt--;
-      if (refCnt == 0) {
+    if (refCnt.get() > 0) {
+      int cnt = refCnt.decrementAndGet();
+      if (cnt == 0) {
         // Remove output
         final T prevOutput = output;
         output = null;
         outputStored.set(false);
-        refCnt = initialRefCnt;
+        refCnt.compareAndSet(cnt, initialRefCnt.get());
       }
     }
   }
@@ -93,18 +111,27 @@ public final class Node<T> {
    * Add dependent node.
    * @param n a dependent node
    */
-  public synchronized void addDependency(final Node n) {
+  public void addDependency(final Node n) {
     if (n == null) {
       throw new NullPointerException();
     }
     dependencies.add(n);
-    n.increaseRefCnt();
+    if (lastChildNode == null) {
+      lastChildNode = n;
+    } else {
+      if (lastChildNode.end < n.end) {
+        lastChildNode = n;
+      }
+    }
+
+
     n.parents.add(this);
+    n.increaseRefCnt();
   }
 
-  private synchronized void increaseRefCnt() {
-    initialRefCnt++;
-    refCnt++;
+  private void increaseRefCnt() {
+    initialRefCnt.incrementAndGet();
+    refCnt.incrementAndGet();
   }
 
   /**
@@ -112,7 +139,7 @@ public final class Node<T> {
    * @return number of parent nodes.
    */
   public int getInitialRefCnt() {
-    return initialRefCnt;
+    return initialRefCnt.get();
   }
 
   /**

@@ -16,6 +16,7 @@
 package vldb.operator.window.timescale.common;
 
 import vldb.operator.window.timescale.Timescale;
+import vldb.operator.window.timescale.pafas.Node;
 
 import java.util.List;
 
@@ -42,6 +43,7 @@ public interface SpanTracker<T> {
 
   List<T> getDependentAggregates(final Timespan timespan);
 
+  List<Node<T>> getDependentNodes(final Timespan timespan);
   /**
    * Receive timescale to be added.
    * @param ts timescale to be added.

@@ -65,4 +65,9 @@ public final class AvgByKeyAggregator<I, K> implements CAAggregator<I, Map<K, Su
   public Map<K, SumAndCount> aggregate(final Collection<Map<K, SumAndCount>> partials) {
     return this.aggregator.aggregate(partials);
   }
+
+  @Override
+  public Map<K, SumAndCount> rollup(final Map<K, SumAndCount> first, final Map<K, SumAndCount> second) {
+    return this.aggregator.rollup(first, second);
+  }
 }
