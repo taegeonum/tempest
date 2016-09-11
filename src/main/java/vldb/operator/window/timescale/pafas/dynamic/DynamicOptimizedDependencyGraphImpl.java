@@ -184,8 +184,8 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
 
   private void addEdges(final Collection<Node<T>> parentNodes) {
     // Add edges
-    final List<Future> futures = new LinkedList<>();
-
+    //final List<Future> futures = new LinkedList<>();
+    final CountDownLatch countDownLatch = new CountDownLatch(parentNodes.size());
     final long st = System.nanoTime();
     for (final Node parent : parentNodes) {
 
@@ -197,7 +197,8 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
         parent.addDependency(elem);
       }*/
 
-      futures.add(workStealingPool.submit(new Runnable() {
+      //futures.add(
+          workStealingPool.submit(new Runnable() {
         @Override
         public void run() {
           final List<Node<T>> childNodes = selectionAlgorithm.selection(parent.start, parent.end);
@@ -206,12 +207,13 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
           for (final Node<T> elem : childNodes) {
             parent.addDependency(elem);
           }
+          countDownLatch.countDown();
         }
-      }));
-
+      });
     }
 
 
+    /*
     for (final Future future : futures) {
       try {
         future.get();
@@ -221,6 +223,12 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
         e.printStackTrace();
         throw new RuntimeException(e);
       }
+    }
+    */
+    try {
+      countDownLatch.await();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
     }
     final long et = System.nanoTime();
     timeMonitor.edgeAdditionTime += (et - st);

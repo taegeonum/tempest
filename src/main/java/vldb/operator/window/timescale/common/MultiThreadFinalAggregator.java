@@ -154,11 +154,18 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
 
     //System.out.println("GROUPS" + groups);
     // Parallelize groups
-    final List<ForkJoinTask<Integer>> forkJoinTasks = new ArrayList<>(groups.size());
+    final CountDownLatch countDownLatch = new CountDownLatch(groups.size());
+    //final List<ForkJoinTask<Integer>> forkJoinTasks = new ArrayList<>(groups.size());
     for (final DependencyGroup group : groups) {
-      forkJoinTasks.add(forkJoinPool.submit(new AggregateTask(group)));
+      forkJoinPool.submit(new AggregateTask(group, countDownLatch));
     }
 
+    try {
+      countDownLatch.await();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+    /*
     for (final ForkJoinTask<Integer> forkJoinTask : forkJoinTasks) {
       try {
         forkJoinTask.get();
@@ -169,6 +176,7 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
         throw new RuntimeException(e);
       }
     }
+    */
 
     // End aggregate
     final long et = System.nanoTime();
@@ -200,9 +208,11 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
     private Integer result;
 
     private final DependencyGroup group;
+    private final CountDownLatch countDownLatch;
 
-    public AggregateTask(final DependencyGroup group) {
+    public AggregateTask(final DependencyGroup group, final CountDownLatch countDownLatch) {
       this.group = group;
+      this.countDownLatch = countDownLatch;
     }
     @Override
     public Integer getRawResult() {
@@ -234,6 +244,7 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
             timespan.startTime, timespan.endTime, timespan.startTime >= startTime));
       }
       setRawResult(1);
+      countDownLatch.countDown();
       return true;
     }
   }
