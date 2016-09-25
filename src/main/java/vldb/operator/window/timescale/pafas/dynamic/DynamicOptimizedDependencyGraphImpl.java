@@ -67,9 +67,9 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
   private final TimeMonitor timeMonitor;
   private final ExecutorService workStealingPool;
 
-  private final int numAddNodeThreads;
-  private int numTimescalesPerAddNode = 20;
-
+  //private final int numAddNodeThreads;
+  //private int numTimescalesPerAddNode = 20;
+  private final int numThreads;
   /**
    * DependencyGraph constructor. This first builds the dependency graph.
    * @param startTime the initial start time of when the graph is built.
@@ -91,8 +91,9 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
     this.partialTimespans = partialTimespans;
     this.timescales = windowManager.timescales;
     this.startTime = startTime;
-    this.numAddNodeThreads = Math.min(numThreads, timescales.size()/numTimescalesPerAddNode);
-    this.numTimescalesPerAddNode = timescales.size() / numAddNodeThreads;
+    this.numThreads = numThreads;
+    //this.numAddNodeThreads = Math.min(numThreads, timescales.size()/numTimescalesPerAddNode);
+    //this.numTimescalesPerAddNode = timescales.size() / numAddNodeThreads;
     this.currBuildingIndex = startTime + windowManager.getRebuildSize();
     this.rebuildSize = windowManager.getRebuildSize();
     this.finalTimespans = outputLookupTable;
@@ -187,31 +188,33 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
     //final List<Future> futures = new LinkedList<>();
     final CountDownLatch countDownLatch = new CountDownLatch(parentNodes.size());
     final long st = System.nanoTime();
-    for (final Node parent : parentNodes) {
 
-      /*
-      final List<Node<T>> childNodes = selectionAlgorithm.selection(parent.start, parent.end);
-      LOG.log(Level.FINE, "(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
-      //System.out.println("(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
-      for (final Node<T> elem : childNodes) {
-        parent.addDependency(elem);
-      }*/
-
-      //futures.add(
-          workStealingPool.submit(new Runnable() {
-        @Override
-        public void run() {
-          final List<Node<T>> childNodes = selectionAlgorithm.selection(parent.start, parent.end);
-          LOG.log(Level.FINE, "(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
-          //System.out.println("(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
-          for (final Node<T> elem : childNodes) {
-            parent.addDependency(elem);
-          }
-          countDownLatch.countDown();
+    if (numThreads == 1) {
+      for (final Node parent : parentNodes) {
+        final List<Node<T>> childNodes = selectionAlgorithm.selection(parent.start, parent.end);
+        LOG.log(Level.FINE, "(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
+        //System.out.println("(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
+        for (final Node<T> elem : childNodes) {
+          parent.addDependency(elem);
         }
-      });
+        countDownLatch.countDown();
+      }
+    } else {
+      for (final Node parent : parentNodes) {
+        workStealingPool.submit(new Runnable() {
+          @Override
+          public void run() {
+            final List<Node<T>> childNodes = selectionAlgorithm.selection(parent.start, parent.end);
+            LOG.log(Level.FINE, "(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
+            //System.out.println("(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
+            for (final Node<T> elem : childNodes) {
+              parent.addDependency(elem);
+            }
+            countDownLatch.countDown();
+          }
+        });
+      }
     }
-
 
     /*
     for (final Future future : futures) {
@@ -331,6 +334,7 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
           prevChildNodes.add(child);
         }
         parentNode.getDependencies().clear();
+        parentNode.lastChildNode = null;
         //finalTimespans.deleteOutput(timespan.startTime, timespan.endTime, timespan.timescale);
       } catch (NotFoundException e) {
         e.printStackTrace();
@@ -474,6 +478,7 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
         prevChildNodes.add(child);
       }
       parentNode.getDependencies().clear();
+      parentNode.lastChildNode = null;
     }
 
     //System.out.println("findingEdgeNode: " + findingEdgeNodes);

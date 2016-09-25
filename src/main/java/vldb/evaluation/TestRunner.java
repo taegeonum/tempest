@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by taegeonum on 4/28/16.
@@ -227,24 +226,24 @@ public final class TestRunner {
     int i = 0;
     Configuration conf = null;
     if (operatorType == OperatorType.DYNAMIC_WINDOW_GREEDY) {
-      conf = DynamicMWOConfiguration.CONF
-          .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, timescales.get(0).toString())
-          .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-          .set(DynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicOptimizedDependencyGraphImpl.class)
-          .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicGreedyOutputLookupTableImpl.class)
-          .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicGreedySelectionAlgorithm.class)
-          .set(DynamicMWOConfiguration.DYNAMIC_PARTIAL, DynamicOptimizedPartialTimespans.class)
-          .set(DynamicMWOConfiguration.START_TIME, 0)
+      conf = MultiThreadDynamicMWOConfiguration.CONF
+          .set(MultiThreadDynamicMWOConfiguration.INITIAL_TIMESCALES, timescales.get(0).toString())
+          .set(MultiThreadDynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+          .set(MultiThreadDynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicOptimizedDependencyGraphImpl.class)
+          .set(MultiThreadDynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicGreedyOutputLookupTableImpl.class)
+          .set(MultiThreadDynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicGreedySelectionAlgorithm.class)
+          .set(MultiThreadDynamicMWOConfiguration.DYNAMIC_PARTIAL, DynamicOptimizedPartialTimespans.class)
+          .set(MultiThreadDynamicMWOConfiguration.START_TIME, 0)
           .build();
     } else if (operatorType == OperatorType.DYNAMIC_WINDOW_DP) {
-      conf = DynamicMWOConfiguration.CONF
-          .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, timescales.get(0).toString())
-          .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-          .set(DynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicOptimizedDependencyGraphImpl.class)
-          .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicDPOutputLookupTableImpl.class)
-          .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPSelectionAlgorithm.class)
-          .set(DynamicMWOConfiguration.DYNAMIC_PARTIAL, DynamicOptimizedPartialTimespans.class)
-          .set(DynamicMWOConfiguration.START_TIME, 0)
+      conf = MultiThreadDynamicMWOConfiguration.CONF
+          .set(MultiThreadDynamicMWOConfiguration.INITIAL_TIMESCALES, timescales.get(0).toString())
+          .set(MultiThreadDynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+          .set(MultiThreadDynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicOptimizedDependencyGraphImpl.class)
+          .set(MultiThreadDynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicDPOutputLookupTableImpl.class)
+          .set(MultiThreadDynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPSelectionAlgorithm.class)
+          .set(MultiThreadDynamicMWOConfiguration.DYNAMIC_PARTIAL, DynamicOptimizedPartialTimespans.class)
+          .set(MultiThreadDynamicMWOConfiguration.START_TIME, 0)
           .build();
     } else if (operatorType == OperatorType.DYNAMIC_OnTheFly) {
       conf = OntheflyMWOConfiguration.CONF
@@ -290,7 +289,7 @@ public final class TestRunner {
     }
 
     long currInput = 0;
-    long rebuildingTime = 0;
+    double rebuildingTime = 0;
     while (tick <= windowChangePeriod * timescales.size() * 2) {
       //System.out.println("totalTime: " + (totalTime*1000) + ", elapsed: " + (System.currentTimeMillis() - currTime));
       final String word = wordGenerator.nextString();
@@ -314,7 +313,7 @@ public final class TestRunner {
           final long addStartTime = System.nanoTime();
           mwo.addWindow(ts, tick);
           final long addEndTime = System.nanoTime();
-          final long elapsed = TimeUnit.NANOSECONDS.toMillis(addEndTime - addStartTime);
+          final double elapsed = (addEndTime - addStartTime)/1000000.0;
           rebuildingTime += elapsed;
           writer.writeLine(prefix + "_result", "ADD\t" + ts + "\t" + elapsed);
         }
@@ -326,7 +325,7 @@ public final class TestRunner {
           final long rmStartTime = System.nanoTime();
           mwo.removeWindow(ts, tick);
           final long rmEndTime = System.nanoTime();
-          final long elapsed = TimeUnit.NANOSECONDS.toMillis(rmEndTime - rmStartTime);
+          final double elapsed = (rmEndTime - rmStartTime)/1000000.0;
           rebuildingTime += elapsed;
           writer.writeLine(prefix + "_result", "REMOVE\t" + ts + "\t" + elapsed);
         }
@@ -374,6 +373,7 @@ public final class TestRunner {
     for (final Timescale ts : timescales) {
       numOutputs += (totalTime / ts.intervalSize);
     }
+    writer.writeLine(prefix + "_num_outputs", numOutputs+"");
     final CountDownLatch countDownLatch = new CountDownLatch(numOutputs);
 
     final String timescaleString = TimescaleParser.parseToString(timescales);
