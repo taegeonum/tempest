@@ -98,7 +98,8 @@ public final class TwitterEvaluation {
 
     TestRunner.Result result = null;
     if (operatorType == TestRunner.OperatorType.DYNAMIC_WINDOW_DP || operatorType == TestRunner.OperatorType.DYNAMIC_WINDOW_GREEDY
-        || operatorType == TestRunner.OperatorType.DYNAMIC_NAIVE || operatorType == TestRunner.OperatorType.DYNAMIC_OnTheFly) {
+        || operatorType == TestRunner.OperatorType.DYNAMIC_NAIVE || operatorType == TestRunner.OperatorType.DYNAMIC_OnTheFly
+        || operatorType == TestRunner.OperatorType.DYNAMIC_WINDOW_DP_SMALLADD) {
       result = TestRunner.runFileWordDynamicTest(timescaleString,
           numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix, windowChangePeriod);
     } else {

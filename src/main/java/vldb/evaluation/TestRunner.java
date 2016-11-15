@@ -49,6 +49,7 @@ public final class TestRunner {
     DYNAMIC_ALL_STORE,
     DYNAMIC_NAIVE,
     DYNAMIC_OnTheFly,
+    DYNAMIC_WINDOW_DP_SMALLADD,
     PAFAS,
     PAFAS_DP,
     PAFAS_SINGLE,
@@ -245,6 +246,16 @@ public final class TestRunner {
           .set(MultiThreadDynamicMWOConfiguration.DYNAMIC_PARTIAL, DynamicOptimizedPartialTimespans.class)
           .set(MultiThreadDynamicMWOConfiguration.START_TIME, 0)
           .build();
+    } else if (operatorType == OperatorType.DYNAMIC_WINDOW_DP_SMALLADD) {
+      conf = MultiThreadDynamicMWOConfiguration.CONF
+          .set(MultiThreadDynamicMWOConfiguration.INITIAL_TIMESCALES, timescales.get(0).toString())
+          .set(MultiThreadDynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+          .set(MultiThreadDynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicSmallCostAddDependencyGraphImpl.class)
+          .set(MultiThreadDynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicDPOutputLookupTableImpl.class)
+          .set(MultiThreadDynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPSelectionAlgorithm.class)
+          .set(MultiThreadDynamicMWOConfiguration.DYNAMIC_PARTIAL, DynamicOptimizedPartialTimespans.class)
+          .set(MultiThreadDynamicMWOConfiguration.START_TIME, 0)
+          .build();
     } else if (operatorType == OperatorType.DYNAMIC_OnTheFly) {
       conf = OntheflyMWOConfiguration.CONF
           .set(OntheflyMWOConfiguration.INITIAL_TIMESCALES, timescales.get(0).toString())
@@ -319,7 +330,7 @@ public final class TestRunner {
         }
 
         if (tick > timescales.size() * windowChangePeriod && tick < timescales.size() * 2 * windowChangePeriod && tick % windowChangePeriod == 0) {
-          int index = timescales.size() - 1 - ((int) (tick / windowChangePeriod) % timescales.size());
+          int index = ((int) (tick / windowChangePeriod) % timescales.size());
           final Timescale ts = timescales.get(index);
           System.out.println("RM: " + ts + ", " + tick);
           final long rmStartTime = System.nanoTime();
