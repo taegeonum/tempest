@@ -29,7 +29,7 @@ import edu.snu.tempest.operator.window.aggregator.impl.KeyExtractor;
 import edu.snu.tempest.operator.window.timescale.TimeWindowOutputHandler;
 import edu.snu.tempest.operator.window.timescale.Timescale;
 import edu.snu.tempest.operator.window.timescale.TimescaleWindowOperator;
-import vldb.operator.window.timescale.parameter.NumThreads;
+import atc.operator.window.timescale.parameter.NumThreads;
 import evaluation.example.common.MTSOperatorProvider;
 import evaluation.example.common.OutputLogger;
 import evaluation.example.common.ResourceLogger;

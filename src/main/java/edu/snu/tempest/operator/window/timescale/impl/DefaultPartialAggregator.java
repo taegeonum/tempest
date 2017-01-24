@@ -17,7 +17,7 @@ package edu.snu.tempest.operator.window.timescale.impl;
 
 import edu.snu.tempest.operator.OutputEmitter;
 import edu.snu.tempest.operator.window.aggregator.CAAggregator;
-import vldb.operator.window.timescale.parameter.StartTime;
+import atc.operator.window.timescale.parameter.StartTime;
 import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;

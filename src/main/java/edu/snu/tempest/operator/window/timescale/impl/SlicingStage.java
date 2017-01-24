@@ -16,7 +16,7 @@
 package edu.snu.tempest.operator.window.timescale.impl;
 
 import edu.snu.tempest.operator.window.timescale.parameter.SlicedWindowTriggerPeriod;
-import vldb.operator.window.timescale.parameter.StartTime;
+import atc.operator.window.timescale.parameter.StartTime;
 import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.wake.Stage;
 import org.apache.reef.wake.WakeParameters;

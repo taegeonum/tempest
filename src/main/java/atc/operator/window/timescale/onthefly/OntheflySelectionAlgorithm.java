@@ -1,0 +1,53 @@
+package atc.operator.window.timescale.onthefly;
+
+import org.apache.reef.tang.annotations.Parameter;
+import atc.operator.window.timescale.common.WindowTimeAndOutput;
+import atc.operator.window.timescale.pafas.DependencyGraph;
+import atc.operator.window.timescale.pafas.Node;
+import atc.operator.window.timescale.pafas.PartialTimespans;
+import atc.operator.window.timescale.pafas.PeriodCalculator;
+import atc.operator.window.timescale.pafas.dynamic.DynamicPartialTimespans;
+import atc.operator.window.timescale.parameter.StartTime;
+
+import javax.inject.Inject;
+import java.util.LinkedList;
+import java.util.List;
+
+public class OntheflySelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorithm<T> {
+
+  private final PartialTimespans<T> partialTimespans;
+  private final long period;
+  private final long startTime;
+
+  @Inject
+  private OntheflySelectionAlgorithm(final DynamicPartialTimespans<T> partialTimespans,
+                                     final PeriodCalculator periodCalculator,
+                                     @Parameter(StartTime.class) long startTime) {
+    this.partialTimespans = partialTimespans;
+    this.startTime = startTime;
+    this.period = periodCalculator.getPeriod();
+  }
+
+  @Override
+  public List<Node<T>> selection(final long start, final long end) {
+    final List<Node<T>> childNodes = new LinkedList<>();
+    // Just select from partial timespans
+    long st = start;
+    while (st < end) {
+      WindowTimeAndOutput<Node<T>> elem = null;
+      if (st < startTime) {
+        final Node<T> partialTimespanNode = partialTimespans.getNextPartialTimespanNode(st + period);
+        //System.out.println("st < startTime: " + st);
+        childNodes.add(partialTimespanNode);
+        st = partialTimespanNode.end - period;
+      } else {
+        final Node<T> partialTimespanNode = partialTimespans.getNextPartialTimespanNode(st);
+        //System.out.println("start: " + start + ", " + end + ", st: " + st + ", " + partialTimespans);
+        childNodes.add(partialTimespanNode);
+        st = partialTimespanNode.end;
+      }
+    }
+    //System.out.println("[" + st + ", " + end + "): " + childNodes);
+    return childNodes;
+  }
+}

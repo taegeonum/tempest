@@ -16,7 +16,7 @@
 package edu.snu.tempest.operator.window.timescale.impl;
 
 import edu.snu.tempest.operator.window.timescale.Timescale;
-import vldb.operator.window.timescale.parameter.TimescaleString;
+import atc.operator.window.timescale.parameter.TimescaleString;
 import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;

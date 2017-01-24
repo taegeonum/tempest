@@ -17,8 +17,8 @@ package edu.snu.tempest.operator.window.timescale.impl;
 
 
 import edu.snu.tempest.operator.window.timescale.Timescale;
-import vldb.operator.window.timescale.parameter.CachingProb;
-import vldb.operator.window.timescale.parameter.TimescaleString;
+import atc.operator.window.timescale.parameter.CachingProb;
+import atc.operator.window.timescale.parameter.TimescaleString;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;

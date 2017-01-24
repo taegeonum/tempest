@@ -18,8 +18,8 @@ package edu.snu.tempest.operator.window.timescale.impl;
 import edu.snu.tempest.operator.common.NotFoundException;
 import edu.snu.tempest.operator.window.aggregator.CAAggregator;
 import edu.snu.tempest.operator.window.timescale.Timescale;
-import vldb.operator.window.timescale.parameter.NumThreads;
-import vldb.operator.window.timescale.parameter.StartTime;
+import atc.operator.window.timescale.parameter.NumThreads;
+import atc.operator.window.timescale.parameter.StartTime;
 import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;

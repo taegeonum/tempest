@@ -17,8 +17,8 @@
 package edu.snu.tempest.operator.window.timescale;
 
 import edu.snu.tempest.operator.window.aggregator.CAAggregator;
-import vldb.operator.window.timescale.parameter.StartTime;
-import vldb.operator.window.timescale.parameter.TimescaleString;
+import atc.operator.window.timescale.parameter.StartTime;
+import atc.operator.window.timescale.parameter.TimescaleString;
 import org.apache.reef.tang.formats.ConfigurationModule;
 import org.apache.reef.tang.formats.ConfigurationModuleBuilder;
 import org.apache.reef.tang.formats.RequiredImpl;

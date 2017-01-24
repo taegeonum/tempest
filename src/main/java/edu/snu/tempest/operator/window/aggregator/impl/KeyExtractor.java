@@ -16,7 +16,7 @@
 package edu.snu.tempest.operator.window.aggregator.impl;
 
 import org.apache.reef.tang.annotations.DefaultImplementation;
-import vldb.example.DefaultExtractor;
+import atc.example.DefaultExtractor;
 
 /**
  * Extract key from input.

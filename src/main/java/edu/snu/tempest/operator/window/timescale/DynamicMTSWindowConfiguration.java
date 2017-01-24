@@ -16,7 +16,7 @@
 package edu.snu.tempest.operator.window.timescale;
 
 import edu.snu.tempest.operator.window.timescale.impl.*;
-import vldb.operator.window.timescale.parameter.CachingProb;
+import atc.operator.window.timescale.parameter.CachingProb;
 import org.apache.reef.tang.formats.ConfigurationModule;
 import org.apache.reef.tang.formats.OptionalParameter;
 

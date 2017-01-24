@@ -18,7 +18,7 @@ package edu.snu.tempest.operator.window.timescale.impl;
 import edu.snu.tempest.operator.common.DefaultSubscription;
 import edu.snu.tempest.operator.common.Subscription;
 import edu.snu.tempest.operator.common.SubscriptionHandler;
-import vldb.operator.window.timescale.parameter.NumThreads;
+import atc.operator.window.timescale.parameter.NumThreads;
 import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.wake.EStage;
 import org.apache.reef.wake.WakeParameters;
