@@ -33,8 +33,8 @@ import java.util.logging.Logger;
  * @param <I> input
  * @param <V> aggregated result
  */
-final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
-  private static final Logger LOG = Logger.getLogger(DefaultPartialAggregator.class.getName());
+final class ActivePartialAggregator<I, V> implements PartialAggregator<I> {
+  private static final Logger LOG = Logger.getLogger(ActivePartialAggregator.class.getName());
 
   /**
    * Aggregator for incremental aggregation.
@@ -69,7 +69,7 @@ final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
 
   private final ActivePartialTimespans activePartialTimespans;
 
-
+  private List<Timespan> currActivePartials;
 
   /**
    * DefaultSlicedWindowOperatorImpl.
@@ -77,7 +77,7 @@ final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
    * @param startTime a start time of the mts operator
    */
   @Inject
-  private DefaultPartialAggregator(
+  private ActivePartialAggregator(
       final CAAggregator<I, V> aggregator,
       final SpanTracker<V> spanTracker,
       final FinalAggregator<V> finalAggregator,
@@ -94,6 +94,7 @@ final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
     this.spanTracker = spanTracker;
     this.finalAggregator = finalAggregator;
     this.nextSliceTime = spanTracker.getNextSliceTime(startTime);
+    this.currActivePartials = activePartialTimespans.getNextActivePartialTimespans(startTime);
     this.nextRealTime = System.currentTimeMillis() + (nextSliceTime - prevSliceTime) * 1000;
   }
 
@@ -115,15 +116,31 @@ final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
     final long tickTime = ((WindowTimeEvent) val).time;
     if (val instanceof WindowTimeEvent) {
       if (isSliceTime(tickTime)) {
-        final V partialAggregation = bucket;
-        bucket = aggregator.init();
-        //System.out.println("PARTIAL_SIZE: " + ((Map)partialAggregation).size() + "\t" + (prevSliceTime) + "-" + (nextSliceTime));
-        final long next = nextSliceTime;
-        final long prev = prevSliceTime;
-        prevSliceTime = nextSliceTime;
-        nextSliceTime = spanTracker.getNextSliceTime(prevSliceTime);
-        spanTracker.putAggregate(partialAggregation, new Timespan(prev, next, null));
-        final List<Timespan> finalTimespans = spanTracker.getFinalTimespans(next);
+
+        // If it is active partial, then
+        if (currActivePartials != null) {
+          for (final Timespan activeTimespan : currActivePartials) {
+            if (tickTime > activeTimespan.startTime && tickTime < activeTimespan.endTime) {
+              spanTracker.putAggregate(bucket, activeTimespan);
+            }
+          }
+          currActivePartials = activePartialTimespans.getNextActivePartialTimespans(tickTime);
+        }
+
+          prevSliceTime = nextSliceTime;
+          nextSliceTime = spanTracker.getNextSliceTime(prevSliceTime);
+        } else {
+          final V partialAggregation = bucket;
+          bucket = aggregator.init();
+          //System.out.println("PARTIAL_SIZE: " + ((Map)partialAggregation).size() + "\t" + (prevSliceTime) + "-" + (nextSliceTime));
+          final long next = nextSliceTime;
+          final long prev = prevSliceTime;
+          prevSliceTime = nextSliceTime;
+          nextSliceTime = spanTracker.getNextSliceTime(prevSliceTime);
+          spanTracker.putAggregate(partialAggregation, new Timespan(prev, next, null));
+        }
+
+        final List<Timespan> finalTimespans = spanTracker.getFinalTimespans(tickTime);
         finalAggregator.triggerFinalAggregation(finalTimespans);
       }
     } else {

@@ -38,7 +38,7 @@ public final class StaticSingleMWOConfiguration extends TimescaleWindowBaseConfi
         .bindImplementation(OutputLookupTable.class, OUTPUT_LOOKUP_TABLE)
         .bindImplementation(SpanTracker.class, StaticSpanTrackerImpl.class)
         .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
-        .bindImplementation(PartialTimespans.class, DefaultPartialTimespans.class)
+        .bindImplementation(PartialTimespans.class, ActivePartialTimespans.class)
         .bindImplementation(FinalAggregator.class, SingleThreadFinalAggregator.class)
         .bindImplementation(DependencyGraph.class, StaticDependencyGraphImpl.class)
         .build();
