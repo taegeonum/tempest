@@ -7,6 +7,8 @@ import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
 import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
+import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
+import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
 
@@ -31,17 +33,19 @@ public final class PafasMWOTest {
     final long currTime = 0;
     final List<Configuration> configurationList = new LinkedList<>();
     final List<String> operatorIds = new LinkedList<>();
+    final String timescaleString =  "(4,2)(5,3)(6,4)(10,5)";
 
-    // PAFAS-Greedy
-    configurationList.add(StaticMWOConfiguration.CONF
-        .set(StaticMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)")
-        .set(StaticMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-        .set(StaticMWOConfiguration.SELECTION_ALGORITHM, GreedySelectionAlgorithm.class)
-        .set(StaticMWOConfiguration.START_TIME, currTime)
+    // PAFAS
+    configurationList.add(StaticSingleMWOConfiguration.CONF
+        .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+        .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+        .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+        .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
+        .set(StaticSingleMWOConfiguration.START_TIME, "0")
         .build());
     operatorIds.add("PAFAS");
 
-
+    /*
     // PAFAS-Greedy
     configurationList.add(StaticMWOConfiguration.CONF
         .set(StaticMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)(10,5)")
@@ -50,16 +54,18 @@ public final class PafasMWOTest {
         .set(StaticMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("PAFAS-DP");
+*/
 
-/*
+
     // On-the-fly operator
     configurationList.add(OntheflyMWOConfiguration.CONF
-        .set(OntheflyMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)")
+        .set(OntheflyMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .set(OntheflyMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(OntheflyMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("OntheFly");
 
+    /*
     // TriOPs
     configurationList.add(TriOpsMWOConfiguration.CONF
         .set(TriOpsMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)")
@@ -85,12 +91,20 @@ public final class PafasMWOTest {
     final int numKey = 10;
     final int numInput = 10000;
     final Random random = new Random();
+    final int tick = numInput / 30;
+    int tickTime = 1;
     for (i = 0; i < numInput; i++) {
       final int key = Math.abs(random.nextInt()%numKey);
       for (final TimescaleWindowOperator mwo : mwos) {
+        if (i % tick == 0) {
+          mwo.execute(new WindowTimeEvent(tickTime));
+        }
         mwo.execute(Integer.toString(key));
       }
-      Thread.sleep(1);
+
+      if (i % tick == 0) {
+        tickTime += 1;
+      }
     }
 
     for (final TimescaleWindowOperator mwo : mwos) {

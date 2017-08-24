@@ -15,8 +15,6 @@
  */
 package edu.snu.tempest.signal.window.timescale;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import edu.snu.tempest.proto.TimescaleProtoMessage;
 import org.apache.reef.wake.remote.Decoder;
 
 import javax.inject.Inject;
@@ -32,6 +30,7 @@ public final class TimescaleSignalDecoder implements Decoder<TimescaleSignal> {
   
   @Override
   public TimescaleSignal decode(final byte[] data) {
+    /*
     try {
       final TimescaleProtoMessage.TimescaleSignal signal =
           TimescaleProtoMessage.TimescaleSignal.parseFrom(data);
@@ -41,6 +40,7 @@ public final class TimescaleSignalDecoder implements Decoder<TimescaleSignal> {
       e.printStackTrace();
       throw new RuntimeException("TimescaleDecoder decode error");
     }
+    */
+    return null;
   }
-
 }

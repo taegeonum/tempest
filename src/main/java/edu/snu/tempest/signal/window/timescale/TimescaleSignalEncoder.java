@@ -15,7 +15,6 @@
  */
 package edu.snu.tempest.signal.window.timescale;
 
-import edu.snu.tempest.proto.TimescaleProtoMessage;
 import org.apache.reef.wake.remote.Encoder;
 
 import javax.inject.Inject;
@@ -34,13 +33,6 @@ public final class TimescaleSignalEncoder implements Encoder<TimescaleSignal> {
   
   @Override
   public byte[] encode(final TimescaleSignal signal) {
-    final TimescaleProtoMessage.TimescaleSignal encoded = TimescaleProtoMessage.TimescaleSignal.newBuilder()
-        .setWindowSize(signal.windowSize)
-        .setInterval(signal.interval)
-        .setType(signal.type)
-        .setStartTime(signal.startTime)
-        .build();
-    
-    return encoded.toByteArray();
+    return null;
   }
 }
