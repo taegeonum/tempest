@@ -8,6 +8,7 @@ import vldb.evaluation.util.RandomSlidingWindowGenerator;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.pafas.*;
+import vldb.operator.window.timescale.pafas.active.ActiveDPSelectionAlgorithm;
 import vldb.operator.window.timescale.parameter.StartTime;
 import vldb.operator.window.timescale.parameter.TimescaleString;
 
@@ -26,7 +27,7 @@ public final class DependencyGraphBuildCostEvaluation {
     jcb.bindNamedParameter(TimescaleString.class, tsString);
     jcb.bindNamedParameter(StartTime.class, "0");
     jcb.bindImplementation(DependencyGraph.class, dgClass);
-    jcb.bindImplementation(DependencyGraph.SelectionAlgorithm.class, DPSelectionAlgorithm.class);
+    jcb.bindImplementation(DependencyGraph.SelectionAlgorithm.class, ActiveDPSelectionAlgorithm.class);
     jcb.bindImplementation(PartialTimespans.class, ptClass);
     final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
     return injector;

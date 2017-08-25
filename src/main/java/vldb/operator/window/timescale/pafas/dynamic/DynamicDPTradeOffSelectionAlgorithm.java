@@ -41,24 +41,43 @@ public class DynamicDPTradeOffSelectionAlgorithm<T> implements DependencyGraph.S
     this.tradeOffFactor = tradeOffFactor;
   }
 
+  /**
+   * This is for active partials.
+   * If there is a timsepan [0-3]
+   * but 3 is an active slice, then
+   * there is not partial timespan [2-3),
+   * so we need to reduce the end time to 2.
+   */
+  private long getReducedEnd(final long end) {
+    /* TODO: Implement dynamic active partials
+    for (long index = end; index > 0; index--) {
+      if (!partialTimespans.isActive(index)) {
+        return index;
+      }
+    }
+    */
+    return 1;
+  }
+
   @Override
   public List<Node<T>> selection(final long start, final long end) {
-    final int length = (int)(end - start);
+    final long reducedEnd = getReducedEnd(end);
+    final int length = (int)(reducedEnd - start);
     final List<Double> costArray = new ArrayList<>(length + 1);
     final List<Node<T>> nodeArray = new ArrayList<>(length + 1);
 
     // Initialize
     for (int i = 0; i < length + 1; i++) {
       if (i == length) {
-        costArray.set(i, 0.0);
+        costArray.add(i, 0.0);
       } else {
-        costArray.set(i, Double.POSITIVE_INFINITY);
+        costArray.add(Double.POSITIVE_INFINITY);
       }
-      nodeArray.set(i, null);
+      nodeArray.add(i, null);
     }
 
     for (int currIndex = length - 1; currIndex >= 0; currIndex -= 1) {
-      final List<Node<T>> availableNodes = getAvailableNodes(start, end, currIndex, length);
+      final List<Node<T>> availableNodes = getAvailableNodes(start, reducedEnd, currIndex, length);
       // Dynamic programming
       for (final Node<T> node : availableNodes) {
         final int nodeEndIndex = (int)(node.end - start);
@@ -80,6 +99,7 @@ public class DynamicDPTradeOffSelectionAlgorithm<T> implements DependencyGraph.S
       solution.add(solutionNode);
       index += (solutionNode.end - solutionNode.start);
     }
+
     return solution;
   }
 

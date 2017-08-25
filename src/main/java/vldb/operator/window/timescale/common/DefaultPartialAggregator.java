@@ -18,7 +18,6 @@ package vldb.operator.window.timescale.common;
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.window.aggregator.CAAggregator;
 import vldb.operator.window.timescale.TimeMonitor;
-import vldb.operator.window.timescale.pafas.ActivePartialTimespans;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.StartTime;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
@@ -33,7 +32,7 @@ import java.util.logging.Logger;
  * @param <I> input
  * @param <V> aggregated result
  */
-final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
+public final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
   private static final Logger LOG = Logger.getLogger(DefaultPartialAggregator.class.getName());
 
   /**
@@ -67,10 +66,6 @@ final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
 
   private final TimeMonitor timeMonitor;
 
-  private final ActivePartialTimespans activePartialTimespans;
-
-
-
   /**
    * DefaultSlicedWindowOperatorImpl.
    * @param aggregator an aggregator for incremental aggregation
@@ -83,10 +78,8 @@ final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
       final FinalAggregator<V> finalAggregator,
       final AggregationCounter aggregationCounter,
       @Parameter(StartTime.class) final Long startTime,
-      final ActivePartialTimespans activePartialTimespans,
       final TimeMonitor timeMonitor) {
     this.timeMonitor = timeMonitor;
-    this.activePartialTimespans = activePartialTimespans;
     this.aggregationCounter = aggregationCounter;
     this.aggregator = aggregator;
     this.bucket = aggregator.init();
@@ -112,8 +105,8 @@ final class DefaultPartialAggregator<I, V> implements PartialAggregator<I> {
   @Override
   public void execute(final I val) {
     LOG.log(Level.FINE, "SlicedWindow aggregates input of [" +  val + "]");
-    final long tickTime = ((WindowTimeEvent) val).time;
     if (val instanceof WindowTimeEvent) {
+      final long tickTime = ((WindowTimeEvent) val).time;
       if (isSliceTime(tickTime)) {
         final V partialAggregation = bucket;
         bucket = aggregator.init();

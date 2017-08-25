@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package vldb.operator.window.timescale.pafas;
+package vldb.operator.window.timescale.pafas.active;
 
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.TimescaleParser;
-import vldb.operator.window.timescale.common.Timespan;
+import vldb.operator.window.timescale.pafas.Node;
+import vldb.operator.window.timescale.pafas.PartialTimespans;
+import vldb.operator.window.timescale.pafas.PeriodCalculator;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
@@ -54,10 +56,7 @@ public final class ActivePartialTimespans<T> implements PartialTimespans {
    */
   private final Map<Long, Node<T>> partialTimespanMap;
 
-  // Key is the end time
-  private final Map<Long, Node<T>> activePartialEndTimeMap;
-
-  private final Map<Long, List<Node<T>>> activePartialStartTimeMap;
+  private final Set<Long> activeSlices;
 
   /**
    * StaticComputationReuserImpl Implementation.
@@ -71,11 +70,11 @@ public final class ActivePartialTimespans<T> implements PartialTimespans {
     this.period = periodCalculator.getPeriod();
     this.startTime = startTime;
     this.partialTimespanMap = new HashMap<>();
-    this.activePartialEndTimeMap = new HashMap<>();
-    this.activePartialStartTimeMap = new HashMap<>();
+    this.activeSlices = new HashSet<>();
     buildSlice(startTime, period);
     LOG.log(Level.INFO, ActivePartialTimespans.class + " started. PERIOD: " + period);
     //System.out.println("TS: " + timescales + ", QUEUE: " + partialTimespanMap);
+    //System.out.println("Active slices: " + activeSlices);
   }
 
   private Node<T> findBeforeNode(final long time) {
@@ -93,10 +92,6 @@ public final class ActivePartialTimespans<T> implements PartialTimespans {
     //System.out.println("partial build: " + currIndex + ", "+ nextStep);
     //System.out.println("adjTime null:" + currTime + ", " + adjTime);
 
-    // For active partials
-    long prevActiveSlice = 0;
-    boolean activeOpened = false;
-
     long prevSlice;
     if (start == startTime) {
       prevSlice = start;
@@ -108,52 +103,45 @@ public final class ActivePartialTimespans<T> implements PartialTimespans {
     for (long st = start; st <= end; st += 1) {
       if (slicableByOthers(st)) {
         // Build active partials!
-        if (isActiveSlice(st)) {
-          if (activeOpened == false) {
-            activeOpened = true;
-            prevActiveSlice = prevSlice;
-            activePartialStartTimeMap.put(prevActiveSlice, new LinkedList<Node<T>>());
-          } else {
-            // Is it already opened?
-            // Create active partial!
-            final Node<T> node =  new Node<T>(prevActiveSlice, st, true);
-            activePartialEndTimeMap.put(st, node);
-            final List<Node<T>> ap = activePartialStartTimeMap.get(prevActiveSlice);
-            ap.add(node);
+        if (isActiveSlice(st) && (st != start && st != end)) {
+          activeSlices.add(st);
+        } else {
+          if (prevSlice < st) {
+            //System.out.println("ADD start" + start + ", end: " + end + " (" + prevSlice  +", " + st + ")");
+            if (partialTimespanMap.get(prevSlice) == null) {
+              //System.out.println("CREATE PARTIAL1: " + prevSlice + ", " + st);
+              partialTimespanMap.put(prevSlice, new Node<T>(prevSlice, st, true));
+            } else {
+              System.out.println("EXIST " + partialTimespanMap.get(prevSlice) + ", expected: " + prevSlice + ", " + st);
+              throw new RuntimeException("HAHA");
+            }
+            prevSlice = st;
           }
-        } else if (activeOpened) {
-          activeOpened = false;
-          // create active partial here when it is closed!
-          final Node<T> node =  new Node<T>(prevActiveSlice, st, true);
-          activePartialEndTimeMap.put(st, node);
-          final List<Node<T>> ap = activePartialStartTimeMap.get(prevActiveSlice);
-          ap.add(node);
-        }
-
-        if (prevSlice < st) {
-          //System.out.println("ADD start" + start + ", end: " + end + " (" + prevSlice  +", " + st + ")");
-          if (partialTimespanMap.get(prevSlice) == null) {
-            //System.out.println("CREATE PARTIAL1: " + prevSlice + ", " + st);
-            partialTimespanMap.put(prevSlice, new Node<T>(prevSlice, st, true));
-          } else {
-            System.out.println("EXIST " + partialTimespanMap.get(prevSlice) + ", expected: " + prevSlice + ", " + st);
-            throw new RuntimeException("HAHA");
-          }
-          prevSlice = st;
         }
       }
     }
   }
 
   private boolean isActiveSlice(final long time) {
+    final long adjTime = adjStartTime(time);
     for (final Timescale timescale : timescales) {
       long tsStart = startTime - (timescale.windowSize - timescale.intervalSize);
-      long elapsedTime = time - tsStart;
+      long elapsedTime = adjTime - tsStart;
       if (elapsedTime % timescale.intervalSize == 0) {
         return false;
       }
     }
     return true;
+  }
+
+  public boolean isSlicable(final long time) {
+    final long adjTime = adjStartTime(time);
+    return partialTimespanMap.containsKey(adjTime) || adjTime == period;
+  }
+
+  public boolean isActive(final long time) {
+    final long adjTime = adjStartTime(time);
+    return activeSlices.contains(adjTime);
   }
 
   private boolean slicableByOthers(final long time) {
@@ -178,9 +166,6 @@ public final class ActivePartialTimespans<T> implements PartialTimespans {
     return partialTimespanMap.get(adjStartTime(currTime));
   }
 
-  public List<Node<T>> getNextActivePartialTimespanNode(final long currTime) {
-    return activePartialStartTimeMap.get(adjStartTime(currTime));
-  }
 
   @Override
   public long getNextSliceTime(final long currTime) {
@@ -195,23 +180,6 @@ public final class ActivePartialTimespans<T> implements PartialTimespans {
     } else {
       return startTime + (time - startTime) % period;
     }
-  }
-
-  public List<Timespan> getNextActivePartialTimespans(final long currTime) {
-    final long adjTime = adjStartTime(currTime);
-
-    for (long i = adjTime; i <= adjTime + period; i++) {
-      final List<Node<T>> nodes = activePartialStartTimeMap.get(adjTime);
-      if (nodes != null) {
-        final List<Timespan> timespans = new ArrayList<>(nodes.size());
-        for (final Node<T> activeNode : nodes) {
-          final long realEnd =  activeNode.end + (currTime - adjTime);
-          timespans.add(new Timespan(realEnd - (activeNode.end - activeNode.start), realEnd, null));
-        }
-        return timespans;
-      }
-    }
-    return null;
   }
 
   @Override

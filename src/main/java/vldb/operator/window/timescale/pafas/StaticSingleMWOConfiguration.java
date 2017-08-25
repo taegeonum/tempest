@@ -19,10 +19,10 @@ import org.apache.reef.tang.formats.ConfigurationModule;
 import org.apache.reef.tang.formats.RequiredImpl;
 import vldb.operator.window.timescale.TimescaleWindowBaseConfiguration;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
-import vldb.operator.window.timescale.common.FinalAggregator;
-import vldb.operator.window.timescale.common.OutputLookupTable;
-import vldb.operator.window.timescale.common.SingleThreadFinalAggregator;
-import vldb.operator.window.timescale.common.SpanTracker;
+import vldb.operator.window.timescale.common.*;
+import vldb.operator.window.timescale.pafas.active.ActiveFinalAggregator;
+import vldb.operator.window.timescale.pafas.active.ActivePartialAggregator;
+import vldb.operator.window.timescale.pafas.active.ActivePartialTimespans;
 
 /**
  * A helper class for static MTS window configuration.
@@ -38,8 +38,9 @@ public final class StaticSingleMWOConfiguration extends TimescaleWindowBaseConfi
         .bindImplementation(OutputLookupTable.class, OUTPUT_LOOKUP_TABLE)
         .bindImplementation(SpanTracker.class, StaticSpanTrackerImpl.class)
         .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
+        .bindImplementation(PartialAggregator.class, ActivePartialAggregator.class)
         .bindImplementation(PartialTimespans.class, ActivePartialTimespans.class)
-        .bindImplementation(FinalAggregator.class, SingleThreadFinalAggregator.class)
+        .bindImplementation(FinalAggregator.class, ActiveFinalAggregator.class)
         .bindImplementation(DependencyGraph.class, StaticDependencyGraphImpl.class)
         .build();
 }

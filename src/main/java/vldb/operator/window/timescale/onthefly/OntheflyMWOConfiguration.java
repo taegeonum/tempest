@@ -18,10 +18,8 @@ package vldb.operator.window.timescale.onthefly;
 import org.apache.reef.tang.formats.ConfigurationModule;
 import vldb.operator.window.timescale.TimescaleWindowBaseConfiguration;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
-import vldb.operator.window.timescale.common.FinalAggregator;
-import vldb.operator.window.timescale.common.SingleThreadFinalAggregator;
-import vldb.operator.window.timescale.common.SpanTracker;
-import vldb.operator.window.timescale.pafas.DependencyGraph;
+import vldb.operator.window.timescale.common.*;
+import vldb.operator.window.timescale.pafas.*;
 import vldb.operator.window.timescale.pafas.dynamic.*;
 
 /**
@@ -39,4 +37,16 @@ public final class OntheflyMWOConfiguration extends TimescaleWindowBaseConfigura
       .bindImplementation(FinalAggregator.class, SingleThreadFinalAggregator.class)
       .bindImplementation(DynamicDependencyGraph.class, DynamicSmallCostAddDependencyGraphImpl.class)
       .build();
+
+public static final ConfigurationModule STATIC_CONF = new OntheflyMWOConfiguration()
+    .merge(TimescaleWindowBaseConfiguration.CONF)
+    .bindImplementation(DependencyGraph.SelectionAlgorithm.class, OntheflySelectionAlgorithm.class)
+    .bindImplementation(OutputLookupTable.class, DPOutputLookupTableImpl.class)
+    .bindImplementation(SpanTracker.class, StaticSpanTrackerImpl.class)
+    .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
+    .bindImplementation(PartialAggregator.class, DefaultPartialAggregator.class)
+    .bindImplementation(PartialTimespans.class, DefaultPartialTimespans.class)
+    .bindImplementation(FinalAggregator.class, SingleThreadFinalAggregator.class)
+    .bindImplementation(DependencyGraph.class, StaticDependencyGraphImpl.class)
+    .build();
 }

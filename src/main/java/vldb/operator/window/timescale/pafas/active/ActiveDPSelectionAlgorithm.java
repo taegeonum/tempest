@@ -1,8 +1,11 @@
-package vldb.operator.window.timescale.pafas;
+package vldb.operator.window.timescale.pafas.active;
 
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.common.NotFoundException;
 import vldb.operator.window.timescale.common.OutputLookupTable;
+import vldb.operator.window.timescale.pafas.DependencyGraph;
+import vldb.operator.window.timescale.pafas.Node;
+import vldb.operator.window.timescale.pafas.PeriodCalculator;
 import vldb.operator.window.timescale.parameter.GCD;
 import vldb.operator.window.timescale.parameter.StartTime;
 
@@ -12,8 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Logger;
 
-public class DPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorithm<T> {
-  private final Logger LOG = Logger.getLogger(DPSelectionAlgorithm.class.getName());
+public class ActiveDPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorithm<T> {
+  private final Logger LOG = Logger.getLogger(ActiveDPSelectionAlgorithm.class.getName());
   private final ActivePartialTimespans<T> partialTimespans;
   private final OutputLookupTable<Node<T>> finalTimespans;
   private final long period;
@@ -23,11 +26,11 @@ public class DPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorit
   private final long gcd;
 
   @Inject
-  private DPSelectionAlgorithm(final ActivePartialTimespans<T> partialTimespans,
-                               final OutputLookupTable<Node<T>> finalTimespans,
-                               final PeriodCalculator periodCalculator,
-                               @Parameter(StartTime.class) long startTime,
-                               @Parameter(GCD.class) long gcd) {
+  private ActiveDPSelectionAlgorithm(final ActivePartialTimespans<T> partialTimespans,
+                                     final OutputLookupTable<Node<T>> finalTimespans,
+                                     final PeriodCalculator periodCalculator,
+                                     @Parameter(StartTime.class) long startTime,
+                                     @Parameter(GCD.class) long gcd) {
     this.partialTimespans = partialTimespans;
     this.finalTimespans = finalTimespans;
     this.startTime = startTime;
@@ -45,28 +48,47 @@ public class DPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorit
     }
   }
 
+  /**
+   * This is for active partials.
+   * If there is a timsepan [0-3]
+   * but 3 is an active slice, then
+   * there is not partial timespan [2-3),
+   * so we need to reduce the end time to 2.
+   */
+  private long getReducedEnd(final long end) {
+    for (long index = end; index > 0; index--) {
+      if (partialTimespans.isSlicable(index) && !partialTimespans.isActive(index)) {
+        return index;
+      }
+    }
+    return 1;
+  }
+
   @Override
   public List<Node<T>> selection(final long start, final long end) {
-    final int length = (int)(end - start);
+    // Reduce end for active partial timespans;
+    final long reducedEnd = getReducedEnd(end);
+    final int length = (int)(reducedEnd - start);
     final List<Double> costArray = new ArrayList<>(length + 1);
     final List<Node<T>> nodeArray = new ArrayList<>(length + 1);
 
     // Initialize
     for (int i = 0; i < length + 1; i++) {
       if (i == length) {
-        costArray.set(i, 0.0);
+        costArray.add(i, 0.0);
       } else {
-        costArray.set(i, Double.POSITIVE_INFINITY);
+        costArray.add(i, Double.POSITIVE_INFINITY);
       }
-      nodeArray.set(i, null);
+      nodeArray.add(i, null);
     }
 
     for (int currIndex = length - 1; currIndex >= 0; currIndex -= 1) {
-      final List<Node<T>> availableNodes = getAvailableNodes(start, end, currIndex, length);
+      final List<Node<T>> availableNodes = getAvailableNodes(start, reducedEnd, currIndex, length);
+
       // Dynamic programming
       for (final Node<T> node : availableNodes) {
-        final int nodeEndIndex = (int)(adjustTime(end, node.end) - start);
-        final int nodeStartIndex = (int)(adjustTime(end, node.start) - start);
+        final int nodeEndIndex = (int)(adjustTime(reducedEnd, node.end) - start);
+        final int nodeStartIndex = (int)(adjustTime(reducedEnd, node.start) - start);
 
         final double cost = 1 + costArray.get(nodeEndIndex);
         if (cost < costArray.get(nodeStartIndex)) {
@@ -89,6 +111,8 @@ public class DPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorit
       solution.add(solutionNode);
       index += (solutionNode.end - solutionNode.start);
     }
+
+    //System.out.println("[" + start + ", " + end + "): " + solution);
 
     return solution;
   }
@@ -125,7 +149,7 @@ public class DPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorit
         availableNodes.add(finalNode);
       } else {
         if (!((endTime - scanStartPoint) == (end - start)) &&
-            !((scanStartPoint >= startTime) && (entry.getKey() > end))) {
+            !((scanStartPoint < end) && (entry.getKey() > end))) {
           availableNodes.add(finalNode);
         }
       }

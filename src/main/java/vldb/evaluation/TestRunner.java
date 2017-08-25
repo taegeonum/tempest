@@ -19,6 +19,7 @@ import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.naive.NaiveMWOConfiguration;
 import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
 import vldb.operator.window.timescale.pafas.*;
+import vldb.operator.window.timescale.pafas.active.ActiveDPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.dynamic.*;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;
@@ -137,7 +138,7 @@ public final class TestRunner {
         return StaticSingleMWOConfiguration.CONF
             .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+            .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
             .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
             .build();
@@ -145,7 +146,7 @@ public final class TestRunner {
         return StaticSingleAllStoreMWOConfiguration.CONF
             .set(StaticSingleAllStoreMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(StaticSingleAllStoreMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(StaticSingleAllStoreMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+            .set(StaticSingleAllStoreMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
             .set(StaticSingleAllStoreMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(StaticSingleAllStoreMWOConfiguration.START_TIME, "0")
             .build();
@@ -153,7 +154,7 @@ public final class TestRunner {
         return StaticSingleNoRefCntMWOConfiguration.CONF
             .set(StaticSingleNoRefCntMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(StaticSingleNoRefCntMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(StaticSingleNoRefCntMWOConfiguration.SELECTION_ALGORITHM, DPSelectionAlgorithm.class)
+            .set(StaticSingleNoRefCntMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
             .set(StaticSingleNoRefCntMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(StaticSingleNoRefCntMWOConfiguration.START_TIME, "0")
             .build();
