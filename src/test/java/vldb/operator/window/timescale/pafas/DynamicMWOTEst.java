@@ -11,6 +11,7 @@ import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
+import vldb.operator.window.timescale.pafas.active.DynamicDPTradeOffSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.dynamic.*;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;

@@ -1,25 +1,28 @@
-package vldb.operator.window.timescale.pafas.dynamic;
+package vldb.operator.window.timescale.pafas.active;
 
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.common.NotFoundException;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.pafas.DependencyGraph;
 import vldb.operator.window.timescale.pafas.Node;
-import vldb.operator.window.timescale.pafas.PartialTimespans;
 import vldb.operator.window.timescale.pafas.PeriodCalculator;
+import vldb.operator.window.timescale.pafas.dynamic.DynamicOutputLookupTable;
 import vldb.operator.window.timescale.parameter.GCD;
 import vldb.operator.window.timescale.parameter.StartTime;
 import vldb.operator.window.timescale.parameter.TradeOffFactor;
 
 import javax.inject.Inject;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Logger;
 
 public class DynamicDPTradeOffSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorithm<T> {
   private final Logger LOG = Logger.getLogger(DynamicDPTradeOffSelectionAlgorithm.class.getName());
-  private final PartialTimespans<T> partialTimespans;
+  private final DynamicActivePartialTimespans<T> partialTimespans;
   private final DynamicOutputLookupTable<Node<T>> finalTimespans;
   private final long period;
   private final long startTime;
@@ -27,7 +30,7 @@ public class DynamicDPTradeOffSelectionAlgorithm<T> implements DependencyGraph.S
   private final double tradeOffFactor;
 
   @Inject
-  private DynamicDPTradeOffSelectionAlgorithm(final DynamicPartialTimespans<T> partialTimespans,
+  private DynamicDPTradeOffSelectionAlgorithm(final DynamicActivePartialTimespans<T> partialTimespans,
                                               final DynamicOutputLookupTable<Node<T>> finalTimespans,
                                               final PeriodCalculator periodCalculator,
                                               @Parameter(StartTime.class) long startTime,
@@ -49,13 +52,11 @@ public class DynamicDPTradeOffSelectionAlgorithm<T> implements DependencyGraph.S
    * so we need to reduce the end time to 2.
    */
   private long getReducedEnd(final long end) {
-    /* TODO: Implement dynamic active partials
     for (long index = end; index > 0; index--) {
-      if (!partialTimespans.isActive(index)) {
+      if (partialTimespans.isSlicable(index) && !partialTimespans.isActive(index)) {
         return index;
       }
     }
-    */
     return 1;
   }
 
@@ -96,6 +97,11 @@ public class DynamicDPTradeOffSelectionAlgorithm<T> implements DependencyGraph.S
     int index = 0;
     while (index < length) {
       final Node<T> solutionNode = nodeArray.get(index);
+      if (solutionNode == null) {
+        // This is active partial point
+        break;
+      }
+
       solution.add(solutionNode);
       index += (solutionNode.end - solutionNode.start);
     }
@@ -106,9 +112,10 @@ public class DynamicDPTradeOffSelectionAlgorithm<T> implements DependencyGraph.S
   private List<Node<T>> getAvailableNodes(final long start, final long end, final int currIndex, final int length) {
     final List<Node<T>> availableNodes = new LinkedList<>();
     ConcurrentMap<Long, ConcurrentMap<Timescale, Node<T>>> availableFinalNodes;
+    final long scanStartPoint = start + currIndex;
 
     try {
-      availableFinalNodes = finalTimespans.lookup(currIndex + start);
+      availableFinalNodes = finalTimespans.lookup(scanStartPoint);
     } catch (final NotFoundException e) {
       availableFinalNodes = new ConcurrentHashMap<>();
     }
@@ -127,7 +134,7 @@ public class DynamicDPTradeOffSelectionAlgorithm<T> implements DependencyGraph.S
     }
 
     // Add partials
-    final Node<T> availablePartialNode = partialTimespans.getNextPartialTimespanNode(currIndex + start);
+    final Node<T> availablePartialNode = partialTimespans.getNextPartialTimespanNode(scanStartPoint);
     if (availablePartialNode != null) {
       availableNodes.add(availablePartialNode);
     }

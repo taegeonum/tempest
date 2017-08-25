@@ -191,7 +191,9 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
 
     if (numThreads == 1) {
       for (final Node parent : parentNodes) {
+        //System.out.println("child node start: " + parent);
         final List<Node<T>> childNodes = selectionAlgorithm.selection(parent.start, parent.end);
+        //System.out.println("child node end: " + parent);
         LOG.log(Level.FINE, "(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
         //System.out.println("(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
         for (final Node<T> elem : childNodes) {

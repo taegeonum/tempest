@@ -21,8 +21,6 @@ public class ActiveDPSelectionAlgorithm<T> implements DependencyGraph.SelectionA
   private final OutputLookupTable<Node<T>> finalTimespans;
   private final long period;
   private final long startTime;
-  private final Map<Long, Map<Long, Node<T>>> nodeMemento;
-  private final Map<Long, Map<Long, Integer>> aggNumMemento;
   private final long gcd;
 
   @Inject
@@ -36,8 +34,6 @@ public class ActiveDPSelectionAlgorithm<T> implements DependencyGraph.SelectionA
     this.startTime = startTime;
     this.period = periodCalculator.getPeriod();
     this.gcd = gcd;
-    this.nodeMemento = new HashMap<>();
-    this.aggNumMemento = new HashMap<>();
   }
 
   private long adjustTime(final long end, final long time) {

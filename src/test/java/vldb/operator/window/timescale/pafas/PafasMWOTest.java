@@ -8,7 +8,10 @@ import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
-import vldb.operator.window.timescale.pafas.active.ActiveDPSelectionAlgorithm;
+import vldb.operator.window.timescale.pafas.active.ActiveDynamicMWOConfiguration;
+import vldb.operator.window.timescale.pafas.active.DynamicDPTradeOffSelectionAlgorithm;
+import vldb.operator.window.timescale.pafas.dynamic.DynamicDPOutputLookupTableImpl;
+import vldb.operator.window.timescale.pafas.dynamic.DynamicOptimizedDependencyGraphImpl;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
@@ -34,10 +37,11 @@ public final class PafasMWOTest {
     final long currTime = 0;
     final List<Configuration> configurationList = new LinkedList<>();
     final List<String> operatorIds = new LinkedList<>();
-    final String timescaleString2 =  "(4,2)(5,3)(6,4)(10,5)";
-    final String timescaleString =  "(5,4)(8,3)(12,7)(16,6)";
+    final String timescaleString =  "(4,2)(5,3)(6,4)(10,5)";
+    final String timescaleString2 =  "(5,4)(8,3)(12,7)(16,6)";
 
     // PAFAS
+  /*
     configurationList.add(StaticSingleMWOConfiguration.CONF
         .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
@@ -46,20 +50,19 @@ public final class PafasMWOTest {
         .set(StaticSingleMWOConfiguration.START_TIME, "0")
         .build());
     operatorIds.add("PAFAS");
-
-
-    /*
-    configurationList.add(DynamicMWOConfiguration.CONF
-        .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
-        .set(DynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-        .set(DynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPTradeOffSelectionAlgorithm.class)
-        .set(DynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicDPOutputLookupTableImpl.class)
-        .set(DynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicOptimizedDependencyGraphImpl.class)
-        .set(DynamicMWOConfiguration.DYNAMIC_PARTIAL, DynamicOptimizedPartialTimespans.class)
-        .set(DynamicMWOConfiguration.START_TIME, currTime)
-        .build());
-    operatorIds.add("Dynamic-OPT");
 */
+
+
+    configurationList.add(ActiveDynamicMWOConfiguration.CONF
+        .set(ActiveDynamicMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+        .set(ActiveDynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+        .set(ActiveDynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPTradeOffSelectionAlgorithm.class)
+        .set(ActiveDynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicDPOutputLookupTableImpl.class)
+        .set(ActiveDynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicOptimizedDependencyGraphImpl.class)
+        .set(ActiveDynamicMWOConfiguration.START_TIME, currTime)
+        .build());
+    operatorIds.add("Dynamic-FAST");
+
     /*
     // PAFAS-Greedy
     configurationList.add(StaticMWOConfiguration.CONF
@@ -97,7 +100,7 @@ public final class PafasMWOTest {
       final Injector injector = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), conf));
       injector.bindVolatileInstance(TimeWindowOutputHandler.class, new LoggingHandler<>(operatorIds.get(i)));
       System.out.println("Creating " + operatorIds.get(i));
-      final TimescaleWindowOperator<String, Map<String, Long>> mwo = injector.getInstance(PafasMWO.class);
+      final TimescaleWindowOperator<String, Map<String, Long>> mwo = injector.getInstance(TimescaleWindowOperator.class);
       System.out.println("Finished creation " + operatorIds.get(i));
       mwos.add(mwo);
       final AggregationCounter aggregationCounter = injector.getInstance(AggregationCounter.class);
