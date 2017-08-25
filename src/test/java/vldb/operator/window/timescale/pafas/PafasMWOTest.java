@@ -7,6 +7,7 @@ import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
 import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
+import vldb.operator.window.timescale.cutty.CuttyMWOConfiguration;
 import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
 import vldb.operator.window.timescale.pafas.active.ActiveDynamicMWOConfiguration;
 import vldb.operator.window.timescale.pafas.active.DynamicDPTradeOffSelectionAlgorithm;
@@ -37,8 +38,8 @@ public final class PafasMWOTest {
     final long currTime = 0;
     final List<Configuration> configurationList = new LinkedList<>();
     final List<String> operatorIds = new LinkedList<>();
-    final String timescaleString =  "(4,2)(5,3)(6,4)(10,5)";
-    final String timescaleString2 =  "(5,4)(8,3)(12,7)(16,6)";
+    final String timescaleString2 =  "(4,2)(5,3)(6,4)(10,5)";
+    final String timescaleString =  "(5,4)(8,3)(12,7)(16,6)";
 
     // PAFAS
   /*
@@ -52,6 +53,12 @@ public final class PafasMWOTest {
     operatorIds.add("PAFAS");
 */
 
+    configurationList.add(CuttyMWOConfiguration.CONF
+    .set(CuttyMWOConfiguration.START_TIME, currTime)
+    .set(CuttyMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+    .set(CuttyMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+        .build());
+    operatorIds.add("Cutty");
 
     configurationList.add(ActiveDynamicMWOConfiguration.CONF
         .set(ActiveDynamicMWOConfiguration.INITIAL_TIMESCALES, timescaleString)

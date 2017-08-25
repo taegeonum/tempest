@@ -6,16 +6,6 @@ import vldb.operator.window.timescale.Timescale;
  * Timespan.
  */
 public final class Timespan {
-  public final long startTime;
-  public final long endTime;
-  public final Timescale timescale;
-
-  public Timespan(final long startTime, final long endTime, final Timescale timescale) {
-    this.startTime = startTime;
-    this.endTime = endTime;
-    this.timescale = timescale;
-  }
-
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
@@ -33,6 +23,9 @@ public final class Timespan {
     if (startTime != timespan.startTime) {
       return false;
     }
+    if (timescale != null ? !timescale.equals(timespan.timescale) : timespan.timescale != null) {
+      return false;
+    }
 
     return true;
   }
@@ -41,7 +34,18 @@ public final class Timespan {
   public int hashCode() {
     int result = (int) (startTime ^ (startTime >>> 32));
     result = 31 * result + (int) (endTime ^ (endTime >>> 32));
+    result = 31 * result + (timescale != null ? timescale.hashCode() : 0);
     return result;
+  }
+
+  public final long startTime;
+  public final long endTime;
+  public final Timescale timescale;
+
+  public Timespan(final long startTime, final long endTime, final Timescale timescale) {
+    this.startTime = startTime;
+    this.endTime = endTime;
+    this.timescale = timescale;
   }
 
   @Override

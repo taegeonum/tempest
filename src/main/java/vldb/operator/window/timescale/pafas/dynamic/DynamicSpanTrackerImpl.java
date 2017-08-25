@@ -112,13 +112,6 @@ public final class DynamicSpanTrackerImpl<I, T> implements SpanTracker<T> {
   }
 
   @Override
-  public List<Node<T>> getDependentNodes(final Timespan timespan) {
-    final Node<T> node = dependencyGraph.getNode(timespan);
-    //System.out.println("PARENT NODE: " + node);
-    return node.getDependencies();
-  }
-
-  @Override
   public void putAggregate(final T agg, final Timespan timespan) {
     final Node<T> node = dependencyGraph.getNode(timespan);
     //if (timespan.timescale == null) {

@@ -248,13 +248,6 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
   }
 
   @Override
-  public List<Node<T>> getDependentNodes(final Timespan timespan) {
-    final DynamicDependencyGraph<T> dependencyGraph = timescaleGraphMap.get(timespan.timescale);
-    final Node<T> node = dependencyGraph.getNode(timespan);
-    return node.getDependencies();
-  }
-
-  @Override
   public void putAggregate(final T agg, final Timespan timespan) {
     final DynamicDependencyGraph<T> dependencyGraph;
     if (timespan.timescale == null) {
