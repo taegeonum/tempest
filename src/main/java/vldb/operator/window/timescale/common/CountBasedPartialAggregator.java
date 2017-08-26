@@ -16,9 +16,9 @@
 package vldb.operator.window.timescale.common;
 
 import org.apache.reef.tang.annotations.Parameter;
+import vldb.evaluation.Metrics;
 import vldb.operator.window.aggregator.CAAggregator;
 import vldb.operator.window.timescale.parameter.StartTime;
-import vldb.operator.window.timescale.profiler.AggregationCounter;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -65,7 +65,7 @@ public final class CountBasedPartialAggregator<I, V> implements PartialAggregato
 
   private final FinalAggregator<V> finalAggregator;
 
-  private final AggregationCounter aggregationCounter;
+  private final Metrics metrics;
 
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -80,9 +80,9 @@ public final class CountBasedPartialAggregator<I, V> implements PartialAggregato
       final CAAggregator<I, V> aggregator,
       final SpanTracker<V> spanTracker,
       final FinalAggregator<V> finalAggregator,
-      final AggregationCounter aggregationCounter,
+      final Metrics metrics,
       @Parameter(StartTime.class) final Long startTime) {
-    this.aggregationCounter = aggregationCounter;
+    this.metrics = metrics;
     this.aggregator = aggregator;
     this.bucket = aggregator.init();
     this.prevSliceTime = startTime;
@@ -99,7 +99,7 @@ public final class CountBasedPartialAggregator<I, V> implements PartialAggregato
   public void execute(final I val) {
     LOG.log(Level.FINE, "SlicedWindow aggregates input of [" +  val + "]");
     aggregator.incrementalAggregate(bucket, val);
-    aggregationCounter.incrementPartialAggregation();
+    metrics.incrementPartial();
     count += 1;
     if (count == (nextSliceTime - prevSliceTime) * 100) {
       final V partialAggregation = bucket;

@@ -56,8 +56,8 @@ public final class EvaluationLauncher3 {
 
     // Experiment1: Change the number of windows
     final List<TestRunner.OperatorType> operatorTypes = Arrays.asList(
-        TestRunner.OperatorType.PAFAS,
-        TestRunner.OperatorType.PAFAS_DP,
+        //TestRunner.OperatorType.PAFAS,
+        //TestRunner.OperatorType.PAFAS_DP,
         TestRunner.OperatorType.TriOps,
         TestRunner.OperatorType.OnTheFly,
         TestRunner.OperatorType.Naive
@@ -83,7 +83,7 @@ public final class EvaluationLauncher3 {
       writer.close();
       int i = 0;
       for (final String timescales : timescalesList) {
-        if (!(operatorType.equals(TestRunner.OperatorType.PAFAS_DP) && i < 3)) {
+        if (!(operatorType.equals(TestRunner.OperatorType.FAST_STATIC) && i < 3)) {
           final Process process = processHelper.startNewJavaProcess("-Xms22000m -Xmx56000m",
               "vldb.evaluation.WikiWordCountEvaluation",
               "./target/tempest-0.11-SNAPSHOT.jar",

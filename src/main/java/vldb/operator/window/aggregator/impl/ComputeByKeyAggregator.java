@@ -15,8 +15,8 @@
  */
 package vldb.operator.window.aggregator.impl;
 
+import vldb.evaluation.Metrics;
 import vldb.operator.window.aggregator.CAAggregator;
-import vldb.operator.window.timescale.profiler.AggregationCounter;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -45,7 +45,7 @@ public final class ComputeByKeyAggregator<I, K, V> implements CAAggregator<I, Ma
    */
   private final ComputeByKeyFunc<V> computeFunc;
 
-  private final AggregationCounter aggregationCounter;
+  private final Metrics metrics;
 
   /**
    * Compute the input by key.
@@ -57,11 +57,11 @@ public final class ComputeByKeyAggregator<I, K, V> implements CAAggregator<I, Ma
   private ComputeByKeyAggregator(final KeyExtractor<I, K> keyExtractor,
                                 final ValueExtractor<I, V> valueExtractor,
                                 final ComputeByKeyFunc<V> computeFunc,
-                                final AggregationCounter aggregationCounter) {
+                                final Metrics metrics) {
     this.keyExtractor = keyExtractor;
     this.valueExtractor = valueExtractor;
     this.computeFunc = computeFunc;
-    this.aggregationCounter = aggregationCounter;
+    this.metrics = metrics;
   }
 
   /**
@@ -119,6 +119,7 @@ public final class ComputeByKeyAggregator<I, K, V> implements CAAggregator<I, Ma
         //numAgg += 1;
         first.put(entry.getKey(), computeFunc.compute(oldVal, entry.getValue()));
         //aggregationCounter.incrementFinalAggregation();
+        metrics.incrementFinal();
       }
     }
     return first;

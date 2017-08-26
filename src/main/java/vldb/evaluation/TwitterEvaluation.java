@@ -15,6 +15,7 @@ import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.TimescaleString;
+import vldb.operator.window.timescale.parameter.TradeOffFactor;
 
 import java.io.IOException;
 import java.util.List;
@@ -44,6 +45,7 @@ public final class TwitterEvaluation {
         .registerShortNameOfClass(Variable.class)
         .registerShortNameOfClass(EndTime.class)
         .registerShortNameOfClass(TestName.class)
+        .registerShortNameOfClass(TradeOffFactor.class)
             .registerShortNameOfClass(TestRunner.WindowChangePeriod.class)
         //.registerShortNameOfClass(NumOfKey.class)
         .processCommandLine(args);
@@ -68,6 +70,7 @@ public final class TwitterEvaluation {
     final String testName = injector.getNamedInstance(TestName.class);
     final String dataPath = injector.getNamedInstance(FileWordGenerator.FileDataPath.class);
     final int windowChangePeriod = injector.getNamedInstance(TestRunner.WindowChangePeriod.class);
+    final double tradeOffFactor = injector.getNamedInstance(TradeOffFactor.class);
     //final long numKey = injector.getNamedInstance(NumOfKey.class);
 
     final TestRunner.OperatorType operatorType = TestRunner.OperatorType.valueOf(
@@ -76,11 +79,11 @@ public final class TwitterEvaluation {
     final OutputWriter writer = injector.getInstance(LocalOutputWriter.class);
     final AvroConfigurationSerializer serializer = injector.getInstance(AvroConfigurationSerializer.class);
 
-    final String prefix = outputPath + testName + "-" + variable + "-" + operatorType.name();
-    writer.writeLine(prefix + "_result", "-------------------------------------\n"
+    final String prefix = outputPath + testName + "/" + variable + "/" + operatorType.name();
+    writer.writeLine(prefix + "_conf", "-------------------------------------\n"
         + serializer.toString(commandLineConf) + "--------------------------------");
 
-    // Profiler
+    // Profiler*
     /*
     final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
     executorService.scheduleAtFixedRate(new Runnable() {
@@ -97,6 +100,7 @@ public final class TwitterEvaluation {
 */
 
     TestRunner.Result result = null;
+    /*
     if (operatorType == TestRunner.OperatorType.DYNAMIC_WINDOW_DP || operatorType == TestRunner.OperatorType.DYNAMIC_WINDOW_GREEDY
         || operatorType == TestRunner.OperatorType.DYNAMIC_NAIVE || operatorType == TestRunner.OperatorType.DYNAMIC_OnTheFly
         || operatorType == TestRunner.OperatorType.DYNAMIC_WINDOW_DP_SMALLADD) {
@@ -106,7 +110,14 @@ public final class TwitterEvaluation {
       result = TestRunner.runFileWordTest(timescales,
           numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix);
     }
-    writer.writeLine(prefix + "_result", operatorType.name() + "\t" + variable + "\t" + result.partialCount + "\t" + result.finalCount + "\t" + result.processedInput + "\t" + result.elapsedTime + result.timeMonitor);
+    */
+    final Metrics metrics = TestRunner.runFileWordTest(timescales,
+        numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix, tradeOffFactor);
+
+    //writer.writeLine(prefix + "_result", operatorType.name() + "\t" + variable + "\t" + result.partialCount + "\t" + result.finalCount + "\t" + result.processedInput + "\t" + result.elapsedTime + result.timeMonitor);
+    writer.writeLine(prefix + "_result",
+        operatorType.name() + "\t" + metrics);
+
 
     // End of experiments
     Thread.sleep(2000);

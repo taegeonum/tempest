@@ -93,9 +93,11 @@ public final class ZipfianEvaluation {
       }
     }, 1, 1, TimeUnit.SECONDS);
 
+    /*
     final TestRunner.Result result = TestRunner.runTest(timescales,
         numThreads, numKey, operatorType, inputRate, endTime, writer, prefix);
     writer.writeLine(prefix + "_result", operatorType.name() + "\t" + variable + "\t" + result.partialCount + "\t" + result.finalCount + "\t" + result.elapsedTime);
+    */
 
     // End of experiments
     Thread.sleep(2000);

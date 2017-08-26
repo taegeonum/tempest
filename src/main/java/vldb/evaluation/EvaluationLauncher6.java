@@ -55,8 +55,8 @@ public final class EvaluationLauncher6 {
   public static void main(final String[] args) throws Exception {
     // Experiment1: Change the number of windows
     final List<TestRunner.OperatorType> operatorTypes = Arrays.asList(
-        TestRunner.OperatorType.PAFAS,
-        TestRunner.OperatorType.PAFAS_DP,
+        //TestRunner.OperatorType.PAFAS,
+        //TestRunner.OperatorType.PAFAS_DP,
         TestRunner.OperatorType.TriOps
         //TestRunner.OperatorType.OnTheFly,
         //TestRunner.OperatorType.Naive

@@ -16,6 +16,7 @@
 package vldb.operator.window.timescale.common;
 
 import org.apache.reef.tang.annotations.Parameter;
+import vldb.evaluation.Metrics;
 import vldb.evaluation.parameter.EndTime;
 import vldb.operator.OutputEmitter;
 import vldb.operator.window.aggregator.CAAggregator;
@@ -24,7 +25,6 @@ import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOutput;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.StartTime;
-import vldb.operator.window.timescale.profiler.AggregationCounter;
 
 import javax.inject.Inject;
 import java.util.Collections;
@@ -57,7 +57,7 @@ public final class SingleThreadFinalAggregator<V> implements FinalAggregator<V> 
 
   private final int numThreads;
 
-  private final AggregationCounter aggregationCounter;
+  private final Metrics metrics;
 
   private final Comparator<Timespan> timespanComparator;
 
@@ -79,7 +79,7 @@ public final class SingleThreadFinalAggregator<V> implements FinalAggregator<V> 
                                       final CAAggregator<?, V> aggregateFunction,
                                       @Parameter(NumThreads.class) final int numThreads,
                                       @Parameter(StartTime.class) final long startTime,
-                                      final AggregationCounter aggregationCounter,
+                                      final Metrics metrics,
                                       final TimeMonitor timeMonitor,
                                       @Parameter(EndTime.class) final long endTime) {
     LOG.info("START " + this.getClass());
@@ -90,7 +90,7 @@ public final class SingleThreadFinalAggregator<V> implements FinalAggregator<V> 
     this.aggregateFunction = aggregateFunction;
     //this.executorServiceMap = new ConcurrentHashMap<>();
     this.startTime = startTime;
-    this.aggregationCounter = aggregationCounter;
+    this.metrics = metrics;
     this.endTime = endTime;
     this.timespanComparator = new TimespanComparator();
   }

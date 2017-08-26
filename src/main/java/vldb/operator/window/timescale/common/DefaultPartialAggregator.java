@@ -16,11 +16,11 @@
 package vldb.operator.window.timescale.common;
 
 import org.apache.reef.tang.annotations.Parameter;
+import vldb.evaluation.Metrics;
 import vldb.operator.window.aggregator.CAAggregator;
 import vldb.operator.window.timescale.TimeMonitor;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.StartTime;
-import vldb.operator.window.timescale.profiler.AggregationCounter;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -62,7 +62,7 @@ public final class DefaultPartialAggregator<I, V> implements PartialAggregator<I
 
   private long nextRealTime;
 
-  private final AggregationCounter aggregationCounter;
+  private final Metrics metrics;
 
   private final TimeMonitor timeMonitor;
 
@@ -76,11 +76,11 @@ public final class DefaultPartialAggregator<I, V> implements PartialAggregator<I
       final CAAggregator<I, V> aggregator,
       final SpanTracker<V> spanTracker,
       final FinalAggregator<V> finalAggregator,
-      final AggregationCounter aggregationCounter,
+      final Metrics metrics,
       @Parameter(StartTime.class) final Long startTime,
       final TimeMonitor timeMonitor) {
     this.timeMonitor = timeMonitor;
-    this.aggregationCounter = aggregationCounter;
+    this.metrics = metrics;
     this.aggregator = aggregator;
     this.bucket = aggregator.init();
     this.prevSliceTime = startTime;
@@ -124,7 +124,7 @@ public final class DefaultPartialAggregator<I, V> implements PartialAggregator<I
       aggregator.incrementalAggregate(bucket, val);
       final long et = System.nanoTime();
       timeMonitor.partialTime += (et - st);
-      aggregationCounter.incrementPartialAggregation();
+      metrics.incrementPartial();
     }
   }
 

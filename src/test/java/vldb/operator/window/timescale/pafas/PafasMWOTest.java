@@ -7,12 +7,8 @@ import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
 import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
-import vldb.operator.window.timescale.cutty.CuttyMWOConfiguration;
 import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
-import vldb.operator.window.timescale.pafas.active.ActiveDynamicMWOConfiguration;
-import vldb.operator.window.timescale.pafas.active.DynamicDPTradeOffSelectionAlgorithm;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicDPOutputLookupTableImpl;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicOptimizedDependencyGraphImpl;
+import vldb.operator.window.timescale.pafas.active.ActiveDPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
@@ -39,10 +35,11 @@ public final class PafasMWOTest {
     final List<Configuration> configurationList = new LinkedList<>();
     final List<String> operatorIds = new LinkedList<>();
     final String timescaleString2 =  "(4,2)(5,3)(6,4)(10,5)";
-    final String timescaleString =  "(5,4)(8,3)(12,7)(16,6)";
-
+    final String timescaleString3 =  "(5,4)(8,3)(12,7)(16,6)";
+    final String timescaleString = "(5,1)(10,1)(20,2)(30,2)(60,4)(90,4)(360,5)(600,5)(900,10)(1800,10)";
     // PAFAS
-  /*
+
+
     configurationList.add(StaticSingleMWOConfiguration.CONF
         .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
@@ -50,9 +47,8 @@ public final class PafasMWOTest {
         .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
         .set(StaticSingleMWOConfiguration.START_TIME, "0")
         .build());
-    operatorIds.add("PAFAS");
-*/
-
+    operatorIds.add("FAST");
+/*
     configurationList.add(CuttyMWOConfiguration.CONF
     .set(CuttyMWOConfiguration.START_TIME, currTime)
     .set(CuttyMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
@@ -69,6 +65,7 @@ public final class PafasMWOTest {
         .set(ActiveDynamicMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("Dynamic-FAST");
+*/
 
     /*
     // PAFAS-Greedy
@@ -83,7 +80,7 @@ public final class PafasMWOTest {
 
 
     // On-the-fly operator
-    configurationList.add(OntheflyMWOConfiguration.STATIC_CONF
+    configurationList.add(OntheflyMWOConfiguration.CONF
         .set(OntheflyMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .set(OntheflyMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(OntheflyMWOConfiguration.START_TIME, currTime)

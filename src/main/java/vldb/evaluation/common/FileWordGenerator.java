@@ -53,7 +53,7 @@ public final class FileWordGenerator extends Generator {
   public String nextString() {
     if (sc.hasNextLine()) {
       final String str = sc.nextLine();
-      if (str != null) {
+      if (str != null || str.length() != 0) {
         return str;
       } else {
         return "a";

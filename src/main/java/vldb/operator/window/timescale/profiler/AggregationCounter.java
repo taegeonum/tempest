@@ -15,4 +15,8 @@ public interface AggregationCounter {
 
   long getNumFinalAggregation();
   void stopCount();
+
+  long addPartialElapsedTime(long et);
+
+  long addFinalElapsedTime(long et);
 }

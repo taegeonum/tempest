@@ -20,8 +20,8 @@ import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.exceptions.InjectionException;
+import vldb.evaluation.Metrics;
 import vldb.operator.window.aggregator.CAAggregator;
-import vldb.operator.window.timescale.profiler.AggregationCounter;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -45,12 +45,12 @@ public final class CountByKeyAggregator<I, K> implements CAAggregator<I, Map<K, 
    */
   @Inject
   private CountByKeyAggregator(final KeyExtractor<I, K> extractor,
-                               final AggregationCounter aggregationCounter) throws InjectionException {
+                               final Metrics metrics) throws InjectionException {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(ValueExtractor.class, CountByKeyValueExtractor.class);
     jcb.bindImplementation(ComputeByKeyAggregator.ComputeByKeyFunc.class, CountByKeyComputeFunc.class);
     final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
-    injector.bindVolatileInstance(AggregationCounter.class, aggregationCounter);
+    injector.bindVolatileInstance(Metrics.class, metrics);
     injector.bindVolatileInstance(KeyExtractor.class, extractor);
     this.aggregator = injector.getInstance(ComputeByKeyAggregator.class);
   }

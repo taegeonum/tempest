@@ -16,6 +16,7 @@
 package vldb.operator.window.timescale.pafas.dynamic;
 
 import org.apache.reef.tang.annotations.Parameter;
+import vldb.evaluation.Metrics;
 import vldb.operator.OutputEmitter;
 import vldb.operator.window.aggregator.CAAggregator;
 import vldb.operator.window.timescale.TimeMonitor;
@@ -27,7 +28,6 @@ import vldb.operator.window.timescale.common.Timespan;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.StartTime;
-import vldb.operator.window.timescale.profiler.AggregationCounter;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -68,7 +68,7 @@ public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
 
   private long nextRealTime;
 
-  private final AggregationCounter aggregationCounter;
+  private final Metrics metrics;
 
   private final TimeMonitor timeMonitor;
 
@@ -84,11 +84,11 @@ public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
       final CAAggregator<I, V> aggregator,
       final DynamicSpanTrackerImpl<I, V> spanTracker,
       final FinalAggregator<V> finalAggregator,
-      final AggregationCounter aggregationCounter,
+      final Metrics metrics,
       @Parameter(NumThreads.class) final int numThreads,
       @Parameter(StartTime.class) final Long startTime,
       final TimeMonitor timeMonitor) {
-    this.aggregationCounter = aggregationCounter;
+    this.metrics = metrics;
     this.aggregator = aggregator;
     this.numThreads = numThreads;
     this.bucket = initBucket();
@@ -131,7 +131,7 @@ public final class DynamicMWO<I, V> implements TimescaleWindowOperator<I, V> {
       aggregator.incrementalAggregate(bucket, val);
       final long et = System.nanoTime();
       timeMonitor.partialTime += (et - st);
-      aggregationCounter.incrementPartialAggregation();
+      metrics.incrementPartial();
     }
   }
 

@@ -23,7 +23,6 @@ import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOutput;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.StartTime;
-import vldb.operator.window.timescale.profiler.AggregationCounter;
 
 import javax.inject.Inject;
 import java.util.Collections;
@@ -62,8 +61,6 @@ public final class DefaultFinalAggregator<V> implements FinalAggregator<V> {
 
   private final int numThreads;
 
-  private final AggregationCounter aggregationCounter;
-
   private final Comparator<Timespan> timespanComparator;
 
   private final long endTime;
@@ -81,7 +78,6 @@ public final class DefaultFinalAggregator<V> implements FinalAggregator<V> {
                                  final CAAggregator<?, V> aggregateFunction,
                                  @Parameter(NumThreads.class) final int numThreads,
                                  @Parameter(StartTime.class) final long startTime,
-                                 final AggregationCounter aggregationCounter,
                                  final SharedForkJoinPool sharedForkJoinPool,
                                  @Parameter(EndTime.class) final long endTime) {
     this.spanTracker = spanTracker;
@@ -92,7 +88,6 @@ public final class DefaultFinalAggregator<V> implements FinalAggregator<V> {
     //this.executorServiceMap = new ConcurrentHashMap<>();
     this.executorService = Executors.newFixedThreadPool(40);
     this.startTime = startTime;
-    this.aggregationCounter = aggregationCounter;
     this.endTime = endTime;
     this.timespanComparator = new TimespanComparator();
   }

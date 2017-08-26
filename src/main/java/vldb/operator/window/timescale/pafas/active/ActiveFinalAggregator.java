@@ -16,10 +16,10 @@
 package vldb.operator.window.timescale.pafas.active;
 
 import org.apache.reef.tang.annotations.Parameter;
+import vldb.evaluation.Metrics;
 import vldb.evaluation.parameter.EndTime;
 import vldb.operator.OutputEmitter;
 import vldb.operator.window.aggregator.CAAggregator;
-import vldb.operator.window.timescale.TimeMonitor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOutput;
 import vldb.operator.window.timescale.common.DepOutputAndResult;
@@ -28,7 +28,6 @@ import vldb.operator.window.timescale.common.SpanTracker;
 import vldb.operator.window.timescale.common.Timespan;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.StartTime;
-import vldb.operator.window.timescale.profiler.AggregationCounter;
 
 import javax.inject.Inject;
 import java.util.Collections;
@@ -61,15 +60,13 @@ public final class ActiveFinalAggregator<V> implements FinalAggregator<V> {
 
   private final int numThreads;
 
-  private final AggregationCounter aggregationCounter;
+  private final Metrics metrics;
 
   private final Comparator<Timespan> timespanComparator;
 
   private final long endTime;
 
   private final CAAggregator<?, V> aggregateFunction;
-
-  private final TimeMonitor timeMonitor;
 
   //private final ConcurrentMap<Timescale, ExecutorService> executorServiceMap;
 
@@ -83,18 +80,16 @@ public final class ActiveFinalAggregator<V> implements FinalAggregator<V> {
                                 final CAAggregator<?, V> aggregateFunction,
                                 @Parameter(NumThreads.class) final int numThreads,
                                 @Parameter(StartTime.class) final long startTime,
-                                final AggregationCounter aggregationCounter,
-                                final TimeMonitor timeMonitor,
+                                final Metrics metrics,
                                 @Parameter(EndTime.class) final long endTime) {
     LOG.info("START " + this.getClass());
-    this.timeMonitor = timeMonitor;
     this.spanTracker = spanTracker;
     this.outputHandler = outputHandler;
     this.numThreads = numThreads;
     this.aggregateFunction = aggregateFunction;
     //this.executorServiceMap = new ConcurrentHashMap<>();
     this.startTime = startTime;
-    this.aggregationCounter = aggregationCounter;
+    this.metrics = metrics;
     this.endTime = endTime;
     this.timespanComparator = new TimespanComparator();
   }
@@ -123,7 +118,6 @@ public final class ActiveFinalAggregator<V> implements FinalAggregator<V> {
           final long st = System.nanoTime();
           final V finalResult = aggregateFunction.aggregate(aggregates);
           final long et = System.nanoTime();
-          timeMonitor.finalTime += (et - st);
           //System.out.println("PUT_TIMESPAN: " + timespan);
           spanTracker.putAggregate(finalResult, timespan);
           outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,
@@ -153,7 +147,6 @@ public final class ActiveFinalAggregator<V> implements FinalAggregator<V> {
         final long st = System.nanoTime();
         final V finalResult = aggregateFunction.aggregate(aggregates);
         final long et = System.nanoTime();
-        timeMonitor.finalTime += (et - st);
         //System.out.println("PUT_TIMESPAN: " + timespan);
         spanTracker.putAggregate(finalResult, timespan);
         outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,

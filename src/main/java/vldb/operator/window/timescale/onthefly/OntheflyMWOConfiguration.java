@@ -34,6 +34,7 @@ public final class OntheflyMWOConfiguration extends TimescaleWindowBaseConfigura
       .bindImplementation(TimescaleWindowOperator.class, DynamicMWO.class)
       .bindImplementation(DependencyGraph.SelectionAlgorithm.class, OntheflySelectionAlgorithm.class)
       .bindImplementation(DynamicPartialTimespans.class, DynamicOptimizedPartialTimespans.class)
+      .bindImplementation(PartialTimespans.class, DynamicOptimizedPartialTimespans.class)
       .bindImplementation(FinalAggregator.class, SingleThreadFinalAggregator.class)
       .bindImplementation(DynamicDependencyGraph.class, DynamicSmallCostAddDependencyGraphImpl.class)
       .build();

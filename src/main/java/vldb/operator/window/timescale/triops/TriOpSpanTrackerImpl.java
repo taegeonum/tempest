@@ -20,6 +20,7 @@ import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.tang.exceptions.InjectionException;
+import vldb.evaluation.Metrics;
 import vldb.operator.window.aggregator.CAAggregator;
 import vldb.operator.window.timescale.TimeMonitor;
 import vldb.operator.window.timescale.Timescale;
@@ -33,7 +34,6 @@ import vldb.operator.window.timescale.pafas.PartialTimespans;
 import vldb.operator.window.timescale.pafas.dynamic.*;
 import vldb.operator.window.timescale.parameter.StartTime;
 import vldb.operator.window.timescale.parameter.TimescaleString;
-import vldb.operator.window.timescale.profiler.AggregationCounter;
 
 import javax.inject.Inject;
 import java.util.*;
@@ -60,13 +60,14 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
   private final List<PartialTimespans> partialTimespans;
 
   //private final ParallelTreeAggregator<I, T> intermediateAggregator;
-  private final AggregationCounter aggregationCounter;
 
   private final CAAggregator<I, T> caAggregator;
 
   private final long largestWindow;
 
   private long lastRemoved;
+
+  private final Metrics metrics;
 
   private final TimeMonitor timeMonitor;
   /**
@@ -79,14 +80,15 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
                                final TriWeave triWeave,
                                final DynamicPartialTimespans<T> sharedPartialTimespans,
                                final CAAggregator<I, T> caAggregator,
-                               final AggregationCounter aggregationCounter,
+                               final Metrics metrics,
                                final TimeMonitor timeMonitor) throws InjectionException {
+    System.out.println("TriOps start");
     this.timeMonitor = timeMonitor;
+    this.metrics = metrics;
     this.partialTimespans = new LinkedList<>();
     this.timescales = tsParser.timescales;
     this.lastRemoved = startTime;
     this.largestWindow = timescales.get(timescales.size()-1).windowSize;
-    this.aggregationCounter = aggregationCounter;
     this.sharedPartialTimespans = sharedPartialTimespans;
     this.timescaleGraphMap = new HashMap<>();
     this.partialTimespansMap = new HashMap<>();

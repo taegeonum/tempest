@@ -139,4 +139,14 @@ public final class DefaultAggregationCounterImpl implements AggregationCounter {
   public void stopCount() {
     stop.set(true);
   }
+
+  @Override
+  public long addPartialElapsedTime(final long et) {
+    return 0;
+  }
+
+  @Override
+  public long addFinalElapsedTime(final long et) {
+    return 0;
+  }
 }

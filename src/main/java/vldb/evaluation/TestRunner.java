@@ -6,7 +6,6 @@ import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 import vldb.evaluation.common.FileWordGenerator;
 import vldb.evaluation.common.Generator;
-import vldb.evaluation.common.ZipfianGenerator;
 import vldb.evaluation.parameter.EndTime;
 import vldb.evaluation.util.Profiler;
 import vldb.example.DefaultExtractor;
@@ -14,15 +13,21 @@ import vldb.operator.OutputEmitter;
 import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
 import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.*;
-import vldb.operator.window.timescale.common.DefaultOutputLookupTableImpl;
 import vldb.operator.window.timescale.common.TimescaleParser;
+import vldb.operator.window.timescale.cutty.CuttyMWOConfiguration;
 import vldb.operator.window.timescale.naive.NaiveMWOConfiguration;
 import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
-import vldb.operator.window.timescale.pafas.*;
+import vldb.operator.window.timescale.pafas.DPOutputLookupTableImpl;
+import vldb.operator.window.timescale.pafas.PeriodCalculator;
+import vldb.operator.window.timescale.pafas.StaticSingleMWOConfiguration;
 import vldb.operator.window.timescale.pafas.active.ActiveDPSelectionAlgorithm;
-import vldb.operator.window.timescale.pafas.dynamic.*;
+import vldb.operator.window.timescale.pafas.active.ActiveDynamicMWOConfiguration;
+import vldb.operator.window.timescale.pafas.active.DynamicDPTradeOffSelectionAlgorithm;
+import vldb.operator.window.timescale.pafas.dynamic.DynamicDPOutputLookupTableImpl;
+import vldb.operator.window.timescale.pafas.dynamic.DynamicOptimizedDependencyGraphImpl;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;
+import vldb.operator.window.timescale.parameter.TradeOffFactor;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
 import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
 
@@ -40,32 +45,14 @@ public final class TestRunner {
   //static final long totalTime = 1800;
 
   public enum OperatorType {
-    DYNAMIC_DP,
-    SCALABLE_DP,
-    SCALABLE_GREEDY,
-    DYNAMIC_GREEDY,
-    DYNAMIC_ADAPTIVE,
-    DYNAMIC_WINDOW_GREEDY,
-    DYNAMIC_WINDOW_DP,
-    DYNAMIC_ALL_STORE,
-    DYNAMIC_NAIVE,
-    DYNAMIC_OnTheFly,
-    DYNAMIC_WINDOW_DP_SMALLADD,
-    PAFAS,
-    PAFAS_DP,
-    PAFAS_SINGLE,
-    PAFAS_SINGLE_ALL_STORE,
-    PAFAS_SINGLE_NO_REFCNT,
-    PAFAS_SINGLE_COUNT,
-    PAFAS_INFINITE,
-    PAFAS_SINGLE_GREEDY,
-    PAFAS_SINGLE_GREEDY_COUNT,
-    PAFAS_INFINITE_COUNT,
-    PAFASI,
-    PAFASI_DP,
-    TriOps,
+    FAST_STATIC,
+    FAST_DYNAMIC,
+    FAST_STATIC_MEM,
     OnTheFly,
-    Naive
+    OnTheFly_DYNAMIC,
+    TriOps,
+    Naive,
+    Cutty,
   }
 
   @NamedParameter(short_name="window_change_period", default_value = "10")
@@ -74,6 +61,51 @@ public final class TestRunner {
   private static Configuration getOperatorConf(final OperatorType operatorType,
                                                final String timescaleString) {
     switch (operatorType) {
+      case FAST_STATIC:
+        return StaticSingleMWOConfiguration.CONF
+            .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
+            .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
+            .set(StaticSingleMWOConfiguration.START_TIME, "0")
+            .build();
+      case FAST_DYNAMIC:
+        return ActiveDynamicMWOConfiguration.CONF
+            .set(ActiveDynamicMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(ActiveDynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(ActiveDynamicMWOConfiguration.SELECTION_ALGORITHM, DynamicDPTradeOffSelectionAlgorithm.class)
+            .set(ActiveDynamicMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicDPOutputLookupTableImpl.class)
+            .set(ActiveDynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicOptimizedDependencyGraphImpl.class)
+            .set(ActiveDynamicMWOConfiguration.START_TIME, "0")
+            .build();
+      case FAST_STATIC_MEM:
+        throw new RuntimeException("not supported yet");
+      case OnTheFly:
+        return OntheflyMWOConfiguration.CONF
+          .set(OntheflyMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+          .set(OntheflyMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+          .set(OntheflyMWOConfiguration.START_TIME, "0")
+          .build();
+      case Cutty:
+        return CuttyMWOConfiguration.CONF
+            .set(CuttyMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(CuttyMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(CuttyMWOConfiguration.START_TIME, "0")
+            .build();
+      case TriOps:
+        // TriOPs
+        return TriOpsMWOConfiguration.CONF
+            .set(TriOpsMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(TriOpsMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(TriOpsMWOConfiguration.START_TIME, "0")
+            .build();
+      case Naive:
+        return NaiveMWOConfiguration.CONF
+            .set(NaiveMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(NaiveMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(NaiveMWOConfiguration.START_TIME, "0")
+            .build();
+      /*
       case DYNAMIC_DP:
         return DynamicMWOConfiguration.CONF
           .set(DynamicMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
@@ -195,6 +227,7 @@ public final class TestRunner {
             .set(NaiveMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(NaiveMWOConfiguration.START_TIME, "0")
             .build();
+            */
       default:
         throw new RuntimeException("Not implemented Naive");
     }
@@ -227,6 +260,7 @@ public final class TestRunner {
     */
     int i = 0;
     Configuration conf = null;
+    /*
     if (operatorType == OperatorType.DYNAMIC_WINDOW_GREEDY) {
       conf = MultiThreadDynamicMWOConfiguration.CONF
           .set(MultiThreadDynamicMWOConfiguration.INITIAL_TIMESCALES, timescales.get(0).toString())
@@ -270,6 +304,7 @@ public final class TestRunner {
           .set(NaiveMWOConfiguration.START_TIME, 0)
           .build();
     }
+    */
 
     //writer.writeLine(outputPath+"/result", "=================\nOperator=" + operatorType.name());
     final Injector newInjector = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), conf));
@@ -366,19 +401,21 @@ public final class TestRunner {
   }
 
 
-  public static Result runFileWordTest(final List<Timescale> timescales,
+  public static Metrics runFileWordTest(final List<Timescale> timescales,
                                        final int numThreads,
                                        final String filePath,
                                        final OperatorType operatorType,
                                        final double inputRate,
                                        final long totalTime,
                                        final OutputWriter writer,
-                                       final String prefix) throws Exception {
+                                       final String prefix,
+                                       final double tradeOffFactor) throws Exception {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
     jcb.bindNamedParameter(NumThreads.class, numThreads+"");
     jcb.bindNamedParameter(FileWordGenerator.FileDataPath.class, filePath);
     jcb.bindNamedParameter(EndTime.class, totalTime+"");
+    jcb.bindNamedParameter(TradeOffFactor.class, tradeOffFactor+"");
 
     Collections.sort(timescales);
     int numOutputs = 0;
@@ -405,9 +442,9 @@ public final class TestRunner {
     newInjector.bindVolatileInstance(TimeWindowOutputHandler.class,
         new EvaluationHandler<>(operatorType.name(), countDownLatch, totalTime, writer, prefix));
     final TimescaleWindowOperator<Object, Map<String, Long>> mwo = newInjector.getInstance(TimescaleWindowOperator.class);
-    final AggregationCounter aggregationCounter = newInjector.getInstance(AggregationCounter.class);
     final TimeMonitor timeMonitor = newInjector.getInstance(TimeMonitor.class);
     final PeriodCalculator periodCalculator = newInjector.getInstance(PeriodCalculator.class);
+    final Metrics metrics = newInjector.getInstance(Metrics.class);
     final long period = periodCalculator.getPeriod();
     i += 1;
 
@@ -449,105 +486,7 @@ public final class TestRunner {
         tick += 1;
         final StringBuilder sb = new StringBuilder("TICK");
         sb.append(tick);
-        System.out.println(sb.toString());        currInput = 0;
-        if (inputRate == 0) {
-          currInputRate = Long.valueOf(poissonFile.nextLine());
-        }
-      }
-
-      processedInput += 1;
-      //while (System.nanoTime() - cTime < 1000000000*(1.0/inputRate)) {
-        // adjust input rate
-      //}
-    }
-    //countDownLatch.await();
-    final long endTime = System.currentTimeMillis();
-    mwo.close();
-    wordGenerator.close();
-    final long partialCount = aggregationCounter.getNumPartialAggregation();
-    final long finalCount = aggregationCounter.getNumFinalAggregation();
-    //writer.writeLine(outputPath+"/result", "PARTIAL="+partialCount);
-    //writer.writeLine(outputPath+"/result", "FINAL=" + finalCount);
-    //writer.writeLine(outputPath+"/result", "ELAPSED_TIME="+(endTime-currTime));
-    return new Result(partialCount, finalCount, processedInput, (endTime - currTime), timeMonitor);
-  }
-
-
-  public static Result runScalableTest(final List<Timescale> timescales,
-                                       final int numThreads,
-                                       final String filePath,
-                                       final OperatorType operatorType,
-                                       final double inputRate,
-                                       final long totalTime,
-                                       final OutputWriter writer,
-                                       final String prefix) throws Exception {
-    final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
-    jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
-    jcb.bindNamedParameter(NumThreads.class, numThreads+"");
-    jcb.bindNamedParameter(FileWordGenerator.FileDataPath.class, filePath);
-    jcb.bindNamedParameter(EndTime.class, totalTime+"");
-
-    Collections.sort(timescales);
-    int numOutputs = 0;
-    for (final Timescale ts : timescales) {
-      numOutputs += (totalTime / ts.intervalSize);
-    }
-    final CountDownLatch countDownLatch = new CountDownLatch(numOutputs);
-
-    final String timescaleString = TimescaleParser.parseToString(timescales);
-    /*
-    writer.writeLine(outputPath+"/result", "-------------------------------------");
-    writer.writeLine(outputPath+"/result", "@NumWindows=" + timescales.size());
-    writer.writeLine(outputPath+"/result", "@Windows="+timescaleString);
-    writer.writeLine(outputPath+"/result", "-------------------------------------");
-    */
-    int i = 0;
-    final Configuration conf = getOperatorConf(operatorType, timescaleString);
-
-    //writer.writeLine(outputPath+"/result", "=================\nOperator=" + operatorType.name());
-    final Injector newInjector = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), conf));
-
-    newInjector.bindVolatileInstance(TimeWindowOutputHandler.class,
-        new EvaluationHandler<>(operatorType.name(), countDownLatch, totalTime, writer, prefix));
-    final TimescaleWindowOperator<Object, Map<Integer, Long>> mwo = newInjector.getInstance(TimescaleWindowOperator.class);
-    final AggregationCounter aggregationCounter = newInjector.getInstance(AggregationCounter.class);
-    final TimeMonitor timeMonitor = newInjector.getInstance(TimeMonitor.class);
-    final PeriodCalculator periodCalculator = newInjector.getInstance(PeriodCalculator.class);
-    final long period = periodCalculator.getPeriod();
-    i += 1;
-
-    long processedInput = 1;
-    //Thread.sleep(period);
-    // FOR TIME
-    //while (processedInput < inputRate * (totalTime)) {
-    // FOR COUNT
-    long tick = 1;
-
-    long currInputRate = (long)inputRate;
-    Scanner poissonFile = null;
-    if (inputRate == 0) {
-      poissonFile = new Scanner(new File("./dataset/poisson.txt"));
-      currInputRate = Long.valueOf(poissonFile.nextLine());
-    }
-
-    final long currTime = System.currentTimeMillis();
-    long currInput = 0;
-    final int numKey = 20000;
-    while (tick <= totalTime) {
-      //System.out.println("totalTime: " + (totalTime*1000) + ", elapsed: " + (System.currentTimeMillis() - currTime));
-      final long cTime = System.nanoTime();
-      //System.out.println("word: " + word);
-
-      mwo.execute(currInput % numKey);
-      currInput += 1;
-
-      if (currInput >= currInputRate) {
-        mwo.execute(new WindowTimeEvent(tick));
-        final StringBuilder sb = new StringBuilder("TICK");
-        sb.append(tick);
         System.out.println(sb.toString());
-        //writer.writeLine(prefix + "_memory", System.currentTimeMillis() + "\t" + Profiler.getMemoryUsage() + "\t" + timeMonitor.storedKey);
-        tick += 1;
         currInput = 0;
         if (inputRate == 0) {
           currInputRate = Long.valueOf(poissonFile.nextLine());
@@ -556,88 +495,24 @@ public final class TestRunner {
 
       processedInput += 1;
       //while (System.nanoTime() - cTime < 1000000000*(1.0/inputRate)) {
-      // adjust input rate
+        // adjust input rate
       //}
     }
     //countDownLatch.await();
     final long endTime = System.currentTimeMillis();
     mwo.close();
-    final long partialCount = aggregationCounter.getNumPartialAggregation();
-    final long finalCount = aggregationCounter.getNumFinalAggregation();
-    //writer.writeLine(outputPath+"/result", "PARTIAL="+partialCount);
-    //writer.writeLine(outputPath+"/result", "FINAL=" + finalCount);
-    //writer.writeLine(outputPath+"/result", "ELAPSED_TIME="+(endTime-currTime));
-    return new Result(partialCount, finalCount, processedInput, (endTime - currTime), timeMonitor);
-  }
-
-  public static Result runTest(final List<Timescale> timescales,
-                               final int numThreads,
-                               final long numKey,
-                               final OperatorType operatorType,
-                               final double inputRate,
-                               final long totalTime,
-                               final OutputWriter writer,
-                               final String prefix) throws Exception {
-    final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
-    jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
-    jcb.bindNamedParameter(NumThreads.class, numThreads+"");
-    //jcb.bindNamedParameter(FileWordGenerator.FileDataPath.class, wikiDataPath);
-    jcb.bindNamedParameter(EndTime.class, totalTime+"");
-
-    Collections.sort(timescales);
-    int numOutputs = 0;
-    for (final Timescale ts : timescales) {
-      numOutputs += (totalTime / ts.intervalSize);
-    }
-    final CountDownLatch countDownLatch = new CountDownLatch(numOutputs);
-
-    final String timescaleString = TimescaleParser.parseToString(timescales);
-    /*
-    writer.writeLine(outputPath+"/result", "-------------------------------------");
-    writer.writeLine(outputPath+"/result", "@NumWindows=" + timescales.size());
-    writer.writeLine(outputPath+"/result", "@Windows="+timescaleString);
-    writer.writeLine(outputPath+"/result", "-------------------------------------");
-    */
-    int i = 0;
-    final Configuration conf = getOperatorConf(operatorType, timescaleString);
-
-    //writer.writeLine(outputPath+"/result", "=================\nOperator=" + operatorType.name());
-    final Injector newInjector = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), conf));
-    final Generator wordGenerator = new ZipfianGenerator(numKey, 0.99);
-
-    newInjector.bindVolatileInstance(TimeWindowOutputHandler.class,
-        new EvaluationHandler<>(operatorType.name(), countDownLatch, totalTime, writer, prefix));
-    final TimescaleWindowOperator<String, Map<String, Long>> mwo = newInjector.getInstance(TimescaleWindowOperator.class);
-    final AggregationCounter aggregationCounter = newInjector.getInstance(AggregationCounter.class);
-    i += 1;
-
-    final long currTime = System.currentTimeMillis();
-    long processedInput = 0;
-    while (processedInput < inputRate * totalTime) {
-      //System.out.println("totalTime: " + (totalTime*1000) + ", elapsed: " + (System.currentTimeMillis() - currTime));
-      final String word = wordGenerator.nextString();
-      final long cTime = System.nanoTime();
-      //System.out.println("word: " + word);
-      if (word == null) {
-        // End of input
-        break;
-      }
-      mwo.execute(word);
-      processedInput += 1;
-      while (System.nanoTime() - cTime < 1000000000*(1.0/inputRate)) {
-        // adjust input rate
-      }
-    }
-    final long endTime = System.currentTimeMillis();
-    countDownLatch.await();
-    mwo.close();
     wordGenerator.close();
+    return metrics;
+
+    /*
     final long partialCount = aggregationCounter.getNumPartialAggregation();
     final long finalCount = aggregationCounter.getNumFinalAggregation();
     //writer.writeLine(outputPath+"/result", "PARTIAL="+partialCount);
     //writer.writeLine(outputPath+"/result", "FINAL=" + finalCount);
     //writer.writeLine(outputPath+"/result", "ELAPSED_TIME="+(endTime-currTime));
-    return new Result(partialCount, finalCount, 0, (endTime - currTime), null);
+
+    return new Result(partialCount, finalCount, processedInput, (endTime - currTime), timeMonitor);
+  */
   }
 
   public static class Result {

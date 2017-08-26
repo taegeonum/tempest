@@ -17,6 +17,7 @@ package vldb.operator.window.timescale.cutty;
 
 import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.wake.remote.impl.Tuple2;
+import vldb.evaluation.Metrics;
 import vldb.operator.OutputEmitter;
 import vldb.operator.window.aggregator.CAAggregator;
 import vldb.operator.window.timescale.*;
@@ -25,7 +26,6 @@ import vldb.operator.window.timescale.common.Timespan;
 import vldb.operator.window.timescale.pafas.dynamic.WindowManager;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.StartTime;
-import vldb.operator.window.timescale.profiler.AggregationCounter;
 
 import javax.inject.Inject;
 import java.util.HashMap;
@@ -54,7 +54,7 @@ public final class CuttyMWO<I, V> implements TimescaleWindowOperator<I, V> {
   private V bucket;
 
 
-  private final AggregationCounter aggregationCounter;
+  private final Metrics metrics;
 
   private final TimeMonitor timeMonitor;
 
@@ -80,13 +80,13 @@ public final class CuttyMWO<I, V> implements TimescaleWindowOperator<I, V> {
   @Inject
   private CuttyMWO(
       final CAAggregator<I, V> aggregator,
-      final AggregationCounter aggregationCounter,
+      final Metrics metrics,
       @Parameter(StartTime.class) final Long startTime,
       final WindowManager windowManager,
       final Fat<V> fat,
       final TimeMonitor timeMonitor,
       final TimeWindowOutputHandler<V, ?> outputHandler) {
-    this.aggregationCounter = aggregationCounter;
+    this.metrics = metrics;
     this.aggregator = aggregator;
     this.bucket = initBucket();
     this.startTime = startTime;
@@ -160,10 +160,16 @@ public final class CuttyMWO<I, V> implements TimescaleWindowOperator<I, V> {
       }
 
       for (final Timespan endWindow : endWindows) {
+        final long stt = System.nanoTime();
+
         final long start = begins.get(endWindow);
         begins.remove(endWindow);
         fat.removeUpTo(minBegins); // gc
         final V agg = aggregator.rollup(fat.merge(start), bucket);
+
+        final long ett = System.nanoTime();
+        timeMonitor.finalTime += (ett - stt);
+
         outputHandler.execute(new TimescaleWindowOutput<V>(endWindow.timescale,
             new DepOutputAndResult<V>(0, agg),
             endWindow.startTime, endWindow.endTime, endWindow.startTime >= startTime));
@@ -173,7 +179,7 @@ public final class CuttyMWO<I, V> implements TimescaleWindowOperator<I, V> {
       aggregator.incrementalAggregate(bucket, val);
       final long et = System.nanoTime();
       timeMonitor.partialTime += (et - st);
-      aggregationCounter.incrementPartialAggregation();
+      metrics.incrementPartial();
     }
   }
 
