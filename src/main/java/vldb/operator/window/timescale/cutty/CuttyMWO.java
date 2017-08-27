@@ -68,8 +68,6 @@ public final class CuttyMWO<I, V> implements TimescaleWindowOperator<I, V> {
 
   private long prevSliceTime;
 
-  private long minBegins;
-
   private final TimeWindowOutputHandler<V, ?> outputHandler;
 
   /**
@@ -94,7 +92,6 @@ public final class CuttyMWO<I, V> implements TimescaleWindowOperator<I, V> {
     this.windowManager = windowManager;
     this.prevSliceTime = startTime;
     this.fat = fat;
-    this.minBegins = startTime;
     this.outputHandler = outputHandler;
     this.begins = new HashMap<>();
     // Initialize begins
@@ -133,6 +130,16 @@ public final class CuttyMWO<I, V> implements TimescaleWindowOperator<I, V> {
     return new Tuple2<>(startWindows, endWindows);
   }
 
+  public long getMinBegins() {
+    long minBegins = Long.MAX_VALUE;
+    for (final Timespan ts : begins.keySet()) {
+      if (ts.startTime < minBegins) {
+        minBegins = ts.startTime;
+      }
+    }
+    return minBegins;
+  }
+
   /**
    * Aggregates input into the current bucket.
    * @param val input
@@ -152,9 +159,6 @@ public final class CuttyMWO<I, V> implements TimescaleWindowOperator<I, V> {
 
         for (final Timespan startWindow : startWindows) {
           begins.put(startWindow, startWindow.startTime);
-          if (tickTime < minBegins) {
-            minBegins = tickTime;
-          }
         }
         prevSliceTime = tickTime;
       }
@@ -164,8 +168,9 @@ public final class CuttyMWO<I, V> implements TimescaleWindowOperator<I, V> {
 
         final long start = begins.get(endWindow);
         begins.remove(endWindow);
-        fat.removeUpTo(minBegins); // gc
         final V agg = aggregator.rollup(fat.merge(start), bucket);
+
+        fat.removeUpTo(getMinBegins()); // gc
 
         final long ett = System.nanoTime();
         timeMonitor.finalTime += (ett - stt);

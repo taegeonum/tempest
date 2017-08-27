@@ -36,9 +36,9 @@ public final class PafasMWOTest {
     final List<String> operatorIds = new LinkedList<>();
     final String timescaleString2 =  "(4,2)(5,3)(6,4)(10,5)";
     final String timescaleString3 =  "(5,4)(8,3)(12,7)(16,6)";
-    final String timescaleString = "(5,1)(10,1)(20,2)(30,2)(60,4)(90,4)(360,5)(600,5)(900,10)(1800,10)";
+    final String timescaleString4 = "(5,1)(10,1)(20,2)(30,2)(60,4)(90,4)(360,5)(600,5)(900,10)(1800,10)";
+    final String timescaleString = "(5,1)(10,1)(20,2)";
     // PAFAS
-
 
     /*
     configurationList.add(StaticSingleMWOConfiguration.CONF

@@ -32,6 +32,8 @@ public final class CuttyFlatFat<I, V> implements Fat<V> {
 
   private final Metrics metrics;
 
+  private long prevRemoved;
+
   @NamedParameter(doc = "initial leaf num", default_value = "32")
   public static final class LeafNum implements Name<Integer> {}
 
@@ -47,6 +49,7 @@ public final class CuttyFlatFat<I, V> implements Fat<V> {
     this.indexTimespanMap = new HashMap<>();
     this.prevSlice = startTime;
     this.aggregator = aggregator;
+    this.prevRemoved = startTime;
     this.metrics = metrics;
     this.currSize = 0;
     initialize(heap, 2 * leafNum - 1);
@@ -142,7 +145,7 @@ public final class CuttyFlatFat<I, V> implements Fat<V> {
   }
 
   private int increase(final int s, final int size) {
-    return s + 1 == size ? leafNum - 1 : s + 1;
+    return s + 1 >= size ? leafNum - 1 : s + 1;
   }
 
   private void doubleSize() {
@@ -189,7 +192,7 @@ public final class CuttyFlatFat<I, V> implements Fat<V> {
     while (frontTimespan != null && frontTimespan.endTime <= time) {
       // Make null and heapify
       heapify(heap, null, front);
-      front += 1;
+      front = increase(front, heap.size());
       frontTimespan = indexTimespanMap.get(front);
       currSize -= 1;
     }
@@ -212,7 +215,7 @@ public final class CuttyFlatFat<I, V> implements Fat<V> {
   @Override
   public V merge(final long from) {
     int statIndex = findIndexStartingFrom(from);
-    int endIndex = back == 0 ? 2 * leafNum - 2 : back - 1;
+    int endIndex = back == leafNum - 1 ? 2 * leafNum - 2 : back - 1;
 
     final int height = log2(leafNum);
 
