@@ -3,6 +3,7 @@ package vldb.operator.window.timescale.cutty;
 import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 import org.apache.reef.tang.annotations.Parameter;
+import vldb.evaluation.Metrics;
 import vldb.operator.window.aggregator.CAAggregator;
 import vldb.operator.window.timescale.common.Timespan;
 import vldb.operator.window.timescale.parameter.StartTime;
@@ -29,12 +30,15 @@ public final class CuttyFlatFat<I, V> implements Fat<V> {
 
   private Map<Integer, Timespan> indexTimespanMap;
 
+  private final Metrics metrics;
+
   @NamedParameter(doc = "initial leaf num", default_value = "32")
   public static final class LeafNum implements Name<Integer> {}
 
   @Inject
   private CuttyFlatFat(@Parameter(StartTime.class) final long startTime,
                        final CAAggregator<I, V> aggregator,
+                       final Metrics metrics,
                        @Parameter(LeafNum.class) final int leafNum) {
     this.leafNum = leafNum;
     this.heap = new ArrayList<>(2 * leafNum - 1);
@@ -43,6 +47,7 @@ public final class CuttyFlatFat<I, V> implements Fat<V> {
     this.indexTimespanMap = new HashMap<>();
     this.prevSlice = startTime;
     this.aggregator = aggregator;
+    this.metrics = metrics;
     this.currSize = 0;
     initialize(heap, 2 * leafNum - 1);
   }
@@ -57,11 +62,22 @@ public final class CuttyFlatFat<I, V> implements Fat<V> {
     return index % 2 == 0 ? (index / 2) - 1 : index / 2;
   }
 
+  private void adjustStoredPartial(final List<V> list, final V val, final int index) {
+    if (list == heap) {
+      if (val == null && list.get(index) != null) {
+        metrics.storedPartial -= 1;
+      } else if (val != null && list.get(index) == null) {
+        metrics.storedPartial += 1;
+      }
+    }
+  }
+
   private void heapify(final List<V> list, final V val, final int index) {
     if (index == 0) {
       return;
     }
 
+    adjustStoredPartial(list, val, index);
     list.set(index, val);
 
     if (index % 2 == 0) {
@@ -73,17 +89,21 @@ public final class CuttyFlatFat<I, V> implements Fat<V> {
       V result;
       if (leftChildV == null && val == null) {
         result = null;
+        adjustStoredPartial(list, val, index);
         list.set(parent, null);
       } else if (leftChildV == null) {
         result = val;
+        adjustStoredPartial(list, val, index);
         list.set(parent, val);
       } else if (val == null) {
         result = leftChildV;
+        adjustStoredPartial(list, val, index);
         list.set(parent, leftChildV);
       } else {
         final V comb = aggregator.init();
         aggregator.rollup(comb, leftChildV);
         aggregator.rollup(comb, val);
+        adjustStoredPartial(list, val, index);
         list.set(parent, comb);
         result = comb;
       }
@@ -98,17 +118,21 @@ public final class CuttyFlatFat<I, V> implements Fat<V> {
       V result;
       if (rightChildV == null && val == null) {
         result = null;
+        adjustStoredPartial(list, val, index);
         list.set(parent, null);
       } else if (rightChildV == null) {
         result = val;
+        adjustStoredPartial(list, val, index);
         list.set(parent, val);
       } else if (val == null) {
         result = rightChildV;
+        adjustStoredPartial(list, val, index);
         list.set(parent, rightChildV);
       } else {
         final V comb = aggregator.init();
         aggregator.rollup(comb, rightChildV);
         aggregator.rollup(comb, val);
+        adjustStoredPartial(list, val, index);
         list.set(parent, comb);
         result = comb;
       }

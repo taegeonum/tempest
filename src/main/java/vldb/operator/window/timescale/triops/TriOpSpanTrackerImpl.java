@@ -148,6 +148,8 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
         lastRemoved = end;
         partialNode.saveOutput(null);
         sharedPartialTimespans.removeNode(partialNode.start);
+
+        metrics.storedPartial -= 1;
         //System.out.println("@@@RM " + partialNode);
       }
     }
@@ -208,9 +210,11 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
               if (dependentNode.refCnt.decrementAndGet() == 0) {
                 dependentNode.saveOutput(null);
                 pt.removeNode(dependentNode.start);
+                metrics.storedPartial -= 1;
               } else {
                 timeMonitor.storedKey += ((Map)intermediateResult).size();
                 dependentNode.saveOutput(intermediateResult);
+                metrics.storedPartial += 1;
               }
               dependentNode.parents.remove(node);
               //dependentNode.decreaseRefCnt();
@@ -228,7 +232,7 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
               //System.out.println("DEP_NODE: " + dependentNode + ", V: " + dependentNode.getOutput());
               aggregates.add(dependentNode.getOutput());
               if (dependentNode.refCnt.decrementAndGet() <= 0) {
-                timeMonitor.storedKey -= ((Map)dependentNode.getOutput()).size();
+                metrics.storedPartial -= 1;
                 dependentNode.saveOutput(null);
                 if (dependentNode.partial) {
                   pt.removeNode(dependentNode.start);
@@ -254,16 +258,16 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
     final DynamicDependencyGraph<T> dependencyGraph;
     if (timespan.timescale == null) {
       // This is a shared partial agggregate. We need to store it into the sharedPartialTimespan.
-      timeMonitor.storedKey += ((Map)agg).size();
+      metrics.storedPartial += 1;
       sharedPartialTimespans.getNextPartialTimespanNode(timespan.startTime).saveOutput(agg);
     } else {
-      // This is a final aggregate.
+      // This is a partial aggregate in each gruop.
       dependencyGraph = timescaleGraphMap.get(timespan.timescale);
       final Node<T> node = dependencyGraph.getNode(timespan);
       if (node.getInitialRefCnt() != 0) {
         synchronized (node) {
           if (node.getInitialRefCnt() != 0) {
-            timeMonitor.storedKey += ((Map)agg).size();
+            metrics.storedPartial += 1;
             node.saveOutput(agg);
             //System.out.println("PUT_AGG: " + timespan + ", " + node + ", " + agg);
             // after saving the output, notify the thread that is waiting for this output.
@@ -271,6 +275,7 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
           } else {
             node.saveOutput(null);
             dependencyGraph.removeNode(node);
+            metrics.storedPartial -= 1;
           }
         }
       }

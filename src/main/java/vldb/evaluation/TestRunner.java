@@ -486,7 +486,11 @@ public final class TestRunner {
         mwo.execute(new WindowTimeEvent(tick));
         final StringBuilder sb1 = new StringBuilder();
         sb1.append(System.currentTimeMillis()); sb1.append("\t"); sb1.append(Profiler.getMemoryUsage()); sb1.append("\t");
-        sb1.append(timeMonitor.storedKey);
+        sb1.append(metrics.storedPartial);
+        sb1.append("\t");
+        sb1.append(metrics.storedFinal);
+        sb1.append("\t");
+        sb1.append(metrics.storedPartial + metrics.storedFinal);
         writer.writeLine(prefix + "_memory", sb1.toString());
         tick += 1;
         final StringBuilder sb = new StringBuilder("TICK");

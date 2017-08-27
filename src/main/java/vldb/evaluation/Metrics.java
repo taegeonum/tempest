@@ -17,11 +17,17 @@ public final class Metrics {
   public long elapsedTime;
   public final TimeMonitor timeMonitor;
 
+  public long storedPartial;
+
+  public long storedFinal;
+
   @Inject
   public Metrics(final TimeMonitor timeMonitor) {
     this.partialCount = 0;
     this.finalCount = 0;
     this.elapsedTime = 0;
+    this.storedFinal = 0;
+    this.storedPartial = 0;
     this.timeMonitor = timeMonitor;
   }
 

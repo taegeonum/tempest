@@ -16,6 +16,7 @@
 package vldb.operator.window.timescale.pafas;
 
 import org.apache.reef.tang.annotations.Parameter;
+import vldb.evaluation.Metrics;
 import vldb.operator.window.timescale.TimeMonitor;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.SpanTracker;
@@ -26,7 +27,6 @@ import vldb.operator.window.timescale.parameter.StartTime;
 import javax.inject.Inject;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -45,6 +45,8 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
   private final DependencyGraph dependencyGraph;
 
   private final TimeMonitor timeMonitor;
+  private Metrics metrics;
+
   /**
    * DependencyGraphComputationReuser constructor.
    * @param tsParser timescale parser
@@ -54,11 +56,13 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
                                 @Parameter(StartTime.class) final long startTime,
                                 final DependencyGraph<T> dependencyGraph,
                                 final PartialTimespans partialTimespans,
+                                final Metrics metrics,
                                 final TimeMonitor timeMonitor) {
     this.timescales = tsParser.timescales;
     this.timeMonitor = timeMonitor;
     this.partialTimespans = partialTimespans;
     this.dependencyGraph = dependencyGraph;
+    this.metrics = metrics;
   }
 
   @Override
@@ -98,7 +102,11 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
               aggregates.add(dependentNode.getOutput());
               dependentNode.decreaseRefCnt();
               if (dependentNode.getOutput() == null) {
-                timeMonitor.storedKey -= ((Map)agg).size();
+                if (dependentNode.partial) {
+                  metrics.storedPartial -= 1;
+                } else {
+                  metrics.storedFinal -= 1;
+                }
               }
               break;
             }
@@ -119,7 +127,11 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
     if (node.getInitialRefCnt() != 0) {
       synchronized (node) {
         if (node.getInitialRefCnt() != 0) {
-          timeMonitor.storedKey += ((Map)agg).size();
+          if (node.partial) {
+            metrics.storedPartial += 1;
+          } else {
+            metrics.storedFinal += 1;
+          }
           node.saveOutput(agg);
           //System.out.println("PUT_AGG: " + timespan + ", " + node);
           // after saving the output, notify the thread that is waiting for this output.

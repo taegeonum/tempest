@@ -169,9 +169,13 @@ public final class ActivePartialTimespans<T> implements PartialTimespans {
 
   @Override
   public long getNextSliceTime(final long currTime) {
-    final long adjTime = adjStartTime(currTime);
-    final Node<T> node = partialTimespanMap.get(adjTime);
-    return node.end + (currTime - adjTime);
+    try {
+      final long adjTime = adjStartTime(currTime);
+      final Node<T> node = partialTimespanMap.get(adjTime);
+      return node.end + (currTime - adjTime);
+    } catch (final Exception e) {
+      throw new RuntimeException("currtime: " + currTime + ", adjTime: " + adjStartTime(currTime));
+    }
   }
 
   private long adjStartTime(final long time) {
