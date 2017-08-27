@@ -88,7 +88,7 @@ public class ActiveDPSelectionAlgorithm<T> implements DependencyGraph.SelectionA
       // Dynamic programming
       for (final Node<T> node : availableNodes) {
         final int nodeEndIndex = (int)(adjustTime(reducedEnd, node.end) - start);
-        final int nodeStartIndex = (int)(adjustTime(reducedEnd, node.start) - start);
+        final int nodeStartIndex = (int)(adjustTime(reducedEnd-1, node.start) - start);
 
         final double cost = 1 + tradeOffCost(node) + costArray.get(nodeEndIndex);
         if (cost < costArray.get(nodeStartIndex)) {

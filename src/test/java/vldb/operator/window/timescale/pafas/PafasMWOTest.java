@@ -8,10 +8,11 @@ import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.cutty.CuttyMWOConfiguration;
-import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
+import vldb.operator.window.timescale.pafas.active.ActiveDPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
+import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -40,7 +41,7 @@ public final class PafasMWOTest {
     final String timescaleString = "(5,1)(10,1)(20,2)";
     // PAFAS
 
-    /*
+
     configurationList.add(StaticSingleMWOConfiguration.CONF
         .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
@@ -49,7 +50,7 @@ public final class PafasMWOTest {
         .set(StaticSingleMWOConfiguration.START_TIME, "0")
         .build());
     operatorIds.add("FAST");
-*/
+
 
     configurationList.add(CuttyMWOConfiguration.CONF
     .set(CuttyMWOConfiguration.START_TIME, currTime)
@@ -79,7 +80,7 @@ public final class PafasMWOTest {
         .set(StaticMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("PAFAS-DP");
-*/
+
 
 
     // On-the-fly operator
@@ -89,16 +90,16 @@ public final class PafasMWOTest {
         .set(OntheflyMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("OntheFly");
+*/
 
-    /*
     // TriOPs
     configurationList.add(TriOpsMWOConfiguration.CONF
-        .set(TriOpsMWOConfiguration.INITIAL_TIMESCALES, "(4,2)(5,3)(6,4)")
+        .set(TriOpsMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .set(TriOpsMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(TriOpsMWOConfiguration.START_TIME, currTime)
         .build());
     operatorIds.add("TriOps");
-*/
+
 
     int i = 0;
     final List<TimescaleWindowOperator> mwos = new LinkedList<>();

@@ -143,13 +143,10 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
     while (lastRemoved < t - largestWindow) {
       final Node<T> partialNode = sharedPartialTimespans.getNextPartialTimespanNode(lastRemoved);
       if (partialNode != null) {
-        timeMonitor.storedKey -= ((Map)partialNode.getOutput()).size();
         final long end = partialNode.end;
         lastRemoved = end;
         partialNode.saveOutput(null);
         sharedPartialTimespans.removeNode(partialNode.start);
-
-        metrics.storedPartial -= 1;
         //System.out.println("@@@RM " + partialNode);
       }
     }
@@ -210,39 +207,24 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
               if (dependentNode.refCnt.decrementAndGet() == 0) {
                 dependentNode.saveOutput(null);
                 pt.removeNode(dependentNode.start);
-                metrics.storedPartial -= 1;
               } else {
-                timeMonitor.storedKey += ((Map)intermediateResult).size();
-                dependentNode.saveOutput(intermediateResult);
                 metrics.storedPartial += 1;
+                dependentNode.saveOutput(intermediateResult);
               }
               dependentNode.parents.remove(node);
               //dependentNode.decreaseRefCnt();
               break;
-            } else if (dependentNode.getOutput() == null) {
-              // FinalAggregate is null. We should wait
-              try {
-                //System.out.println("WAIT: " + dependentNode);
-                dependentNode.wait();
-                //System.out.println("AWAKE: " + dependentNode);
-              } catch (InterruptedException e) {
-                e.printStackTrace();
-              }
-            } else {
-              //System.out.println("DEP_NODE: " + dependentNode + ", V: " + dependentNode.getOutput());
+            } else if (dependentNode.getOutput() != null && dependentNode.partial) {
               aggregates.add(dependentNode.getOutput());
               if (dependentNode.refCnt.decrementAndGet() <= 0) {
                 metrics.storedPartial -= 1;
                 dependentNode.saveOutput(null);
-                if (dependentNode.partial) {
-                  pt.removeNode(dependentNode.start);
-                } else {
-                  dependencyGraph.removeNode(dependentNode);
-                }
+                pt.removeNode(dependentNode.start);
+                dependentNode.parents.remove(node);
               }
-              dependentNode.parents.remove(node);
-              //dependentNode.decreaseRefCnt();
               break;
+            } else {
+              throw new RuntimeException("Invalid dependent node: " + node);
             }
           }
         }
@@ -255,30 +237,10 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
 
   @Override
   public void putAggregate(final T agg, final Timespan timespan) {
-    final DynamicDependencyGraph<T> dependencyGraph;
     if (timespan.timescale == null) {
       // This is a shared partial agggregate. We need to store it into the sharedPartialTimespan.
-      metrics.storedPartial += 1;
+      //metrics.storedPartial += 1;
       sharedPartialTimespans.getNextPartialTimespanNode(timespan.startTime).saveOutput(agg);
-    } else {
-      // This is a partial aggregate in each gruop.
-      dependencyGraph = timescaleGraphMap.get(timespan.timescale);
-      final Node<T> node = dependencyGraph.getNode(timespan);
-      if (node.getInitialRefCnt() != 0) {
-        synchronized (node) {
-          if (node.getInitialRefCnt() != 0) {
-            metrics.storedPartial += 1;
-            node.saveOutput(agg);
-            //System.out.println("PUT_AGG: " + timespan + ", " + node + ", " + agg);
-            // after saving the output, notify the thread that is waiting for this output.
-            node.notifyAll();
-          } else {
-            node.saveOutput(null);
-            dependencyGraph.removeNode(node);
-            metrics.storedPartial -= 1;
-          }
-        }
-      }
     }
   }
 
