@@ -57,9 +57,7 @@ public final class EvaluationLauncher4 {
     final List<TestRunner.OperatorType> operatorTypes = Arrays.asList(
         //TestRunner.OperatorType.PAFAS,
         //TestRunner.OperatorType.PAFAS_DP,
-        TestRunner.OperatorType.TriOps,
-        TestRunner.OperatorType.OnTheFly,
-        TestRunner.OperatorType.Naive
+        TestRunner.OperatorType.TriOps
     );
 
     final String timescales = "(292,3)(362,5)(461,4)(112,1)(371,3)(445,7)(194,9)(451,9)(488,10)(391,9)(228,4)(420,4)(290,2)(490,10)(71,5)(268,7)(110,8)(176,10)(425,2)(72,1)(181,10)(309,8)(113,2)(214,3)(448,6)(252,2)(163,7)(195,6)(136,10)(196,6)";
@@ -76,7 +74,7 @@ public final class EvaluationLauncher4 {
       writer.close();
       int i = 0;
       for (final double inputRate : inputRates) {
-        if (!(operatorType.equals(TestRunner.OperatorType.FAST_STATIC) && i < 3)) {
+        if (!(operatorType.equals(TestRunner.OperatorType.FastSt) && i < 3)) {
           final Process process = processHelper.startNewJavaProcess("-Xms22000m -Xmx56000m",
               "vldb.evaluation.WikiWordCountEvaluation",
               "./target/tempest-0.11-SNAPSHOT.jar",

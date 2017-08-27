@@ -61,7 +61,7 @@ public final class TwitterEvaluation {
 
     // Parameters
     final String timescaleString = injector.getNamedInstance(TimescaleString.class);
-    final String outputPath = injector.getNamedInstance(OutputPath.class);
+     String outputPath = injector.getNamedInstance(OutputPath.class);
     final List<Timescale> timescales = TimescaleParser.parseFromString(timescaleString);
     final int numThreads = injector.getNamedInstance(NumThreads.class);
     final double inputRate = injector.getNamedInstance(InputRate.class);
@@ -79,7 +79,16 @@ public final class TwitterEvaluation {
     final OutputWriter writer = injector.getInstance(LocalOutputWriter.class);
     final AvroConfigurationSerializer serializer = injector.getInstance(AvroConfigurationSerializer.class);
 
-    final String prefix = outputPath + testName + "/" + variable + "/" + operatorType.name();
+    String prefix;
+    outputPath = !outputPath.endsWith("/") ? outputPath + "/" : outputPath;
+    if ((operatorType == TestRunner.OperatorType.FastSt || operatorType == TestRunner.OperatorType.FastDy)
+        && tradeOffFactor < 100000.0) {
+      prefix = outputPath +  testName + "/" + variable + "/" + operatorType.name() + "/" + tradeOffFactor;
+    } else {
+      prefix = outputPath + testName + "/" + variable + "/" + operatorType.name();
+    }
+    System.out.println("PREFIX: " + prefix);
+
     writer.writeLine(prefix + "_conf", "-------------------------------------\n"
         + serializer.toString(commandLineConf) + "--------------------------------");
 
@@ -116,7 +125,7 @@ public final class TwitterEvaluation {
 
     //writer.writeLine(prefix + "_result", operatorType.name() + "\t" + variable + "\t" + result.partialCount + "\t" + result.finalCount + "\t" + result.processedInput + "\t" + result.elapsedTime + result.timeMonitor);
     writer.writeLine(prefix + "_result",
-        operatorType.name() + "\t" + metrics);
+        (tradeOffFactor < 100000.0 ? operatorType.name() + "-" + tradeOffFactor : operatorType.name()) + "\t" + metrics);
 
 
     // End of experiments

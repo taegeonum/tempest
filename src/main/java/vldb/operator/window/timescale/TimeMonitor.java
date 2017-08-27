@@ -11,6 +11,7 @@ public final class TimeMonitor {
   public long finalTime = 0;
   public long partialTime = 0;
   public long continuousTime = 0;
+  public long staticBuildingTime = 0;
   public long storedKey = 0;
   public long groupingTime = 0;
   public long nodeAdditionTime = 0;
@@ -25,6 +26,7 @@ public final class TimeMonitor {
   public String toString() {
     final long pt = TimeUnit.NANOSECONDS.toMillis(partialTime);
     final long ft = TimeUnit.NANOSECONDS.toMillis(finalTime);
+    final long bt = TimeUnit.NANOSECONDS.toMillis(staticBuildingTime);
     final long ct = TimeUnit.NANOSECONDS.toMillis(continuousTime);
     final long gt = TimeUnit.NANOSECONDS.toMillis(groupingTime);
     final long nat = TimeUnit.NANOSECONDS.toMillis(nodeAdditionTime);
@@ -32,11 +34,7 @@ public final class TimeMonitor {
 
     return "PT\t" + pt +
         "\tFT\t" + ft +
-        "\tBT\t" + ct +
-        "\tCT\t" + (pt+ft) +
-        "\tTT\t" + (pt+ft+ct) +
-        "\tGT\t" + gt +
-        "\tNAT\t" + nat +
-        "\tEAT\t" + eat;
+        "\tBT\t" + bt +
+        "\tCT\t" + ct;
   }
 }

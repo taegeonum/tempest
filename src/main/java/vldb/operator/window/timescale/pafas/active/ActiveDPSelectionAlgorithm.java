@@ -8,6 +8,7 @@ import vldb.operator.window.timescale.pafas.Node;
 import vldb.operator.window.timescale.pafas.PeriodCalculator;
 import vldb.operator.window.timescale.parameter.GCD;
 import vldb.operator.window.timescale.parameter.StartTime;
+import vldb.operator.window.timescale.parameter.TradeOffFactor;
 
 import javax.inject.Inject;
 import java.util.*;
@@ -22,18 +23,21 @@ public class ActiveDPSelectionAlgorithm<T> implements DependencyGraph.SelectionA
   private final long period;
   private final long startTime;
   private final long gcd;
+  private final double tradeOffFactor;
 
   @Inject
   private ActiveDPSelectionAlgorithm(final ActivePartialTimespans<T> partialTimespans,
                                      final OutputLookupTable<Node<T>> finalTimespans,
                                      final PeriodCalculator periodCalculator,
                                      @Parameter(StartTime.class) long startTime,
-                                     @Parameter(GCD.class) long gcd) {
+                                     @Parameter(GCD.class) long gcd,
+                                     @Parameter(TradeOffFactor.class) double tradeOffFactor) {
     this.partialTimespans = partialTimespans;
     this.finalTimespans = finalTimespans;
     this.startTime = startTime;
     this.period = periodCalculator.getPeriod();
     this.gcd = gcd;
+    this.tradeOffFactor = tradeOffFactor;
   }
 
   private long adjustTime(final long end, final long time) {
@@ -86,7 +90,7 @@ public class ActiveDPSelectionAlgorithm<T> implements DependencyGraph.SelectionA
         final int nodeEndIndex = (int)(adjustTime(reducedEnd, node.end) - start);
         final int nodeStartIndex = (int)(adjustTime(reducedEnd, node.start) - start);
 
-        final double cost = 1 + costArray.get(nodeEndIndex);
+        final double cost = 1 + tradeOffCost(node) + costArray.get(nodeEndIndex);
         if (cost < costArray.get(nodeStartIndex)) {
           costArray.set(nodeStartIndex, cost);
           nodeArray.set(nodeStartIndex, node);
@@ -158,5 +162,14 @@ public class ActiveDPSelectionAlgorithm<T> implements DependencyGraph.SelectionA
     }
 
     return availableNodes;
+  }
+
+
+  private double tradeOffCost(final Node<T> node) {
+    if (tradeOffFactor >= 100000.0) {
+      return 0;
+    } else {
+      return node.refCnt.get() == 0 ? 1 / tradeOffFactor : 0.0;
+    }
   }
 }

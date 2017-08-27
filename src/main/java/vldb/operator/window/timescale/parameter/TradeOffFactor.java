@@ -18,6 +18,6 @@ package vldb.operator.window.timescale.parameter;
 import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 
-@NamedParameter(doc = "CPU-memory trade-off factor", short_name = "tf", default_value = "5.0")
+@NamedParameter(doc = "CPU-memory trade-off factor", short_name = "tf", default_value = "100000.0")
 public final class TradeOffFactor implements Name<Double> {
 }

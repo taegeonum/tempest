@@ -135,8 +135,11 @@ public final class ActiveDynamicMWO<I, V> implements TimescaleWindowOperator<I, 
 
       if (activePartialTimespans.isActive(tickTime)) {
         // Trigger final aggregator without storing!
+        final long stt = System.nanoTime();
         final List<Timespan> finalTimespans = spanTracker.getFinalTimespans(tickTime);
         finalAggregator.triggerFinalAggregation(finalTimespans, bucket);
+        final long ett = System.nanoTime();
+        timeMonitor.finalTime += (ett - stt);
       }
 
     } else {
@@ -159,7 +162,11 @@ public final class ActiveDynamicMWO<I, V> implements TimescaleWindowOperator<I, 
     spanTracker.putAggregate(partialAggregation, new Timespan(prev, next, null));
     final List<Timespan> finalTimespans = spanTracker.getFinalTimespans(next);
     //System.out.println("final timespans at " + next  + ": " + finalTimespans);
+
+    final long stt = System.nanoTime();
     finalAggregator.triggerFinalAggregation(finalTimespans);
+    final long ett = System.nanoTime();
+    timeMonitor.finalTime += (ett - stt);
   }
 
   @Override

@@ -115,9 +115,7 @@ public final class ActiveFinalAggregator<V> implements FinalAggregator<V> {
         try {
           //System.out.println("FINAL: (" + timespan.startTime + ", " + timespan.endTime + ")");
           // Calculate elapsed time
-          final long st = System.nanoTime();
           final V finalResult = aggregateFunction.aggregate(aggregates);
-          final long et = System.nanoTime();
           //System.out.println("PUT_TIMESPAN: " + timespan);
           spanTracker.putAggregate(finalResult, timespan);
           outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,

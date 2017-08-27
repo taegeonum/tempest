@@ -45,14 +45,14 @@ public final class TestRunner {
   //static final long totalTime = 1800;
 
   public enum OperatorType {
-    FAST_STATIC,
-    FAST_DYNAMIC,
-    FAST_STATIC_MEM,
-    OnTheFly,
-    OnTheFly_DYNAMIC,
+    FastSt, // fast static
+    FastDy, // fast dynamic
+    FastSm, // fast static memory
+    OTFSta,
+    OTFDyn,
     TriOps,
-    Naive,
-    Cutty,
+    Naivee,
+    Cuttyy,
   }
 
   @NamedParameter(short_name="window_change_period", default_value = "10")
@@ -61,7 +61,7 @@ public final class TestRunner {
   private static Configuration getOperatorConf(final OperatorType operatorType,
                                                final String timescaleString) {
     switch (operatorType) {
-      case FAST_STATIC:
+      case FastSt:
         return StaticSingleMWOConfiguration.CONF
             .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
@@ -69,7 +69,7 @@ public final class TestRunner {
             .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
             .build();
-      case FAST_DYNAMIC:
+      case FastDy:
         return ActiveDynamicMWOConfiguration.CONF
             .set(ActiveDynamicMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(ActiveDynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
@@ -78,15 +78,15 @@ public final class TestRunner {
             .set(ActiveDynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicOptimizedDependencyGraphImpl.class)
             .set(ActiveDynamicMWOConfiguration.START_TIME, "0")
             .build();
-      case FAST_STATIC_MEM:
+      case FastSm:
         throw new RuntimeException("not supported yet");
-      case OnTheFly:
-        return OntheflyMWOConfiguration.CONF
+      case OTFSta:
+        return OntheflyMWOConfiguration.STATIC_CONF
           .set(OntheflyMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
           .set(OntheflyMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
           .set(OntheflyMWOConfiguration.START_TIME, "0")
           .build();
-      case Cutty:
+      case Cuttyy:
         return CuttyMWOConfiguration.CONF
             .set(CuttyMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(CuttyMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
@@ -99,7 +99,7 @@ public final class TestRunner {
             .set(TriOpsMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(TriOpsMWOConfiguration.START_TIME, "0")
             .build();
-      case Naive:
+      case Naivee:
         return NaiveMWOConfiguration.CONF
             .set(NaiveMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(NaiveMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
@@ -441,8 +441,13 @@ public final class TestRunner {
 
     newInjector.bindVolatileInstance(TimeWindowOutputHandler.class,
         new EvaluationHandler<>(operatorType.name(), countDownLatch, totalTime, writer, prefix));
-    final TimescaleWindowOperator<Object, Map<String, Long>> mwo = newInjector.getInstance(TimescaleWindowOperator.class);
     final TimeMonitor timeMonitor = newInjector.getInstance(TimeMonitor.class);
+    final long bst = System.nanoTime();
+    final TimescaleWindowOperator<Object, Map<String, Long>> mwo = newInjector.getInstance(TimescaleWindowOperator.class);
+    final long bet = System.nanoTime();
+
+    timeMonitor.staticBuildingTime = (bet - bst);
+
     final PeriodCalculator periodCalculator = newInjector.getInstance(PeriodCalculator.class);
     final Metrics metrics = newInjector.getInstance(Metrics.class);
     final long period = periodCalculator.getPeriod();

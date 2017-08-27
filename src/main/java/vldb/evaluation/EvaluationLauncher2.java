@@ -58,9 +58,7 @@ public final class EvaluationLauncher2 {
     final List<TestRunner.OperatorType> operatorTypes = Arrays.asList(
         //TestRunner.OperatorType.PAFAS,
         //TestRunner.OperatorType.PAFAS_DP,
-        TestRunner.OperatorType.TriOps,
-        TestRunner.OperatorType.OnTheFly,
-        TestRunner.OperatorType.Naive
+        TestRunner.OperatorType.TriOps
     );
 
     final List<String> timescalesList = new LinkedList<>();

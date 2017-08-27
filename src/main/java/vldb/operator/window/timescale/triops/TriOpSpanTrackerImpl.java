@@ -148,7 +148,7 @@ public final class TriOpSpanTrackerImpl<I, T> implements SpanTracker<T> {
         lastRemoved = end;
         partialNode.saveOutput(null);
         sharedPartialTimespans.removeNode(partialNode.start);
-        System.out.println("@@@RM " + partialNode);
+        //System.out.println("@@@RM " + partialNode);
       }
     }
     return timespans;
