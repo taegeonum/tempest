@@ -41,7 +41,7 @@ public final class OntheflyMWOConfiguration extends TimescaleWindowBaseConfigura
 
 public static final ConfigurationModule STATIC_CONF = new OntheflyMWOConfiguration()
     .merge(TimescaleWindowBaseConfiguration.CONF)
-    .bindImplementation(DependencyGraph.SelectionAlgorithm.class, OntheflySelectionAlgorithm.class)
+    .bindImplementation(DependencyGraph.SelectionAlgorithm.class, OntheflyStaticSelectionAlgorithm.class)
     .bindImplementation(OutputLookupTable.class, DPOutputLookupTableImpl.class)
     .bindImplementation(SpanTracker.class, StaticSpanTrackerImpl.class)
     .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
