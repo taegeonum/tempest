@@ -89,40 +89,7 @@ limitations under the License.
           <encoding>${project.build.sourceEncoding}</encoding>
         </configuration>
       </plugin>
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.7</version>
-        <executions>
-          <execution>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <tasks>
-                <exec executable="protoc" outputproperty="protoc.version">
-                  <arg value="--version"/>
-                </exec>
-                <fail message="${protobuf.version} expected, but protoc version was: ${protoc.version}">
-                  <condition>
-                    <not>
-                      <contains substring="${protobuf.version}" string="${protoc.version}"/>
-                    </not>
-                  </condition>
-                </fail>
 
-                <mkdir dir="target/generated-sources/proto"/>
-                <exec executable="protoc">
-                  <arg value="--proto_path=src/main/proto/"/>
-                  <arg value="--java_out=target/generated-sources/proto"/>
-                  <arg value="src/main/proto/timescalesignal.proto"/>
-                </exec>
-
-              </tasks>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
