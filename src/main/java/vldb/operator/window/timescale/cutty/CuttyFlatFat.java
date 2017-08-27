@@ -92,21 +92,21 @@ public final class CuttyFlatFat<I, V> implements Fat<V> {
       V result;
       if (leftChildV == null && val == null) {
         result = null;
-        adjustStoredPartial(list, val, index);
+        adjustStoredPartial(list, null, parent);
         list.set(parent, null);
       } else if (leftChildV == null) {
         result = val;
-        adjustStoredPartial(list, val, index);
+        adjustStoredPartial(list, val, parent);
         list.set(parent, val);
       } else if (val == null) {
         result = leftChildV;
-        adjustStoredPartial(list, val, index);
+        adjustStoredPartial(list, leftChildV, parent);
         list.set(parent, leftChildV);
       } else {
         final V comb = aggregator.init();
         aggregator.rollup(comb, leftChildV);
         aggregator.rollup(comb, val);
-        adjustStoredPartial(list, val, index);
+        adjustStoredPartial(list, comb, parent);
         list.set(parent, comb);
         result = comb;
       }
@@ -121,21 +121,21 @@ public final class CuttyFlatFat<I, V> implements Fat<V> {
       V result;
       if (rightChildV == null && val == null) {
         result = null;
-        adjustStoredPartial(list, val, index);
+        adjustStoredPartial(list, null, parent);
         list.set(parent, null);
       } else if (rightChildV == null) {
         result = val;
-        adjustStoredPartial(list, val, index);
+        adjustStoredPartial(list, val, parent);
         list.set(parent, val);
       } else if (val == null) {
         result = rightChildV;
-        adjustStoredPartial(list, val, index);
+        adjustStoredPartial(list, rightChildV, parent);
         list.set(parent, rightChildV);
       } else {
         final V comb = aggregator.init();
         aggregator.rollup(comb, rightChildV);
         aggregator.rollup(comb, val);
-        adjustStoredPartial(list, val, index);
+        adjustStoredPartial(list, comb, parent);
         list.set(parent, comb);
         result = comb;
       }
