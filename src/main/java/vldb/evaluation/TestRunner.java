@@ -509,6 +509,7 @@ public final class TestRunner {
     }
     //countDownLatch.await();
     final long endTime = System.currentTimeMillis();
+    metrics.setElapsedTime(endTime - currTime);
     mwo.close();
     wordGenerator.close();
     return metrics;
