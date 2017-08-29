@@ -85,7 +85,7 @@ public final class TwitterEvaluation {
     String prefix;
     outputPath = !outputPath.endsWith("/") ? outputPath + "/" : outputPath;
     if ((operatorType == TestRunner.OperatorType.FastSt || operatorType == TestRunner.OperatorType.FastDy)
-        && reusingRatio < 1.0) {
+        && windowGap > 0) {
       prefix = outputPath +  testName + "/" + variable + "/" + operatorType.name() + "/" + reusingRatio;
     } else {
       prefix = outputPath + testName + "/" + variable + "/" + operatorType.name();
