@@ -22,11 +22,16 @@ import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.OutputLookupTable;
 import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.common.Timespan;
+import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -60,6 +65,7 @@ public final class StaticDependencyGraphImpl<T> implements DependencyGraph {
   private final PartialTimespans<T> partialTimespans;
   private final OutputLookupTable<Node<T>> finalTimespans;
   private final SelectionAlgorithm<T> selectionAlgorithm;
+  private final int numThreads;
 
   /**
    * DependencyGraph constructor. This first builds the dependency graph.
@@ -71,12 +77,14 @@ public final class StaticDependencyGraphImpl<T> implements DependencyGraph {
                                    final PartialTimespans partialTimespans,
                                    final PeriodCalculator periodCalculator,
                                    final OutputLookupTable<Node<T>> outputLookupTable,
+                                   @Parameter(NumThreads.class) final int numThreads,
                                    final SelectionAlgorithm<T> selectionAlgorithm) {
     this.partialTimespans = partialTimespans;
     this.timescales = tsParser.timescales;
     this.period = periodCalculator.getPeriod();
     this.startTime = startTime;
     this.finalTimespans = outputLookupTable;
+    this.numThreads = numThreads;
     this.selectionAlgorithm = selectionAlgorithm;
     // create dependency graph.
     addOverlappingWindowNodeAndEdge();
@@ -116,25 +124,58 @@ public final class StaticDependencyGraphImpl<T> implements DependencyGraph {
    * Add DependencyGraphNode and connect dependent nodes.
    */
   private void addOverlappingWindowNodeAndEdge() {
+    final ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
+
     for (final Timescale timescale : timescales) {
+      final List<Node<T>> addedNodes = new LinkedList<>();
+
       for (long time = timescale.intervalSize + startTime; time <= period + startTime; time += timescale.intervalSize) {
         // create vertex and add it to the table cell of (time, windowsize)
         final long start = time - timescale.windowSize;
         final Node parent = new Node(start, time, false);
-        final List<Node<T>> childNodes = selectionAlgorithm.selection(start, time);
-        LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies1: " + childNodes);
-        //System.out.println("LOGGIGN: (" + start + ", " + time + ") dependencies1: " + childNodes);
-        for (final Node<T> elem : childNodes) {
-          parent.addDependency(elem);
-        }
+        addedNodes.add(parent);
+
         finalTimespans.saveOutput(start, time, parent);
         LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
-        LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies2: " + childNodes);
+        //LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies2: " + childNodes);
+      }
+
+      // Add edges
+      if (numThreads == 1) {
+        addEdges(addedNodes);
+      } else {
+        executorService.submit(() -> {
+          addEdges(addedNodes);
+        });
+      }
+    }
+
+    executorService.shutdown();
+    try {
+      executorService.awaitTermination(1000, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+  }
+
+  private void addEdges(final Collection<Node<T>> parentNodes) {
+    // Add edges
+    //final List<Future> futures = new LinkedList<>();
+
+    for (final Node parent : parentNodes) {
+      //System.out.println("child node start: " + parent);
+      final List<Node<T>> childNodes = selectionAlgorithm.selection(parent.start, parent.end);
+      //System.out.println("child node end: " + parent);
+      LOG.log(Level.FINE, "(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
+      //System.out.println("(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
+      for (final Node<T> elem : childNodes) {
+        parent.addDependency(elem);
       }
     }
   }
 
-  @Override
+
+    @Override
   public List<Timespan> getFinalTimespans(final long t) {
     final List<Timespan> timespans = new LinkedList<>();
     for (final Timescale timescale : timescales) {
