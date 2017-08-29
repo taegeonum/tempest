@@ -23,6 +23,7 @@ import vldb.operator.window.timescale.common.*;
 import vldb.operator.window.timescale.pafas.active.ActiveFinalAggregator;
 import vldb.operator.window.timescale.pafas.active.ActivePartialAggregator;
 import vldb.operator.window.timescale.pafas.active.ActivePartialTimespans;
+import vldb.operator.window.timescale.pafas.active.PruningDependencyGraphImpl;
 
 /**
  * A helper class for static MTS window configuration.
@@ -41,6 +42,6 @@ public final class StaticSingleMWOConfiguration extends TimescaleWindowBaseConfi
         .bindImplementation(PartialAggregator.class, ActivePartialAggregator.class)
         .bindImplementation(PartialTimespans.class, ActivePartialTimespans.class)
         .bindImplementation(FinalAggregator.class, ActiveFinalAggregator.class)
-        .bindImplementation(DependencyGraph.class, StaticDependencyGraphImpl.class)
+        .bindImplementation(DependencyGraph.class, PruningDependencyGraphImpl.class)
         .build();
 }

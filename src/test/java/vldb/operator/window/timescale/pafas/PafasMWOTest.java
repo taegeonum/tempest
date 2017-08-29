@@ -2,6 +2,7 @@ package vldb.operator.window.timescale.pafas;
 
 import org.apache.reef.tang.*;
 import org.junit.Test;
+import vldb.evaluation.Metrics;
 import vldb.example.DefaultExtractor;
 import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
 import vldb.operator.window.aggregator.impl.KeyExtractor;
@@ -11,7 +12,7 @@ import vldb.operator.window.timescale.cutty.CuttyMWOConfiguration;
 import vldb.operator.window.timescale.pafas.active.ActiveDPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;
-import vldb.operator.window.timescale.profiler.AggregationCounter;
+import vldb.operator.window.timescale.parameter.ReusingRatio;
 import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
 
 import java.util.LinkedList;
@@ -31,6 +32,7 @@ public final class PafasMWOTest {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
     jcb.bindNamedParameter(NumThreads.class, "4");
+    jcb.bindNamedParameter(ReusingRatio.class, "1.0");
 
     final long currTime = 0;
     final List<Configuration> configurationList = new LinkedList<>();
@@ -103,7 +105,7 @@ public final class PafasMWOTest {
 
     int i = 0;
     final List<TimescaleWindowOperator> mwos = new LinkedList<>();
-    final List<AggregationCounter> aggregationCounters = new LinkedList<>();
+    final List<Metrics> aggregationCounters = new LinkedList<>();
     for (final Configuration conf : configurationList) {
       final Injector injector = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), conf));
       injector.bindVolatileInstance(TimeWindowOutputHandler.class, new LoggingHandler<>(operatorIds.get(i)));
@@ -111,8 +113,8 @@ public final class PafasMWOTest {
       final TimescaleWindowOperator<String, Map<String, Long>> mwo = injector.getInstance(TimescaleWindowOperator.class);
       System.out.println("Finished creation " + operatorIds.get(i));
       mwos.add(mwo);
-      final AggregationCounter aggregationCounter = injector.getInstance(AggregationCounter.class);
-      aggregationCounters.add(aggregationCounter);
+      final Metrics metrics = injector.getInstance(Metrics.class);
+      aggregationCounters.add(metrics);
       i += 1;
     }
 
@@ -141,12 +143,13 @@ public final class PafasMWOTest {
 
     i = 0;
     for (final TimescaleWindowOperator mwo : mwos) {
-      final AggregationCounter aggregationCounter = aggregationCounters.get(i);
-      final long partialCount = aggregationCounter.getNumPartialAggregation();
-      final long finalCount = aggregationCounter.getNumFinalAggregation();
+      final Metrics aggregationCounter = aggregationCounters.get(i);
+      final long partialCount = aggregationCounter.partialCount;
+      final long finalCount = aggregationCounter.finalCount;
+      final long storedAgg = aggregationCounter.storedFinal + aggregationCounter.storedPartial;
       final String id = operatorIds.get(i);
       LOG.info(id + " aggregation count: partial: " + partialCount + ", final: " + finalCount
-          + ", total: " + (partialCount + finalCount));
+          + ", total: " + (partialCount + finalCount) + ", stored: " + storedAgg);
       i += 1;
     }
   }

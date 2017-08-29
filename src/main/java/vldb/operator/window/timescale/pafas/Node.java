@@ -40,6 +40,10 @@ public final class Node<T> {
 
   public final AtomicBoolean outputStored = new AtomicBoolean(false);
 
+  public boolean isNotShared = false;
+
+  public int possibleParentCount = 0;
+
   /**
    * The start time of the node.
    */

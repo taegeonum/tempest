@@ -90,7 +90,7 @@ public class ActiveDPSelectionAlgorithm<T> implements DependencyGraph.SelectionA
         final int nodeEndIndex = (int)(adjustTime(reducedEnd, node.end) - start);
         final int nodeStartIndex = (int)(adjustTime(reducedEnd-1, node.start) - start);
 
-        final double cost = 1 + tradeOffCost(node) + costArray.get(nodeEndIndex);
+        final double cost = 1 + costArray.get(nodeEndIndex);
         if (cost < costArray.get(nodeStartIndex)) {
           costArray.set(nodeStartIndex, cost);
           nodeArray.set(nodeStartIndex, node);
@@ -145,12 +145,14 @@ public class ActiveDPSelectionAlgorithm<T> implements DependencyGraph.SelectionA
       final Node<T> finalNode = entry.getValue();
       final long endTime = entry.getKey();
 
-      if (finalNode.start > end) {
-        availableNodes.add(finalNode);
-      } else {
-        if (!((endTime - scanStartPoint) == (end - start)) &&
-            !((scanStartPoint < end) && (entry.getKey() > end))) {
+      if (!finalNode.isNotShared) {
+        if (finalNode.start > end) {
           availableNodes.add(finalNode);
+        } else {
+          if (!((endTime - scanStartPoint) == (end - start)) &&
+              !((scanStartPoint < end) && (entry.getKey() > end))) {
+            availableNodes.add(finalNode);
+          }
         }
       }
     }
@@ -162,14 +164,5 @@ public class ActiveDPSelectionAlgorithm<T> implements DependencyGraph.SelectionA
     }
 
     return availableNodes;
-  }
-
-
-  private double tradeOffCost(final Node<T> node) {
-    if (tradeOffFactor >= 100000.0) {
-      return 0;
-    } else {
-      return node.refCnt.get() == 0 ? 1 / tradeOffFactor : 0.0;
-    }
   }
 }

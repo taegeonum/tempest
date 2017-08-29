@@ -14,8 +14,8 @@ import vldb.evaluation.parameter.*;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.parameter.NumThreads;
+import vldb.operator.window.timescale.parameter.ReusingRatio;
 import vldb.operator.window.timescale.parameter.TimescaleString;
-import vldb.operator.window.timescale.parameter.TradeOffFactor;
 
 import java.io.IOException;
 import java.util.List;
@@ -45,7 +45,7 @@ public final class TwitterEvaluation {
         .registerShortNameOfClass(Variable.class)
         .registerShortNameOfClass(EndTime.class)
         .registerShortNameOfClass(TestName.class)
-        .registerShortNameOfClass(TradeOffFactor.class)
+        .registerShortNameOfClass(ReusingRatio.class)
             .registerShortNameOfClass(TestRunner.WindowChangePeriod.class)
         //.registerShortNameOfClass(NumOfKey.class)
         .processCommandLine(args);
@@ -70,7 +70,7 @@ public final class TwitterEvaluation {
     final String testName = injector.getNamedInstance(TestName.class);
     final String dataPath = injector.getNamedInstance(FileWordGenerator.FileDataPath.class);
     final int windowChangePeriod = injector.getNamedInstance(TestRunner.WindowChangePeriod.class);
-    final double tradeOffFactor = injector.getNamedInstance(TradeOffFactor.class);
+    final double reusingRatio = injector.getNamedInstance(ReusingRatio.class);
     //final long numKey = injector.getNamedInstance(NumOfKey.class);
 
     final TestRunner.OperatorType operatorType = TestRunner.OperatorType.valueOf(
@@ -82,8 +82,8 @@ public final class TwitterEvaluation {
     String prefix;
     outputPath = !outputPath.endsWith("/") ? outputPath + "/" : outputPath;
     if ((operatorType == TestRunner.OperatorType.FastSt || operatorType == TestRunner.OperatorType.FastDy)
-        && tradeOffFactor < 100000.0) {
-      prefix = outputPath +  testName + "/" + variable + "/" + operatorType.name() + "/" + tradeOffFactor;
+        && reusingRatio < 1.0) {
+      prefix = outputPath +  testName + "/" + variable + "/" + operatorType.name() + "/" + reusingRatio;
     } else {
       prefix = outputPath + testName + "/" + variable + "/" + operatorType.name();
     }
@@ -121,11 +121,11 @@ public final class TwitterEvaluation {
     }
     */
     final Metrics metrics = TestRunner.runFileWordTest(timescales,
-        numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix, tradeOffFactor);
+        numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix, reusingRatio);
 
     //writer.writeLine(prefix + "_result", operatorType.name() + "\t" + variable + "\t" + result.partialCount + "\t" + result.finalCount + "\t" + result.processedInput + "\t" + result.elapsedTime + result.timeMonitor);
     writer.writeLine(prefix + "_result",
-        (tradeOffFactor < 100000.0 ? operatorType.name() + "-" + tradeOffFactor : operatorType.name()) + "\t" + metrics);
+        (reusingRatio < 1.0 ? reusingRatio : operatorType.name()) + "\t" + metrics);
 
 
     // End of experiments
