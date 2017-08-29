@@ -29,9 +29,7 @@ import javax.inject.Inject;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -129,15 +127,49 @@ public final class StaticDependencyGraphImpl<T> implements DependencyGraph {
     for (final Timescale timescale : timescales) {
       final List<Node<T>> addedNodes = new LinkedList<>();
 
-      for (long time = timescale.intervalSize + startTime; time <= period + startTime; time += timescale.intervalSize) {
-        // create vertex and add it to the table cell of (time, windowsize)
-        final long start = time - timescale.windowSize;
-        final Node parent = new Node(start, time, false);
-        addedNodes.add(parent);
+      // Add node parallelize
+      if (numThreads == 1) {
+        for (long time = timescale.intervalSize + startTime; time <= period + startTime; time += timescale.intervalSize) {
+          // create vertex and add it to the table cell of (time, windowsize)
+          final long start = time - timescale.windowSize;
+          final Node parent = new Node(start, time, false);
+          addedNodes.add(parent);
 
-        finalTimespans.saveOutput(start, time, parent);
-        LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
-        //LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies2: " + childNodes);
+          finalTimespans.saveOutput(start, time, parent);
+          LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
+          //LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies2: " + childNodes);
+        }
+      } else {
+        final List<Future<List<Node<T>>>> futures = new LinkedList<>();
+        futures.add(executorService.submit(new Callable<List<Node<T>>>() {
+          @Override
+          public List<Node<T>> call() throws Exception {
+            final List<Node<T>> createdNodes = new LinkedList<Node<T>>();
+            for (long time = timescale.intervalSize + startTime; time <= period + startTime; time += timescale.intervalSize) {
+
+              // create vertex and add it to the table cell of (time, windowsize)
+              final long start = time - timescale.windowSize;
+              final Node parent = new Node(start, time, false);
+              createdNodes.add(parent);
+
+              finalTimespans.saveOutput(start, time, parent);
+              LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
+              //LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies2: " + childNodes);
+            }
+            return createdNodes;
+          }
+        }));
+
+        for (final Future<List<Node<T>>> future : futures) {
+          try {
+            addedNodes.addAll(future.get());
+          } catch (InterruptedException e) {
+            e.printStackTrace();
+          } catch (ExecutionException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+          }
+        }
       }
 
       // Add edges
