@@ -28,6 +28,7 @@ import vldb.operator.window.timescale.pafas.dynamic.DynamicOptimizedDependencyGr
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.ReusingRatio;
+import vldb.operator.window.timescale.parameter.WindowGap;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
 import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
 
@@ -409,13 +410,15 @@ public final class TestRunner {
                                        final long totalTime,
                                        final OutputWriter writer,
                                        final String prefix,
-                                       final double reusingRatio) throws Exception {
+                                       final double reusingRatio,
+                                       final int windowGap) throws Exception {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
     jcb.bindNamedParameter(NumThreads.class, numThreads+"");
     jcb.bindNamedParameter(FileWordGenerator.FileDataPath.class, filePath);
     jcb.bindNamedParameter(EndTime.class, totalTime+"");
     jcb.bindNamedParameter(ReusingRatio.class, reusingRatio+"");
+    jcb.bindNamedParameter(WindowGap.class, windowGap+"");
 
     Collections.sort(timescales);
     int numOutputs = 0;

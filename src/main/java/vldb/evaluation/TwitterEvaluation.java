@@ -16,6 +16,7 @@ import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.ReusingRatio;
 import vldb.operator.window.timescale.parameter.TimescaleString;
+import vldb.operator.window.timescale.parameter.WindowGap;
 
 import java.io.IOException;
 import java.util.List;
@@ -47,6 +48,7 @@ public final class TwitterEvaluation {
         .registerShortNameOfClass(TestName.class)
         .registerShortNameOfClass(ReusingRatio.class)
             .registerShortNameOfClass(TestRunner.WindowChangePeriod.class)
+                .registerShortNameOfClass(WindowGap.class)
         //.registerShortNameOfClass(NumOfKey.class)
         .processCommandLine(args);
 
@@ -71,6 +73,7 @@ public final class TwitterEvaluation {
     final String dataPath = injector.getNamedInstance(FileWordGenerator.FileDataPath.class);
     final int windowChangePeriod = injector.getNamedInstance(TestRunner.WindowChangePeriod.class);
     final double reusingRatio = injector.getNamedInstance(ReusingRatio.class);
+    final int windowGap = injector.getNamedInstance(WindowGap.class);
     //final long numKey = injector.getNamedInstance(NumOfKey.class);
 
     final TestRunner.OperatorType operatorType = TestRunner.OperatorType.valueOf(
@@ -121,7 +124,7 @@ public final class TwitterEvaluation {
     }
     */
     final Metrics metrics = TestRunner.runFileWordTest(timescales,
-        numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix, reusingRatio);
+        numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix, reusingRatio, windowGap);
 
     //writer.writeLine(prefix + "_result", operatorType.name() + "\t" + variable + "\t" + result.partialCount + "\t" + result.finalCount + "\t" + result.processedInput + "\t" + result.elapsedTime + result.timeMonitor);
     writer.writeLine(prefix + "_result",

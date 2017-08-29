@@ -20,10 +20,7 @@ import org.apache.reef.tang.formats.RequiredImpl;
 import vldb.operator.window.timescale.TimescaleWindowBaseConfiguration;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.common.*;
-import vldb.operator.window.timescale.pafas.active.ActiveFinalAggregator;
-import vldb.operator.window.timescale.pafas.active.ActivePartialAggregator;
-import vldb.operator.window.timescale.pafas.active.ActivePartialTimespans;
-import vldb.operator.window.timescale.pafas.active.PruningDependencyGraphImpl;
+import vldb.operator.window.timescale.pafas.active.*;
 
 /**
  * A helper class for static MTS window configuration.
@@ -42,6 +39,6 @@ public final class StaticSingleMWOConfiguration extends TimescaleWindowBaseConfi
         .bindImplementation(PartialAggregator.class, ActivePartialAggregator.class)
         .bindImplementation(PartialTimespans.class, ActivePartialTimespans.class)
         .bindImplementation(FinalAggregator.class, ActiveFinalAggregator.class)
-        .bindImplementation(DependencyGraph.class, PruningDependencyGraphImpl.class)
+        .bindImplementation(DependencyGraph.class, WindowPruningDependencyGraphImpl.class)
         .build();
 }
