@@ -26,15 +26,14 @@ import vldb.operator.window.timescale.pafas.DependencyGraph;
 import vldb.operator.window.timescale.pafas.Node;
 import vldb.operator.window.timescale.pafas.PartialTimespans;
 import vldb.operator.window.timescale.pafas.PeriodCalculator;
+import vldb.operator.window.timescale.pafas.dynamic.WindowManager;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.ReusingRatio;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -73,6 +72,11 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
 
   private final Set<Node<T>> noSharedNode = new HashSet<>();
 
+  private final ConcurrentMap<Long, List<Long>> startEndMap;
+
+  private final WindowManager windowManager;
+  private final int largestWindowSize;
+
   /**
    * DependencyGraph constructor. This first builds the dependency graph.
    * @param startTime the initial start time of when the graph is built.
@@ -84,6 +88,7 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
                                      final PeriodCalculator periodCalculator,
                                      final OutputLookupTable<Node<T>> outputLookupTable,
                                      @Parameter(NumThreads.class) final int numThreads,
+                                     final WindowManager windowManager,
                                      @Parameter(ReusingRatio.class) final double reusingRatio,
                                      final SelectionAlgorithm<T> selectionAlgorithm) {
     this.partialTimespans = partialTimespans;
@@ -93,8 +98,10 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
     this.finalTimespans = outputLookupTable;
     this.numThreads = numThreads;
     this.reusingRatio = reusingRatio;
+    this.startEndMap = new ConcurrentHashMap<>();
     this.selectionAlgorithm = selectionAlgorithm;
-
+    this.windowManager = windowManager;
+    this.largestWindowSize = (int)windowManager.timescales.get(windowManager.timescales.size()-1).windowSize;
     // create dependency graph.
     addOverlappingWindowNodeAndEdge();
   }
@@ -129,50 +136,38 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
     return adj;
   }
 
-  private void pruning(final List<Node<T>> addedNodes) {
+  private void pruning(final List<Node<T>> addedNodes, final boolean[][] table) {
+    final ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
+
+    // Counting the possible reference count!
+    for (final Node<T> node : addedNodes) {
+      executorService.submit(() -> {
+        int st = (int) node.start + largestWindowSize;
+        int e = (int) node.end + largestWindowSize;
+
+        int cnt = 0;
+        for (int i = st; i >= 0; i--) {
+          for (int j = e; j <= (int) period + largestWindowSize; j++) {
+            if (table[i][j]) {
+              cnt += 1;
+            }
+          }
+        }
+
+        node.possibleParentCount = cnt;
+      });
+    }
 
     final Node<T>[] array = new Node[addedNodes.size()];
     for (int i = 0; i < array.length; i++) {
       array[i] = addedNodes.get(i);
     }
 
-    Arrays.parallelSort(array, new Comparator<Node<T>>() {
-      @Override
-      public int compare(final Node<T> o1, final Node<T> o2) {
-        final long windowSize1 = o1.end - o1.start;
-        final long windowSize2 = o2.end - o2.start;
-
-        if (o1.start < o2.start) {
-          if (windowSize1 < windowSize2) {
-            return -1;
-          } else if (windowSize1 > windowSize2) {
-            return 1;
-          } else {
-            return 0;
-          }
-        } else if (o1.start > o2.start) {
-          return 1;
-        } else {
-          return 0;
-        }
-      }
-    });
-
-    // Counting the possible reference count!
-    for (int i = 0; i < array.length; i++) {
-      final Node<T> node = array[i];
-      final long windowSize1 = node.end - node.start;
-      int count = 0;
-      for (int j = i+1; j < array.length; j++) {
-        final Node<T> possibleParent = array[j];
-        final long windowSize2 = possibleParent.end - possibleParent.start;
-        if (possibleParent.start == node.start && (windowSize2 > windowSize1)) {
-          count += 1;
-        } else {
-          break;
-        }
-      }
-      node.possibleParentCount = count;
+    executorService.shutdown();
+    try {
+      executorService.awaitTermination(300, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
     }
 
     // Sorting by possible parent count
@@ -180,9 +175,9 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
       @Override
       public int compare(final Node<T> o1, final Node<T> o2) {
         if (o1.possibleParentCount < o2.possibleParentCount) {
-          return -1;
-        } else if (o1.possibleParentCount > o2.possibleParentCount) {
           return 1;
+        } else if (o1.possibleParentCount > o2.possibleParentCount) {
+          return -1;
         } else {
           return 0;
         }
@@ -204,22 +199,70 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
     final ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
     final List<Node<T>> addedNodes = new LinkedList<>();
 
-    for (final Timescale timescale : timescales) {
+    final boolean[][] table = new boolean[(int)period + largestWindowSize][(int)period+largestWindowSize+1];
 
-      for (long time = timescale.intervalSize + startTime; time <= period + startTime; time += timescale.intervalSize) {
-        // create vertex and add it to the table cell of (time, windowsize)
-        final long start = time - timescale.windowSize;
-        final Node parent = new Node(start, time, false);
-        addedNodes.add(parent);
+    for (int i = 0; i < period + largestWindowSize; i++) {
+      for (int j = 0; j < period  + largestWindowSize + 1; j++) {
+        table[i][j] = false;
+      }
+    }
 
-        finalTimespans.saveOutput(start, time, parent);
-        LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
-        //LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies2: " + childNodes);
+    if (numThreads == 1) {
+      for (final Timescale timescale : timescales) {
+
+        for (long time = timescale.intervalSize + startTime; time <= period + startTime; time += timescale.intervalSize) {
+          // create vertex and add it to the table cell of (time, windowsize)
+          final long start = time - timescale.windowSize;
+          final Node parent = new Node(start, time, false);
+          addedNodes.add(parent);
+
+
+          table[(int)start+largestWindowSize][(int)time+largestWindowSize] = true;
+
+          finalTimespans.saveOutput(start, time, parent);
+          LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
+          //LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies2: " + childNodes);
+        }
+      }
+    } else {
+      final List<Future<List<Node<T>>>> futures = new LinkedList<>();
+      for (final Timescale timescale : timescales) {
+        futures.add(executorService.submit(new Callable<List<Node<T>>>() {
+          @Override
+          public List<Node<T>> call() throws Exception {
+            final List<Node<T>> createdNodes = new LinkedList<Node<T>>();
+            for (long time = timescale.intervalSize + startTime; time <= period + startTime; time += timescale.intervalSize) {
+
+              // create vertex and add it to the table cell of (time, windowsize)
+              final long start = time - timescale.windowSize;
+              final Node parent = new Node(start, time, false);
+              createdNodes.add(parent);
+
+              table[(int)start+largestWindowSize][(int)time+largestWindowSize] = true;
+
+              finalTimespans.saveOutput(start, time, parent);
+              LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
+              //LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies2: " + childNodes);
+            }
+            return createdNodes;
+          }
+        }));
+      }
+
+      for (final Future<List<Node<T>>> future : futures) {
+        try {
+          addedNodes.addAll(future.get());
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        } catch (ExecutionException e) {
+          e.printStackTrace();
+          throw new RuntimeException(e);
+        }
       }
     }
 
     if (reusingRatio < 1.0) {
-      pruning(addedNodes);
+      pruning(addedNodes, table);
     }
 
     // Add edges
