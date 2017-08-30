@@ -106,29 +106,28 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
   }
 
   private void adjustDependencyGraph(final double reuseRatio, final List<Node<T>> addedNodes) {
-    final Node<T>[] array = new Node[addedNodes.size()];
-    for (int i = 0; i < array.length; i++) {
-      array[i] = addedNodes.get(i);
+    final PriorityQueue<Node<T>> priorityQueue = new PriorityQueue<>(addedNodes.size(),
+        new Comparator<Node<T>>() {
+          @Override
+          public int compare(final Node<T> o1, final Node<T> o2) {
+            return (o1.refCnt.get() * o1.getDependencies().size() - o2.refCnt.get() * o2.getDependencies().size());
+          }
+        });
+
+    final Set<Node<T>> pruningNodes = new HashSet<>();
+    for (final Node<T> node : addedNodes) {
+      final List<Node<T>> dp = node.getDependencies();
+      if (node.refCnt.get() > 0 && dp.size() > 0 && dp.get(dp.size()-1).end == node.end) {
+        priorityQueue.add(node);
+        pruningNodes.add(node);
+      }
     }
 
-    Arrays.parallelSort(array, new Comparator<Node<T>>() {
-      @Override
-      public int compare(final Node<T> o1, final Node<T> o2) {
-        return -(int)(o1.refCnt.get() * o1.getDependencies().size() - o2.refCnt.get() * o2.getDependencies().size());
-      }
-    });
-
-    // parent
-    // pruning node
-    // child
-    final int pruningIndex = Math.min(array.length - 1, (int) (reuseRatio * array.length));
-    for (int i = pruningIndex; i < array.length; i++) {
-      final Node<T> pruningNode = array[i];
-
-      // Skip because they have no parent node. They are root!
-      if (pruningNode.refCnt.get() == 0) {
-        break;
-      }
+    final int pruningNum = (int)(priorityQueue.size() * (1-reuseRatio));
+    int removedNum = 0;
+    while (removedNum < pruningNum) {
+      final Node<T> pruningNode = priorityQueue.poll();
+      final Set<Node<T>> updatedChildren = new HashSet<>();
 
       pruningNode.initialRefCnt.set(0);
 
@@ -138,10 +137,21 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
 
         for (final Node<T> child : pruningNode.getDependencies()) {
           parent.addDependency(child);
+          updatedChildren.add(child);
         }
       }
 
       pruningNode.parents.clear();
+
+      // Update child
+      for (final Node<T> updatedNode : updatedChildren) {
+        if (pruningNodes.contains(updatedNode)) {
+          priorityQueue.remove(updatedNode);
+          priorityQueue.add(updatedNode);
+        }
+      }
+
+      removedNum += 1;
     }
   }
 
