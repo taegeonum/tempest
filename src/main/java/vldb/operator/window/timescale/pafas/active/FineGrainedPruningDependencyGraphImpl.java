@@ -127,7 +127,7 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
     int removedNum = 0;
     while (removedNum < pruningNum) {
       final Node<T> pruningNode = priorityQueue.poll();
-      final Set<Node<T>> updatedChildren = new HashSet<>();
+      final Set<Node<T>> updatedNodes = new HashSet<>();
 
       pruningNode.initialRefCnt.set(0);
 
@@ -135,16 +135,18 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
         parent.getDependencies().remove(pruningNode);
         pruningNode.decreaseRefCnt();
 
+        updatedNodes.add(parent);
+
         for (final Node<T> child : pruningNode.getDependencies()) {
           parent.addDependency(child);
-          updatedChildren.add(child);
+          updatedNodes.add(child);
         }
       }
 
       pruningNode.parents.clear();
 
       // Update child
-      for (final Node<T> updatedNode : updatedChildren) {
+      for (final Node<T> updatedNode : updatedNodes) {
         if (pruningNodes.contains(updatedNode)) {
           priorityQueue.remove(updatedNode);
           priorityQueue.add(updatedNode);
