@@ -29,7 +29,7 @@ public final class Node<T> {
   /**
    * An initial reference count.
    */
-  private AtomicInteger initialRefCnt;
+  public AtomicInteger initialRefCnt;
 
   /**
    * An output.

@@ -130,6 +130,8 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
         break;
       }
 
+      pruningNode.initialRefCnt.set(0);
+
       for (final Node<T> parent : pruningNode.parents) {
         parent.getDependencies().remove(pruningNode);
         pruningNode.decreaseRefCnt();
