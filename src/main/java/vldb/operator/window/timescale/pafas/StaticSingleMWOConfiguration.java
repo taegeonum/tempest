@@ -39,6 +39,6 @@ public final class StaticSingleMWOConfiguration extends TimescaleWindowBaseConfi
         .bindImplementation(PartialAggregator.class, ActivePartialAggregator.class)
         .bindImplementation(PartialTimespans.class, ActivePartialTimespans.class)
         .bindImplementation(FinalAggregator.class, ActiveFinalAggregator.class)
-        .bindImplementation(DependencyGraph.class, WindowPruningDependencyGraphImpl.class)
+        .bindImplementation(DependencyGraph.class, FineGrainedPruningDependencyGraphImpl.class)
         .build();
 }
