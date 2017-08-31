@@ -102,7 +102,16 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
     this.largestWindowSize = (int)windowManager.timescales.get(windowManager.timescales.size()-1).windowSize;
     // create dependency graph.
     addOverlappingWindowNodeAndEdge(reuseRatio);
+    System.out.println("done");
+  }
 
+  private boolean childRefCntGreaterThanOne(final Node<T> node) {
+    for (final Node<T> child : node.getDependencies()) {
+      if (child.refCnt.get() <= 1) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private void adjustDependencyGraph(final double reuseRatio, final List<Node<T>> addedNodes) {
@@ -117,7 +126,9 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
     final Set<Node<T>> pruningNodes = new HashSet<>();
     for (final Node<T> node : addedNodes) {
       final List<Node<T>> dp = node.getDependencies();
-      if (node.refCnt.get() > 0 && dp.size() > 0 && dp.get(dp.size()-1).end == node.end) {
+      //if (node.refCnt.get() > 0 && dp.size() > 0 && dp.get(dp.size()-1).end == node.end
+      //    && childRefCntGreaterThanOne(node)) {
+      if (node.refCnt.get() > 0) {
         priorityQueue.add(node);
         pruningNodes.add(node);
       }
@@ -256,6 +267,7 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
+
 
     // Adjust dependency graph!
     if (reuseRatio < 1.0) {

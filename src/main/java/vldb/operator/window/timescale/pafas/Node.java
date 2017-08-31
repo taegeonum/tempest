@@ -165,7 +165,7 @@ public final class Node<T> {
     sb.append(end);
     sb.append("), outputSaved: ");
     sb.append(outputExists);
-    sb.append(")");
+    sb.append(", #_child: " + dependencies.size() + ")");
     return sb.toString();
   }
 

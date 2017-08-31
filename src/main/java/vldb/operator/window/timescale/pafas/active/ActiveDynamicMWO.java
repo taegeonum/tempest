@@ -64,7 +64,7 @@ public final class ActiveDynamicMWO<I, V> implements TimescaleWindowOperator<I, 
 
   private final DynamicSpanTrackerImpl<I, V> spanTracker;
 
-  private final ActiveFinalAggregator<V> finalAggregator;
+  private final DefaultActiveFinalAggregatorImpl<V> finalAggregator;
 
   private long nextRealTime;
 
@@ -85,7 +85,7 @@ public final class ActiveDynamicMWO<I, V> implements TimescaleWindowOperator<I, 
   private ActiveDynamicMWO(
       final CAAggregator<I, V> aggregator,
       final DynamicSpanTrackerImpl<I, V> spanTracker,
-      final ActiveFinalAggregator<V> finalAggregator,
+      final DefaultActiveFinalAggregatorImpl<V> finalAggregator,
       final Metrics metrics,
       @Parameter(NumThreads.class) final int numThreads,
       @Parameter(StartTime.class) final Long startTime,

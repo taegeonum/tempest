@@ -44,6 +44,6 @@ public final class ActiveDynamicMWOConfiguration extends TimescaleWindowBaseConf
         .bindImplementation(DynamicPartialTimespans.class, DynamicActivePartialTimespans.class)
         .bindImplementation(SpanTracker.class, DynamicSpanTrackerImpl.class)
         .bindImplementation(TimescaleWindowOperator.class, ActiveDynamicMWO.class)
-        .bindImplementation(FinalAggregator.class, ActiveFinalAggregator.class)
+        .bindImplementation(FinalAggregator.class, DefaultActiveFinalAggregatorImpl.class)
         .build();
 }

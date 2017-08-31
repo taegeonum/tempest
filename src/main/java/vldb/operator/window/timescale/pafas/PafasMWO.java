@@ -20,7 +20,6 @@ import vldb.operator.OutputEmitter;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.TimescaleWindowOutput;
-import vldb.operator.window.timescale.common.FinalAggregator;
 import vldb.operator.window.timescale.common.PartialAggregator;
 import vldb.operator.window.timescale.common.SpanTracker;
 import vldb.operator.window.timescale.common.TimescaleParser;
@@ -41,8 +40,6 @@ public final class PafasMWO<I, V> implements TimescaleWindowOperator<I, V> {
    * A sliced window operator for incremental aggregation.
    */
   private final PartialAggregator<I> partialAggregator;
-
-  private final FinalAggregator<V> finalAggregator;
 
   /**
    * Parser for Initial timescales.
@@ -69,13 +66,11 @@ public final class PafasMWO<I, V> implements TimescaleWindowOperator<I, V> {
       final SpanTracker<V> spanTracker,
       final TimescaleParser tsParser,
       final PartialAggregator<I> partialAggregator,
-      final FinalAggregator<V> finalAggregator,
       @Parameter(StartTime.class) final long startTime) throws Exception {
     this.partialAggregator = partialAggregator;
     this.spanTracker = spanTracker;
     this.tsParser = tsParser;
     this.startTime = startTime;
-    this.finalAggregator = finalAggregator;
   }
 
   /**
@@ -99,7 +94,7 @@ public final class PafasMWO<I, V> implements TimescaleWindowOperator<I, V> {
   @Override
   public void close() throws Exception {
     partialAggregator.close();
-    finalAggregator.close();
+    //finalAggregator.close();
   }
 
   @Override

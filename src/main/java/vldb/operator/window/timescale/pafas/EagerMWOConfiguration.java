@@ -19,26 +19,28 @@ import org.apache.reef.tang.formats.ConfigurationModule;
 import org.apache.reef.tang.formats.RequiredImpl;
 import vldb.operator.window.timescale.TimescaleWindowBaseConfiguration;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
-import vldb.operator.window.timescale.common.*;
+import vldb.operator.window.timescale.common.OutputLookupTable;
+import vldb.operator.window.timescale.common.PartialAggregator;
+import vldb.operator.window.timescale.common.SpanTracker;
 import vldb.operator.window.timescale.pafas.active.*;
 
 /**
  * A helper class for static MTS window configuration.
  */
-public final class StaticSingleMWOConfiguration extends TimescaleWindowBaseConfiguration {
+public final class EagerMWOConfiguration extends TimescaleWindowBaseConfiguration {
 
     public static final RequiredImpl<OutputLookupTable> OUTPUT_LOOKUP_TABLE = new RequiredImpl<>();
 
     public static final RequiredImpl<DependencyGraph.SelectionAlgorithm> SELECTION_ALGORITHM = new RequiredImpl<>();
-    public static final ConfigurationModule CONF = new StaticSingleMWOConfiguration()
+    public static final ConfigurationModule CONF = new EagerMWOConfiguration()
         .merge(TimescaleWindowBaseConfiguration.CONF)
         .bindImplementation(DependencyGraph.SelectionAlgorithm.class, SELECTION_ALGORITHM)
         .bindImplementation(OutputLookupTable.class, OUTPUT_LOOKUP_TABLE)
-        .bindImplementation(SpanTracker.class, StaticSpanTrackerImpl.class)
+        .bindImplementation(SpanTracker.class, EagerStaticSpanTrackerImpl.class)
         .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
         .bindImplementation(PartialAggregator.class, ActivePartialAggregator.class)
         .bindImplementation(PartialTimespans.class, ActivePartialTimespans.class)
-        .bindImplementation(ActiveFinalAggregator.class, DefaultActiveFinalAggregatorImpl.class)
-        .bindImplementation(DependencyGraph.class, StaticDependencyGraphImpl.class)
+        .bindImplementation(ActiveFinalAggregator.class, EagerActiveFinalAggregatorImpl.class)
+        .bindImplementation(DependencyGraph.class, FineGrainedPruningDependencyGraphImpl.class)
         .build();
 }

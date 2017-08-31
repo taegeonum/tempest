@@ -15,6 +15,7 @@
  */
 package vldb.operator.window.timescale.pafas;
 
+import edu.snu.tempest.operator.window.aggregator.CAAggregator;
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.evaluation.Metrics;
 import vldb.operator.window.timescale.TimeMonitor;
@@ -25,6 +26,7 @@ import vldb.operator.window.timescale.common.Timespan;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -32,8 +34,8 @@ import java.util.logging.Logger;
 /**
  * A SpanTracker using Greedy selection algorithm.
  */
-public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
-  private static final Logger LOG = Logger.getLogger(StaticSpanTrackerImpl.class.getName());
+public final class EagerStaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
+  private static final Logger LOG = Logger.getLogger(EagerStaticSpanTrackerImpl.class.getName());
 
   /**
    * The list of timescale.
@@ -47,22 +49,26 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
   private final TimeMonitor timeMonitor;
   private Metrics metrics;
 
+  private final CAAggregator<?, T> aggregator;
+
   /**
    * DependencyGraphComputationReuser constructor.
    * @param tsParser timescale parser
    */
   @Inject
-  private StaticSpanTrackerImpl(final TimescaleParser tsParser,
-                                @Parameter(StartTime.class) final long startTime,
-                                final DependencyGraph<T> dependencyGraph,
-                                final PartialTimespans partialTimespans,
-                                final Metrics metrics,
-                                final TimeMonitor timeMonitor) {
+  private EagerStaticSpanTrackerImpl(final TimescaleParser tsParser,
+                                     @Parameter(StartTime.class) final long startTime,
+                                     final DependencyGraph<T> dependencyGraph,
+                                     final PartialTimespans partialTimespans,
+                                     final CAAggregator<?, T> aggregator,
+                                     final Metrics metrics,
+                                     final TimeMonitor timeMonitor) {
     this.timescales = tsParser.timescales;
     this.timeMonitor = timeMonitor;
     this.partialTimespans = partialTimespans;
     this.dependencyGraph = dependencyGraph;
     this.metrics = metrics;
+    this.aggregator = aggregator;
   }
 
   @Override
@@ -121,24 +127,21 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
 
   @Override
   public void putAggregate(final T agg, final Timespan timespan) {
+    // Eagerly perform aggregation!!
+
     final Node<T> node = dependencyGraph.getNode(timespan);
-    //if (timespan.timescale == null) {
-    //  System.out.println("PUT_PARTIAL: " + timespan.startTime + ", " + timespan.endTime + " node: " + node.start + ", " + node.end);
-    //}
-    if (node.getInitialRefCnt() != 0) {
-      synchronized (node) {
-        if (node.getInitialRefCnt() != 0) {
-          //System.out.println("Added " + node);
-          if (node.partial) {
-            metrics.storedPartial += 1;
-          } else {
-            metrics.storedFinal += 1;
-          }
-          node.saveOutput(agg);
-          //System.out.println("PUT_AGG: " + timespan + ", " + node);
-          // after saving the output, notify the thread that is waiting for this output.
-          node.notifyAll();
-        }
+
+    for (final Node<T> parent : node.parents) {
+      final T output = parent.getOutput();
+      if (output == null) {
+        parent.saveOutput(agg);
+        metrics.storedFinal += 1;
+      } else {
+        final List<T> l = new ArrayList<>(2);
+        l.add(output);
+        l.add(agg);
+        final T o = aggregator.aggregate(l);
+        parent.saveOutput(o);
       }
     }
   }
