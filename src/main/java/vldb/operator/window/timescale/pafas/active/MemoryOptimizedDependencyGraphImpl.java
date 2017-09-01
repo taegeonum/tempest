@@ -161,7 +161,7 @@ public final class MemoryOptimizedDependencyGraphImpl<T> implements DependencyGr
     long childCost = 0;
     for (final Node<T> child : node.getDependencies()) {
       final long childEnd = Math.max(largestEnd, getChildLargestEnd(child, child.parents, node));
-      if (child.start >= node.end) {
+      if (child.start >= node.end && child.end > childEnd) {
         childCost += (childEnd - child.end - period);
       } else {
         childCost += (childEnd - child.end);
