@@ -27,7 +27,9 @@ import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -89,6 +91,15 @@ public final class EagerStaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
     return l;
   }
 
+  private T copyAgg(final T agg) {
+    final Map<Object, Object> result = new HashMap<>();
+    final Map<Object, Object> e = (Map)agg;
+    for (final Map.Entry<Object, Object> entry : e.entrySet()) {
+      result.put(entry.getKey(), entry.getValue());
+    }
+    return (T)result;
+  }
+
   @Override
   public void putAggregate(final T agg, final Timespan timespan) {
     // Eagerly perform aggregation!!
@@ -104,14 +115,11 @@ public final class EagerStaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
     for (final Node<T> parent : node.parents) {
       final T output = parent.getOutput();
       if (output == null) {
-        parent.saveOutput(agg);
+        parent.saveOutput(copyAgg(agg));
         metrics.storedFinal += 1;
         //System.out.println("ADDED: " + parent);
       } else {
-        final List<T> l = new ArrayList<>(2);
-        l.add(output);
-        l.add(agg);
-        final T o = aggregator.aggregate(l);
+        final T o = aggregator.rollup(output, agg);
         parent.saveOutput(o);
       }
     }

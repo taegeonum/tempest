@@ -114,15 +114,27 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
     return true;
   }
 
+  private int calculateWeight(final Node<T> node) {
+    final int size = node.getDependencies().size();
+    if (node.refCnt.get() == 0) {
+      return 0;
+    } else if (node.getDependencies().get(size-1).end < node.end) {
+      return size + 1;
+    } else {
+      return node.refCnt.get() * size;
+    }
+  }
+
   private void adjustDependencyGraph(final double reuseRatio, final List<Node<T>> addedNodes) {
     final PriorityQueue<Node<T>> priorityQueue = new PriorityQueue<>(addedNodes.size(),
         new Comparator<Node<T>>() {
           @Override
           public int compare(final Node<T> o1, final Node<T> o2) {
-            return (o1.refCnt.get() * o1.getDependencies().size() - o2.refCnt.get() * o2.getDependencies().size());
+            return (calculateWeight(o1) - calculateWeight(o2));
           }
         });
 
+    /*
     int alreadyPruningNum = 0;
     final Set<Node<T>> pruningNodes = new HashSet<>();
     for (final Node<T> node : addedNodes) {
@@ -136,36 +148,42 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
         alreadyPruningNum += 1;
       }
     }
+    */
 
-    final int pruningNum = (int)(addedNodes.size() * (1-reuseRatio)) - alreadyPruningNum;
+    for (final Node<T> node : addedNodes) {
+      priorityQueue.add(node);
+    }
+
+    final int pruningNum = (int)(addedNodes.size() * (1-reuseRatio));
     int removedNum = 0;
     while (removedNum < pruningNum) {
       final Node<T> pruningNode = priorityQueue.poll();
-      final Set<Node<T>> updatedNodes = new HashSet<>();
 
-      pruningNode.initialRefCnt.set(0);
+      if (pruningNode.refCnt.get() != 0) {
+        final Set<Node<T>> updatedNodes = new HashSet<>();
 
-      for (final Node<T> parent : pruningNode.parents) {
-        parent.getDependencies().remove(pruningNode);
-        pruningNode.decreaseRefCnt();
+        pruningNode.initialRefCnt.set(0);
 
-        updatedNodes.add(parent);
+        for (final Node<T> parent : pruningNode.parents) {
+          parent.getDependencies().remove(pruningNode);
+          pruningNode.decreaseRefCnt();
 
-        for (final Node<T> child : pruningNode.getDependencies()) {
-          parent.addDependency(child);
-          updatedNodes.add(child);
+          updatedNodes.add(parent);
+
+          for (final Node<T> child : pruningNode.getDependencies()) {
+            parent.addDependency(child);
+            updatedNodes.add(child);
+          }
         }
-      }
 
-      if (pruningNode.refCnt.get() > 0) {
-        throw new RuntimeException("Exception! " + pruningNode);
-      }
+        if (pruningNode.refCnt.get() > 0) {
+          throw new RuntimeException("Exception! " + pruningNode);
+        }
 
-      pruningNode.parents.clear();
+        pruningNode.parents.clear();
 
-      // Update child
-      for (final Node<T> updatedNode : updatedNodes) {
-        if (pruningNodes.contains(updatedNode)) {
+        // Update child
+        for (final Node<T> updatedNode : updatedNodes) {
           priorityQueue.remove(updatedNode);
           priorityQueue.add(updatedNode);
         }

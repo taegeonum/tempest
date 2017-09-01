@@ -104,6 +104,17 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
     LOG.info("done");
   }
 
+  private int calculateWeight(final Node<T> node) {
+    final int size = node.getDependencies().size();
+    if (node.refCnt.get() == 0) {
+      return 0;
+    } else if (node.getDependencies().get(size-1).end < node.end) {
+      return size + 1;
+    } else {
+     return node.refCnt.get() * size;
+    }
+  }
+
   private void adjustDependencyGraph(final double reuseRatio, final List<Node<T>> addedNodes) {
     final ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
 
