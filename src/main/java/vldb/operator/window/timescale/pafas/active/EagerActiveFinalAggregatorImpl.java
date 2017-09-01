@@ -107,14 +107,18 @@ public final class EagerActiveFinalAggregatorImpl<V> implements ActiveFinalAggre
     for (final Timespan timespan : finalTimespans) {
       //System.out.println("BEFORE_GET: " + timespan);
       //if (timespan.endTime <= endTime) {
-        final List<V> aggregates = spanTracker.getDependentAggregates(timespan);
-      final V finalResult = aggregates.get(0);
+      final List<V> aggregates = spanTracker.getDependentAggregates(timespan);
+      V finalResult = null;
+      if (aggregates.size() > 1) {
+        finalResult = aggregateFunction.aggregate(aggregates);
+      } else {
+        finalResult = aggregates.get(0);
+      }
 
       spanTracker.putAggregate(finalResult, timespan);
       outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,
           new DepOutputAndResult<V>(aggregates.size(), finalResult),
           timespan.startTime, timespan.endTime, timespan.startTime >= startTime));
-      //}
     }
   }
 
@@ -125,8 +129,14 @@ public final class EagerActiveFinalAggregatorImpl<V> implements ActiveFinalAggre
       //System.out.println("BEFORE_GET: " + timespan);
       //if (timespan.endTime <= endTime) {
       final List<V> aggregates = spanTracker.getDependentAggregates(timespan);
-      final V agg = aggregates.get(0);
-      final V finalResult = aggregateFunction.rollup(agg, activePartial);
+      V finalResult = null;
+      if (aggregates.size() > 1) {
+        aggregates.add(activePartial);
+        finalResult = aggregateFunction.aggregate(aggregates);
+      } else {
+        final V agg = aggregates.get(0);
+        finalResult = aggregateFunction.rollup(agg, activePartial);
+      }
       spanTracker.putAggregate(finalResult, timespan);
       outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,
           new DepOutputAndResult<V>(aggregates.size(), finalResult),

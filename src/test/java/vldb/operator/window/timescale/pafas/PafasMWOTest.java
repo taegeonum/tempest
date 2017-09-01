@@ -32,7 +32,7 @@ public final class PafasMWOTest {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
     jcb.bindNamedParameter(NumThreads.class, "4");
-    jcb.bindNamedParameter(ReusingRatio.class, "0.7");
+    jcb.bindNamedParameter(ReusingRatio.class, "0.4");
     jcb.bindNamedParameter(WindowGap.class, "25");
 
     final long currTime = 0;
@@ -40,8 +40,8 @@ public final class PafasMWOTest {
     final List<String> operatorIds = new LinkedList<>();
     final String timescaleString2 =  "(4,2)(5,3)(6,4)(10,5)";
     final String timescaleString3 =  "(5,4)(8,3)(12,7)(16,6)";
-    final String timescaleString1 = "(5,1)(10,1)(20,2)(30,2)(60,4)(90,4)(360,5)(600,5)(900,10)(1800,10)";
-    final String timescaleString = "(5,2)(6,2)(10,2)";
+    final String timescaleString = "(5,1)(10,1)(20,2)(30,2)(60,4)(90,4)(360,5)(600,5)(900,10)(1800,10)";
+    final String timescaleString1 = "(5,2)(6,2)(10,2)";
     // PAFAS
 
 

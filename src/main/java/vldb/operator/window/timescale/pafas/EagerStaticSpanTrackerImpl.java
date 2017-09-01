@@ -26,10 +26,7 @@ import vldb.operator.window.timescale.common.Timespan;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
 
 /**
@@ -86,9 +83,25 @@ public final class EagerStaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
   @Override
   public List<T> getDependentAggregates(final Timespan timespan) {
     final Node<T> node = dependencyGraph.getNode(timespan);
-    final List<T> l = new ArrayList<>(2);
-    l.add(node.getOutput());
-    return l;
+    if (node.refCnt.get() == 0) {
+      final List<Node<T>> dependentNodes = node.getDependencies();
+      final List<T> aggregates = new LinkedList<>();
+      for (final Node<T> dependentNode : dependentNodes) {
+        if (dependentNode.end <= timespan.endTime) {
+          // Do not count first outgoing edge
+          aggregates.add(dependentNode.getOutput());
+          dependentNode.decreaseRefCnt();
+          if (dependentNode.getOutput() == null) {
+            metrics.storedFinal -= 1;
+          }
+        }
+      }
+      return aggregates;
+    } else {
+      final List<T> l = new ArrayList<>(2);
+      l.add(node.getOutput());
+      return l;
+    }
   }
 
   private T copyAgg(final T agg) {
@@ -112,15 +125,30 @@ public final class EagerStaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
       //System.out.println("DELETED: " + node);
     }
 
+    boolean lazy = false;
     for (final Node<T> parent : node.parents) {
-      final T output = parent.getOutput();
-      if (output == null) {
-        parent.saveOutput(copyAgg(agg));
-        metrics.storedFinal += 1;
-        //System.out.println("ADDED: " + parent);
+      if (parent.refCnt.get() > 0) {
+        // eager!
+        final T output = parent.getOutput();
+        if (output == null) {
+          parent.saveOutput(copyAgg(agg));
+          metrics.storedFinal += 1;
+          //System.out.println("ADDED: " + parent);
+        } else {
+          final T o = aggregator.rollup(output, agg);
+          parent.saveOutput(o);
+        }
+        node.decreaseRefCnt();
       } else {
-        final T o = aggregator.rollup(output, agg);
-        parent.saveOutput(o);
+        // lazy!
+        lazy = true;
+      }
+    }
+
+    if (lazy) {
+      if (node.getInitialRefCnt() != 0) {
+        node.saveOutput(agg);
+        metrics.storedFinal += 1;
       }
     }
   }
