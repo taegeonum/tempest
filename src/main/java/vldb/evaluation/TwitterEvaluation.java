@@ -86,8 +86,8 @@ public final class TwitterEvaluation {
     outputPath = !outputPath.endsWith("/") ? outputPath + "/" : outputPath;
     if ((operatorType == TestRunner.OperatorType.FastSt || operatorType == TestRunner.OperatorType.FastDy
     || operatorType == TestRunner.OperatorType.FastEg)
-        && reusingRatio < 1.0) {
-      prefix = outputPath +  testName + "/" + variable + "/" + operatorType.name() + "/" + reusingRatio;
+        && windowGap > 0) {
+      prefix = outputPath +  testName + "/" + variable + "/" + operatorType.name() + "/" + windowGap;
     } else {
       prefix = outputPath + testName + "/" + variable + "/" + operatorType.name();
     }
