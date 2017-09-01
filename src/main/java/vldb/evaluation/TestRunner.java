@@ -18,6 +18,7 @@ import vldb.operator.window.timescale.cutty.CuttyMWOConfiguration;
 import vldb.operator.window.timescale.naive.NaiveMWOConfiguration;
 import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
 import vldb.operator.window.timescale.pafas.DPOutputLookupTableImpl;
+import vldb.operator.window.timescale.pafas.EagerMWOConfiguration;
 import vldb.operator.window.timescale.pafas.PeriodCalculator;
 import vldb.operator.window.timescale.pafas.StaticSingleMWOConfiguration;
 import vldb.operator.window.timescale.pafas.active.ActiveDPSelectionAlgorithm;
@@ -49,6 +50,7 @@ public final class TestRunner {
     FastSt, // fast static
     FastDy, // fast dynamic
     FastSm, // fast static memory
+    FastEg, // fast eager agg
     OTFSta,
     OTFDyn,
     TriOps,
@@ -69,6 +71,14 @@ public final class TestRunner {
             .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
             .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
+            .build();
+      case FastEg:
+        return EagerMWOConfiguration.CONF
+            .set(EagerMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(EagerMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(EagerMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
+            .set(EagerMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
+            .set(EagerMWOConfiguration.START_TIME, "0")
             .build();
       case FastDy:
         return ActiveDynamicMWOConfiguration.CONF

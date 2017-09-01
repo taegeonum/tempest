@@ -45,7 +45,7 @@ public final class PafasMWOTest {
     // PAFAS
 
 
-    /*
+
     configurationList.add(EagerMWOConfiguration.CONF
         .set(EagerMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .set(EagerMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
@@ -53,7 +53,7 @@ public final class PafasMWOTest {
         .set(EagerMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
         .set(EagerMWOConfiguration.START_TIME, "0")
         .build());
-    operatorIds.add("FAST-Active");*/
+    operatorIds.add("FAST-Active");
 
     configurationList.add(StaticSingleMWOConfiguration.CONF
         .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)

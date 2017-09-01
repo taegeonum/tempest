@@ -98,6 +98,7 @@ public final class EagerStaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
       node.saveOutput(null);
       node.outputStored.set(false);
       metrics.storedFinal -= 1;
+      //System.out.println("DELETED: " + node);
     }
 
     for (final Node<T> parent : node.parents) {
@@ -105,6 +106,7 @@ public final class EagerStaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
       if (output == null) {
         parent.saveOutput(agg);
         metrics.storedFinal += 1;
+        //System.out.println("ADDED: " + parent);
       } else {
         final List<T> l = new ArrayList<>(2);
         l.add(output);

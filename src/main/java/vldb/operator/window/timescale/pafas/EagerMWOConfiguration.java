@@ -41,6 +41,6 @@ public final class EagerMWOConfiguration extends TimescaleWindowBaseConfiguratio
         .bindImplementation(PartialAggregator.class, ActivePartialAggregator.class)
         .bindImplementation(PartialTimespans.class, ActivePartialTimespans.class)
         .bindImplementation(ActiveFinalAggregator.class, EagerActiveFinalAggregatorImpl.class)
-        .bindImplementation(DependencyGraph.class, FineGrainedPruningDependencyGraphImpl.class)
+        .bindImplementation(DependencyGraph.class, FineGrainedPruningRebuildDependencyGraphImpl.class)
         .build();
 }
