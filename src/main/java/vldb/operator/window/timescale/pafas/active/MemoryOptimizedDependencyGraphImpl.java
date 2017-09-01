@@ -161,7 +161,11 @@ public final class MemoryOptimizedDependencyGraphImpl<T> implements DependencyGr
     long childCost = 0;
     for (final Node<T> child : node.getDependencies()) {
       final long childEnd = Math.max(largestEnd, getChildLargestEnd(child, child.parents, node));
-      childCost += (childEnd - child.end);
+      if (child.start >= node.end) {
+        childCost += (childEnd - child.end - period);
+      } else {
+        childCost += (childEnd - child.end);
+      }
     }
 
     return (childCost - cost);
@@ -207,10 +211,10 @@ public final class MemoryOptimizedDependencyGraphImpl<T> implements DependencyGr
     int removedNum = 0;
     while (removedNum < pruningNum) {
       final Node<T> pruningNode = priorityQueue.poll();
-      System.out.println("cost " + pruningNode.cost);
 
       if (pruningNode.cost < 0) {
         final Set<Node<T>> updatedNodes = new HashSet<>();
+        System.out.println("cost " + pruningNode.cost);
 
         pruningNode.initialRefCnt.set(0);
 
@@ -235,8 +239,9 @@ public final class MemoryOptimizedDependencyGraphImpl<T> implements DependencyGr
         // Update child
         for (final Node<T> updatedNode : updatedNodes) {
           if (!updatedNode.partial) {
-            priorityQueue.remove(updatedNode);
-            priorityQueue.add(updatedNode);
+            if (priorityQueue.remove(updatedNode)) {
+              priorityQueue.add(updatedNode);
+            }
           }
         }
       }
