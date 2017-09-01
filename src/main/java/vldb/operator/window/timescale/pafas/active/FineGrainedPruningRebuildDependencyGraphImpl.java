@@ -24,7 +24,6 @@ import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.common.Timespan;
 import vldb.operator.window.timescale.pafas.DependencyGraph;
 import vldb.operator.window.timescale.pafas.Node;
-import vldb.operator.window.timescale.pafas.PartialTimespans;
 import vldb.operator.window.timescale.pafas.PeriodCalculator;
 import vldb.operator.window.timescale.pafas.dynamic.WindowManager;
 import vldb.operator.window.timescale.parameter.NumThreads;
@@ -64,7 +63,7 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
    */
   private final long startTime;
 
-  private final PartialTimespans<T> partialTimespans;
+  private final ActivePartialTimespans<T> partialTimespans;
   private final OutputLookupTable<Node<T>> finalTimespans;
   private final SelectionAlgorithm<T> selectionAlgorithm;
   private final int numThreads;
@@ -83,7 +82,7 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
   @Inject
   private FineGrainedPruningRebuildDependencyGraphImpl(final TimescaleParser tsParser,
                                                        @Parameter(StartTime.class) final long startTime,
-                                                       final PartialTimespans partialTimespans,
+                                                       final ActivePartialTimespans partialTimespans,
                                                        final PeriodCalculator periodCalculator,
                                                        final OutputLookupTable<Node<T>> outputLookupTable,
                                                        @Parameter(NumThreads.class) final int numThreads,
@@ -102,7 +101,7 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
     this.largestWindowSize = (int)windowManager.timescales.get(windowManager.timescales.size()-1).windowSize;
     // create dependency graph.
     addOverlappingWindowNodeAndEdge(reuseRatio);
-    System.out.println("done");
+    LOG.info("done");
   }
 
   private void adjustDependencyGraph(final double reuseRatio, final List<Node<T>> addedNodes) {
@@ -130,6 +129,7 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
       }
     }
 
+    partialTimespans.reset();
 
     for (final Node<T> node : addedNodes) {
       executorService.submit(new Runnable() {

@@ -186,6 +186,12 @@ public final class ActivePartialTimespans<T> implements PartialTimespans {
     }
   }
 
+  public void reset() {
+    for (final Node<T> partialNode : partialTimespanMap.values()) {
+      partialNode.reset();
+    }
+  }
+
   @Override
   public String toString() {
     return partialTimespanMap.toString();
