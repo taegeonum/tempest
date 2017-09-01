@@ -136,6 +136,19 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
     return adj;
   }
 
+  private boolean isOverlappingRange(final int i, final int j, final int st, final int e, final boolean[][] table) {
+    for (int k = i; k <= st; k++) {
+      for (int l = j; l >= e; l--) {
+        if ((k != i && l != j) && (k != st && l != e)) {
+          if (table[k][l]) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
   private void pruning(final List<Node<T>> addedNodes, final boolean[][] table) {
     final ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
 
@@ -148,13 +161,18 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
         int cnt = 0;
         for (int i = st; i >= 0; i--) {
           for (int j = e; j <= (int) period + largestWindowSize; j++) {
-            if (table[i][j]) {
-              cnt += 1;
+            if (i != st && j != e) {
+              if (table[i][j]) {
+                if (!isOverlappingRange(i, j, st, e, table)) {
+                  cnt += 1;
+                }
+              }
             }
           }
         }
 
         node.possibleParentCount = cnt;
+        //System.out.println("Node cnt: " + node + " , " + cnt);
       });
     }
 
@@ -188,6 +206,7 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
     final int pruningIndex = Math.min(array.length-1, (int)(reusingRatio * array.length));
     for (int i = pruningIndex; i < array.length; i++) {
       array[i].isNotShared = true;
+      //System.out.println("Not shared node: " + array[i] + ", cnt: " + array[i].possibleParentCount);
     }
   }
 
