@@ -15,9 +15,9 @@
  */
 package vldb.operator.window.timescale.pafas;
 
-import edu.snu.tempest.operator.window.aggregator.CAAggregator;
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.evaluation.Metrics;
+import vldb.operator.window.aggregator.CAAggregator;
 import vldb.operator.window.timescale.TimeMonitor;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.SpanTracker;
@@ -27,7 +27,6 @@ import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -85,44 +84,9 @@ public final class EagerStaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
   @Override
   public List<T> getDependentAggregates(final Timespan timespan) {
     final Node<T> node = dependencyGraph.getNode(timespan);
-    //System.out.println("PARENT NODE: " + node);
-    final List<Node<T>> dependentNodes = node.getDependencies();
-    //System.out.println(timespan + " DEP_NODES: " + dependentNodes);
-    final List<T> aggregates = new LinkedList<>();
-    for (final Node<T> dependentNode : dependentNodes) {
-      if (dependentNode.end <= timespan.endTime) {
-        // Do not count first outgoing edge
-        while (true) {
-          synchronized (dependentNode) {
-            if (!dependentNode.outputStored.get()) {
-              // null
-              try {
-                System.out.println("WAIT: " + dependentNode +", final: " + timespan);
-                dependentNode.wait();
-                //System.out.println("AWAKE: " + dependentNode);
-              } catch (InterruptedException e) {
-                e.printStackTrace();
-              }
-            } else {
-              final T agg = dependentNode.getOutput();
-              aggregates.add(dependentNode.getOutput());
-              dependentNode.decreaseRefCnt();
-              if (dependentNode.getOutput() == null) {
-                //System.out.println("Deleted " + dependentNode);
-                if (dependentNode.partial) {
-                  metrics.storedPartial -= 1;
-                } else {
-                  metrics.storedFinal -= 1;
-                }
-              }
-              break;
-            }
-          }
-        }
-      }
-    }
-    //System.out.println("RETURN: " + aggregates);
-    return aggregates;
+    final List<T> l = new ArrayList<>(2);
+    l.add(node.getOutput());
+    return l;
   }
 
   @Override
@@ -130,6 +94,11 @@ public final class EagerStaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
     // Eagerly perform aggregation!!
 
     final Node<T> node = dependencyGraph.getNode(timespan);
+    if (node.getOutput() != null) {
+      node.saveOutput(null);
+      node.outputStored.set(false);
+      metrics.storedFinal -= 1;
+    }
 
     for (final Node<T> parent : node.parents) {
       final T output = parent.getOutput();

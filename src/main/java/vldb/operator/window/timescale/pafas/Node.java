@@ -77,7 +77,12 @@ public final class Node<T> {
     this.timescale = ts;
   }
 
-
+  public void reset() {
+    dependencies.clear();
+    parents.clear();
+    refCnt.set(0);
+    initialRefCnt.set(0);
+  }
 
   /**
    * For testing. It should not be used.

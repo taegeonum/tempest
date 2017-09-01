@@ -40,9 +40,9 @@ import java.util.logging.Logger;
 /**
  * DependencyGraph shows which nodes are related to each other. This is used so that unnecessary outputs are not saved.
  */
-public final class FineGrainedPruningDependencyGraphImpl<T> implements DependencyGraph {
+public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements DependencyGraph {
 
-  private static final Logger LOG = Logger.getLogger(FineGrainedPruningDependencyGraphImpl.class.getName());
+  private static final Logger LOG = Logger.getLogger(FineGrainedPruningRebuildDependencyGraphImpl.class.getName());
 
   /**
    * A table containing DependencyGraphNode for partial outputs.
@@ -81,15 +81,15 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
    * @param startTime the initial start time of when the graph is built.
    */
   @Inject
-  private FineGrainedPruningDependencyGraphImpl(final TimescaleParser tsParser,
-                                                @Parameter(StartTime.class) final long startTime,
-                                                final PartialTimespans partialTimespans,
-                                                final PeriodCalculator periodCalculator,
-                                                final OutputLookupTable<Node<T>> outputLookupTable,
-                                                @Parameter(NumThreads.class) final int numThreads,
-                                                final WindowManager windowManager,
-                                                @Parameter(ReusingRatio.class) final double reuseRatio,
-                                                final SelectionAlgorithm<T> selectionAlgorithm) {
+  private FineGrainedPruningRebuildDependencyGraphImpl(final TimescaleParser tsParser,
+                                                       @Parameter(StartTime.class) final long startTime,
+                                                       final PartialTimespans partialTimespans,
+                                                       final PeriodCalculator periodCalculator,
+                                                       final OutputLookupTable<Node<T>> outputLookupTable,
+                                                       @Parameter(NumThreads.class) final int numThreads,
+                                                       final WindowManager windowManager,
+                                                       @Parameter(ReusingRatio.class) final double reuseRatio,
+                                                       final SelectionAlgorithm<T> selectionAlgorithm) {
     this.partialTimespans = partialTimespans;
     this.timescales = tsParser.timescales;
     this.period = periodCalculator.getPeriod();
@@ -105,73 +105,46 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
     System.out.println("done");
   }
 
-  private boolean childRefCntGreaterThanOne(final Node<T> node) {
-    for (final Node<T> child : node.getDependencies()) {
-      if (child.refCnt.get() <= 1) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   private void adjustDependencyGraph(final double reuseRatio, final List<Node<T>> addedNodes) {
-    final PriorityQueue<Node<T>> priorityQueue = new PriorityQueue<>(addedNodes.size(),
-        new Comparator<Node<T>>() {
-          @Override
-          public int compare(final Node<T> o1, final Node<T> o2) {
-            return (o1.refCnt.get() * o1.getDependencies().size() - o2.refCnt.get() * o2.getDependencies().size());
-          }
-        });
+    final ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
 
-    int alreadyPruningNum = 0;
-    final Set<Node<T>> pruningNodes = new HashSet<>();
-    for (final Node<T> node : addedNodes) {
-      final List<Node<T>> dp = node.getDependencies();
-      if (node.refCnt.get() > 0 && dp.size() > 0 && dp.get(dp.size()-1).end == node.end
-          && childRefCntGreaterThanOne(node)) {
-      //if (node.refCnt.get() > 0) {
-        priorityQueue.add(node);
-        pruningNodes.add(node);
-      } else {
-        alreadyPruningNum += 1;
+    final Node<T>[] nodeArray = new Node[addedNodes.size()];
+    for (int i = 0; i < addedNodes.size(); i++) {
+      nodeArray[i] = addedNodes.get(i);
+    }
+
+    Arrays.parallelSort(nodeArray, new Comparator<Node<T>>() {
+      @Override
+      public int compare(final Node<T> o1, final Node<T> o2) {
+        return (o1.refCnt.get() * o1.getDependencies().size() - o2.refCnt.get() * o2.getDependencies().size());
+      }
+    });
+
+    final int pruningNum = (int)(addedNodes.size() * (1-reuseRatio));
+
+    for (int i = 0; i < addedNodes.size(); i++) {
+      final Node<T> node = nodeArray[i];
+      node.reset();
+      if (i >= pruningNum) {
+        node.isNotShared = true;
       }
     }
 
-    final int pruningNum = (int)(addedNodes.size() * (1-reuseRatio)) - alreadyPruningNum;
-    int removedNum = 0;
-    while (removedNum < pruningNum) {
-      final Node<T> pruningNode = priorityQueue.poll();
-      final Set<Node<T>> updatedNodes = new HashSet<>();
 
-      pruningNode.initialRefCnt.set(0);
-
-      for (final Node<T> parent : pruningNode.parents) {
-        parent.getDependencies().remove(pruningNode);
-        pruningNode.decreaseRefCnt();
-
-        updatedNodes.add(parent);
-
-        for (final Node<T> child : pruningNode.getDependencies()) {
-          parent.addDependency(child);
-          updatedNodes.add(child);
+    for (final Node<T> node : addedNodes) {
+      executorService.submit(new Runnable() {
+        @Override
+        public void run() {
+          addEdge(node);
         }
-      }
+      });
+    }
 
-      if (pruningNode.refCnt.get() > 0) {
-        throw new RuntimeException("Exception! " + pruningNode);
-      }
-
-      pruningNode.parents.clear();
-
-      // Update child
-      for (final Node<T> updatedNode : updatedNodes) {
-        if (pruningNodes.contains(updatedNode)) {
-          priorityQueue.remove(updatedNode);
-          priorityQueue.add(updatedNode);
-        }
-      }
-
-      removedNum += 1;
+    executorService.shutdown();
+    try {
+      executorService.awaitTermination(1000, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
     }
   }
 
