@@ -44,6 +44,8 @@ public final class Node<T> {
 
   public int possibleParentCount = 0;
 
+  public long cost;
+
   /**
    * The start time of the node.
    */

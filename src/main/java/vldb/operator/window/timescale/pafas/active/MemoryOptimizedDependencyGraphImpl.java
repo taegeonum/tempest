@@ -40,9 +40,9 @@ import java.util.logging.Logger;
 /**
  * DependencyGraph shows which nodes are related to each other. This is used so that unnecessary outputs are not saved.
  */
-public final class FineGrainedPruningDependencyGraphImpl<T> implements DependencyGraph {
+public final class MemoryOptimizedDependencyGraphImpl<T> implements DependencyGraph {
 
-  private static final Logger LOG = Logger.getLogger(FineGrainedPruningDependencyGraphImpl.class.getName());
+  private static final Logger LOG = Logger.getLogger(MemoryOptimizedDependencyGraphImpl.class.getName());
 
   /**
    * A table containing DependencyGraphNode for partial outputs.
@@ -81,15 +81,15 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
    * @param startTime the initial start time of when the graph is built.
    */
   @Inject
-  private FineGrainedPruningDependencyGraphImpl(final TimescaleParser tsParser,
-                                                @Parameter(StartTime.class) final long startTime,
-                                                final PartialTimespans partialTimespans,
-                                                final PeriodCalculator periodCalculator,
-                                                final OutputLookupTable<Node<T>> outputLookupTable,
-                                                @Parameter(NumThreads.class) final int numThreads,
-                                                final WindowManager windowManager,
-                                                @Parameter(ReusingRatio.class) final double reuseRatio,
-                                                final SelectionAlgorithm<T> selectionAlgorithm) {
+  private MemoryOptimizedDependencyGraphImpl(final TimescaleParser tsParser,
+                                             @Parameter(StartTime.class) final long startTime,
+                                             final PartialTimespans partialTimespans,
+                                             final PeriodCalculator periodCalculator,
+                                             final OutputLookupTable<Node<T>> outputLookupTable,
+                                             @Parameter(NumThreads.class) final int numThreads,
+                                             final WindowManager windowManager,
+                                             @Parameter(ReusingRatio.class) final double reuseRatio,
+                                             final SelectionAlgorithm<T> selectionAlgorithm) {
     this.partialTimespans = partialTimespans;
     this.timescales = tsParser.timescales;
     this.period = periodCalculator.getPeriod();
@@ -114,15 +114,57 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
     return true;
   }
 
-  private int calculateWeight(final Node<T> node) {
-    final int size = node.getDependencies().size();
-    if (node.refCnt.get() == 0 || node.getDependencies().size() == 0) {
-      return 0;
-    } else if (node.getDependencies().get(size-1).end < node.end) {
-      return size + 1;
-    } else {
-      return node.refCnt.get() * size;
+  private long getEnd(Node<T> n, Node<T> node) {
+    return node.end <= n.start ? (node.end + period) : node.end;
+  }
+
+  private long getLargestEnd(final Node<T> n, final Collection<Node<T>> nodes) {
+    long largestEnd = 0;
+    for (final Node<T> node : nodes) {
+      final long end = getEnd(n, node);
+      if (largestEnd < end) {
+        largestEnd = end;
+      }
     }
+    return largestEnd;
+  }
+
+
+  private long getChildLargestEnd(final Node<T> n, final Collection<Node<T>> nodes, final Node<T> parent) {
+    long largestEnd = 0;
+    for (final Node<T> node : nodes) {
+      if (node != parent) {
+        long end;
+        if (n.start >= parent.end && node.start >= startTime) {
+          end = node.end - period;
+        } else {
+          end = node.end;
+        }
+
+        if (largestEnd < end) {
+          largestEnd = end;
+        }
+      }
+    }
+    return largestEnd;
+  }
+
+  private long calculateWeight(final Node<T> node) {
+    if (node.refCnt.get() == 0) {
+      return 0;
+    }
+
+    final long largestEnd = getLargestEnd(node, node.parents);
+    final long cost = (largestEnd - node.end);
+
+    // Calculate child cost
+    long childCost = 0;
+    for (final Node<T> child : node.getDependencies()) {
+      final long childEnd = Math.max(largestEnd, getChildLargestEnd(child, child.parents, node));
+      childCost += (childEnd - child.end);
+    }
+
+    return (childCost - cost);
   }
 
   private void adjustDependencyGraph(final double reuseRatio, final List<Node<T>> addedNodes) {
@@ -130,7 +172,13 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
         new Comparator<Node<T>>() {
           @Override
           public int compare(final Node<T> o1, final Node<T> o2) {
-            return (calculateWeight(o1) - calculateWeight(o2));
+            if (o1.cost < o2.cost) {
+              return -1;
+            } else if (o1.cost > o2.cost) {
+              return 1;
+            } else {
+              return 0;
+            }
           }
         });
 
@@ -151,15 +199,17 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
     */
 
     for (final Node<T> node : addedNodes) {
+      node.cost = calculateWeight(node);
       priorityQueue.add(node);
     }
 
-    final int pruningNum = Math.min(addedNodes.size()-1, (int)(addedNodes.size() * (1-reuseRatio)));
+    final int pruningNum = (int)(addedNodes.size() * (1-reuseRatio));
     int removedNum = 0;
     while (removedNum < pruningNum) {
       final Node<T> pruningNode = priorityQueue.poll();
+      System.out.println("cost " + pruningNode.cost);
 
-      if (pruningNode.refCnt.get() != 0) {
+      if (pruningNode.cost < 0) {
         final Set<Node<T>> updatedNodes = new HashSet<>();
 
         pruningNode.initialRefCnt.set(0);
@@ -184,8 +234,10 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
 
         // Update child
         for (final Node<T> updatedNode : updatedNodes) {
-          priorityQueue.remove(updatedNode);
-          priorityQueue.add(updatedNode);
+          if (!updatedNode.partial) {
+            priorityQueue.remove(updatedNode);
+            priorityQueue.add(updatedNode);
+          }
         }
       }
 
