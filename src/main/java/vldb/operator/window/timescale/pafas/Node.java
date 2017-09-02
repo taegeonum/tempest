@@ -46,6 +46,8 @@ public final class Node<T> {
 
   public long cost;
 
+  public int weight;
+
   /**
    * The start time of the node.
    */

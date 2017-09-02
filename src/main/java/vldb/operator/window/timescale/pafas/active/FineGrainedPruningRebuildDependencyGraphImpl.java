@@ -115,6 +115,117 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
     }
   }
 
+  private boolean isOverlappingRange(final int i, final int j, final int st, final int e, final boolean[][] table) {
+    for (int k = i; k <= st; k++) {
+      for (int l = j; l >= e; l--) {
+        if ((k != i && l != j) && (k != st && l != e)) {
+          if (table[k][l]) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  private void adjustDependencyGraph2(final double reuseRatio, final List<Node<T>> addedNodes, final boolean[][] table) {
+    final ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
+
+    // Counting the possible reference count!
+    for (final Node<T> node : addedNodes) {
+      executorService.submit(() -> {
+        int st = (int) node.start + largestWindowSize;
+        int e = (int) node.end + largestWindowSize;
+
+        int cnt = 0;
+        for (int i = st; i >= 0; i--) {
+          for (int j = e; j <= (int) period + largestWindowSize; j++) {
+            if (i != st && j != e) {
+              if (table[i][j]) {
+                if (!isOverlappingRange(i, j, st, e, table)) {
+                  cnt += 1;
+                }
+              }
+            }
+          }
+        }
+
+        node.possibleParentCount = cnt;
+        //System.out.println("Node cnt: " + node + " , " + cnt);
+      });
+    }
+
+    final Node<T>[] array = new Node[addedNodes.size()];
+    for (int i = 0; i < array.length; i++) {
+      array[i] = addedNodes.get(i);
+    }
+
+    executorService.shutdown();
+    try {
+      executorService.awaitTermination(300, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+
+    // Sorting by possible parent count
+    Arrays.parallelSort(array, new Comparator<Node<T>>() {
+      @Override
+      public int compare(final Node<T> o1, final Node<T> o2) {
+        if (o1.possibleParentCount < o2.possibleParentCount) {
+          return 1;
+        } else if (o1.possibleParentCount > o2.possibleParentCount) {
+          return -1;
+        } else {
+          return 0;
+        }
+      }
+    });
+
+    int sharedNum = 0;
+    // Set is not shared true when the reference count is zero
+    for (final Node<T> node : addedNodes) {
+      if (node.refCnt.get() == 0) {
+        node.isNotShared = true;
+      } else {
+        sharedNum += 1;
+      }
+      node.reset();
+    }
+
+    partialTimespans.reset();;
+
+    final int pruningNum = (int)((1 - reuseRatio) * sharedNum);
+    int deletedNum = 0;
+    int index = 0;
+    final int size = array.length;
+    while (deletedNum < pruningNum && index < size) {
+      final Node<T> removableNode = array[index];
+      if (!removableNode.isNotShared) {
+        removableNode.isNotShared = true;
+        deletedNum += 1;
+      }
+      index += 1;
+    }
+
+    final ExecutorService executorService2 = Executors.newFixedThreadPool(numThreads);
+    // Rebuild the edges!!
+    for (final Node<T> node : addedNodes) {
+      executorService2.submit(new Runnable() {
+        @Override
+        public void run() {
+          addEdge(node);
+        }
+      });
+    }
+
+    executorService2.shutdown();
+    try {
+      executorService2.awaitTermination(1000, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+  }
+
   private void adjustDependencyGraph(final double reuseRatio, final List<Node<T>> addedNodes) {
     final ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
 
@@ -196,6 +307,15 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
     final ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
     final List<Node<T>> addedNodes = new LinkedList<>();
 
+
+    final boolean[][] table = new boolean[(int)period + largestWindowSize][(int)period+largestWindowSize+1];
+
+    for (int i = 0; i < period + largestWindowSize; i++) {
+      for (int j = 0; j < period  + largestWindowSize + 1; j++) {
+        table[i][j] = false;
+      }
+    }
+
     if (numThreads == 1) {
       for (final Timescale timescale : timescales) {
 
@@ -204,6 +324,8 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
           final long start = time - timescale.windowSize;
           final Node parent = new Node(start, time, false);
           addedNodes.add(parent);
+
+          table[(int)start+largestWindowSize][(int)time+largestWindowSize] = true;
 
           finalTimespans.saveOutput(start, time, parent);
           LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
@@ -223,6 +345,8 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
               final long start = time - timescale.windowSize;
               final Node parent = new Node(start, time, false);
               createdNodes.add(parent);
+
+              table[(int)start+largestWindowSize][(int)time+largestWindowSize] = true;
 
               finalTimespans.saveOutput(start, time, parent);
               LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
@@ -262,7 +386,7 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
 
     // Adjust dependency graph!
     if (reuseRatio < 1.0) {
-      adjustDependencyGraph(reuseRatio, addedNodes);
+      adjustDependencyGraph2(reuseRatio, addedNodes, table);
     }
   }
 
