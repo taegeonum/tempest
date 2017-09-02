@@ -21,9 +21,7 @@ import vldb.operator.window.timescale.pafas.DPOutputLookupTableImpl;
 import vldb.operator.window.timescale.pafas.EagerMWOConfiguration;
 import vldb.operator.window.timescale.pafas.PeriodCalculator;
 import vldb.operator.window.timescale.pafas.StaticSingleMWOConfiguration;
-import vldb.operator.window.timescale.pafas.active.ActiveDPSelectionAlgorithm;
-import vldb.operator.window.timescale.pafas.active.ActiveDynamicMWOConfiguration;
-import vldb.operator.window.timescale.pafas.active.DynamicDPTradeOffSelectionAlgorithm;
+import vldb.operator.window.timescale.pafas.active.*;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicDPOutputLookupTableImpl;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicOptimizedDependencyGraphImpl;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
@@ -51,6 +49,7 @@ public final class TestRunner {
     FastDy, // fast dynamic
     FastSm, // fast static memory
     FastEg, // fast eager agg
+    FastRb, // fast rebuild
     OTFSta,
     OTFDyn,
     TriOps,
@@ -70,6 +69,16 @@ public final class TestRunner {
             .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
             .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
+            .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, WindowPruningDependencyGraphImpl.class)
+            .set(StaticSingleMWOConfiguration.START_TIME, "0")
+            .build();
+      case FastRb:
+        return StaticSingleMWOConfiguration.CONF
+            .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
+            .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
+            .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, FineGrainedPruningRebuildDependencyGraphImpl.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
             .build();
       case FastEg:

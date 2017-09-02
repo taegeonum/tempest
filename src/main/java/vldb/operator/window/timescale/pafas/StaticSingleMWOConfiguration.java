@@ -28,6 +28,7 @@ import vldb.operator.window.timescale.pafas.active.*;
 public final class StaticSingleMWOConfiguration extends TimescaleWindowBaseConfiguration {
 
     public static final RequiredImpl<OutputLookupTable> OUTPUT_LOOKUP_TABLE = new RequiredImpl<>();
+    public static final RequiredImpl<DependencyGraph> DEPENDENCY_GRAPH = new RequiredImpl<>();
 
     public static final RequiredImpl<DependencyGraph.SelectionAlgorithm> SELECTION_ALGORITHM = new RequiredImpl<>();
     public static final ConfigurationModule CONF = new StaticSingleMWOConfiguration()
@@ -39,6 +40,6 @@ public final class StaticSingleMWOConfiguration extends TimescaleWindowBaseConfi
         .bindImplementation(PartialAggregator.class, ActivePartialAggregator.class)
         .bindImplementation(PartialTimespans.class, ActivePartialTimespans.class)
         .bindImplementation(ActiveFinalAggregator.class, DefaultActiveFinalAggregatorImpl.class)
-        .bindImplementation(DependencyGraph.class, FineGrainedPruningRebuildDependencyGraphImpl.class)
+        .bindImplementation(DependencyGraph.class, DEPENDENCY_GRAPH)
         .build();
 }
