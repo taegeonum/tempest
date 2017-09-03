@@ -46,6 +46,7 @@ public final class TwitterEvaluation {
         .registerShortNameOfClass(ReusingRatio.class)
             .registerShortNameOfClass(TestRunner.WindowChangePeriod.class)
                 .registerShortNameOfClass(WindowGap.class)
+                    .registerShortNameOfClass(SharedFinalNum.class)
         //.registerShortNameOfClass(NumOfKey.class)
         .processCommandLine(args);
 
