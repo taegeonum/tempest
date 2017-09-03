@@ -50,6 +50,7 @@ public final class TestRunner {
     FastDy, // fast dynamic
     FastSm, // fast static memory
     FastEg, // fast eager agg
+    FastPruning, // fast pruning after DP
     FastRb, // fast rebuild
     FastRb2, // fast rebuild with weight
     FastPruningNum, // fast pruning with limited num
@@ -73,6 +74,15 @@ public final class TestRunner {
             .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
             .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, WindowPruningDependencyGraphImpl.class)
+            .set(StaticSingleMWOConfiguration.START_TIME, "0")
+            .build();
+      case FastPruning:
+        return StaticSingleMWOConfiguration.CONF
+            .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
+            .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
+            .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, FineGrainedPruningDependencyGraphImpl.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
             .build();
       case FastRb:

@@ -29,6 +29,7 @@ import vldb.operator.window.timescale.pafas.PeriodCalculator;
 import vldb.operator.window.timescale.pafas.dynamic.WindowManager;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.ReusingRatio;
+import vldb.operator.window.timescale.parameter.SharedFinalNum;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
@@ -76,6 +77,7 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
   private final WindowManager windowManager;
   private final int largestWindowSize;
 
+  private final int sharedNum;
   /**
    * DependencyGraph constructor. This first builds the dependency graph.
    * @param startTime the initial start time of when the graph is built.
@@ -88,10 +90,12 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
                                                 final OutputLookupTable<Node<T>> outputLookupTable,
                                                 @Parameter(NumThreads.class) final int numThreads,
                                                 final WindowManager windowManager,
+                                                @Parameter(SharedFinalNum.class) final int sharedNum,
                                                 @Parameter(ReusingRatio.class) final double reuseRatio,
                                                 final SelectionAlgorithm<T> selectionAlgorithm) {
     this.partialTimespans = partialTimespans;
     this.timescales = tsParser.timescales;
+    this.sharedNum = sharedNum;
     this.period = periodCalculator.getPeriod();
     this.startTime = startTime;
     this.finalTimespans = outputLookupTable;
@@ -130,7 +134,7 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
         new Comparator<Node<T>>() {
           @Override
           public int compare(final Node<T> o1, final Node<T> o2) {
-            return (calculateWeight(o1) - calculateWeight(o2));
+            return o1.weight - o2.weight;
           }
         });
 
@@ -151,10 +155,11 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
     */
 
     for (final Node<T> node : addedNodes) {
+      node.weight = calculateWeight(node);
       priorityQueue.add(node);
     }
 
-    final int pruningNum = Math.min(addedNodes.size()-1, (int)(addedNodes.size() * (1-reuseRatio)));
+    final int pruningNum = addedNodes.size() - sharedNum;
     int removedNum = 0;
     while (removedNum < pruningNum) {
       final Node<T> pruningNode = priorityQueue.poll();
@@ -295,7 +300,7 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
 
 
     // Adjust dependency graph!
-    if (reuseRatio < 1.0) {
+    if (sharedNum < 10000000) {
       adjustDependencyGraph(reuseRatio, addedNodes);
     }
   }
