@@ -189,8 +189,9 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
 
         // Update child
         for (final Node<T> updatedNode : updatedNodes) {
-          priorityQueue.remove(updatedNode);
-          priorityQueue.add(updatedNode);
+          if (priorityQueue.remove(updatedNode)) {
+            priorityQueue.add(updatedNode);
+          }
         }
       }
 
