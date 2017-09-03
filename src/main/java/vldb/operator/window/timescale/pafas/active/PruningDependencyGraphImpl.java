@@ -29,6 +29,7 @@ import vldb.operator.window.timescale.pafas.PeriodCalculator;
 import vldb.operator.window.timescale.pafas.dynamic.WindowManager;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.ReusingRatio;
+import vldb.operator.window.timescale.parameter.SharedFinalNum;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
@@ -77,6 +78,7 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
   private final WindowManager windowManager;
   private final int largestWindowSize;
 
+  private final int sharedFinalNum;
   /**
    * DependencyGraph constructor. This first builds the dependency graph.
    * @param startTime the initial start time of when the graph is built.
@@ -86,6 +88,7 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
                                      @Parameter(StartTime.class) final long startTime,
                                      final PartialTimespans partialTimespans,
                                      final PeriodCalculator periodCalculator,
+                                     @Parameter(SharedFinalNum.class) final int sharedFinalNum,
                                      final OutputLookupTable<Node<T>> outputLookupTable,
                                      @Parameter(NumThreads.class) final int numThreads,
                                      final WindowManager windowManager,
@@ -101,6 +104,7 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
     this.startEndMap = new ConcurrentHashMap<>();
     this.selectionAlgorithm = selectionAlgorithm;
     this.windowManager = windowManager;
+    this.sharedFinalNum = sharedFinalNum;
     this.largestWindowSize = (int)windowManager.timescales.get(windowManager.timescales.size()-1).windowSize;
     // create dependency graph.
     addOverlappingWindowNodeAndEdge();
@@ -163,15 +167,15 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
           for (int j = e; j <= (int) period + largestWindowSize; j++) {
             if (i != st && j != e) {
               if (table[i][j]) {
-                if (!isOverlappingRange(i, j, st, e, table)) {
-                  cnt += 1;
-                }
+                //if (!isOverlappingRange(i, j, st, e, table)) {
+                //  cnt += 1;
+                cnt += 1;
               }
             }
           }
         }
 
-        node.possibleParentCount = cnt;
+        node.possibleParentCount = cnt * (int)(node.end - node.start);
         //System.out.println("Node cnt: " + node + " , " + cnt);
       });
     }
@@ -193,9 +197,9 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
       @Override
       public int compare(final Node<T> o1, final Node<T> o2) {
         if (o1.possibleParentCount < o2.possibleParentCount) {
-          return 1;
-        } else if (o1.possibleParentCount > o2.possibleParentCount) {
           return -1;
+        } else if (o1.possibleParentCount > o2.possibleParentCount) {
+          return 1;
         } else {
           return 0;
         }
@@ -203,11 +207,18 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
     });
 
     // Pruning!!
+    final int pruningNum = array.length - sharedFinalNum;
+    for (int i = 0; i < pruningNum; i++) {
+      array[i].isNotShared = true;
+    }
+
+    /*
     final int pruningIndex = Math.min(array.length-1, (int)(reusingRatio * array.length));
     for (int i = pruningIndex; i < array.length; i++) {
       array[i].isNotShared = true;
       //System.out.println("Not shared node: " + array[i] + ", cnt: " + array[i].possibleParentCount);
     }
+    */
   }
 
 

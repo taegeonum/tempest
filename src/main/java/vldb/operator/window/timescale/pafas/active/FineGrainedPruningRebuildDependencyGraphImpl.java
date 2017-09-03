@@ -28,6 +28,7 @@ import vldb.operator.window.timescale.pafas.PeriodCalculator;
 import vldb.operator.window.timescale.pafas.dynamic.WindowManager;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.ReusingRatio;
+import vldb.operator.window.timescale.parameter.SharedFinalNum;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
@@ -75,6 +76,7 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
   private final WindowManager windowManager;
   private final int largestWindowSize;
 
+  private final int sharedFinalNum;
   /**
    * DependencyGraph constructor. This first builds the dependency graph.
    * @param startTime the initial start time of when the graph is built.
@@ -87,6 +89,7 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
                                                        final OutputLookupTable<Node<T>> outputLookupTable,
                                                        @Parameter(NumThreads.class) final int numThreads,
                                                        final WindowManager windowManager,
+                                                       @Parameter(SharedFinalNum.class) final int sharedFinalNum,
                                                        @Parameter(ReusingRatio.class) final double reuseRatio,
                                                        final SelectionAlgorithm<T> selectionAlgorithm) {
     this.partialTimespans = partialTimespans;
@@ -98,6 +101,7 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
     this.startEndMap = new ConcurrentHashMap<>();
     this.selectionAlgorithm = selectionAlgorithm;
     this.windowManager = windowManager;
+    this.sharedFinalNum = sharedFinalNum;
     this.largestWindowSize = (int)windowManager.timescales.get(windowManager.timescales.size()-1).windowSize;
     // create dependency graph.
     addOverlappingWindowNodeAndEdge(reuseRatio);
@@ -142,15 +146,16 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
           for (int j = e; j <= (int) period + largestWindowSize; j++) {
             if (i != st && j != e) {
               if (table[i][j]) {
-                if (!isOverlappingRange(i, j, st, e, table)) {
-                  cnt += 1;
-                }
+                //if (!isOverlappingRange(i, j, st, e, table)) {
+                //  cnt += 1;
+                //}
+                cnt += 1;
               }
             }
           }
         }
 
-        node.possibleParentCount = cnt;
+        node.possibleParentCount = cnt * (int)(node.end - node.start);
         //System.out.println("Node cnt: " + node + " , " + cnt);
       });
     }
@@ -172,9 +177,9 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
       @Override
       public int compare(final Node<T> o1, final Node<T> o2) {
         if (o1.possibleParentCount < o2.possibleParentCount) {
-          return 1;
-        } else if (o1.possibleParentCount > o2.possibleParentCount) {
           return -1;
+        } else if (o1.possibleParentCount > o2.possibleParentCount) {
+          return 1;
         } else {
           return 0;
         }
@@ -194,7 +199,8 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
 
     partialTimespans.reset();;
 
-    final int pruningNum = (int)((1 - reuseRatio) * sharedNum);
+    //final int pruningNum = (int)((1 - reuseRatio) * sharedNum);
+    final int pruningNum = sharedNum - sharedFinalNum;
     int deletedNum = 0;
     int index = 0;
     final int size = array.length;
@@ -396,8 +402,8 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
 
 
     // Adjust dependency graph!
-    if (reuseRatio < 1.0) {
-      adjustDependencyGraph(reuseRatio, addedNodes);
+    if (reuseRatio < 1.0 || sharedFinalNum < 10000000) {
+      adjustDependencyGraph2(reuseRatio, addedNodes, table);
     }
   }
 

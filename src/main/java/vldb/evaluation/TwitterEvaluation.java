@@ -13,10 +13,7 @@ import vldb.evaluation.common.FileWordGenerator;
 import vldb.evaluation.parameter.*;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.TimescaleParser;
-import vldb.operator.window.timescale.parameter.NumThreads;
-import vldb.operator.window.timescale.parameter.ReusingRatio;
-import vldb.operator.window.timescale.parameter.TimescaleString;
-import vldb.operator.window.timescale.parameter.WindowGap;
+import vldb.operator.window.timescale.parameter.*;
 
 import java.io.IOException;
 import java.util.List;
@@ -74,6 +71,7 @@ public final class TwitterEvaluation {
     final int windowChangePeriod = injector.getNamedInstance(TestRunner.WindowChangePeriod.class);
     final double reusingRatio = injector.getNamedInstance(ReusingRatio.class);
     final int windowGap = injector.getNamedInstance(WindowGap.class);
+    final int sharedFinalNum = injector.getNamedInstance(SharedFinalNum.class);
     //final long numKey = injector.getNamedInstance(NumOfKey.class);
 
     final TestRunner.OperatorType operatorType = TestRunner.OperatorType.valueOf(
@@ -92,6 +90,12 @@ public final class TwitterEvaluation {
         prefix = outputPath +  testName + "/" + variable + "/" + operatorType.name() + "/" + windowGap;
       } else {
         prefix = outputPath +  testName + "/" + variable + "/" + operatorType.name() + "/" + reusingRatio;
+      }
+    } else if (operatorType == TestRunner.OperatorType.FastPruningNum) {
+      if (sharedFinalNum < 10000000) {
+        prefix = outputPath +  testName + "/" + variable + "/" + operatorType.name() + "/" + sharedFinalNum;
+      } else {
+        prefix = outputPath + testName + "/" + variable + "/" + operatorType.name();
       }
     } else {
       prefix = outputPath + testName + "/" + variable + "/" + operatorType.name();
@@ -130,7 +134,7 @@ public final class TwitterEvaluation {
     }
     */
     final Metrics metrics = TestRunner.runFileWordTest(timescales,
-        numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix, reusingRatio, windowGap);
+        numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix, reusingRatio, windowGap, sharedFinalNum);
 
     //writer.writeLine(prefix + "_result", operatorType.name() + "\t" + variable + "\t" + result.partialCount + "\t" + result.finalCount + "\t" + result.processedInput + "\t" + result.elapsedTime + result.timeMonitor);
     writer.writeLine(prefix + "_result",

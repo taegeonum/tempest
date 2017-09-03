@@ -27,6 +27,7 @@ import vldb.operator.window.timescale.pafas.dynamic.DynamicOptimizedDependencyGr
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.ReusingRatio;
+import vldb.operator.window.timescale.parameter.SharedFinalNum;
 import vldb.operator.window.timescale.parameter.WindowGap;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
 import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
@@ -51,6 +52,7 @@ public final class TestRunner {
     FastEg, // fast eager agg
     FastRb, // fast rebuild
     FastRb2, // fast rebuild with weight
+    FastPruningNum, // fast pruning with limited num
     OTFSta,
     OTFDyn,
     TriOps,
@@ -89,6 +91,15 @@ public final class TestRunner {
             .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
             .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, FineGrainedPruningRebuildDependencyGraphImpl.class)
+            .set(StaticSingleMWOConfiguration.START_TIME, "0")
+            .build();
+      case FastPruningNum:
+        return StaticSingleMWOConfiguration.CONF
+            .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
+            .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
+            .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, PruningDependencyGraphImpl.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
             .build();
       case FastEg:
@@ -440,7 +451,8 @@ public final class TestRunner {
                                        final OutputWriter writer,
                                        final String prefix,
                                        final double reusingRatio,
-                                       final int windowGap) throws Exception {
+                                       final int windowGap,
+                                       final int sharedFinalNum) throws Exception {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
     jcb.bindNamedParameter(NumThreads.class, numThreads+"");
@@ -448,6 +460,7 @@ public final class TestRunner {
     jcb.bindNamedParameter(EndTime.class, totalTime+"");
     jcb.bindNamedParameter(ReusingRatio.class, reusingRatio+"");
     jcb.bindNamedParameter(WindowGap.class, windowGap+"");
+    jcb.bindNamedParameter(SharedFinalNum.class, sharedFinalNum+"");
 
     Collections.sort(timescales);
     int numOutputs = 0;
