@@ -229,9 +229,16 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
   private void adjustDependencyGraph(final double reuseRatio, final List<Node<T>> addedNodes) {
     final ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
 
+    int sharedNum = 0;
     final Node<T>[] nodeArray = new Node[addedNodes.size()];
     for (int i = 0; i < addedNodes.size(); i++) {
-      nodeArray[i] = addedNodes.get(i);
+      final Node<T> node = addedNodes.get(i);
+      nodeArray[i] = node;
+      if (node.refCnt.get() == 0) {
+        node.isNotShared = true;
+      } else {
+        sharedNum += 1;
+      }
     }
 
     Arrays.parallelSort(nodeArray, new Comparator<Node<T>>() {
@@ -241,13 +248,17 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
       }
     });
 
-    final int pruningNum = (int)(addedNodes.size() * (1-reuseRatio));
+    final int pruningNum = (int)(sharedNum * (1-reuseRatio));
 
+    int deletedNum = 0;
     for (int i = 0; i < addedNodes.size(); i++) {
       final Node<T> node = nodeArray[i];
+
       node.reset();
-      if (i >= pruningNum) {
+
+      if (!node.isNotShared && deletedNum < pruningNum) {
         node.isNotShared = true;
+        deletedNum += 1;
       }
     }
 
@@ -386,7 +397,7 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
 
     // Adjust dependency graph!
     if (reuseRatio < 1.0) {
-      adjustDependencyGraph2(reuseRatio, addedNodes, table);
+      adjustDependencyGraph(reuseRatio, addedNodes);
     }
   }
 
