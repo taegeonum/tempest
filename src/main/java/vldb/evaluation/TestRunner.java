@@ -53,7 +53,7 @@ public final class TestRunner {
     FastPruning, // fast pruning after DP
     FastRb, // fast rebuild
     FastRb2, // fast rebuild with weight
-    FastPruningNum, // fast pruning with limited num
+    FastRbNum, // fast rebuild with num limited num
     OTFSta,
     OTFDyn,
     TriOps,
@@ -103,13 +103,13 @@ public final class TestRunner {
             .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, FineGrainedPruningRebuildDependencyGraphImpl.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
             .build();
-      case FastPruningNum:
+      case FastRbNum:
         return StaticSingleMWOConfiguration.CONF
             .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
             .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
-            .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, PruningDependencyGraphImpl.class)
+            .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, FineGrainedPruningRebuildDependencyGraphImpl.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
             .build();
       case FastEg:

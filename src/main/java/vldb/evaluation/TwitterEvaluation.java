@@ -92,7 +92,7 @@ public final class TwitterEvaluation {
       } else {
         prefix = outputPath +  testName + "/" + variable + "/" + operatorType.name() + "/" + reusingRatio;
       }
-    } else if (operatorType == TestRunner.OperatorType.FastPruningNum || operatorType == TestRunner.OperatorType.FastPruning) {
+    } else if (operatorType == TestRunner.OperatorType.FastRbNum || operatorType == TestRunner.OperatorType.FastPruning) {
       if (sharedFinalNum < 10000000) {
         prefix = outputPath +  testName + "/" + variable + "/" + operatorType.name() + "/" + sharedFinalNum;
       } else {
