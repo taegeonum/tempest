@@ -54,6 +54,7 @@ public final class TestRunner {
     FastRb, // fast rebuild
     FastRb2, // fast rebuild with weight
     FastRbNum, // fast rebuild with num limited num
+    NoOverlap, // rm overlapping windows
     OTFSta,
     OTFDyn,
     TriOps,
@@ -110,6 +111,15 @@ public final class TestRunner {
             .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
             .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, FineGrainedPruningRebuildDependencyGraphImpl.class)
+            .set(StaticSingleMWOConfiguration.START_TIME, "0")
+            .build();
+      case NoOverlap:
+        return StaticSingleMWOConfiguration.CONF
+            .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
+            .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
+            .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, WindowFineGrainedPruningDependencyGraphImpl.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
             .build();
       case FastEg:

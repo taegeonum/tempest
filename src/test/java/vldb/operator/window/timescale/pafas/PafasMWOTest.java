@@ -10,7 +10,7 @@ import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.cutty.CuttyMWOConfiguration;
 import vldb.operator.window.timescale.pafas.active.ActiveDPSelectionAlgorithm;
-import vldb.operator.window.timescale.pafas.active.FineGrainedPruningRebuildDependencyGraphImpl;
+import vldb.operator.window.timescale.pafas.active.WindowFineGrainedPruningDependencyGraphImpl;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.ReusingRatio;
@@ -62,7 +62,7 @@ public final class PafasMWOTest {
         .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
         .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
-        .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, FineGrainedPruningRebuildDependencyGraphImpl.class)
+        .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, WindowFineGrainedPruningDependencyGraphImpl.class)
         .set(StaticSingleMWOConfiguration.START_TIME, "0")
         .build());
     operatorIds.add("FAST");
