@@ -202,7 +202,7 @@ public final class WindowFineGrainedPruningDependencyGraphImpl<T> implements Dep
               createdNodes.add(parent);
 
               // Select this node as sharable node!
-              if (lastEndTime <= start) {
+              if (lastEndTime - gap <= start) {
                 parent.isNotShared = false;
                 lastEndTime = time;
               } else {

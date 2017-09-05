@@ -98,6 +98,8 @@ public final class TwitterEvaluation {
       } else {
         prefix = outputPath + testName + "/" + variable + "/" + operatorType.name();
       }
+    } else if (operatorType == TestRunner.OperatorType.FastOverlap) {
+        prefix = outputPath +  testName + "/" + variable + "/" + operatorType.name() + "/" + windowGap;
     } else {
       prefix = outputPath + testName + "/" + variable + "/" + operatorType.name();
     }
@@ -138,9 +140,12 @@ public final class TwitterEvaluation {
         numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix, reusingRatio, windowGap, sharedFinalNum);
 
     //writer.writeLine(prefix + "_result", operatorType.name() + "\t" + variable + "\t" + result.partialCount + "\t" + result.finalCount + "\t" + result.processedInput + "\t" + result.elapsedTime + result.timeMonitor);
-    writer.writeLine(prefix + "_result",
-        (reusingRatio < 1.0 ? reusingRatio : operatorType.name()) + "\t" + metrics);
-
+    if (operatorType == TestRunner.OperatorType.FastOverlap) {
+      writer.writeLine(prefix + "_result", windowGap + "\t" + metrics);
+    } else {
+      writer.writeLine(prefix + "_result",
+          (reusingRatio < 1.0 ? reusingRatio : operatorType.name()) + "\t" + metrics);
+    }
 
     // End of experiments
     Thread.sleep(2000);
