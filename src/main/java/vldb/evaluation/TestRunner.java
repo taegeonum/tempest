@@ -54,6 +54,7 @@ public final class TestRunner {
     FastRb, // fast rebuild
     FastRb2, // fast rebuild with weight
     FastRbNum, // fast rebuild with num limited num
+    NoOverlap, // no overlap
     FastOverlap, // rm overlapping windows
     OTFSta,
     OTFDyn,
@@ -114,6 +115,7 @@ public final class TestRunner {
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
             .build();
       case FastOverlap:
+      case NoOverlap:
         return StaticSingleMWOConfiguration.CONF
             .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
