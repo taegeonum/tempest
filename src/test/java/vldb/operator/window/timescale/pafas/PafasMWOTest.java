@@ -12,10 +12,7 @@ import vldb.operator.window.timescale.cutty.CuttyMWOConfiguration;
 import vldb.operator.window.timescale.pafas.active.ActiveDPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.active.WindowFineGrainedPruningDependencyGraphImpl;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
-import vldb.operator.window.timescale.parameter.NumThreads;
-import vldb.operator.window.timescale.parameter.ReusingRatio;
-import vldb.operator.window.timescale.parameter.SharedFinalNum;
-import vldb.operator.window.timescale.parameter.WindowGap;
+import vldb.operator.window.timescale.parameter.*;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -37,6 +34,7 @@ public final class PafasMWOTest {
     jcb.bindNamedParameter(ReusingRatio.class, "0.2");
     jcb.bindNamedParameter(WindowGap.class, "25");
     jcb.bindNamedParameter(SharedFinalNum.class, "300");
+    jcb.bindNamedParameter(OverlappingRatio.class, "1.0");
 
     final long currTime = 0;
     final List<Configuration> configurationList = new LinkedList<>();
@@ -132,7 +130,7 @@ public final class PafasMWOTest {
     }
 
     final int numKey = 10;
-    final int numInput = 10000;
+    final int numInput = 1000;
     final Random random = new Random();
     final int tick = numInput / 300;
     int tickTime = 1;

@@ -27,10 +27,10 @@ import vldb.operator.window.timescale.pafas.Node;
 import vldb.operator.window.timescale.pafas.PartialTimespans;
 import vldb.operator.window.timescale.pafas.PeriodCalculator;
 import vldb.operator.window.timescale.pafas.dynamic.WindowManager;
+import vldb.operator.window.timescale.parameter.LevelCost;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.OverlappingRatio;
 import vldb.operator.window.timescale.parameter.StartTime;
-import vldb.operator.window.timescale.parameter.WindowGap;
 
 import javax.inject.Inject;
 import java.util.*;
@@ -41,9 +41,9 @@ import java.util.logging.Logger;
 /**
  * DependencyGraph shows which nodes are related to each other. This is used so that unnecessary outputs are not saved.
  */
-public final class WindowFineGrainedPruningDependencyGraphImpl<T> implements DependencyGraph {
+public final class LevelOverlappingPruningDependencyGraphImpl<T> implements DependencyGraph {
 
-  private static final Logger LOG = Logger.getLogger(WindowFineGrainedPruningDependencyGraphImpl.class.getName());
+  private static final Logger LOG = Logger.getLogger(LevelOverlappingPruningDependencyGraphImpl.class.getName());
 
   /**
    * A table containing DependencyGraphNode for partial outputs.
@@ -69,7 +69,6 @@ public final class WindowFineGrainedPruningDependencyGraphImpl<T> implements Dep
   private final OutputLookupTable<Node<T>> finalTimespans;
   private final SelectionAlgorithm<T> selectionAlgorithm;
   private final int numThreads;
-  private final int gap;
 
   private final Set<Node<T>> noSharedNode = new HashSet<>();
 
@@ -78,31 +77,29 @@ public final class WindowFineGrainedPruningDependencyGraphImpl<T> implements Dep
   private final WindowManager windowManager;
   private final int largestWindowSize;
 
-  private final double overlapRatio;
-
+  private final int levelCost;
   /**
    * DependencyGraph constructor. This first builds the dependency graph.
    * @param startTime the initial start time of when the graph is built.
    */
   @Inject
-  private WindowFineGrainedPruningDependencyGraphImpl(final TimescaleParser tsParser,
-                                                      @Parameter(StartTime.class) final long startTime,
-                                                      final PartialTimespans partialTimespans,
-                                                      final PeriodCalculator periodCalculator,
-                                                      final OutputLookupTable<Node<T>> outputLookupTable,
-                                                      @Parameter(NumThreads.class) final int numThreads,
-                                                      final WindowManager windowManager,
-                                                      @Parameter(WindowGap.class) final int gap,
-                                                      @Parameter(OverlappingRatio.class) final double overlapRatio,
-                                                      final SelectionAlgorithm<T> selectionAlgorithm) throws NotFoundException {
+  private LevelOverlappingPruningDependencyGraphImpl(final TimescaleParser tsParser,
+                                                     @Parameter(StartTime.class) final long startTime,
+                                                     final PartialTimespans partialTimespans,
+                                                     final PeriodCalculator periodCalculator,
+                                                     final OutputLookupTable<Node<T>> outputLookupTable,
+                                                     @Parameter(NumThreads.class) final int numThreads,
+                                                     final WindowManager windowManager,
+                                                     @Parameter(LevelCost.class) final int levelCost,
+                                                     @Parameter(OverlappingRatio.class) final double overlapRatio,
+                                                     final SelectionAlgorithm<T> selectionAlgorithm) {
     this.partialTimespans = partialTimespans;
     this.timescales = tsParser.timescales;
     this.period = periodCalculator.getPeriod();
     this.startTime = startTime;
-    this.overlapRatio = overlapRatio;
+    this.levelCost = levelCost;
     this.finalTimespans = outputLookupTable;
     this.numThreads = numThreads;
-    this.gap = gap;
     this.startEndMap = new ConcurrentHashMap<>();
     this.selectionAlgorithm = selectionAlgorithm;
     this.windowManager = windowManager;
@@ -141,37 +138,64 @@ public final class WindowFineGrainedPruningDependencyGraphImpl<T> implements Dep
     return adj;
   }
 
-  private Set<Timescale> sharableTimescales() {
-    final Set<Timescale> st = new HashSet<>();
-    long prevWindow = timescales.get(timescales.size()-1).windowSize;
+  private int getWindowCost(final Timescale ts) {
+    return (int)(ts.windowSize / ts.intervalSize);
+  }
 
-    for (int i = timescales.size() - 2; i >= 0; i--) {
-      final Timescale ts = timescales.get(i);
-      if (prevWindow - ts.windowSize >= gap) {
-        prevWindow = ts.windowSize;
-        st.add(ts);
+  private Timescale findMaxWindow(final List<Timescale> list) {
+    int maxCost = 0;
+    Timescale maxTs = null;
+    for (final Timescale ts : list) {
+      final int tsCost = getWindowCost(ts);
+      if (tsCost > maxCost) {
+        maxCost = tsCost;
       }
     }
 
+    return maxTs;
+  }
+
+  private Set<Timescale> sharableTimescales() {
+    final Set<Timescale> st = new HashSet<>();
+    final List<List<Timescale>> levelMap = new LinkedList<>();
+    levelMap.add(new LinkedList<>());
+    int cost = 0;
+    int level = 0;
+    for (final Timescale ts : timescales) {
+      final int tsCost = getWindowCost(ts);
+      if (cost + tsCost > levelCost) {
+        levelMap.add(new LinkedList<>());
+        level += 1;
+        levelMap.get(level).add(ts);
+        cost = tsCost;
+      } else {
+        levelMap.get(level).add(ts);
+        cost += tsCost;
+      }
+    }
+
+    for (final List<Timescale> levelTs : levelMap) {
+      if (levelTs.size() > 0) {
+        st.add(findMaxWindow(levelTs));
+      }
+    }
     return st;
   }
 
   /**
    * Add DependencyGraphNode and connect dependent nodes.
    */
-  private void addOverlappingWindowNodeAndEdge() throws NotFoundException {
+  private void addOverlappingWindowNodeAndEdge() {
     final ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
     final List<Node<T>> addedNodes = new LinkedList<>();
 
     // Select timescales
-    //final Set<Timescale> sts = sharableTimescales();
+    final Set<Timescale> sts = sharableTimescales();
 
     if (numThreads == 1) {
       for (final Timescale timescale : timescales) {
 
-        //final boolean isNotShared = !sts.contains(timescale);
-        long lastEndTime = startTime - timescale.windowSize;
-        final long overlapLength = (long)(overlapRatio * timescale.windowSize);
+        final boolean isNotShared = !sts.contains(timescale);
 
         for (long time = timescale.intervalSize + startTime; time <= period + startTime; time += timescale.intervalSize) {
           // create vertex and add it to the table cell of (time, windowsize)
@@ -179,38 +203,17 @@ public final class WindowFineGrainedPruningDependencyGraphImpl<T> implements Dep
           final Node parent = new Node(start, time, false);
           addedNodes.add(parent);
 
-          //parent.isNotShared = isNotShared;
-          // Select this node as sharable node!
-          if (lastEndTime - overlapLength <= start) {
-            parent.isNotShared = false;
-            lastEndTime = time;
-          } else {
-            parent.isNotShared = true;
-          }
+          parent.isNotShared = isNotShared;
+
           finalTimespans.saveOutput(start, time, parent);
           LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
           //LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies2: " + childNodes);
-        }
-
-        // overlapping!
-        lastEndTime = startTime - timescale.windowSize;
-        if (overlapRatio > 0) {
-          for (long time = timescale.intervalSize + startTime; time <= period + startTime; time += timescale.intervalSize) {
-            final long start = time - timescale.windowSize;
-            final Node parent = finalTimespans.lookup(start, time);
-            // Select this node as sharable node!
-            if (lastEndTime - overlapLength > start) {
-              parent.isNotShared = false;
-              lastEndTime = time;
-            }
-          }
         }
       }
     } else {
       final List<Future<List<Node<T>>>> futures = new LinkedList<>();
       for (final Timescale timescale : timescales) {
-        final long overlapLength = (long)(overlapRatio * timescale.windowSize);
-        //final boolean isNotShared = !sts.contains(timescale);
+        final boolean isNotShared = !sts.contains(timescale);
         futures.add(executorService.submit(new Callable<List<Node<T>>>() {
           @Override
           public List<Node<T>> call() throws Exception {
@@ -223,31 +226,11 @@ public final class WindowFineGrainedPruningDependencyGraphImpl<T> implements Dep
               final Node parent = new Node(start, time, false);
               createdNodes.add(parent);
 
-              // Select this node as sharable node!
-              if (lastEndTime <= start) {
-                parent.isNotShared = false;
-                lastEndTime = time;
-              } else {
-                parent.isNotShared = true;
-              }
+              parent.isNotShared = isNotShared;
 
               finalTimespans.saveOutput(start, time, parent);
               LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
               //LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies2: " + childNodes);
-            }
-
-            // overlapping!
-            lastEndTime = startTime - timescale.windowSize;
-            if (overlapRatio > 0) {
-              for (long time = timescale.intervalSize + startTime; time <= period + startTime; time += timescale.intervalSize) {
-                final long start = time - timescale.windowSize;
-                final Node parent = finalTimespans.lookup(start, time);
-                // Select this node as sharable node!
-                if (lastEndTime - overlapLength <= start) {
-                  parent.isNotShared = false;
-                  lastEndTime = time;
-                }
-              }
             }
             return createdNodes;
           }

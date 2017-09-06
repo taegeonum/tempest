@@ -47,6 +47,7 @@ public final class TwitterEvaluation {
             .registerShortNameOfClass(TestRunner.WindowChangePeriod.class)
                 .registerShortNameOfClass(WindowGap.class)
                     .registerShortNameOfClass(SharedFinalNum.class)
+                        .registerShortNameOfClass(OverlappingRatio.class)
         //.registerShortNameOfClass(NumOfKey.class)
         .processCommandLine(args);
 
@@ -73,6 +74,7 @@ public final class TwitterEvaluation {
     final double reusingRatio = injector.getNamedInstance(ReusingRatio.class);
     final int windowGap = injector.getNamedInstance(WindowGap.class);
     final int sharedFinalNum = injector.getNamedInstance(SharedFinalNum.class);
+    final double overlapRatio = injector.getNamedInstance(OverlappingRatio.class);
     //final long numKey = injector.getNamedInstance(NumOfKey.class);
 
     final TestRunner.OperatorType operatorType = TestRunner.OperatorType.valueOf(
@@ -99,7 +101,7 @@ public final class TwitterEvaluation {
         prefix = outputPath + testName + "/" + variable + "/" + operatorType.name();
       }
     } else if (operatorType == TestRunner.OperatorType.FastOverlap) {
-        prefix = outputPath +  testName + "/" + variable + "/" + operatorType.name() + "/" + windowGap;
+        prefix = outputPath +  testName + "/" + variable + "/" + operatorType.name() + "/" + overlapRatio;
     } else {
       prefix = outputPath + testName + "/" + variable + "/" + operatorType.name();
     }
@@ -141,7 +143,7 @@ public final class TwitterEvaluation {
 
     //writer.writeLine(prefix + "_result", operatorType.name() + "\t" + variable + "\t" + result.partialCount + "\t" + result.finalCount + "\t" + result.processedInput + "\t" + result.elapsedTime + result.timeMonitor);
     if (operatorType == TestRunner.OperatorType.FastOverlap) {
-      writer.writeLine(prefix + "_result", windowGap + "\t" + metrics);
+      writer.writeLine(prefix + "_result", overlapRatio + "\t" + metrics);
     } else {
       writer.writeLine(prefix + "_result",
           (reusingRatio < 1.0 ? reusingRatio : operatorType.name()) + "\t" + metrics);
