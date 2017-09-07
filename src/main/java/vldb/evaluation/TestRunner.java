@@ -25,10 +25,7 @@ import vldb.operator.window.timescale.pafas.active.*;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicDPOutputLookupTableImpl;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicOptimizedDependencyGraphImpl;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
-import vldb.operator.window.timescale.parameter.NumThreads;
-import vldb.operator.window.timescale.parameter.ReusingRatio;
-import vldb.operator.window.timescale.parameter.SharedFinalNum;
-import vldb.operator.window.timescale.parameter.WindowGap;
+import vldb.operator.window.timescale.parameter.*;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
 import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
 
@@ -474,7 +471,8 @@ public final class TestRunner {
                                        final String prefix,
                                        final double reusingRatio,
                                        final int windowGap,
-                                       final int sharedFinalNum) throws Exception {
+                                       final int sharedFinalNum,
+                                       final double overlappingRatio) throws Exception {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
     jcb.bindNamedParameter(NumThreads.class, numThreads+"");
@@ -483,6 +481,7 @@ public final class TestRunner {
     jcb.bindNamedParameter(ReusingRatio.class, reusingRatio+"");
     jcb.bindNamedParameter(WindowGap.class, windowGap+"");
     jcb.bindNamedParameter(SharedFinalNum.class, sharedFinalNum+"");
+    jcb.bindNamedParameter(OverlappingRatio.class, overlappingRatio + "");
 
     Collections.sort(timescales);
     int numOutputs = 0;

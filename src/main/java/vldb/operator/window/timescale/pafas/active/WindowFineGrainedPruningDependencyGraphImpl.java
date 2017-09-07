@@ -181,7 +181,7 @@ public final class WindowFineGrainedPruningDependencyGraphImpl<T> implements Dep
 
           //parent.isNotShared = isNotShared;
           // Select this node as sharable node!
-          if (lastEndTime - overlapLength <= start) {
+          if (lastEndTime <= start) {
             parent.isNotShared = false;
             lastEndTime = time;
           } else {

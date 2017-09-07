@@ -139,7 +139,8 @@ public final class TwitterEvaluation {
     }
     */
     final Metrics metrics = TestRunner.runFileWordTest(timescales,
-        numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix, reusingRatio, windowGap, sharedFinalNum);
+        numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix,
+        reusingRatio, windowGap, sharedFinalNum, overlapRatio);
 
     //writer.writeLine(prefix + "_result", operatorType.name() + "\t" + variable + "\t" + result.partialCount + "\t" + result.finalCount + "\t" + result.processedInput + "\t" + result.elapsedTime + result.timeMonitor);
     if (operatorType == TestRunner.OperatorType.FastOverlap) {
