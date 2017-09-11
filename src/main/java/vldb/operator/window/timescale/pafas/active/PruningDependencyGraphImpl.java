@@ -284,16 +284,25 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
 
     while (currentNum.get() < numSelection) {
       System.out.println(currentNum.get() + " / " + numSelection);
+      long s1 = System.currentTimeMillis();
       final Node<T> n = priorityQueue.poll();
+      System.out.println("poll time: " + (System.currentTimeMillis() - s1));
       //final Set<Node<T>> nParentSet = parentSetMap.remove(n);
+      s1 = System.currentTimeMillis();
       final Set<Node<T>> nParentSet = possibleParentMap.get(n) == null
           ? getPossibleParents(n, startTimeTree, endTimeTree) : possibleParentMap.remove(n);
+
+      System.out.println("nParentSet time: " + (System.currentTimeMillis() - s1));
 
       n.isNotShared = !add;
 
       // Select included nodes
+      s1 = System.currentTimeMillis();
       final Set<Node<T>> includedNodes = getIncludedNode(n, startTimeTree, endTimeTree);
+      System.out.println("includedNodes time: " + (System.currentTimeMillis() - s1));
       final List<Future> futures = new ArrayList<>(includedNodes.size());
+
+      s1 = System.currentTimeMillis();
 
       for (final Node<T> includedNode : includedNodes) {
         if (includedNode.isNotShared == add) {
@@ -324,6 +333,9 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
           throw new RuntimeException(e);
         }
       }
+
+      System.out.println("Future time: " + (System.currentTimeMillis() - s1));
+
       currentNum.incrementAndGet();
     }
 
