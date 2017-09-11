@@ -246,8 +246,7 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
       }
     });
 
-    final ConcurrentMap<Node<T>, Set<Node<T>>> parentSetMap = new ConcurrentHashMap<>(addedNodes.size());
-    final ConcurrentMap<Node<T>, Set<Node<T>>> includedNodeMap = new ConcurrentHashMap<>();
+    //final ConcurrentMap<Node<T>, Set<Node<T>>> parentSetMap = new ConcurrentHashMap<>(addedNodes.size());
 
     // Counting the possible reference count!
     for (final Node<T> node : addedNodes) {
@@ -257,10 +256,10 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
 
     for (final Node<T> node : addedNodes) {
       executorService.submit(() -> {
-        parentSetMap.put(node, getPossibleParents(node, startTimeTree, endTimeTree));
-        includedNodeMap.put(node, getIncludedNode(node, startTimeTree, endTimeTree));
+        //parentSetMap.put(node, getPossibleParents(node, startTimeTree, endTimeTree));
 
-        node.possibleParentCount = parentSetMap.get(node).size();
+        //node.possibleParentCount = parentSetMap.get(node).size();
+        node.possibleParentCount = getPossibleParents(node, startTimeTree, endTimeTree).size();
 
         node.cost = node.possibleParentCount * (node.end - node.start);
         node.isNotShared = add;
@@ -276,31 +275,33 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
     }
 
     // Pruning start!
+
     int numSelection = add ? selectNum : addedNodes.size() - selectNum;
     final AtomicInteger currentNum = new AtomicInteger(0);
     final ExecutorService executorService2 = Executors.newFixedThreadPool(numThreads);
 
-
     while (currentNum.get() < numSelection) {
       System.out.println(currentNum.get() + " / " + numSelection);
       final Node<T> n = priorityQueue.poll();
-      final Set<Node<T>> nParentSet = parentSetMap.get(n);
+      //final Set<Node<T>> nParentSet = parentSetMap.remove(n);
+      final Set<Node<T>> nParentSet = getPossibleParents(n, startTimeTree, endTimeTree);
       n.isNotShared = !add;
 
       // Select included nodes
-      final Set<Node<T>> includedNodes = includedNodeMap.get(n);
+      final Set<Node<T>> includedNodes = getIncludedNode(n, startTimeTree, endTimeTree);
       final List<Future> futures = new ArrayList<>(includedNodes.size());
 
       for (final Node<T> includedNode : includedNodes) {
         if (includedNode.isNotShared == add) {
           futures.add(executorService2.submit(() -> {
-              final Set<Node<T>> includedNodeParent = parentSetMap.get(includedNode);
-              includedNodeParent.removeAll(nParentSet);
-              includedNode.possibleParentCount = includedNodeParent.size();
-              includedNode.cost = includedNode.possibleParentCount * (includedNode.end - includedNode.start);
+              //final Set<Node<T>> includedNodeParent = parentSetMap.get(includedNode);
+            final Set<Node<T>> includedNodeParent = getPossibleParents(includedNode, startTimeTree, endTimeTree);
+            includedNodeParent.removeAll(nParentSet);
+            includedNode.possibleParentCount = includedNodeParent.size();
+            includedNode.cost = includedNode.possibleParentCount * (includedNode.end - includedNode.start);
 
-              priorityQueue.remove(includedNode);
-              priorityQueue.add(includedNode);
+            priorityQueue.remove(includedNode);
+            priorityQueue.add(includedNode);
            }));
         }
       }
