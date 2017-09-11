@@ -300,14 +300,14 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
       s1 = System.currentTimeMillis();
       final Set<Node<T>> includedNodes = getIncludedNode(n, startTimeTree, endTimeTree);
       System.out.println("includedNodes time: " + (System.currentTimeMillis() - s1));
-      final List<Future> futures = new ArrayList<>(includedNodes.size());
 
       s1 = System.currentTimeMillis();
 
+      final CountDownLatch countDownLatch = new CountDownLatch(includedNodes.size());
       for (final Node<T> includedNode : includedNodes) {
         if (includedNode.isNotShared == add) {
-          futures.add(executorService2.submit(() -> {
-              //final Set<Node<T>> includedNodeParent = parentSetMap.get(includedNode);
+          executorService2.submit(() -> {
+            //final Set<Node<T>> includedNodeParent = parentSetMap.get(includedNode);
             if (possibleParentMap.get(includedNode) == null) {
               possibleParentMap.put(includedNode, getPossibleParents(includedNode, startTimeTree, endTimeTree));
             }
@@ -319,21 +319,19 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
 
             priorityQueue.remove(includedNode);
             priorityQueue.add(includedNode);
-           }));
+
+            countDownLatch.countDown();
+          });
+        } else {
+          countDownLatch.countDown();
         }
       }
 
-      for (final Future future : futures) {
-        try {
-          future.get();
-        } catch (InterruptedException e) {
-          e.printStackTrace();
-        } catch (ExecutionException e) {
-          e.printStackTrace();
-          throw new RuntimeException(e);
-        }
+      try {
+        countDownLatch.await();
+      } catch (InterruptedException e) {
+        e.printStackTrace();
       }
-
       System.out.println("Future time: " + (System.currentTimeMillis() - s1));
 
       currentNum.incrementAndGet();
