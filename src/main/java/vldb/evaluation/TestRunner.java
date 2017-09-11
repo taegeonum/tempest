@@ -83,7 +83,7 @@ public final class TestRunner {
             .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
             .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
-            .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, PruningDependencyGraphImpl.class)
+            .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, PruningParallelMaxDependencyGraphImpl.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
             .build();
       case FastRandom:

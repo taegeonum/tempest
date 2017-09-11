@@ -27,7 +27,10 @@ import vldb.operator.window.timescale.pafas.Node;
 import vldb.operator.window.timescale.pafas.PartialTimespans;
 import vldb.operator.window.timescale.pafas.PeriodCalculator;
 import vldb.operator.window.timescale.pafas.dynamic.WindowManager;
-import vldb.operator.window.timescale.parameter.*;
+import vldb.operator.window.timescale.parameter.NumThreads;
+import vldb.operator.window.timescale.parameter.OverlappingRatio;
+import vldb.operator.window.timescale.parameter.SharedFinalNum;
+import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
 import java.util.*;
@@ -39,9 +42,9 @@ import java.util.logging.Logger;
 /**
  * DependencyGraph shows which nodes are related to each other. This is used so that unnecessary outputs are not saved.
  */
-public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
+public final class PruningParallelMaxDependencyGraphImpl<T> implements DependencyGraph {
 
-  private static final Logger LOG = Logger.getLogger(PruningDependencyGraphImpl.class.getName());
+  private static final Logger LOG = Logger.getLogger(PruningParallelMaxDependencyGraphImpl.class.getName());
 
   /**
    * A table containing DependencyGraphNode for partial outputs.
@@ -78,16 +81,16 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
    * @param startTime the initial start time of when the graph is built.
    */
   @Inject
-  private PruningDependencyGraphImpl(final TimescaleParser tsParser,
-                                     @Parameter(StartTime.class) final long startTime,
-                                     final PartialTimespans partialTimespans,
-                                     final PeriodCalculator periodCalculator,
-                                     @Parameter(SharedFinalNum.class) final int sharedFinalNum,
-                                     final OutputLookupTable<Node<T>> outputLookupTable,
-                                     @Parameter(NumThreads.class) final int numThreads,
-                                     final WindowManager windowManager,
-                                     @Parameter(OverlappingRatio.class) final double reusingRatio,
-                                     final SelectionAlgorithm<T> selectionAlgorithm) {
+  private PruningParallelMaxDependencyGraphImpl(final TimescaleParser tsParser,
+                                                @Parameter(StartTime.class) final long startTime,
+                                                final PartialTimespans partialTimespans,
+                                                final PeriodCalculator periodCalculator,
+                                                @Parameter(SharedFinalNum.class) final int sharedFinalNum,
+                                                final OutputLookupTable<Node<T>> outputLookupTable,
+                                                @Parameter(NumThreads.class) final int numThreads,
+                                                final WindowManager windowManager,
+                                                @Parameter(OverlappingRatio.class) final double reusingRatio,
+                                                final SelectionAlgorithm<T> selectionAlgorithm) {
     this.partialTimespans = partialTimespans;
     this.timescales = tsParser.timescales;
     this.period = periodCalculator.getPeriod();
@@ -145,9 +148,9 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
     intersect.remove(node);
 
     // Minus nodes
-    final Set<Node<T>> startSet1 = startTimeTree.subSet(new Node<T>(node.end - period - largestWindowSize, node.start, false),
-        new Node<T>(node.start - period, node.start, false));
-    final Set<Node<T>> endSet1 = endTimeTree.subSet(new Node<T>(1, node.end - period, false), new Node<T>(1, node.start - period + largestWindowSize, false));
+    final Set<Node<T>> startSet1 = startTimeTree.subSet(new Node<T>(Math.min(node.start - period - 1, node.end - period - largestWindowSize), 1, false),
+        new Node<T>(node.end - period, 1, false));
+    final Set<Node<T>> endSet1 = endTimeTree.subSet(new Node<T>(1, node.end - period, false), new Node<T>(1, Math.max(node.end-period+1, node.start-period + largestWindowSize), false));
 
     final Set<Node<T>> intersect2 = new HashSet<>(startSet1);
     final Set<Node<T>> intersect3 = new HashSet<>(endSet1);
@@ -188,49 +191,6 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
     final ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
     final int selectNum = (int)(addedNodes.size() * reusingRatio);
     final boolean add = (addedNodes.size() - selectNum) >=  addedNodes.size()/2 ? true : false;
-    if (add) {
-      priorityQueue = new PriorityBlockingQueue<>(addedNodes.size(), new Comparator<Node<T>>() {
-        @Override
-        public int compare(final Node<T> o1, final Node<T> o2) {
-          if (o1.cost < o2.cost) {
-            return 1;
-          } else if (o1.cost > o2.cost) {
-            return -1;
-          } else {
-            final long o1Size = o1.end - o1.start;
-            final long o2Size = o2.end - o2.start;
-            if (o1Size < o2Size) {
-              return 1;
-            } else if (o1Size > o2Size) {
-              return -1;
-            } else {
-              return 0;
-            }
-          }
-        }
-      });
-    } else {
-      priorityQueue = new PriorityBlockingQueue<>(addedNodes.size(), new Comparator<Node<T>>() {
-        @Override
-        public int compare(final Node<T> o1, final Node<T> o2) {
-          if (o1.cost < o2.cost) {
-            return -1;
-          } else if (o1.cost > o2.cost) {
-            return 1;
-          } else {
-            final long o1Size = o1.end - o1.start;
-            final long o2Size = o2.end - o2.start;
-            if (o1Size < o2Size) {
-              return 1;
-            } else if (o1Size > o2Size) {
-              return -1;
-            } else {
-              return 0;
-            }
-          }
-        }
-      });
-    }
 
     final TreeSet<Node<T>> startTimeTree = new TreeSet<Node<T>>(new Comparator<Node<T>>() {
       @Override
@@ -263,7 +223,6 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
 
         node.cost = node.possibleParentCount * (node.end - node.start);
         node.isNotShared = add;
-        priorityQueue.add(node);
       });
     }
 
@@ -275,30 +234,74 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
     }
 
     // Pruning start!
+    final Comparator<Node<T>> addComparator = new Comparator<Node<T>>() {
+      @Override
+      public int compare(final Node<T> o1, final Node<T> o2) {
+        if (o1.cost < o2.cost) {
+          return 1;
+        } else if (o1.cost > o2.cost) {
+          return -1;
+        } else {
+          final long o1Size = o1.end - o1.start;
+          final long o2Size = o2.end - o2.start;
+          if (o1Size < o2Size) {
+            return 1;
+          } else if (o1Size > o2Size) {
+            return -1;
+          } else {
+            return 0;
+          }
+        }
+      }
+    };
+
+
+    final Comparator<Node<T>> removeComparator = new Comparator<Node<T>>() {
+      @Override
+      public int compare(final Node<T> o1, final Node<T> o2) {
+        if (o1.cost < o2.cost) {
+          return -1;
+        } else if (o1.cost > o2.cost) {
+          return 1;
+        } else {
+          final long o1Size = o1.end - o1.start;
+          final long o2Size = o2.end - o2.start;
+          if (o1Size < o2Size) {
+            return 1;
+          } else if (o1Size > o2Size) {
+            return -1;
+          } else {
+            return 0;
+          }
+        }
+      }
+    };
 
     int numSelection = add ? selectNum : addedNodes.size() - selectNum;
     final AtomicInteger currentNum = new AtomicInteger(0);
     final ExecutorService executorService2 = Executors.newFixedThreadPool(numThreads);
 
     final Map<Node<T>, Set<Node<T>>> possibleParentMap = new ConcurrentHashMap<>();
+    final Comparator<Node<T>> comparator = add ? addComparator : removeComparator;
 
     while (currentNum.get() < numSelection) {
       System.out.println(currentNum.get() + " / " + numSelection);
+
       long s1 = System.currentTimeMillis();
-      final Node<T> n = priorityQueue.poll();
-      System.out.println("poll time: " + (System.currentTimeMillis() - s1));
-      //final Set<Node<T>> nParentSet = parentSetMap.remove(n);
+      final Node<T> maxNode = addedNodes.parallelStream().max(comparator).get();
+      System.out.println("max time: " + (System.currentTimeMillis() - s1));
+
       s1 = System.currentTimeMillis();
-      final Set<Node<T>> nParentSet = possibleParentMap.get(n) == null
-          ? getPossibleParents(n, startTimeTree, endTimeTree) : possibleParentMap.remove(n);
+      final Set<Node<T>> nParentSet = possibleParentMap.get(maxNode) == null
+          ? getPossibleParents(maxNode, startTimeTree, endTimeTree) : possibleParentMap.remove(maxNode);
 
       System.out.println("nParentSet time: " + (System.currentTimeMillis() - s1));
 
-      n.isNotShared = !add;
+      maxNode.isNotShared = !add;
 
       // Select included nodes
       s1 = System.currentTimeMillis();
-      final Set<Node<T>> includedNodes = getIncludedNode(n, startTimeTree, endTimeTree);
+      final Set<Node<T>> includedNodes = getIncludedNode(maxNode, startTimeTree, endTimeTree);
       System.out.println("includedNodes time: " + (System.currentTimeMillis() - s1));
 
       s1 = System.currentTimeMillis();
@@ -316,9 +319,6 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
             includedNodeParent.removeAll(nParentSet);
             includedNode.possibleParentCount = includedNodeParent.size();
             includedNode.cost = includedNode.possibleParentCount * (includedNode.end - includedNode.start);
-
-            priorityQueue.remove(includedNode);
-            priorityQueue.add(includedNode);
 
             countDownLatch.countDown();
           });
@@ -369,12 +369,20 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
   }
 
 
+  private int calculateSize() {
+    int s = 0;
+    for (final Timescale timescle : timescales) {
+      s += (period / timescle.intervalSize);
+    }
+    return s;
+  }
+
   /**
    * Add DependencyGraphNode and connect dependent nodes.
    */
   private void addOverlappingWindowNodeAndEdge() {
     final ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
-    final List<Node<T>> addedNodes = new LinkedList<>();
+    final List<Node<T>> addedNodes = new ArrayList<>(calculateSize());
 
     //System.out.println("period: " + period);
     /*

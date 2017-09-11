@@ -10,7 +10,7 @@ import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.cutty.CuttyMWOConfiguration;
 import vldb.operator.window.timescale.pafas.active.ActiveDPSelectionAlgorithm;
-import vldb.operator.window.timescale.pafas.active.PruningDependencyGraphImpl;
+import vldb.operator.window.timescale.pafas.active.PruningParallelMaxDependencyGraphImpl;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.*;
 
@@ -34,7 +34,7 @@ public final class PafasMWOTest {
     jcb.bindNamedParameter(ReusingRatio.class, "0.4");
     jcb.bindNamedParameter(WindowGap.class, "25");
     jcb.bindNamedParameter(SharedFinalNum.class, "300");
-    jcb.bindNamedParameter(OverlappingRatio.class, "1.0");
+    jcb.bindNamedParameter(OverlappingRatio.class, "0.5");
 
     final long currTime = 0;
     final List<Configuration> configurationList = new LinkedList<>();
@@ -60,7 +60,7 @@ public final class PafasMWOTest {
         .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
         .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
-        .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, PruningDependencyGraphImpl.class)
+        .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, PruningParallelMaxDependencyGraphImpl.class)
         .set(StaticSingleMWOConfiguration.START_TIME, "0")
         .build());
     operatorIds.add("FAST");
