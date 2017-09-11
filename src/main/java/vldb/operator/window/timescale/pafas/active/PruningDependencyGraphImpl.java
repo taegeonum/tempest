@@ -27,10 +27,7 @@ import vldb.operator.window.timescale.pafas.Node;
 import vldb.operator.window.timescale.pafas.PartialTimespans;
 import vldb.operator.window.timescale.pafas.PeriodCalculator;
 import vldb.operator.window.timescale.pafas.dynamic.WindowManager;
-import vldb.operator.window.timescale.parameter.NumThreads;
-import vldb.operator.window.timescale.parameter.ReusingRatio;
-import vldb.operator.window.timescale.parameter.SharedFinalNum;
-import vldb.operator.window.timescale.parameter.StartTime;
+import vldb.operator.window.timescale.parameter.*;
 
 import javax.inject.Inject;
 import java.util.*;
@@ -72,14 +69,10 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
   private final int numThreads;
   private final double reusingRatio;
 
-  private final Set<Node<T>> noSharedNode = new HashSet<>();
-
-  private final ConcurrentMap<Long, List<Long>> startEndMap;
 
   private final WindowManager windowManager;
   private final int largestWindowSize;
 
-  private final int sharedFinalNum;
   /**
    * DependencyGraph constructor. This first builds the dependency graph.
    * @param startTime the initial start time of when the graph is built.
@@ -93,7 +86,7 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
                                      final OutputLookupTable<Node<T>> outputLookupTable,
                                      @Parameter(NumThreads.class) final int numThreads,
                                      final WindowManager windowManager,
-                                     @Parameter(ReusingRatio.class) final double reusingRatio,
+                                     @Parameter(OverlappingRatio.class) final double reusingRatio,
                                      final SelectionAlgorithm<T> selectionAlgorithm) {
     this.partialTimespans = partialTimespans;
     this.timescales = tsParser.timescales;
@@ -102,10 +95,8 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
     this.finalTimespans = outputLookupTable;
     this.numThreads = numThreads;
     this.reusingRatio = reusingRatio;
-    this.startEndMap = new ConcurrentHashMap<>();
     this.selectionAlgorithm = selectionAlgorithm;
     this.windowManager = windowManager;
-    this.sharedFinalNum = sharedFinalNum;
     this.largestWindowSize = (int)windowManager.timescales.get(windowManager.timescales.size()-1).windowSize;
     // create dependency graph.
     addOverlappingWindowNodeAndEdge();
