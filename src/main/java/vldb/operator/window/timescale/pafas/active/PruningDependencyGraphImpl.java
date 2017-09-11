@@ -280,11 +280,14 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
     final AtomicInteger currentNum = new AtomicInteger(0);
     final ExecutorService executorService2 = Executors.newFixedThreadPool(numThreads);
 
+    final Map<Node<T>, Set<Node<T>>> possibleParentMap = new ConcurrentHashMap<>();
+
     while (currentNum.get() < numSelection) {
       System.out.println(currentNum.get() + " / " + numSelection);
       final Node<T> n = priorityQueue.poll();
       //final Set<Node<T>> nParentSet = parentSetMap.remove(n);
       final Set<Node<T>> nParentSet = getPossibleParents(n, startTimeTree, endTimeTree);
+      possibleParentMap.remove(n);
       n.isNotShared = !add;
 
       // Select included nodes
@@ -295,7 +298,11 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
         if (includedNode.isNotShared == add) {
           futures.add(executorService2.submit(() -> {
               //final Set<Node<T>> includedNodeParent = parentSetMap.get(includedNode);
-            final Set<Node<T>> includedNodeParent = getPossibleParents(includedNode, startTimeTree, endTimeTree);
+            if (possibleParentMap.get(includedNode) == null) {
+              possibleParentMap.put(includedNode, getPossibleParents(includedNode, startTimeTree, endTimeTree));
+            }
+            final Set<Node<T>> includedNodeParent = possibleParentMap.get(includedNode);
+
             includedNodeParent.removeAll(nParentSet);
             includedNode.possibleParentCount = includedNodeParent.size();
             includedNode.cost = includedNode.possibleParentCount * (includedNode.end - includedNode.start);
