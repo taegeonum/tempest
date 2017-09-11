@@ -140,7 +140,6 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
   private Set<Node<T>> getPossibleParents(final Node<T> node,
                                  final TreeSet<Node<T>> startTimeTree,
                                  final TreeSet<Node<T>> endTimeTree) {
-
     final Set<Node<T>> startSet = startTimeTree.subSet(new Node<T>(Math.min(node.start-1, node.end - largestWindowSize), node.end, false), node);
     final Set<Node<T>> endSet = endTimeTree.subSet(node, new Node<T>(node.start, Math.max(node.end+1, node.start + largestWindowSize), false));
 
@@ -269,7 +268,12 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
       }
     };
 
-    int numSelection = add ? selectNum : addedNodes.size() - selectNum;
+    final List<Node<T>> filteredNodes = addedNodes
+        .parallelStream()
+        .filter(node -> node.cost > 0)
+        .collect(Collectors.toCollection(ArrayList::new));
+
+    int numSelection = add ? selectNum : filteredNodes.size() - selectNum;
     int currentNum = 0;
 
     final Map<Node<T>, Set<Node<T>>> possibleParentMap = new ConcurrentHashMap<>();
@@ -278,7 +282,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
     while (currentNum < numSelection) {
 
       long s1 = System.currentTimeMillis();
-      final Node<T> maxNode = addedNodes.parallelStream().max(comparator).get();
+      final Node<T> maxNode = filteredNodes.parallelStream().max(comparator).get();
       System.out.println(currentNum + " / " + numSelection + ", maxnode: " + maxNode);
       System.out.println("max time: " + (System.currentTimeMillis() - s1));
 
@@ -313,7 +317,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
       System.out.println("Future time: " + (System.currentTimeMillis() - s1));
 
       maxNode.possibleParentCount = 0;
-      maxNode.cost = 0L;
+      maxNode.cost = add ? 0 : Long.MAX_VALUE;
       currentNum += 1;
     }
 
@@ -369,7 +373,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
 
           // create vertex and add it to the table cell of (time, windowsize)
           final long start = time - timescale.windowSize;
-          final Node parent = new Node(start, time, false);
+          final Node parent = new Node(start, time, false, timescale);
           createdNodes.add(parent);
 
           //table[(int)start+largestWindowSize][(int)time+largestWindowSize] = true;
