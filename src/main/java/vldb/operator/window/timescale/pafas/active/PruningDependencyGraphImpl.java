@@ -286,8 +286,9 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
       System.out.println(currentNum.get() + " / " + numSelection);
       final Node<T> n = priorityQueue.poll();
       //final Set<Node<T>> nParentSet = parentSetMap.remove(n);
-      final Set<Node<T>> nParentSet = getPossibleParents(n, startTimeTree, endTimeTree);
-      possibleParentMap.remove(n);
+      final Set<Node<T>> nParentSet = possibleParentMap.get(n) == null
+          ? getPossibleParents(n, startTimeTree, endTimeTree) : possibleParentMap.remove(n);
+
       n.isNotShared = !add;
 
       // Select included nodes
