@@ -35,6 +35,7 @@ import vldb.operator.window.timescale.parameter.StartTime;
 import javax.inject.Inject;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -140,59 +141,194 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
     return adj;
   }
 
-  private boolean isOverlappingRange(final int i, final int j, final int st, final int e, final boolean[][] table) {
-    for (int k = i; k <= st; k++) {
-      for (int l = j; l >= e; l--) {
-        if ((k != i && l != j) && (k != st && l != e)) {
-          if (table[k][l]) {
-            return true;
-          }
-        }
-      }
-    }
-    return false;
+  private Set<Node<T>> getPossibleParents(final Node<T> node,
+                                 final TreeSet<Node<T>> startTimeTree,
+                                 final TreeSet<Node<T>> endTimeTree) {
+
+    final Set<Node<T>> startSet = startTimeTree.subSet(new Node<T>(Math.min(node.start-1, node.end - largestWindowSize), node.end, false), node);
+    final Set<Node<T>> endSet = endTimeTree.subSet(node, new Node<T>(node.start, Math.max(node.end+1, node.start + largestWindowSize), false));
+
+    final Set<Node<T>> intersect = new HashSet<>(startSet);
+    final Set<Node<T>> intersect1 = new HashSet<>(endSet);
+    intersect.retainAll(intersect1);
+    intersect.remove(node);
+
+    // Minus nodes
+    final Set<Node<T>> startSet1 = startTimeTree.subSet(new Node<T>(node.start - period - largestWindowSize, node.start, false),
+        new Node<T>(node.start - period, node.start, false));
+    final Set<Node<T>> endSet1 = endTimeTree.subSet(new Node<T>(1, node.end - period, false), new Node<T>(1, node.end - period + largestWindowSize, false));
+
+    final Set<Node<T>> intersect2 = new HashSet<>(startSet1);
+    final Set<Node<T>> intersect3 = new HashSet<>(endSet1);
+    intersect2.retainAll(intersect3);
+    intersect2.remove(node);
+
+    intersect.addAll(intersect2);
+    return intersect;
   }
 
-  private void pruning(final List<Node<T>> addedNodes, final boolean[][] table) {
+  private Set<Node<T>> getIncludedNode(final Node<T> node,
+                                        final TreeSet<Node<T>> startTimeTree,
+                                        final TreeSet<Node<T>> endTimeTree) {
+
+    final Node<T> startIndexNode = new Node<>(node.end-1, node.end, false);
+    final Node<T> endIndexNode = new Node<>(node.start, node.start+1, false);
+
+    final Set<Node<T>> nodesInStart = startTimeTree.subSet(node, startIndexNode);
+    final Set<Node<T>> nodesInEnd = endTimeTree.subSet(endIndexNode, node);
+
+    final Set<Node<T>> includedNodes = new HashSet<>(nodesInStart);
+    includedNodes.addAll(nodesInEnd);
+
+    includedNodes.remove(node);
+
+    if (node.start < 0) {
+      final Node<T> startIndexNode1 = new Node<>(node.start + period, node.start + period + 1, false);
+
+      final Set<Node<T>> nodes = startTimeTree.tailSet(startIndexNode1);
+      includedNodes.addAll(nodes);
+    }
+
+    return includedNodes;
+  }
+
+  private void pruning(final List<Node<T>> addedNodes) {
+    final PriorityBlockingQueue<Node<T>> priorityQueue;
     final ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
-
-    // Counting the possible reference count!
-    for (final Node<T> node : addedNodes) {
-      executorService.submit(() -> {
-        int st = (int) node.start + largestWindowSize;
-        int e = (int) node.end + largestWindowSize;
-
-        int cnt = 0;
-        for (int i = st; i >= 0; i--) {
-          for (int j = e; j <= (int) period + largestWindowSize; j++) {
-            if (i != st && j != e) {
-              if (table[i][j]) {
-                //if (!isOverlappingRange(i, j, st, e, table)) {
-                //  cnt += 1;
-                cnt += 1;
-              }
+    final int selectNum = (int)(addedNodes.size() * reusingRatio);
+    final boolean add = (addedNodes.size() - selectNum) >=  addedNodes.size()/2 ? true : false;
+    if (add) {
+      priorityQueue = new PriorityBlockingQueue<>(addedNodes.size(), new Comparator<Node<T>>() {
+        @Override
+        public int compare(final Node<T> o1, final Node<T> o2) {
+          if (o1.cost < o2.cost) {
+            return 1;
+          } else if (o1.cost > o2.cost) {
+            return -1;
+          } else {
+            final long o1Size = o1.end - o1.start;
+            final long o2Size = o2.end - o2.start;
+            if (o1Size < o2Size) {
+              return 1;
+            } else if (o1Size > o2Size) {
+              return -1;
+            } else {
+              return 0;
             }
           }
         }
-
-        node.possibleParentCount = cnt * (int)(node.end - node.start);
-        //System.out.println("Node cnt: " + node + " , " + cnt);
+      });
+    } else {
+      priorityQueue = new PriorityBlockingQueue<>(addedNodes.size(), new Comparator<Node<T>>() {
+        @Override
+        public int compare(final Node<T> o1, final Node<T> o2) {
+          if (o1.cost < o2.cost) {
+            return -1;
+          } else if (o1.cost > o2.cost) {
+            return 1;
+          } else {
+            final long o1Size = o1.end - o1.start;
+            final long o2Size = o2.end - o2.start;
+            if (o1Size < o2Size) {
+              return 1;
+            } else if (o1Size > o2Size) {
+              return -1;
+            } else {
+              return 0;
+            }
+          }
+        }
       });
     }
 
-    final Node<T>[] array = new Node[addedNodes.size()];
-    for (int i = 0; i < array.length; i++) {
-      array[i] = addedNodes.get(i);
+    final TreeSet<Node<T>> startTimeTree = new TreeSet<Node<T>>(new Comparator<Node<T>>() {
+      @Override
+      public int compare(final Node<T> o1, final Node<T> o2) {
+        return o1.start < o2.start ? -1 : 1;
+      }
+    });
+
+    final TreeSet<Node<T>> endTimeTree = new TreeSet<Node<T>>(new Comparator<Node<T>>() {
+      @Override
+      public int compare(final Node<T> o1, final Node<T> o2) {
+        return o1.end < o2.end ? -1 : 1;
+      }
+    });
+
+    final ConcurrentMap<Node<T>, Set<Node<T>>> parentSetMap = new ConcurrentHashMap<>(addedNodes.size());
+    final ConcurrentMap<Node<T>, Set<Node<T>>> includedNodeMap = new ConcurrentHashMap<>();
+
+    // Counting the possible reference count!
+    for (final Node<T> node : addedNodes) {
+      startTimeTree.add(node);
+      endTimeTree.add(node);
+    }
+
+    for (final Node<T> node : addedNodes) {
+      executorService.submit(() -> {
+        parentSetMap.put(node, getPossibleParents(node, startTimeTree, endTimeTree));
+        includedNodeMap.put(node, getIncludedNode(node, startTimeTree, endTimeTree));
+
+        node.possibleParentCount = parentSetMap.get(node).size();
+
+        node.cost = node.possibleParentCount * (node.end - node.start);
+        node.isNotShared = add;
+        priorityQueue.add(node);
+      });
     }
 
     executorService.shutdown();
     try {
-      executorService.awaitTermination(300, TimeUnit.SECONDS);
+      executorService.awaitTermination(1000, TimeUnit.SECONDS);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
 
+    // Pruning start!
+    int numSelection = add ? selectNum : addedNodes.size() - selectNum;
+    final AtomicInteger currentNum = new AtomicInteger(0);
+    final ExecutorService executorService2 = Executors.newFixedThreadPool(numThreads);
+
+
+    while (currentNum.get() < numSelection) {
+      System.out.println(currentNum.get() + " / " + numSelection);
+      final Node<T> n = priorityQueue.poll();
+      final Set<Node<T>> nParentSet = parentSetMap.get(n);
+      n.isNotShared = !add;
+
+      // Select included nodes
+      final Set<Node<T>> includedNodes = includedNodeMap.get(n);
+      final List<Future> futures = new ArrayList<>(includedNodes.size());
+
+      for (final Node<T> includedNode : includedNodes) {
+        if (includedNode.isNotShared == add) {
+          futures.add(executorService2.submit(() -> {
+              final Set<Node<T>> includedNodeParent = parentSetMap.get(includedNode);
+              includedNodeParent.removeAll(nParentSet);
+              includedNode.possibleParentCount = includedNodeParent.size();
+              includedNode.cost = includedNode.possibleParentCount * (includedNode.end - includedNode.start);
+
+              priorityQueue.remove(includedNode);
+              priorityQueue.add(includedNode);
+           }));
+        }
+      }
+
+      for (final Future future : futures) {
+        try {
+          future.get();
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        } catch (ExecutionException e) {
+          e.printStackTrace();
+          throw new RuntimeException(e);
+        }
+      }
+      currentNum.incrementAndGet();
+    }
+
     // Sorting by possible parent count
+    /*
     Arrays.parallelSort(array, new Comparator<Node<T>>() {
       @Override
       public int compare(final Node<T> o1, final Node<T> o2) {
@@ -211,6 +347,7 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
     for (int i = 0; i < pruningNum; i++) {
       array[i].isNotShared = true;
     }
+    */
 
     /*
     final int pruningIndex = Math.min(array.length-1, (int)(reusingRatio * array.length));
@@ -229,13 +366,18 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
     final ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
     final List<Node<T>> addedNodes = new LinkedList<>();
 
+    //System.out.println("period: " + period);
+    /*
     final boolean[][] table = new boolean[(int)period + largestWindowSize][(int)period+largestWindowSize+1];
+    final Node[][] nodeTable = new Node[(int)period + largestWindowSize][(int)period+largestWindowSize+1];
 
     for (int i = 0; i < period + largestWindowSize; i++) {
       for (int j = 0; j < period  + largestWindowSize + 1; j++) {
         table[i][j] = false;
+        nodeTable[i][j] = null;
       }
     }
+    */
 
     if (numThreads == 1) {
       for (final Timescale timescale : timescales) {
@@ -247,7 +389,8 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
           addedNodes.add(parent);
 
 
-          table[(int)start+largestWindowSize][(int)time+largestWindowSize] = true;
+          //table[(int)start+largestWindowSize][(int)time+largestWindowSize] = true;
+          //nodeTable[(int)start+largestWindowSize][(int)time+largestWindowSize] = parent;
 
           finalTimespans.saveOutput(start, time, parent);
           LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
@@ -268,7 +411,8 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
               final Node parent = new Node(start, time, false);
               createdNodes.add(parent);
 
-              table[(int)start+largestWindowSize][(int)time+largestWindowSize] = true;
+              //table[(int)start+largestWindowSize][(int)time+largestWindowSize] = true;
+              //nodeTable[(int)start+largestWindowSize][(int)time+largestWindowSize] = parent;
 
               finalTimespans.saveOutput(start, time, parent);
               LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
@@ -292,7 +436,7 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
     }
 
     if (reusingRatio < 1.0) {
-      pruning(addedNodes, table);
+      pruning(addedNodes);
     }
 
     // Add edges

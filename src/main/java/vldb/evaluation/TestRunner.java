@@ -54,6 +54,7 @@ public final class TestRunner {
     NoOverlap, // no overlap
     FastOverlap, // rm overlapping windows
     FastRandom, // random selection
+    FastWeight, // fast pruning while updating weight
     OTFSta,
     OTFDyn,
     TriOps,
@@ -74,6 +75,15 @@ public final class TestRunner {
             .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
             .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, WindowPruningDependencyGraphImpl.class)
+            .set(StaticSingleMWOConfiguration.START_TIME, "0")
+            .build();
+      case FastWeight:
+        return StaticSingleMWOConfiguration.CONF
+            .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
+            .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
+            .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, PruningDependencyGraphImpl.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
             .build();
       case FastRandom:

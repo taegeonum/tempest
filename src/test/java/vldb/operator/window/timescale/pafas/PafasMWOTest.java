@@ -10,7 +10,7 @@ import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.cutty.CuttyMWOConfiguration;
 import vldb.operator.window.timescale.pafas.active.ActiveDPSelectionAlgorithm;
-import vldb.operator.window.timescale.pafas.active.WindowFineGrainedPruningDependencyGraphImpl;
+import vldb.operator.window.timescale.pafas.active.PruningDependencyGraphImpl;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.*;
 
@@ -31,7 +31,7 @@ public final class PafasMWOTest {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
     jcb.bindNamedParameter(NumThreads.class, "4");
-    jcb.bindNamedParameter(ReusingRatio.class, "0.2");
+    jcb.bindNamedParameter(ReusingRatio.class, "0.4");
     jcb.bindNamedParameter(WindowGap.class, "25");
     jcb.bindNamedParameter(SharedFinalNum.class, "300");
     jcb.bindNamedParameter(OverlappingRatio.class, "1.0");
@@ -39,7 +39,7 @@ public final class PafasMWOTest {
     final long currTime = 0;
     final List<Configuration> configurationList = new LinkedList<>();
     final List<String> operatorIds = new LinkedList<>();
-    final String timescaleString2 =  "(4,2)(5,3)(6,4)(10,5)";
+    final String timescaleString3 =  "(4,2)(5,3)(6,4)(10,5)";
     final String timescaleString1 =  "(5,4)(8,3)(12,7)(16,6)";
     final String timescaleString = "(5,1)(10,1)(20,2)(30,2)(60,4)(90,4)(360,5)(600,5)(900,10)(1800,10)";
     final String timescaleString4 = "(5,2)(6,2)(10,2)";
@@ -60,7 +60,7 @@ public final class PafasMWOTest {
         .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
         .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
-        .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, WindowFineGrainedPruningDependencyGraphImpl.class)
+        .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, PruningDependencyGraphImpl.class)
         .set(StaticSingleMWOConfiguration.START_TIME, "0")
         .build());
     operatorIds.add("FAST");

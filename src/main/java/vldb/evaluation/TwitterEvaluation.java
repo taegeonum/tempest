@@ -101,7 +101,7 @@ public final class TwitterEvaluation {
         prefix = outputPath + testName + "/" + variable + "/" + operatorType.name();
       }
     } else if (operatorType == TestRunner.OperatorType.FastOverlap ||
-        operatorType == TestRunner.OperatorType.FastRandom) {
+        operatorType == TestRunner.OperatorType.FastRandom || operatorType == TestRunner.OperatorType.FastWeight) {
         prefix = outputPath +  testName + "/" + variable + "/" + operatorType.name() + "/" + overlapRatio;
     } else {
       prefix = outputPath + testName + "/" + variable + "/" + operatorType.name();
