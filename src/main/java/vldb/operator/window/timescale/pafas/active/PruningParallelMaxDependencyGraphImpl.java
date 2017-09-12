@@ -300,8 +300,10 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
             includedNode.possibleParentCount = includedNodeParent.size();
             includedNode.cost = includedNode.possibleParentCount * (includedNode.end - includedNode.start);
 
-            if (includedNode.possibleParentCount > 100) {
+            if (includedNode.possibleParentCount > 500) {
               possibleParentMap.put(includedNode, includedNodeParent);
+            } else {
+              possibleParentMap.remove(includedNode);
             }
           });
 

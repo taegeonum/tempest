@@ -81,9 +81,9 @@ public final class RandomSelectionDependencyGraphImpl<T> implements DependencyGr
   private final Random random = new Random();
 
   /**
-   * DependencyGraph constructor. This first builds the dependency graph.
-   * @param startTime the initial start time of when the graph is built.
-   */
+  * DependencyGraph constructor. This first builds the dependency graph.
+      * @param startTime the initial start time of when the graph is built.
+  */
   @Inject
   private RandomSelectionDependencyGraphImpl(final TimescaleParser tsParser,
                                              @Parameter(StartTime.class) final long startTime,
