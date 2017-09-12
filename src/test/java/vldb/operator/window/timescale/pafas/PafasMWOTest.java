@@ -31,10 +31,10 @@ public final class PafasMWOTest {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
     jcb.bindNamedParameter(NumThreads.class, "4");
-    jcb.bindNamedParameter(ReusingRatio.class, "0.4");
+    jcb.bindNamedParameter(ReusingRatio.class, "0.0");
     jcb.bindNamedParameter(WindowGap.class, "25");
-    jcb.bindNamedParameter(SharedFinalNum.class, "300");
-    jcb.bindNamedParameter(OverlappingRatio.class, "0.5");
+    jcb.bindNamedParameter(SharedFinalNum.class, "3000");
+    jcb.bindNamedParameter(OverlappingRatio.class, "0.0");
 
     final long currTime = 0;
     final List<Configuration> configurationList = new LinkedList<>();
