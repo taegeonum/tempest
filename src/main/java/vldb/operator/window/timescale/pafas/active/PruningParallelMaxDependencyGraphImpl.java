@@ -168,30 +168,23 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
         throw new RuntimeException("Invalid window: " + info.timescale + ", node: " + node);
       }
 
-      final long endStart = interval * ((int)Math.ceil((double)node.end / interval));
+      final long endStart = interval * ((int)Math.ceil(((double)node.end) / interval));
 
       for (long e = endStart; e - windowSize <= node.start && e <= period; e += interval) {
         final long s = e - windowSize;
-        if (!(s == node.start && e == node.end)) {
+        if (e > period) {
+          try {
+            parentSet.add(finalTimespans.lookup(s - period, e - period));
+          } catch (NotFoundException e1) {
+            e1.printStackTrace();
+            throw new RuntimeException(e1);
+          }
+        } else {
           try {
             parentSet.add(finalTimespans.lookup(s, e));
           } catch (NotFoundException e1) {
             e1.printStackTrace();
             throw new RuntimeException(e1);
-          }
-        }
-      }
-
-      if (node.start + windowSize > period) {
-        for (long e = interval; e - windowSize + period <= node.start && e <= period; e += interval) {
-          final long s = e - windowSize;
-          if (!(s == node.start && e == node.end)) {
-            try {
-              parentSet.add(finalTimespans.lookup(s, e));
-            } catch (NotFoundException e1) {
-              e1.printStackTrace();
-              throw new RuntimeException(e1);
-            }
           }
         }
       }
@@ -201,12 +194,10 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
   }
 
   private Collection<Node<T>> getIncludedNode(final Node<T> node,
-                                        final List<Info> infos) {
+                                              final List<Info> infos) {
 
+    final Set<Node<T>> added = new HashSet<>();
     final int startIndex = getIndexOfInfos(node, infos);
-
-    final List<Node<T>> added = new LinkedList<>();
-
     for (int index = startIndex; index >= 0; index--) {
       final Info info = infos.get(index);
 
@@ -214,41 +205,21 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
       final long interval = info.timescale.intervalSize;
 
       long endStart = node.start % interval == 0 ? node.start + interval : interval * ((int)Math.ceil(((double)node.start) / interval));
-      // minus nodes
-      if (node.start < 0) {
-        for (long e = endStart + period; e - windowSize < period && e <= period; e += interval) {
-          final long s = e - windowSize;
-          if (!(s == node.start && e == node.end)) {
-            try {
-              added.add(finalTimespans.lookup(s, e));
-            } catch (NotFoundException e1) {
-              e1.printStackTrace();
-              throw new RuntimeException(e1);
-            }
-          }
-        }
 
-        for (long e = interval; e - windowSize < node.end && e <= period; e += interval) {
-          final long s = e - windowSize;
-          if (!(s == node.start && e == node.end)) {
-            try {
+      for (long e = endStart; e - windowSize < node.end; e += interval) {
+        final long s = e - windowSize;
+        if ((s > node.start && s < node.end) || (e > node.start &&  e < node.end)) {
+          try {
+            if (e <= 0) {
+              added.add(finalTimespans.lookup(s + period, e + period));
+            } else if (e > period) {
+              added.add(finalTimespans.lookup(s - period, e - period));
+            } else {
               added.add(finalTimespans.lookup(s, e));
-            } catch (NotFoundException e1) {
-              e1.printStackTrace();
-              throw new RuntimeException(e1);
             }
-          }
-        }
-      } else {
-        for (long e = endStart; e - windowSize < node.end && e <= period; e += interval) {
-          final long s = e - windowSize;
-          if (!(s == node.start && e == node.end)) {
-            try {
-              added.add(finalTimespans.lookup(s, e));
-            } catch (NotFoundException e1) {
-              e1.printStackTrace();
-              throw new RuntimeException("window: " + info.timescale + ", s: " + s + ", e: " + e + ", node: " + node + ", " + e1);
-            }
+          } catch (NotFoundException e1) {
+            e1.printStackTrace();
+            throw new RuntimeException("window: " + info.timescale + ", s: " + s + ", e: " + e + ", node: " + node + ", " + e1);
           }
         }
       }

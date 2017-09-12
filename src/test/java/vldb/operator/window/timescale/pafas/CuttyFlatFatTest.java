@@ -30,6 +30,7 @@ public final class CuttyFlatFatTest {
     final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
     final Fat fat = injector.getInstance(CuttyFlatFat.class);
 
+    System.out.println(Math.ceil(-1.3));
     final Map<String, Long> val1 = new HashMap<>();
     final Map<String, Long> val2 = new HashMap<>();
     final Map<String, Long> val3 = new HashMap<>();
