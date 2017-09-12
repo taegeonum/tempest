@@ -312,7 +312,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
             includedNode.possibleParentCount = includedNodeParent.size();
             includedNode.cost = includedNode.possibleParentCount * (includedNode.end - includedNode.start);
 
-            if (includedNode.possibleParentCount > 500) {
+            if (includedNode.possibleParentCount > 1000) {
               possibleParentMap.put(includedNode, includedNodeParent);
             } else {
               possibleParentMap.remove(includedNode);
@@ -447,7 +447,6 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
       addEdge(parent);
     }
   }
-
 
   @Override
   public List<Timespan> getFinalTimespans(final long t) {
