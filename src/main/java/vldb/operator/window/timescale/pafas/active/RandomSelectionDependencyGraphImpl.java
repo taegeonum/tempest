@@ -29,6 +29,7 @@ import vldb.operator.window.timescale.pafas.PeriodCalculator;
 import vldb.operator.window.timescale.pafas.dynamic.WindowManager;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.OverlappingRatio;
+import vldb.operator.window.timescale.parameter.SharedFinalNum;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
@@ -77,7 +78,7 @@ public final class RandomSelectionDependencyGraphImpl<T> implements DependencyGr
   private final int largestWindowSize;
 
   private final double overlapRatio;
-
+  private final int selectNum;
   private final Random random = new Random();
 
   /**
@@ -92,6 +93,7 @@ public final class RandomSelectionDependencyGraphImpl<T> implements DependencyGr
                                              final OutputLookupTable<Node<T>> outputLookupTable,
                                              @Parameter(NumThreads.class) final int numThreads,
                                              final WindowManager windowManager,
+                                             @Parameter(SharedFinalNum.class) final int selectNum,
                                              @Parameter(OverlappingRatio.class) final double overlapRatio,
                                              final SelectionAlgorithm<T> selectionAlgorithm) throws NotFoundException {
     this.partialTimespans = partialTimespans;
@@ -103,6 +105,7 @@ public final class RandomSelectionDependencyGraphImpl<T> implements DependencyGr
     this.numThreads = numThreads;
     this.startEndMap = new ConcurrentHashMap<>();
     this.selectionAlgorithm = selectionAlgorithm;
+    this.selectNum = selectNum;
     this.windowManager = windowManager;
     this.largestWindowSize = (int)windowManager.timescales.get(windowManager.timescales.size()-1).windowSize;
     // create dependency graph.
@@ -203,9 +206,7 @@ public final class RandomSelectionDependencyGraphImpl<T> implements DependencyGr
               final long start = time - timescale.windowSize;
               final Node parent = new Node(start, time, false);
               createdNodes.add(parent);
-
-              final double rand = random.nextDouble();
-              parent.isNotShared = rand >= overlapRatio;
+              parent.isNotShared = true;
 
               finalTimespans.saveOutput(start, time, parent);
               LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
@@ -215,6 +216,7 @@ public final class RandomSelectionDependencyGraphImpl<T> implements DependencyGr
           }
         }));
       }
+
 
       for (final Future<List<Node<T>>> future : futures) {
         try {
@@ -226,6 +228,17 @@ public final class RandomSelectionDependencyGraphImpl<T> implements DependencyGr
           throw new RuntimeException(e);
         }
       }
+    }
+
+    // random selection
+    final int size = addedNodes.size();
+    for (int i = 0; i < selectNum; i++) {
+      int select = Math.min(size-1, random.nextInt(size));
+      while (!addedNodes.get(select).isNotShared) {
+        select = Math.min(size-1, random.nextInt(size));
+      }
+      addedNodes.get(select).isNotShared = false;
+      System.out.println("Selection: " + i + " / " + selectNum);
     }
 
     // Add edges
