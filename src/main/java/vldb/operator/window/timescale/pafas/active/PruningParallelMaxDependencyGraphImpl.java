@@ -170,7 +170,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
 
       final long endStart = interval * ((int)Math.ceil(((double)node.end) / interval));
 
-      for (long e = endStart; e - windowSize <= node.start && e <= period; e += interval) {
+      for (long e = endStart; e - windowSize <= node.start; e += interval) {
         final long s = e - windowSize;
         if (e > period) {
           try {
@@ -317,11 +317,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
             includedNode.possibleParentCount = includedNodeParent.size();
             includedNode.cost = includedNode.possibleParentCount * (includedNode.end - includedNode.start);
 
-            if (includedNode.possibleParentCount > 1000) {
-              possibleParentMap.put(includedNode, includedNodeParent);
-            } else {
-              possibleParentMap.remove(includedNode);
-            }
+            possibleParentMap.put(includedNode, includedNodeParent);
           });
 
       System.out.println("Future time: " + (System.currentTimeMillis() - s1));
