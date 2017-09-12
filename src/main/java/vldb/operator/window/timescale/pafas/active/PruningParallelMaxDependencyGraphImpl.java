@@ -185,7 +185,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
     return parentSet;
   }
 
-  private List<Node<T>> getIncludedNode(final Node<T> node,
+  private Collection<Node<T>> getIncludedNode(final Node<T> node,
                                         final List<Info> infos) {
 
     final int startIndex = getIndexOfInfos(node, infos) - 1;
@@ -211,11 +211,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
       }
     }
 
-    final List<Node<T>> arrayList = new ArrayList<>(added.size());
-    for (final Node<T> n : added) {
-      arrayList.add(n);
-    }
-    return arrayList;
+    return added;
   }
 
   private void pruning(final List<Info> infos, final List<Node<T>> addedNodes) {
@@ -288,7 +284,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
 
       // Select included nodes
       s1 = System.currentTimeMillis();
-      final List<Node<T>> includedNodes = getIncludedNode(maxNode, infos);
+      final Collection<Node<T>> includedNodes = getIncludedNode(maxNode, infos);
       System.out.println("includedNodes time: " + (System.currentTimeMillis() - s1));
 
       s1 = System.currentTimeMillis();
