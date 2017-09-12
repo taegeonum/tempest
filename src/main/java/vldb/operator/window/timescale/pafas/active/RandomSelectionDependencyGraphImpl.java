@@ -232,13 +232,19 @@ public final class RandomSelectionDependencyGraphImpl<T> implements DependencyGr
 
     // random selection
     final int size = addedNodes.size();
-    for (int i = 0; i < selectNum; i++) {
-      int select = Math.min(size-1, random.nextInt(size));
-      while (!addedNodes.get(select).isNotShared) {
-        select = Math.min(size-1, random.nextInt(size));
+    if (size < selectNum) {
+      for (final Node<T> node : addedNodes) {
+        node.isNotShared = false;
       }
-      addedNodes.get(select).isNotShared = false;
-      System.out.println("Selection: " + i + " / " + selectNum);
+    } else {
+      for (int i = 0; i < selectNum; i++) {
+        int select = Math.min(size - 1, random.nextInt(size));
+        while (!addedNodes.get(select).isNotShared) {
+          select = Math.min(size - 1, random.nextInt(size));
+        }
+        addedNodes.get(select).isNotShared = false;
+        System.out.println("Selection: " + i + " / " + selectNum);
+      }
     }
 
     // Add edges
