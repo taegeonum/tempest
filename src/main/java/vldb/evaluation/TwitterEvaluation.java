@@ -101,7 +101,8 @@ public final class TwitterEvaluation {
         prefix = outputPath + testName + "/" + variable + "/" + operatorType.name();
       }
     } else if (operatorType == TestRunner.OperatorType.FastOverlap ||
-        operatorType == TestRunner.OperatorType.FastRandom || operatorType == TestRunner.OperatorType.FastWeight) {
+        operatorType == TestRunner.OperatorType.FastRandom || operatorType == TestRunner.OperatorType.FastWeight
+        || operatorType == TestRunner.OperatorType.FastRandom) {
       if (overlapRatio > 0.0) {
         prefix = outputPath + testName + "/" + variable + "/" + operatorType.name() + "/" + overlapRatio;
       } else {
@@ -148,10 +149,9 @@ public final class TwitterEvaluation {
         reusingRatio, windowGap, sharedFinalNum, overlapRatio);
 
     //writer.writeLine(prefix + "_result", operatorType.name() + "\t" + variable + "\t" + result.partialCount + "\t" + result.finalCount + "\t" + result.processedInput + "\t" + result.elapsedTime + result.timeMonitor);
-    if (operatorType == TestRunner.OperatorType.FastOverlap ||
-        operatorType == TestRunner.OperatorType.FastRandom) {
+    if (operatorType == TestRunner.OperatorType.FastOverlap) {
       writer.writeLine(prefix + "_result", overlapRatio + "\t" + metrics);
-    } else if (operatorType == TestRunner.OperatorType.FastWeight) {
+    } else if (operatorType == TestRunner.OperatorType.FastWeight ||operatorType == TestRunner.OperatorType.FastRandom ) {
       if (overlapRatio > 0.0) {
         writer.writeLine(prefix + "_result", overlapRatio + "\t" + metrics);
       } else {
