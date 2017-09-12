@@ -168,7 +168,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
         throw new RuntimeException("Invalid window: " + info.timescale + ", node: " + node);
       }
 
-      final long endStart = node.end % interval == 0 ? node.end + interval : interval * ((int)Math.ceil((double)node.end / interval));
+      final long endStart = interval * ((int)Math.ceil((double)node.end / interval));
 
       for (long e = endStart; e - windowSize <= node.start && e <= period; e += interval) {
         final long s = e - windowSize;
