@@ -162,24 +162,39 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
       // largest windows
       final Info info = infos.get(index);
       final long windowSize = info.timescale.windowSize;
+      final long interval = info.timescale.intervalSize;
 
       if (windowSize < (node.end - node.start)) {
         throw new RuntimeException("Invalid window: " + info.timescale + ", node: " + node);
       }
 
-      final Set<Node<T>> set1 = new HashSet<>(info.startTimeTree.subSet(new Node<T>(node.end - windowSize, 1, false), node));
-      final Set<Node<T>> set2 = new HashSet<>(info.endTimeTree.subSet(node, new Node<T>(1, node.start + windowSize, false)));
+      final long endStart = node.end % interval == 0 ? node.end + interval : interval * ((int)Math.ceil((double)node.end / interval));
 
-      if (node.end - windowSize < 0) {
-        // Add minus nodes
-        set1.addAll(info.startTimeTree.subSet(new Node<T>(node.end - windowSize - period, 1, false),
-            new Node<T>(node.start - period, 1, false)));
-        set2.addAll(info.endTimeTree.subSet(new Node<T>(1, node.end - period, false),
-            new Node<T>(1, node.start + windowSize - period, false)));
+      for (long e = endStart; e - windowSize <= node.start && e <= period; e += interval) {
+        final long s = e - windowSize;
+        if (!(s == node.start && e == node.end)) {
+          try {
+            parentSet.add(finalTimespans.lookup(s, e));
+          } catch (NotFoundException e1) {
+            e1.printStackTrace();
+            throw new RuntimeException(e1);
+          }
+        }
       }
 
-      set1.retainAll(set2);
-      parentSet.addAll(set1);
+      if (node.start + windowSize > period) {
+        for (long e = interval; e - windowSize + period <= node.start && e <= period; e += interval) {
+          final long s = e - windowSize;
+          if (!(s == node.start && e == node.end)) {
+            try {
+              parentSet.add(finalTimespans.lookup(s, e));
+            } catch (NotFoundException e1) {
+              e1.printStackTrace();
+              throw new RuntimeException(e1);
+            }
+          }
+        }
+      }
     }
 
     return parentSet;
@@ -188,26 +203,54 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
   private Collection<Node<T>> getIncludedNode(final Node<T> node,
                                         final List<Info> infos) {
 
-    final int startIndex = getIndexOfInfos(node, infos) - 1;
-    if (startIndex < 0) {
-      return new ArrayList<>();
-    }
+    final int startIndex = getIndexOfInfos(node, infos);
 
-    final Set<Node<T>> added = new HashSet<>();
-
-    final Node<T> startIndexNode = new Node<>(node.end - 1, 1, false);
-    final Node<T> endIndexNode = new Node<>(1, node.start + 1, false);
+    final List<Node<T>> added = new LinkedList<>();
 
     for (int index = startIndex; index >= 0; index--) {
       final Info info = infos.get(index);
 
-      added.addAll(info.startTimeTree.subSet(node, startIndexNode));
-      added.addAll(info.endTimeTree.subSet(endIndexNode, node));
+      final long windowSize = info.timescale.windowSize;
+      final long interval = info.timescale.intervalSize;
 
+      long endStart = node.start % interval == 0 ? node.start + interval : interval * ((int)Math.ceil(((double)node.start) / interval));
       // minus nodes
       if (node.start < 0) {
-        final Node<T> startIndexNode1 = new Node<>(node.start + period, node.start + period + 1, false);
-        added.addAll(info.startTimeTree.tailSet(startIndexNode1));
+        for (long e = endStart + period; e - windowSize < period && e <= period; e += interval) {
+          final long s = e - windowSize;
+          if (!(s == node.start && e == node.end)) {
+            try {
+              added.add(finalTimespans.lookup(s, e));
+            } catch (NotFoundException e1) {
+              e1.printStackTrace();
+              throw new RuntimeException(e1);
+            }
+          }
+        }
+
+        for (long e = interval; e - windowSize < node.end && e <= period; e += interval) {
+          final long s = e - windowSize;
+          if (!(s == node.start && e == node.end)) {
+            try {
+              added.add(finalTimespans.lookup(s, e));
+            } catch (NotFoundException e1) {
+              e1.printStackTrace();
+              throw new RuntimeException(e1);
+            }
+          }
+        }
+      } else {
+        for (long e = endStart; e - windowSize < node.end && e <= period; e += interval) {
+          final long s = e - windowSize;
+          if (!(s == node.start && e == node.end)) {
+            try {
+              added.add(finalTimespans.lookup(s, e));
+            } catch (NotFoundException e1) {
+              e1.printStackTrace();
+              throw new RuntimeException("window: " + info.timescale + ", s: " + s + ", e: " + e + ", node: " + node + ", " + e1);
+            }
+          }
+        }
       }
     }
 
@@ -361,20 +404,6 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
   private void addOverlappingWindowNodeAndEdge() {
     final List<Info> infos = timescales.parallelStream().map(timescale -> {
 
-      final TreeSet<Node<T>> startTimeTree = new TreeSet<Node<T>>(new Comparator<Node<T>>() {
-        @Override
-        public int compare(final Node<T> o1, final Node<T> o2) {
-          return o1.start < o2.start ? -1 : 1;
-        }
-      });
-
-      final TreeSet<Node<T>> endTimeTree = new TreeSet<Node<T>>(new Comparator<Node<T>>() {
-        @Override
-        public int compare(final Node<T> o1, final Node<T> o2) {
-          return o1.end < o2.end ? -1 : 1;
-        }
-      });
-
       final List<Node<T>> nodes = new ArrayList<Node<T>>((int)(period / timescale.intervalSize + 1));
 
       for (long time = timescale.intervalSize + startTime; time <= period + startTime; time += timescale.intervalSize) {
@@ -383,9 +412,6 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
         final long start = time - timescale.windowSize;
         final Node parent = new Node(start, time, false, timescale);
         parent.isNotShared = false;
-
-        startTimeTree.add(parent);
-        endTimeTree.add(parent);
 
         nodes.add(parent);
 
@@ -397,7 +423,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
         //LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies2: " + childNodes);
       }
 
-      return new Info(nodes, timescale, startTimeTree, endTimeTree);
+      return new Info(nodes, timescale);
     }).collect(Collectors.toCollection(ArrayList::new));
 
     infos.sort(new Comparator<Info>() {
@@ -493,17 +519,11 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
   final class Info {
     public final List<Node<T>> nodes;
     public final Timescale timescale;
-    public final TreeSet<Node<T>> startTimeTree;
-    public final TreeSet<Node<T>> endTimeTree;
 
     public Info(final List<Node<T>> nodes,
-                final Timescale timescale,
-                final TreeSet<Node<T>> startTimeTree,
-                final TreeSet<Node<T>> endTimeTree) {
+                final Timescale timescale) {
       this.nodes = nodes;
       this.timescale = timescale;
-      this.startTimeTree = startTimeTree;
-      this.endTimeTree = endTimeTree;
     }
   }
 }
