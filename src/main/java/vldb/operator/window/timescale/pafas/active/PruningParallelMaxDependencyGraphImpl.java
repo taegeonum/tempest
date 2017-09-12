@@ -137,57 +137,91 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
     return adj;
   }
 
+  private int getIndexOfInfos(final Node node, final List<Info> infos) {
+    for (int i = 0; i < infos.size(); i++) {
+      if (node.timescale == infos.get(i).timescale) {
+        return i;
+      }
+    }
+
+    throw new RuntimeException("No matched timescale: " + node.timescale + ", infos: " + infos);
+  }
+
   private Set<Node<T>> getPossibleParents(final Node<T> node,
-                                 final TreeSet<Node<T>> startTimeTree,
-                                 final TreeSet<Node<T>> endTimeTree) {
-    final Set<Node<T>> startSet = startTimeTree.subSet(new Node<T>(Math.min(node.start-1, node.end - largestWindowSize), node.end, false), node);
-    final Set<Node<T>> endSet = endTimeTree.subSet(node, new Node<T>(node.start, Math.max(node.end+1, node.start + largestWindowSize), false));
+                                          final List<Info> infos) {
+    final int startIndex = getIndexOfInfos(node, infos) + 1;
 
-    final Set<Node<T>> intersect = new HashSet<>(startSet);
-    final Set<Node<T>> intersect1 = new HashSet<>(endSet);
-    intersect.retainAll(intersect1);
-    intersect.remove(node);
+    if (startIndex == infos.size()) {
+      return new HashSet<>();
+    }
 
-    // Minus nodes
-    final Set<Node<T>> startSet1 = startTimeTree.subSet(new Node<T>(Math.min(node.start - period - 1, node.end - period - largestWindowSize), 1, false),
-        new Node<T>(node.end - period, 1, false));
-    final Set<Node<T>> endSet1 = endTimeTree.subSet(new Node<T>(1, node.end - period, false), new Node<T>(1, Math.max(node.end-period+1, node.start-period + largestWindowSize), false));
+    final Set<Node<T>> startSet = new HashSet<>();
+    final Set<Node<T>> endSet = new HashSet<>();
 
-    final Set<Node<T>> intersect2 = new HashSet<>(startSet1);
-    final Set<Node<T>> intersect3 = new HashSet<>(endSet1);
-    intersect2.retainAll(intersect3);
-    intersect2.remove(node);
+    for (int index = startIndex; index < infos.size(); index++) {
+      // largest windows
+      final Info info = infos.get(index);
+      final long windowSize = info.timescale.windowSize;
 
-    intersect.addAll(intersect2);
-    return intersect;
+      if (windowSize < (node.end - node.start)) {
+        throw new RuntimeException("Invalid window: " + info.timescale + ", node: " + node);
+      }
+
+      startSet.addAll(info.startTimeTree.subSet(new Node<T>(node.end - windowSize, 1, false), node));
+      endSet.addAll(info.endTimeTree.subSet(node, new Node<T>(1, node.start + windowSize, false)));
+
+      if (node.end - windowSize < 0) {
+        // Add minus nodes
+        startSet.addAll(info.startTimeTree.subSet(new Node<T>(node.end - windowSize + period, 1, false),
+            new Node<T>(node.start + period, 1, false)));
+        endSet.addAll(info.endTimeTree.subSet(new Node<T>(1, node.end + period, false),
+            new Node<T>(1, node.start + windowSize + period, false)));
+      }
+    }
+
+    startSet.retainAll(endSet);
+
+    return startSet;
   }
 
   private Set<Node<T>> getIncludedNode(final Node<T> node,
-                                        final TreeSet<Node<T>> startTimeTree,
-                                        final TreeSet<Node<T>> endTimeTree) {
+                                       final List<Info> infos) {
 
-    final Node<T> startIndexNode = new Node<>(node.end-1, node.end, false);
-    final Node<T> endIndexNode = new Node<>(node.start, node.start+1, false);
-
-    final Set<Node<T>> nodesInStart = startTimeTree.subSet(node, startIndexNode);
-    final Set<Node<T>> nodesInEnd = endTimeTree.subSet(endIndexNode, node);
-
-    final Set<Node<T>> includedNodes = new HashSet<>(nodesInStart);
-    includedNodes.addAll(nodesInEnd);
-
-    includedNodes.remove(node);
-
-    if (node.start < 0) {
-      final Node<T> startIndexNode1 = new Node<>(node.start + period, node.start + period + 1, false);
-
-      final Set<Node<T>> nodes = startTimeTree.tailSet(startIndexNode1);
-      includedNodes.addAll(nodes);
+    final int startIndex = getIndexOfInfos(node, infos) - 1;
+    if (startIndex < 0) {
+      return new HashSet<>();
     }
 
-    return includedNodes;
+    final Set<Node<T>> nodesInStart = new HashSet<>();
+    final Set<Node<T>> nodesInEnd = new HashSet<>();
+
+    final Set<Node<T>> added = new HashSet<>();
+
+    for (int index = startIndex; index >= 0; index--) {
+      final Info info = infos.get(index);
+      final long windowSize = info.timescale.windowSize;
+
+      final Node<T> startIndexNode = new Node<>(node.end - windowSize, 1, false);
+      final Node<T> endIndexNode = new Node<>(1, node.start + windowSize, false);
+
+      nodesInStart.addAll(info.startTimeTree.subSet(node, startIndexNode));
+      nodesInEnd.addAll(info.endTimeTree.subSet(endIndexNode, node));
+
+      // minus nodes
+      if (node.start < 0) {
+        final Node<T> startIndexNode1 = new Node<>(node.start + period, node.start + period + 1, false);
+        added.addAll(info.startTimeTree.tailSet(startIndexNode1));
+      }
+    }
+
+
+    nodesInStart.retainAll(nodesInEnd);
+    nodesInStart.addAll(added);
+
+    return nodesInStart;
   }
 
-  private void pruning(final List<Node<T>> addedNodes) {
+  private void pruning(final List<Info> infos, final List<Node<T>> addedNodes) {
 
 
     final int selectNum = reusingRatio > 0.0 ? (int)(addedNodes.size() * reusingRatio) : sharedFinalNum;
@@ -198,34 +232,13 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
 
     final boolean add =  true;//selectNum <=  addedNodes.size()/2 ? true : false;
 
-    final TreeSet<Node<T>> startTimeTree = new TreeSet<Node<T>>(new Comparator<Node<T>>() {
-      @Override
-      public int compare(final Node<T> o1, final Node<T> o2) {
-        return o1.start < o2.start ? -1 : 1;
-      }
-    });
-
-    final TreeSet<Node<T>> endTimeTree = new TreeSet<Node<T>>(new Comparator<Node<T>>() {
-      @Override
-      public int compare(final Node<T> o1, final Node<T> o2) {
-        return o1.end < o2.end ? -1 : 1;
-      }
-    });
-
-    //final ConcurrentMap<Node<T>, Set<Node<T>>> parentSetMap = new ConcurrentHashMap<>(addedNodes.size());
-
-    // Counting the possible reference count!
-    for (final Node<T> node : addedNodes) {
-      startTimeTree.add(node);
-      endTimeTree.add(node);
-    }
 
     // Calculate possible counts
     addedNodes.parallelStream().forEach(node -> {
       //parentSetMap.put(node, getPossibleParents(node, startTimeTree, endTimeTree));
 
       //node.possibleParentCount = parentSetMap.get(node).size();
-      node.possibleParentCount = getPossibleParents(node, startTimeTree, endTimeTree).size();
+      node.possibleParentCount = getPossibleParents(node, infos).size();
 
       node.cost = node.possibleParentCount * (node.end - node.start);
       node.isNotShared = add;
@@ -273,7 +286,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
 
       s1 = System.currentTimeMillis();
       final Set<Node<T>> nParentSet = possibleParentMap.get(maxNode) == null
-          ? getPossibleParents(maxNode, startTimeTree, endTimeTree) : possibleParentMap.remove(maxNode);
+          ? getPossibleParents(maxNode, infos) : possibleParentMap.remove(maxNode);
 
       System.out.println("nParentSet time: " + (System.currentTimeMillis() - s1));
 
@@ -281,7 +294,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
 
       // Select included nodes
       s1 = System.currentTimeMillis();
-      final Set<Node<T>> includedNodes = getIncludedNode(maxNode, startTimeTree, endTimeTree);
+      final Set<Node<T>> includedNodes = getIncludedNode(maxNode, infos);
       System.out.println("includedNodes time: " + (System.currentTimeMillis() - s1));
 
       s1 = System.currentTimeMillis();
@@ -291,7 +304,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
           .forEach(includedNode -> {
             final Set<Node<T>> includedNodeParent;
             if (possibleParentMap.get(includedNode) == null) {
-              includedNodeParent =  getPossibleParents(includedNode, startTimeTree, endTimeTree);
+              includedNodeParent =  getPossibleParents(includedNode, infos);
             } else {
               includedNodeParent = possibleParentMap.get(includedNode);
             }
@@ -300,7 +313,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
             includedNode.possibleParentCount = includedNodeParent.size();
             includedNode.cost = includedNode.possibleParentCount * (includedNode.end - includedNode.start);
 
-            if (includedNode.possibleParentCount > 200) {
+            if (includedNode.possibleParentCount > 500) {
               possibleParentMap.put(includedNode, includedNodeParent);
             } else {
               possibleParentMap.remove(includedNode);
@@ -357,15 +370,35 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
    * Add DependencyGraphNode and connect dependent nodes.
    */
   private void addOverlappingWindowNodeAndEdge() {
-      final List<Node<T>> addedNodes = timescales.parallelStream().map(timescale -> {
-        final List<Node<T>> createdNodes = new LinkedList<Node<T>>();
+      final List<Info> infos = timescales.parallelStream().map(timescale -> {
+
+        final TreeSet<Node<T>> startTimeTree = new TreeSet<Node<T>>(new Comparator<Node<T>>() {
+          @Override
+          public int compare(final Node<T> o1, final Node<T> o2) {
+            return o1.start < o2.start ? -1 : 1;
+          }
+        });
+
+        final TreeSet<Node<T>> endTimeTree = new TreeSet<Node<T>>(new Comparator<Node<T>>() {
+          @Override
+          public int compare(final Node<T> o1, final Node<T> o2) {
+            return o1.end < o2.end ? -1 : 1;
+          }
+        });
+
+        final List<Node<T>> nodes = new ArrayList<Node<T>>((int)(period / timescale.intervalSize + 1));
+
         for (long time = timescale.intervalSize + startTime; time <= period + startTime; time += timescale.intervalSize) {
 
           // create vertex and add it to the table cell of (time, windowsize)
           final long start = time - timescale.windowSize;
           final Node parent = new Node(start, time, false, timescale);
           parent.isNotShared = false;
-          createdNodes.add(parent);
+
+          startTimeTree.add(parent);
+          endTimeTree.add(parent);
+
+          nodes.add(parent);
 
           //table[(int)start+largestWindowSize][(int)time+largestWindowSize] = true;
           //nodeTable[(int)start+largestWindowSize][(int)time+largestWindowSize] = parent;
@@ -374,12 +407,25 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
           LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
           //LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies2: " + childNodes);
         }
-        return createdNodes;
-      })
-          .flatMap((nodeList) -> nodeList.stream())
-          .collect(Collectors.toCollection(ArrayList::new));
 
-    pruning(addedNodes);
+        return new Info(nodes, timescale, startTimeTree, endTimeTree);
+      }).collect(Collectors.toCollection(ArrayList::new));
+
+    infos.sort(new Comparator<Info>() {
+      @Override
+      public int compare(final Info o1, final Info o2) {
+        if (o1.timescale.windowSize - o2.timescale.windowSize < 0) {
+          return -1;
+        } else {
+          return 1;
+        }
+      }
+    });
+
+    final List<Node<T>> addedNodes = infos.stream().flatMap(info -> info.nodes.stream())
+        .collect(Collectors.toCollection(ArrayList::new));
+
+    pruning(infos, addedNodes);
 
     addedNodes.parallelStream().forEach(node -> addEdge(node));
   }
@@ -454,5 +500,22 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
   @Override
   public void removeSlidingWindow(final Timescale ts, final long deleteTime) {
 
+  }
+
+  final class Info {
+    public final List<Node<T>> nodes;
+    public final Timescale timescale;
+    public final TreeSet<Node<T>> startTimeTree;
+    public final TreeSet<Node<T>> endTimeTree;
+
+    public Info(final List<Node<T>> nodes,
+                final Timescale timescale,
+                final TreeSet<Node<T>> startTimeTree,
+                final TreeSet<Node<T>> endTimeTree) {
+      this.nodes = nodes;
+      this.timescale = timescale;
+      this.startTimeTree = startTimeTree;
+      this.endTimeTree = endTimeTree;
+    }
   }
 }
