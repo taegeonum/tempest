@@ -102,7 +102,11 @@ public final class TwitterEvaluation {
       }
     } else if (operatorType == TestRunner.OperatorType.FastOverlap ||
         operatorType == TestRunner.OperatorType.FastRandom || operatorType == TestRunner.OperatorType.FastWeight) {
-        prefix = outputPath +  testName + "/" + variable + "/" + operatorType.name() + "/" + overlapRatio;
+      if (overlapRatio > 0.0) {
+        prefix = outputPath + testName + "/" + variable + "/" + operatorType.name() + "/" + overlapRatio;
+      } else {
+        prefix = outputPath + testName + "/" + variable + "/" + operatorType.name() + "/" + sharedFinalNum;
+      }
     } else {
       prefix = outputPath + testName + "/" + variable + "/" + operatorType.name();
     }
@@ -147,7 +151,14 @@ public final class TwitterEvaluation {
     if (operatorType == TestRunner.OperatorType.FastOverlap ||
         operatorType == TestRunner.OperatorType.FastRandom) {
       writer.writeLine(prefix + "_result", overlapRatio + "\t" + metrics);
-    } else {
+    } else if (operatorType == TestRunner.OperatorType.FastWeight) {
+      if (overlapRatio > 0.0) {
+        writer.writeLine(prefix + "_result", overlapRatio + "\t" + metrics);
+      } else {
+        writer.writeLine(prefix + "_result", sharedFinalNum + "\t" + metrics);
+      }
+    }
+    else {
       writer.writeLine(prefix + "_result",
           (reusingRatio < 1.0 ? reusingRatio : operatorType.name()) + "\t" + metrics);
     }

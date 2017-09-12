@@ -35,8 +35,6 @@ import vldb.operator.window.timescale.parameter.StartTime;
 import javax.inject.Inject;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -78,6 +76,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
   private final WindowManager windowManager;
   private final int largestWindowSize;
 
+  private final int sharedFinalNum;
   /**
    * DependencyGraph constructor. This first builds the dependency graph.
    * @param startTime the initial start time of when the graph is built.
@@ -97,6 +96,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
     this.timescales = tsParser.timescales;
     this.period = periodCalculator.getPeriod();
     this.startTime = startTime;
+    this.sharedFinalNum = sharedFinalNum;
     this.finalTimespans = outputLookupTable;
     this.numThreads = numThreads;
     this.reusingRatio = reusingRatio;
@@ -188,8 +188,15 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
   }
 
   private void pruning(final List<Node<T>> addedNodes) {
-    final int selectNum = (int)(addedNodes.size() * reusingRatio);
-    final boolean add = (addedNodes.size() - selectNum) >=  addedNodes.size()/2 ? true : false;
+
+
+    final int selectNum = reusingRatio > 0.0 ? (int)(addedNodes.size() * reusingRatio) : sharedFinalNum;
+
+    if (selectNum >= addedNodes.size()) {
+      return;
+    }
+
+    final boolean add =  true;//selectNum <=  addedNodes.size()/2 ? true : false;
 
     final TreeSet<Node<T>> startTimeTree = new TreeSet<Node<T>>(new Comparator<Node<T>>() {
       @Override
@@ -225,28 +232,6 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
     });
 
     // Pruning start!
-    final Comparator<Node<T>> removeComparator = new Comparator<Node<T>>() {
-      @Override
-      public int compare(final Node<T> o1, final Node<T> o2) {
-        if (o1.cost < o2.cost) {
-          return 1;
-        } else if (o1.cost > o2.cost) {
-          return -1;
-        } else {
-          final long o1Size = o1.end - o1.start;
-          final long o2Size = o2.end - o2.start;
-          if (o1Size < o2Size) {
-            return 1;
-          } else if (o1Size > o2Size) {
-            return -1;
-          } else {
-            return 0;
-          }
-        }
-      }
-    };
-
-
     final Comparator<Node<T>> addComparator = new Comparator<Node<T>>() {
       @Override
       public int compare(final Node<T> o1, final Node<T> o2) {
@@ -273,11 +258,11 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
         .filter(node -> node.cost > 0)
         .collect(Collectors.toCollection(ArrayList::new));
 
-    int numSelection = add ? selectNum : filteredNodes.size() - selectNum;
+    int numSelection = selectNum;//add ? selectNum : filteredNodes.size() - selectNum;
     int currentNum = 0;
 
     final Map<Node<T>, Set<Node<T>>> possibleParentMap = new ConcurrentHashMap<>();
-    final Comparator<Node<T>> comparator = add ? addComparator : removeComparator;
+    final Comparator<Node<T>> comparator = addComparator;
 
     while (currentNum < numSelection) {
 
@@ -304,14 +289,20 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
       includedNodes.parallelStream()
           .filter(includedNode -> includedNode.isNotShared == add)
           .forEach(includedNode -> {
+            final Set<Node<T>> includedNodeParent;
             if (possibleParentMap.get(includedNode) == null) {
-              possibleParentMap.put(includedNode, getPossibleParents(includedNode, startTimeTree, endTimeTree));
+              includedNodeParent =  getPossibleParents(includedNode, startTimeTree, endTimeTree);
+            } else {
+              includedNodeParent = possibleParentMap.get(includedNode);
             }
-            final Set<Node<T>> includedNodeParent = possibleParentMap.get(includedNode);
 
             includedNodeParent.removeAll(nParentSet);
             includedNode.possibleParentCount = includedNodeParent.size();
             includedNode.cost = includedNode.possibleParentCount * (includedNode.end - includedNode.start);
+
+            if (includedNode.possibleParentCount > 100) {
+              possibleParentMap.put(includedNode, includedNodeParent);
+            }
           });
 
       System.out.println("Future time: " + (System.currentTimeMillis() - s1));
@@ -352,7 +343,6 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
     */
   }
 
-
   private int calculateSize() {
     int s = 0;
     for (final Timescale timescle : timescales) {
@@ -365,8 +355,6 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
    * Add DependencyGraphNode and connect dependent nodes.
    */
   private void addOverlappingWindowNodeAndEdge() {
-    final ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
-
       final List<Node<T>> addedNodes = timescales.parallelStream().map(timescale -> {
         final List<Node<T>> createdNodes = new LinkedList<Node<T>>();
         for (long time = timescale.intervalSize + startTime; time <= period + startTime; time += timescale.intervalSize) {
@@ -374,6 +362,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
           // create vertex and add it to the table cell of (time, windowsize)
           final long start = time - timescale.windowSize;
           final Node parent = new Node(start, time, false, timescale);
+          parent.isNotShared = false;
           createdNodes.add(parent);
 
           //table[(int)start+largestWindowSize][(int)time+largestWindowSize] = true;
@@ -388,9 +377,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
           .flatMap((nodeList) -> nodeList.stream())
           .collect(Collectors.toCollection(ArrayList::new));
 
-    if (reusingRatio < 1.0) {
-      pruning(addedNodes);
-    }
+    pruning(addedNodes);
 
     addedNodes.parallelStream().forEach(node -> addEdge(node));
   }
