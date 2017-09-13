@@ -42,6 +42,7 @@ public class OntheflySelectionAlgorithm<T> implements DependencyGraph.SelectionA
         st = partialTimespanNode.end - period;
       } else {
         final Node<T> partialTimespanNode = partialTimespans.getNextPartialTimespanNode(st);
+
         //System.out.println("start: " + start + ", " + end + ", st: " + st + ", " + partialTimespans);
         childNodes.add(partialTimespanNode);
         st = partialTimespanNode.end;

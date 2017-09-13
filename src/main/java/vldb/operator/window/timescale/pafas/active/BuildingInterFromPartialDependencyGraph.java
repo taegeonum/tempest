@@ -43,9 +43,9 @@ import java.util.stream.Collectors;
 /**
  * DependencyGraph shows which nodes are related to each other. This is used so that unnecessary outputs are not saved.
  */
-public final class PruningParallelMaxDependencyGraphImpl<T> implements DependencyGraph {
+public final class BuildingInterFromPartialDependencyGraph<T> implements DependencyGraph {
 
-  private static final Logger LOG = Logger.getLogger(PruningParallelMaxDependencyGraphImpl.class.getName());
+  private static final Logger LOG = Logger.getLogger(AdjustPartialDependencyGraph.class.getName());
 
   /**
    * A table containing DependencyGraphNode for partial outputs.
@@ -83,16 +83,16 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
    * @param startTime the initial start time of when the graph is built.
    */
   @Inject
-  private PruningParallelMaxDependencyGraphImpl(final TimescaleParser tsParser,
-                                                @Parameter(StartTime.class) final long startTime,
-                                                final PartialTimespans partialTimespans,
-                                                final PeriodCalculator periodCalculator,
-                                                @Parameter(SharedFinalNum.class) final int sharedFinalNum,
-                                                final OutputLookupTable<Node<T>> outputLookupTable,
-                                                @Parameter(NumThreads.class) final int numThreads,
-                                                final WindowManager windowManager,
-                                                @Parameter(OverlappingRatio.class) final double reusingRatio,
-                                                final SelectionAlgorithm<T> selectionAlgorithm) {
+  private BuildingInterFromPartialDependencyGraph(final TimescaleParser tsParser,
+                                       @Parameter(StartTime.class) final long startTime,
+                                       final PartialTimespans partialTimespans,
+                                       final PeriodCalculator periodCalculator,
+                                       @Parameter(SharedFinalNum.class) final int sharedFinalNum,
+                                       final OutputLookupTable<Node<T>> outputLookupTable,
+                                       @Parameter(NumThreads.class) final int numThreads,
+                                       final WindowManager windowManager,
+                                       @Parameter(OverlappingRatio.class) final double reusingRatio,
+                                       final SelectionAlgorithm<T> selectionAlgorithm) {
     this.partialTimespans = partialTimespans;
     this.timescales = tsParser.timescales;
     this.period = periodCalculator.getPeriod();
@@ -228,10 +228,129 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
     return added;
   }
 
+  private void buildIntermediateNodes(final long startTime) {
+    final Node<T> initialNode = partialTimespans.getNextPartialTimespanNode(startTime);
+    final Set<Node<T>> currentParents = new HashSet<>(initialNode.parents);
+    final List<Node<T>> currentChild = new LinkedList<>();
+    currentChild.add(initialNode);
+
+    for (long start = partialTimespans.getNextSliceTime(startTime);
+         start < period && currentParents.size() > 0; start = partialTimespans.getNextSliceTime(start)) {
+      final Node<T> partial = partialTimespans.getNextPartialTimespanNode(start);
+      final Set<Node<T>> removedParents = new HashSet<>(currentParents);
+      removedParents.removeAll(partial.parents);
+
+      currentParents.removeAll(removedParents);
+
+      if (removedParents.isEmpty()) {
+        currentChild.add(partial);
+      } else {
+        if (currentChild.size() > 1) {
+          Node<T> newIntermediate =
+              new Node<T>(currentChild.get(0).start, currentChild.get(currentChild.size()-1).end, 1);
+
+          if (newIntermediate.start == 11 && newIntermediate.end == 16) {
+            System.out.println("Intermediate: " + newIntermediate + ", removedParents: " + removedParents + ", currentChild: " + currentChild + ", \ncurrentParents: " + currentParents);
+          }
+          if (newIntermediate.start == 11 && newIntermediate.end == 17) {
+            System.out.println("Intermediate: " + newIntermediate + ", removedParents: " + removedParents + ", currentChild: " + currentChild + ", \ncurrentParents: " + currentParents);
+          }
+          try {
+            // If the node already exists, make it final!
+            newIntermediate = finalTimespans.lookup(newIntermediate.start, newIntermediate.end);
+
+            // Adjust dependency
+            for (final Node<T> parent : removedParents) {
+              if (parent.start != newIntermediate.start && parent.end != newIntermediate.end) {
+                final List<Node<T>> parentChild = parent.getDependencies();
+                // Remove prev child
+                for (final Node<T> child : currentChild) {
+                  parentChild.remove(child);
+                  child.refCnt.decrementAndGet();
+                  child.initialRefCnt.decrementAndGet();
+                  child.parents.remove(parent);
+                }
+
+                // Re-connect the new intermediate node
+                parent.addDependency(newIntermediate);
+              }
+            }
+
+            for (final Node<T> parent : currentParents) {
+              if (parent.start != newIntermediate.start && parent.end != newIntermediate.end) {
+                final List<Node<T>> parentChild = parent.getDependencies();
+                // Remove prev child
+                for (final Node<T> child : currentChild) {
+                  parentChild.remove(child);
+                  child.refCnt.decrementAndGet();
+                  child.initialRefCnt.decrementAndGet();
+                  child.parents.remove(parent);
+                }
+
+                // Re-connect the new intermediate node
+                parent.addDependency(newIntermediate);
+              }
+            }
+          } catch (final NotFoundException e) {
+            finalTimespans.saveOutput(newIntermediate.start, newIntermediate.end, newIntermediate);
+            // new intermedate node
+            // child ....
+            // Add dependency
+            for (final Node<T> child : currentChild) {
+              newIntermediate.addDependency(child);
+            }
+
+            // Adjust dependency
+            for (final Node<T> parent : removedParents) {
+              final List<Node<T>> parentChild = parent.getDependencies();
+              // Remove prev child
+              for (final Node<T> child : currentChild) {
+                parentChild.remove(child);
+                child.refCnt.decrementAndGet();
+                child.initialRefCnt.decrementAndGet();
+                child.parents.remove(parent);
+              }
+
+              // Re-connect the new intermediate node
+              parent.addDependency(newIntermediate);
+            }
+
+            for (final Node<T> parent : currentParents) {
+              final List<Node<T>> parentChild = parent.getDependencies();
+              // Remove prev child
+              for (final Node<T> child : currentChild) {
+                parentChild.remove(child);
+                child.refCnt.decrementAndGet();
+                child.initialRefCnt.decrementAndGet();
+                child.parents.remove(parent);
+              }
+
+              // Re-connect the new intermediate node
+              parent.addDependency(newIntermediate);
+            }
+          } finally {
+            // Remove current child
+            currentChild.clear();
+            currentChild.add(newIntermediate);
+          }
+
+        }
+
+        currentChild.add(partial);
+      }
+    }
+  }
+
+  private void adjustPartialNodes() {
+    for (long start = startTime; start < period; start = partialTimespans.getNextSliceTime(start)) {
+      buildIntermediateNodes(start);
+    }
+  }
+
   private void pruning(final List<Info> infos, final List<Node<T>> addedNodes) {
 
 
-    final long selectNum = reusingRatio > 0.0 ? (int)(addedNodes.size() * reusingRatio) : sharedFinalNum;
+    final int selectNum = reusingRatio > 0.0 ? (int)(addedNodes.size() * reusingRatio) : sharedFinalNum;
 
     if (selectNum >= addedNodes.size()) {
       return;
@@ -275,7 +394,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
         .filter(node -> node.cost > 0)
         .collect(Collectors.toCollection(ArrayList::new));
 
-    long numSelection = selectNum;//add ? selectNum : filteredNodes.size() - selectNum;
+    int numSelection = selectNum;//add ? selectNum : filteredNodes.size() - selectNum;
     int currentNum = 0;
 
     final Map<Node<T>, Set<Node<T>>> possibleParentMap = new ConcurrentHashMap<>();
@@ -410,6 +529,9 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
     pruning(infos, addedNodes);
 
     addedNodes.parallelStream().forEach(node -> addEdge(node));
+
+    // Adjust partial nodes!
+    adjustPartialNodes();
   }
 
   private void addEdge(final Node<T> parent) {

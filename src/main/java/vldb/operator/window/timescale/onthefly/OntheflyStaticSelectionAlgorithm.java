@@ -41,6 +41,11 @@ public class OntheflyStaticSelectionAlgorithm<T> implements DependencyGraph.Sele
         st = partialTimespanNode.end - period;
       } else {
         final Node<T> partialTimespanNode = partialTimespans.getNextPartialTimespanNode(st);
+
+        if (partialTimespanNode.end > end) {
+          // This is the active partial
+          break;
+        }
         //System.out.println("start: " + start + ", " + end + ", st: " + st + ", " + partialTimespans);
         childNodes.add(partialTimespanNode);
         st = partialTimespanNode.end;

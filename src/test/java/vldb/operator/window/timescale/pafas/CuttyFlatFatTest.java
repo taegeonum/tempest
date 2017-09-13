@@ -14,6 +14,7 @@ import vldb.operator.window.timescale.parameter.StartTime;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * Created by taegeonum on 8/25/17.
@@ -57,6 +58,13 @@ public final class CuttyFlatFatTest {
 
     fat.append(new Timespan(5, 6, null), val6);
 
+    long s = 0;
+    Random r = new Random();
+    for (int i = 0; i < 100000000; i++) {
+      s = r.nextInt();
+    }
+
+    System.out.println(s);
 
     fat.dump();
   }

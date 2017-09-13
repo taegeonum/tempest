@@ -43,6 +43,7 @@ public final class TestRunner {
     FastSt, // fast static
     FastDy, // fast dynamic
     FastSm, // fast static memory
+    FastInter, // fast intermediate aggregate by adjusting partials
     FastEg, // fast eager agg
     FastPruning, // fast pruning after DP
     FastRb, // fast rebuild
@@ -72,6 +73,15 @@ public final class TestRunner {
             .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
             .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, StaticDependencyGraphImpl.class)
+            .set(StaticSingleMWOConfiguration.START_TIME, "0")
+            .build();
+      case FastInter:
+        return StaticSingleMWOConfiguration.CONF
+            .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
+            .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
+            .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, AdjustPartialDependencyGraph.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
             .build();
       case FastWeight:
@@ -573,7 +583,9 @@ public final class TestRunner {
         sb1.append("\t");
         sb1.append(metrics.storedFinal);
         sb1.append("\t");
-        sb1.append(metrics.storedPartial + metrics.storedFinal);
+        sb1.append(metrics.storedInter);
+        sb1.append("\t");
+        sb1.append(metrics.storedPartial + metrics.storedInter + metrics.storedFinal);
         writer.writeLine(prefix + "_memory", sb1.toString());
         tick += 1;
         final StringBuilder sb = new StringBuilder("TICK");

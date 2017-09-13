@@ -17,6 +17,7 @@ package vldb.operator.window.timescale.pafas;
 
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.evaluation.Metrics;
+import vldb.operator.window.aggregator.CAAggregator;
 import vldb.operator.window.timescale.TimeMonitor;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.SpanTracker;
@@ -25,7 +26,8 @@ import vldb.operator.window.timescale.common.Timespan;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -48,6 +50,7 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
   private Metrics metrics;
 
   private int numAgg = 0;
+  private final CAAggregator<?, T> aggregateFunction;
 
   /**
    * DependencyGraphComputationReuser constructor.
@@ -59,12 +62,14 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
                                 final DependencyGraph<T> dependencyGraph,
                                 final PartialTimespans partialTimespans,
                                 final Metrics metrics,
+                                final CAAggregator<?, T> aggregateFunction,
                                 final TimeMonitor timeMonitor) {
     this.timescales = tsParser.timescales;
     this.timeMonitor = timeMonitor;
     this.partialTimespans = partialTimespans;
     this.dependencyGraph = dependencyGraph;
     this.metrics = metrics;
+    this.aggregateFunction = aggregateFunction;
   }
 
   @Override
@@ -78,6 +83,36 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
     return dependencyGraph.getFinalTimespans(t);
   }
 
+  private T createIntermediateAgg(final Node<T> intermediateNode) {
+    final List<Node<T>> intermediateChildren = intermediateNode.getDependencies();
+    final Collection<T> intermediateAgg = new ArrayList<>(intermediateChildren.size());
+    for (final Node<T> intermediateChild : intermediateChildren) {
+      if (intermediateChild.intermediate && intermediateChild.getOutput() == null) {
+        // Recursive construction
+        intermediateChild.saveOutput(createIntermediateAgg(intermediateChild));
+        metrics.storedInter += 1;
+      } else if (intermediateChild.getOutput() == null) {
+        throw new RuntimeException("null aggregate at: " + intermediateChild + ", when generating " + intermediateNode);
+      }
+
+      intermediateAgg.add(intermediateChild.getOutput());
+      intermediateChild.decreaseRefCnt();
+
+      if (intermediateChild.getOutput() == null) {
+        if (intermediateChild.partial) {
+          //System.out.println("Deleted " + dependentNode);
+          metrics.storedPartial -= 1;
+        } else if (intermediateChild.intermediate) {
+          metrics.storedInter -= 1;
+        } else {
+          metrics.storedFinal -= 1;
+        }
+      }
+    }
+
+    return aggregateFunction.aggregate(intermediateAgg);
+  }
+
   @Override
   public List<T> getDependentAggregates(final Timespan timespan) {
     final Node<T> node = dependencyGraph.getNode(timespan);
@@ -85,37 +120,34 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
     final List<Node<T>> dependentNodes = node.getDependencies();
 
     //System.out.println(timespan + " DEP_NODES: " + dependentNodes);
-    final List<T> aggregates = new LinkedList<>();
+    final List<T> aggregates = new ArrayList<>(dependentNodes.size());
     for (final Node<T> dependentNode : dependentNodes) {
       if (dependentNode.end <= timespan.endTime) {
         // Do not count first outgoing edge
-        while (true) {
-          synchronized (dependentNode) {
-            if (!dependentNode.outputStored.get()) {
-              // null
-              try {
-                System.out.println("WAIT: " + dependentNode +", final: " + timespan);
-                dependentNode.wait();
-                //System.out.println("AWAKE: " + dependentNode);
-              } catch (InterruptedException e) {
-                e.printStackTrace();
-              }
-            } else {
-              final T agg = dependentNode.getOutput();
-              aggregates.add(dependentNode.getOutput());
-              dependentNode.decreaseRefCnt();
-              if (dependentNode.getOutput() == null) {
-                if (dependentNode.partial) {
-                  //System.out.println("Deleted " + dependentNode);
-                  metrics.storedPartial -= 1;
-                } else {
-                  metrics.storedFinal -= 1;
-                }
-              }
-              break;
-            }
+
+        if (dependentNode.intermediate && dependentNode.getOutput() == null) {
+          // Consider intermediate aggregates
+          dependentNode.saveOutput(createIntermediateAgg(dependentNode));
+          metrics.storedInter += 1;
+        }
+
+        if (dependentNode.getOutput() == null) {
+          throw new RuntimeException("null aggregate at: " + dependentNode + ", when generating " + timespan);
+        }
+
+        aggregates.add(dependentNode.getOutput());
+        dependentNode.decreaseRefCnt();
+        if (dependentNode.getOutput() == null) {
+          if (dependentNode.partial) {
+            //System.out.println("Deleted " + dependentNode);
+            metrics.storedPartial -= 1;
+          } else if (dependentNode.intermediate) {
+            metrics.storedInter -= 1;
+          } else {
+            metrics.storedFinal -= 1;
           }
         }
+
       }
     }
 

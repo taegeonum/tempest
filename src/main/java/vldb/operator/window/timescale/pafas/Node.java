@@ -61,6 +61,8 @@ public final class Node<T> {
   public final boolean partial;
 
   public Node<T> lastChildNode;
+
+  public boolean intermediate;
   /**
    * DependencyGraphNode.
    * @param start the start time of the node.
@@ -68,6 +70,18 @@ public final class Node<T> {
    */
   public Node(final long start, final long end, boolean partial) {
     this(start, end, partial, null);
+  }
+
+  public Node(final long start, final long end, int inter) {
+    this.dependencies = new LinkedList<>();
+    this.parents = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    this.refCnt = new AtomicInteger(0);
+    this.initialRefCnt = new AtomicInteger(0);
+    this.start = start;
+    this.end = end;
+    this.partial = false;
+    this.intermediate = true;
+    this.timescale = null;
   }
 
   public Node(final long start, final long end, boolean partial, final Timescale ts) {
@@ -79,6 +93,7 @@ public final class Node<T> {
     this.end = end;
     this.partial = partial;
     this.timescale = ts;
+    this.intermediate = false;
   }
 
   public void reset() {
@@ -99,6 +114,7 @@ public final class Node<T> {
     this.end = end;
     this.partial = partial;
     this.timescale = null;
+    this.intermediate = false;
   }
 
   /**
