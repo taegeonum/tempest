@@ -115,7 +115,8 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
         }
       }
     }
-    //System.out.println("RETURN: " + aggregates);
+
+    System.out.println("Timespan " + timespan + "AGG: " + aggregates.size());
     return aggregates;
   }
 
