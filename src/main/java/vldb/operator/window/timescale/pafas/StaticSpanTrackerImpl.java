@@ -47,6 +47,8 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
   private final TimeMonitor timeMonitor;
   private Metrics metrics;
 
+  private int numAgg = 0;
+
   /**
    * DependencyGraphComputationReuser constructor.
    * @param tsParser timescale parser
@@ -81,6 +83,7 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
     final Node<T> node = dependencyGraph.getNode(timespan);
     //System.out.println("PARENT NODE: " + node);
     final List<Node<T>> dependentNodes = node.getDependencies();
+
     //System.out.println(timespan + " DEP_NODES: " + dependentNodes);
     final List<T> aggregates = new LinkedList<>();
     for (final Node<T> dependentNode : dependentNodes) {
@@ -116,7 +119,8 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
       }
     }
 
-    System.out.println("Timespan " + timespan + "AGG: " + aggregates.size());
+    numAgg += aggregates.size();
+    System.out.println("Timespan " + timespan + "AGG: " + aggregates.size() + ", total:" + numAgg);
     return aggregates;
   }
 
