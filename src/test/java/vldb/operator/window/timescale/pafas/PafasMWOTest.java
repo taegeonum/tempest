@@ -41,8 +41,9 @@ public final class PafasMWOTest {
     final List<String> operatorIds = new LinkedList<>();
     final String timescaleString3 =  "(4,2)(5,3)(6,4)(10,5)";
     final String timescaleString1 =  "(5,4)(8,3)(12,7)(16,6)";
-    final String timescaleString = "(5,1)(10,1)(20,2)(30,2)(60,4)(90,4)(360,5)(600,5)(900,10)(1800,10)";
+    final String timescaleString2 = "(5,1)(10,1)(20,2)(30,2)(60,4)(90,4)(360,5)(600,5)(900,10)(1800,10)";
     final String timescaleString4 = "(5,2)(6,2)(10,2)";
+    final String timescaleString = "(107,60)(170,3)(935,10)(1229,10)(1991,110)(2206,20)(2284,140)(2752,30)(2954,88)(2961,165)(2999,60)(3043,55)(3076,35)(3134,110)(3161,210)(3406,40)(3515,385)(3555,40)(3590,210)(3593,840)";
     // PAFAS
 
     /*
@@ -130,7 +131,7 @@ public final class PafasMWOTest {
     }
 
     final int numKey = 10;
-    final int numInput = 1000;
+    final int numInput = 3000;
     final Random random = new Random();
     final int tick = numInput / 300;
     int tickTime = 1;

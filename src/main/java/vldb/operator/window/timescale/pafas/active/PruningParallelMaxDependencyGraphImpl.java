@@ -309,6 +309,7 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
             final Set<Node<T>> includedNodeParent;
             if (possibleParentMap.get(includedNode) == null) {
               includedNodeParent =  getPossibleParents(includedNode, infos);
+              possibleParentMap.put(includedNode, includedNodeParent);
             } else {
               includedNodeParent = possibleParentMap.get(includedNode);
             }
@@ -317,7 +318,6 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
             includedNode.possibleParentCount = includedNodeParent.size();
             includedNode.cost = includedNode.possibleParentCount * (includedNode.end - includedNode.start);
 
-            possibleParentMap.put(includedNode, includedNodeParent);
           });
 
       System.out.println("Future time: " + (System.currentTimeMillis() - s1));

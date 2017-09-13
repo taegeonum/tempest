@@ -17,10 +17,7 @@ import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.cutty.CuttyMWOConfiguration;
 import vldb.operator.window.timescale.naive.NaiveMWOConfiguration;
 import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
-import vldb.operator.window.timescale.pafas.DPOutputLookupTableImpl;
-import vldb.operator.window.timescale.pafas.EagerMWOConfiguration;
-import vldb.operator.window.timescale.pafas.PeriodCalculator;
-import vldb.operator.window.timescale.pafas.StaticSingleMWOConfiguration;
+import vldb.operator.window.timescale.pafas.*;
 import vldb.operator.window.timescale.pafas.active.*;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicDPOutputLookupTableImpl;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicOptimizedDependencyGraphImpl;
@@ -74,7 +71,7 @@ public final class TestRunner {
             .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
             .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
-            .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, WindowPruningDependencyGraphImpl.class)
+            .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, StaticDependencyGraphImpl.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
             .build();
       case FastWeight:
