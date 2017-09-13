@@ -119,14 +119,6 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
       }
     }
 
-    numAgg += aggregates.size();
-    if (timespan.startTime == -1479 && timespan.endTime == 1925) {
-      System.out.println("Timespan " + timespan + ", dependents:" + dependentNodes);
-    }
-    if (timespan.startTime == -1618 && timespan.endTime == 1925) {
-      System.out.println("Timespan " + timespan + ", dependents:" + dependentNodes);
-    }
-    System.out.println("Timespan " + timespan + "AGG: " + aggregates.size() + ", total:" + numAgg + " totalCnt: " + metrics.finalCount);
     return aggregates;
   }
 
