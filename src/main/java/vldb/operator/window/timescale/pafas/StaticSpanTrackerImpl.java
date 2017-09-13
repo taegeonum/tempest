@@ -120,7 +120,7 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
     }
 
     numAgg += aggregates.size();
-    System.out.println("Timespan " + timespan + "AGG: " + aggregates.size() + ", total:" + numAgg);
+    System.out.println("Timespan " + timespan + "AGG: " + aggregates.size() + ", total:" + numAgg + " totalCnt: " + metrics.finalCount);
     return aggregates;
   }
 
