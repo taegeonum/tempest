@@ -109,7 +109,11 @@ public final class TwitterEvaluation {
         prefix = outputPath + testName + "/" + variable + "/" + operatorType.name() + "/" + sharedFinalNum;
       }
     } else {
-      prefix = outputPath + testName + "/" + variable + "/" + operatorType.name();
+      if (operatorType == TestRunner.OperatorType.FastInter) {
+        prefix = outputPath + testName + "/" + variable + "/" + operatorType.name() + "-" + sharedFinalNum;
+      } else {
+        prefix = outputPath + testName + "/" + variable + "/" + operatorType.name();
+      }
     }
     System.out.println("PREFIX: " + prefix);
 
@@ -159,8 +163,12 @@ public final class TwitterEvaluation {
       }
     }
     else {
-      writer.writeLine(prefix + "_result",
-          (reusingRatio < 1.0 ? reusingRatio : operatorType.name()) + "\t" + metrics);
+      if (operatorType == TestRunner.OperatorType.FastInter) {
+        writer.writeLine(prefix + "_result", operatorType + "-" + sharedFinalNum + "\t" + metrics);
+      } else {
+        writer.writeLine(prefix + "_result",
+            (reusingRatio < 1.0 ? reusingRatio : operatorType.name()) + "\t" + metrics);
+      }
     }
 
     // End of experiments
