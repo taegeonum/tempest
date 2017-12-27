@@ -221,6 +221,16 @@ public final class IncrementalPartialTimespans<T> implements PartialTimespans {
   }
 
   @Override
+  public boolean removePartialNode(final long startTime) {
+    throw new RuntimeException("Not implemented");
+  }
+
+  @Override
+  public boolean addPartialNode(final long startTime, final long endTime) {
+    throw new RuntimeException("Not implemented");
+  }
+
+  @Override
   public String toString() {
     return partialTimespanMap.toString();
   }

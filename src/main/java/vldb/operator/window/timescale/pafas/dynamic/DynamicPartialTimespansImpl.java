@@ -236,6 +236,16 @@ public final class DynamicPartialTimespansImpl<T> implements DynamicPartialTimes
   }
 
   @Override
+  public boolean removePartialNode(final long startTime) {
+    throw new RuntimeException("Not implemented");
+  }
+
+  @Override
+  public boolean addPartialNode(final long startTime, final long endTime) {
+    throw new RuntimeException("Not implemented");
+  }
+
+  @Override
   public void removeNode(final long startTime) {
     partialTimespanMap.remove(startTime);
   }

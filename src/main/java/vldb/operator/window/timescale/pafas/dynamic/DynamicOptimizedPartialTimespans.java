@@ -321,6 +321,15 @@ public final class DynamicOptimizedPartialTimespans<T> implements DynamicPartial
       odd = !odd;
     }
   }
+  @Override
+  public boolean removePartialNode(final long startTime) {
+    throw new RuntimeException("Not implemented");
+  }
+
+  @Override
+  public boolean addPartialNode(final long startTime, final long endTime) {
+    throw new RuntimeException("Not implemented");
+  }
 
   @Override
   public void removeNode(final long startTime) {

@@ -13,15 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package vldb.operator.window.timescale.pafas;
+package vldb.operator.window.timescale.pafas.vldb2018;
 
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.TimescaleParser;
+import vldb.operator.window.timescale.pafas.Node;
+import vldb.operator.window.timescale.pafas.PartialTimespans;
+import vldb.operator.window.timescale.pafas.PeriodCalculator;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,8 +35,8 @@ import java.util.logging.Logger;
  * for streamed aggregation. In ACM SIGMOD, 2006
  * It returns next slice time for slicing input stream into paired sliced window.
  */
-public final class DefaultPartialTimespans<T> implements PartialTimespans {
-  private static final Logger LOG = Logger.getLogger(DefaultPartialTimespans.class.getName());
+public final class SizeOnePartialTimespans<T> implements PartialTimespans {
+  private static final Logger LOG = Logger.getLogger(SizeOnePartialTimespans.class.getName());
 
   /**
    * The list of timescale.
@@ -58,7 +63,7 @@ public final class DefaultPartialTimespans<T> implements PartialTimespans {
    * @param startTime an initial start time
    */
   @Inject
-  private DefaultPartialTimespans(final TimescaleParser tsParser,
+  private SizeOnePartialTimespans(final TimescaleParser tsParser,
                                   @Parameter(StartTime.class) final long startTime,
                                   final PeriodCalculator periodCalculator) {
     this.timescales = tsParser.timescales;
@@ -66,7 +71,7 @@ public final class DefaultPartialTimespans<T> implements PartialTimespans {
     this.startTime = startTime;
     this.partialTimespanMap = new HashMap<>();
     buildSlice(startTime, period);
-    LOG.log(Level.INFO, DefaultPartialTimespans.class + " started. PERIOD: " + period);
+    LOG.log(Level.INFO, SizeOnePartialTimespans.class + " started. PERIOD: " + period);
     //System.out.println("TS: " + timescales + ", QUEUE: " + partialTimespanMap);
   }
 
@@ -93,37 +98,20 @@ public final class DefaultPartialTimespans<T> implements PartialTimespans {
       prevSlice = prevNode.end;
     }
 
+    // Slice every one second
     for (long st = start; st <= end; st += 1) {
-      if (slicableByOthers(st)) {
-        if (prevSlice < st) {
-          //System.out.println("ADD start" + start + ", end: " + end + " (" + prevSlice  +", " + st + ")");
-          if (partialTimespanMap.get(prevSlice) == null) {
-            //System.out.println("CREATE PARTIAL1: " + prevSlice + ", " + st);
-            partialTimespanMap.put(prevSlice, new Node<T>(prevSlice, st, true));
-          } else {
-            System.out.println("EXIST " + partialTimespanMap.get(prevSlice) + ", expected: " + prevSlice + ", " + st);
-            throw new RuntimeException("HAHA");
-          }
-          prevSlice = st;
+      if (prevSlice < st) {
+        //System.out.println("ADD start" + start + ", end: " + end + " (" + prevSlice  +", " + st + ")");
+        if (partialTimespanMap.get(prevSlice) == null) {
+          //System.out.println("CREATE PARTIAL1: " + prevSlice + ", " + st);
+          partialTimespanMap.put(prevSlice, new Node<T>(prevSlice, st, true));
+        } else {
+          System.out.println("EXIST " + partialTimespanMap.get(prevSlice) + ", expected: " + prevSlice + ", " + st);
+          throw new RuntimeException("HAHA");
         }
+        prevSlice = st;
       }
     }
-  }
-
-  private boolean slicableByOthers(final long time) {
-    for (final Timescale timescale : timescales) {
-      long pairedB = timescale.windowSize % timescale.intervalSize;
-      final long pairedA = timescale.intervalSize - pairedB;
-
-      if ((time - startTime) == 0 ||
-          (time - startTime - pairedA) % timescale.intervalSize == 0 ||
-          (time - startTime) % timescale.intervalSize == 0) {
-        // this is slicable by other timescale
-        //System.out.println("Time " + time + " Slicable by " + timescale + ", at start " + st);
-        return true;
-      }
-    }
-    return false;
   }
 
   @Override

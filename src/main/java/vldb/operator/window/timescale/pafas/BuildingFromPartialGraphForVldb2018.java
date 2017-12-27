@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package vldb.operator.window.timescale.pafas.active;
+package vldb.operator.window.timescale.pafas;
 
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.common.NotFoundException;
@@ -23,10 +23,6 @@ import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.OutputLookupTable;
 import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.common.Timespan;
-import vldb.operator.window.timescale.pafas.DependencyGraph;
-import vldb.operator.window.timescale.pafas.Node;
-import vldb.operator.window.timescale.pafas.PartialTimespans;
-import vldb.operator.window.timescale.pafas.PeriodCalculator;
 import vldb.operator.window.timescale.pafas.dynamic.WindowManager;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.OverlappingRatio;
@@ -43,9 +39,9 @@ import java.util.stream.Collectors;
 /**
  * DependencyGraph shows which nodes are related to each other. This is used so that unnecessary outputs are not saved.
  */
-public final class AdjustPartialDependencyGraph<T> implements DependencyGraph {
+public final class BuildingFromPartialGraphForVldb2018<T> implements DependencyGraph {
 
-  private static final Logger LOG = Logger.getLogger(AdjustPartialDependencyGraph.class.getName());
+  private static final Logger LOG = Logger.getLogger(BuildingFromPartialGraphForVldb2018.class.getName());
 
   /**
    * A table containing DependencyGraphNode for partial outputs.
@@ -83,16 +79,16 @@ public final class AdjustPartialDependencyGraph<T> implements DependencyGraph {
    * @param startTime the initial start time of when the graph is built.
    */
   @Inject
-  private AdjustPartialDependencyGraph(final TimescaleParser tsParser,
-                                       @Parameter(StartTime.class) final long startTime,
-                                       final PartialTimespans partialTimespans,
-                                       final PeriodCalculator periodCalculator,
-                                       @Parameter(SharedFinalNum.class) final int sharedFinalNum,
-                                       final OutputLookupTable<Node<T>> outputLookupTable,
-                                       @Parameter(NumThreads.class) final int numThreads,
-                                       final WindowManager windowManager,
-                                       @Parameter(OverlappingRatio.class) final double reusingRatio,
-                                       final SelectionAlgorithm<T> selectionAlgorithm) {
+  private BuildingFromPartialGraphForVldb2018(final TimescaleParser tsParser,
+                                              @Parameter(StartTime.class) final long startTime,
+                                              final PartialTimespans partialTimespans,
+                                              final PeriodCalculator periodCalculator,
+                                              @Parameter(SharedFinalNum.class) final int sharedFinalNum,
+                                              final OutputLookupTable<Node<T>> outputLookupTable,
+                                              @Parameter(NumThreads.class) final int numThreads,
+                                              final WindowManager windowManager,
+                                              @Parameter(OverlappingRatio.class) final double reusingRatio,
+                                              final SelectionAlgorithm<T> selectionAlgorithm) {
     this.partialTimespans = partialTimespans;
     this.timescales = tsParser.timescales;
     this.period = periodCalculator.getPeriod();
@@ -228,6 +224,69 @@ public final class AdjustPartialDependencyGraph<T> implements DependencyGraph {
     return added;
   }
 
+  private List<Node<T>> findCoalescingPartials(final long time) {
+    Node<T> partialNode = partialTimespans.getNextPartialTimespanNode(time);
+
+    if (partialNode.refCnt.get() != 1) {
+      return null;
+    }
+
+    final List<Node<T>> coalescingPartials = new LinkedList<>();
+    final Set<Node<T>> parents = partialNode.parents;
+    long t = time;
+
+    do {
+      coalescingPartials.add(partialNode);
+      t = partialTimespans.getNextSliceTime(t);
+      partialNode = partialTimespans.getNextPartialTimespanNode(t);
+    } while (partialNode.refCnt.get() == 1 && partialNode.parents.equals(parents));
+
+
+    return coalescingPartials;
+  }
+
+  private void removeUnnecessaryPartialNodes() {
+    long time = startTime;
+
+    // find largest partial nodes that can be coalesced.
+    while (time < period) {
+      final List<Node<T>> coalescingPartials = findCoalescingPartials(time);
+      if (coalescingPartials == null || coalescingPartials.size() == 1) {
+        // skip
+        time = partialTimespans.getNextSliceTime(time);
+      } else {
+        // coalescing
+        final long startTime = coalescingPartials.get(0).start;
+        final long endTime = coalescingPartials.get(coalescingPartials.size()-1).end;
+
+        // This just contains one parent
+        final Set<Node<T>> parentNode = coalescingPartials.get(0).parents;
+
+        for (final Node<T> removablePartial : coalescingPartials) {
+          if (!partialTimespans.removePartialNode(removablePartial.start)) {
+            throw new RuntimeException("This partial node is not added in partialTimespans: " + removablePartial);
+          } else {
+            for (final Node<T> parent : parentNode) {
+              parent.getDependencies().remove(removablePartial);
+            }
+          }
+        }
+
+        // add new partial
+        if (!partialTimespans.addPartialNode(startTime, endTime)) {
+          throw new RuntimeException("Collision while adding [" + startTime + ", " + endTime +") partial node");
+        }
+
+        final Node<T> newPartial = partialTimespans.getNextPartialTimespanNode(startTime);
+        // update parent child
+        for (final Node<T> parent : parentNode) {
+          parent.addDependency(newPartial);
+        }
+
+        time = endTime;
+      }
+    }
+  }
 
   private void buildIntermediateNodes(final long startTime) {
     final Node<T> initialNode = partialTimespans.getNextPartialTimespanNode(startTime);
@@ -496,6 +555,9 @@ public final class AdjustPartialDependencyGraph<T> implements DependencyGraph {
 
     // Adjust partial nodes!
     adjustPartialNodes();
+
+    // Remove partial nodes that have reference count 1
+    removeUnnecessaryPartialNodes();
   }
 
   private void addEdge(final Node<T> parent) {

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package vldb.operator.window.timescale.pafas.active;
+package vldb.operator.window.timescale.pafas.vldb2018;
 
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.operator.common.NotFoundException;
@@ -30,22 +30,22 @@ import vldb.operator.window.timescale.pafas.PeriodCalculator;
 import vldb.operator.window.timescale.pafas.dynamic.WindowManager;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.OverlappingRatio;
-import vldb.operator.window.timescale.parameter.SharedFinalNum;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * DependencyGraph shows which nodes are related to each other. This is used so that unnecessary outputs are not saved.
  */
-public final class AdjustPartialDependencyGraph<T> implements DependencyGraph {
+public final class InterNodeDependencyGraph<T> implements DependencyGraph {
 
-  private static final Logger LOG = Logger.getLogger(AdjustPartialDependencyGraph.class.getName());
+  private static final Logger LOG = Logger.getLogger(InterNodeDependencyGraph.class.getName());
 
   /**
    * A table containing DependencyGraphNode for partial outputs.
@@ -73,31 +73,27 @@ public final class AdjustPartialDependencyGraph<T> implements DependencyGraph {
   private final int numThreads;
   private final double reusingRatio;
 
-
   private final WindowManager windowManager;
   private final int largestWindowSize;
 
-  private final int sharedFinalNum;
   /**
    * DependencyGraph constructor. This first builds the dependency graph.
    * @param startTime the initial start time of when the graph is built.
    */
   @Inject
-  private AdjustPartialDependencyGraph(final TimescaleParser tsParser,
-                                       @Parameter(StartTime.class) final long startTime,
-                                       final PartialTimespans partialTimespans,
-                                       final PeriodCalculator periodCalculator,
-                                       @Parameter(SharedFinalNum.class) final int sharedFinalNum,
-                                       final OutputLookupTable<Node<T>> outputLookupTable,
-                                       @Parameter(NumThreads.class) final int numThreads,
-                                       final WindowManager windowManager,
-                                       @Parameter(OverlappingRatio.class) final double reusingRatio,
-                                       final SelectionAlgorithm<T> selectionAlgorithm) {
+  private InterNodeDependencyGraph(final TimescaleParser tsParser,
+                                   @Parameter(StartTime.class) final long startTime,
+                                   final PartialTimespans partialTimespans,
+                                   final PeriodCalculator periodCalculator,
+                                   final OutputLookupTable<Node<T>> outputLookupTable,
+                                   @Parameter(NumThreads.class) final int numThreads,
+                                   final WindowManager windowManager,
+                                   @Parameter(OverlappingRatio.class) final double reusingRatio,
+                                   final SelectionAlgorithm<T> selectionAlgorithm) {
     this.partialTimespans = partialTimespans;
     this.timescales = tsParser.timescales;
     this.period = periodCalculator.getPeriod();
     this.startTime = startTime;
-    this.sharedFinalNum = sharedFinalNum;
     this.finalTimespans = outputLookupTable;
     this.numThreads = numThreads;
     this.reusingRatio = reusingRatio;
@@ -106,6 +102,7 @@ public final class AdjustPartialDependencyGraph<T> implements DependencyGraph {
     this.largestWindowSize = (int)windowManager.timescales.get(windowManager.timescales.size()-1).windowSize;
     // create dependency graph.
     addOverlappingWindowNodeAndEdge();
+    System.out.println("end");
   }
 
   /**
@@ -228,6 +225,69 @@ public final class AdjustPartialDependencyGraph<T> implements DependencyGraph {
     return added;
   }
 
+  private List<Node<T>> findCoalescingPartials(final long time) {
+    Node<T> partialNode = partialTimespans.getNextPartialTimespanNode(time);
+
+    if (partialNode.refCnt.get() != 1) {
+      return null;
+    }
+
+    final List<Node<T>> coalescingPartials = new LinkedList<>();
+    final Set<Node<T>> parents = partialNode.parents;
+    long t = time;
+
+    do {
+      coalescingPartials.add(partialNode);
+      t = partialTimespans.getNextSliceTime(t);
+      partialNode = partialTimespans.getNextPartialTimespanNode(t);
+    } while (partialNode.refCnt.get() == 1 && partialNode.parents.equals(parents));
+
+
+    return coalescingPartials;
+  }
+
+  private void removeUnnecessaryPartialNodes() {
+    long time = startTime;
+
+    // find largest partial nodes that can be coalesced.
+    while (time < period) {
+      final List<Node<T>> coalescingPartials = findCoalescingPartials(time);
+      if (coalescingPartials == null || coalescingPartials.size() == 1) {
+        // skip
+        time = partialTimespans.getNextSliceTime(time);
+      } else {
+        // coalescing
+        final long startTime = coalescingPartials.get(0).start;
+        final long endTime = coalescingPartials.get(coalescingPartials.size()-1).end;
+
+        // This just contains one parent
+        final Set<Node<T>> parentNode = coalescingPartials.get(0).parents;
+
+        for (final Node<T> removablePartial : coalescingPartials) {
+          if (!partialTimespans.removePartialNode(removablePartial.start)) {
+            throw new RuntimeException("This partial node is not added in partialTimespans: " + removablePartial);
+          } else {
+            for (final Node<T> parent : parentNode) {
+              parent.getDependencies().remove(removablePartial);
+            }
+          }
+        }
+
+        // add new partial
+        if (!partialTimespans.addPartialNode(startTime, endTime)) {
+          throw new RuntimeException("Collision while adding [" + startTime + ", " + endTime +") partial node");
+        }
+
+        final Node<T> newPartial = partialTimespans.getNextPartialTimespanNode(startTime);
+        // update parent child
+        for (final Node<T> parent : parentNode) {
+          parent.addDependency(newPartial);
+        }
+
+        time = endTime;
+      }
+    }
+  }
 
   private void buildIntermediateNodes(final long startTime) {
     final Node<T> initialNode = partialTimespans.getNextPartialTimespanNode(startTime);
@@ -312,134 +372,6 @@ public final class AdjustPartialDependencyGraph<T> implements DependencyGraph {
     }
   }
 
-  private void pruning(final List<Info> infos, final List<Node<T>> addedNodes) {
-
-    final int selectNum = reusingRatio > 0.0 ? (int)(addedNodes.size() * reusingRatio) : sharedFinalNum;
-
-    if (selectNum >= addedNodes.size()) {
-      return;
-    }
-
-    // Calculate possible counts
-    addedNodes.parallelStream().forEach(node -> {
-      //parentSetMap.put(node, getPossibleParents(node, startTimeTree, endTimeTree));
-
-      //node.possibleParentCount = parentSetMap.get(node).size();
-      node.possibleParentCount = getPossibleParents(node, infos).size();
-
-      node.cost = node.possibleParentCount * (node.end - node.start);
-      node.isNotShared = true;
-    });
-
-    // Pruning start!
-    final Comparator<Node<T>> addComparator = new Comparator<Node<T>>() {
-      @Override
-      public int compare(final Node<T> o1, final Node<T> o2) {
-        if (o1.cost < o2.cost) {
-          return -1;
-        } else if (o1.cost > o2.cost) {
-          return 1;
-        } else {
-          final long o1Size = o1.end - o1.start;
-          final long o2Size = o2.end - o2.start;
-          if (o1Size < o2Size) {
-            return 1;
-          } else if (o1Size > o2Size) {
-            return -1;
-          } else {
-            return 0;
-          }
-        }
-      }
-    };
-
-    final List<Node<T>> filteredNodes = addedNodes
-        .parallelStream()
-        .filter(node -> node.cost > 0)
-        .collect(Collectors.toCollection(ArrayList::new));
-
-    int numSelection = selectNum;//add ? selectNum : filteredNodes.size() - selectNum;
-    int currentNum = 0;
-
-    final Map<Node<T>, Set<Node<T>>> possibleParentMap = new ConcurrentHashMap<>();
-    final Comparator<Node<T>> comparator = addComparator;
-
-    while (currentNum < numSelection) {
-
-      long s1 = System.currentTimeMillis();
-      final Node<T> maxNode = filteredNodes.parallelStream().max(comparator).get();
-      System.out.println(currentNum + " / " + numSelection + ", maxnode: " + maxNode);
-      System.out.println("max time: " + (System.currentTimeMillis() - s1));
-
-      s1 = System.currentTimeMillis();
-      final Set<Node<T>> nParentSet = possibleParentMap.get(maxNode) == null
-          ? getPossibleParents(maxNode, infos) : possibleParentMap.remove(maxNode);
-
-      System.out.println("nParentSet time: " + (System.currentTimeMillis() - s1));
-
-      maxNode.isNotShared = false;
-
-      // Select included nodes
-      s1 = System.currentTimeMillis();
-      final Collection<Node<T>> includedNodes = getIncludedNode(maxNode, infos);
-      System.out.println("includedNodes time: " + (System.currentTimeMillis() - s1));
-
-      s1 = System.currentTimeMillis();
-
-      includedNodes.parallelStream()
-          .filter(includedNode -> includedNode.isNotShared == true)
-          .forEach(includedNode -> {
-            final Set<Node<T>> includedNodeParent;
-            if (possibleParentMap.get(includedNode) == null) {
-              includedNodeParent =  getPossibleParents(includedNode, infos);
-              possibleParentMap.put(includedNode, includedNodeParent);
-            } else {
-              includedNodeParent = possibleParentMap.get(includedNode);
-            }
-
-            includedNodeParent.removeAll(nParentSet);
-            includedNode.possibleParentCount = includedNodeParent.size();
-            includedNode.cost = includedNode.possibleParentCount * (includedNode.end - includedNode.start);
-
-          });
-
-      System.out.println("Future time: " + (System.currentTimeMillis() - s1));
-
-      maxNode.possibleParentCount = 0;
-      maxNode.cost = 0;
-      currentNum += 1;
-    }
-
-    // Sorting by possible parent count
-    /*
-    Arrays.parallelSort(array, new Comparator<Node<T>>() {
-      @Override
-      public int compare(final Node<T> o1, final Node<T> o2) {
-        if (o1.possibleParentCount < o2.possibleParentCount) {
-          return -1;
-        } else if (o1.possibleParentCount > o2.possibleParentCount) {
-          return 1;
-        } else {
-          return 0;
-        }
-      }
-    });
-    // Pruning!!
-    final int pruningNum = array.length - sharedFinalNum;
-    for (int i = 0; i < pruningNum; i++) {
-      array[i].isNotShared = true;
-    }
-    */
-
-    /*
-    final int pruningIndex = Math.min(array.length-1, (int)(reusingRatio * array.length));
-    for (int i = pruningIndex; i < array.length; i++) {
-      array[i].isNotShared = true;
-      //System.out.println("Not shared node: " + array[i] + ", cnt: " + array[i].possibleParentCount);
-    }
-    */
-  }
-
   private int calculateSize() {
     int s = 0;
     for (final Timescale timescle : timescales) {
@@ -476,6 +408,31 @@ public final class AdjustPartialDependencyGraph<T> implements DependencyGraph {
       return new Info(nodes, timescale);
     }).collect(Collectors.toCollection(ArrayList::new));
 
+    // add intermediate node
+    final List<List<Node<T>>> nodeList = new ArrayList<>(largestWindowSize - 2);
+    for (int i = 2; i < largestWindowSize; i++) {
+      nodeList.add(new ArrayList<>((int)(period / i) + 1));
+    }
+
+    IntStream.range(2, largestWindowSize).parallel()
+        .forEach(wSize -> {
+          final List<Node<T>> nodes = nodeList.get(wSize - 2);
+          for (long endTime = startTime + wSize; endTime - wSize < startTime + period; endTime += wSize) {
+            final long eTime = Math.min(endTime, startTime + period);
+            if (eTime - (endTime - wSize) > 1) {
+              try {
+                finalTimespans.lookup(endTime - wSize, eTime);
+              } catch (final NotFoundException e) {
+                final Node node = new Node(endTime - wSize, eTime, false, null);
+                nodes.add(node);
+                node.intermediate = true;
+                finalTimespans.saveOutput(endTime - wSize, eTime, node);
+              }
+            }
+          }
+        });
+
+
     infos.sort(new Comparator<Info>() {
       @Override
       public int compare(final Info o1, final Info o2) {
@@ -490,12 +447,34 @@ public final class AdjustPartialDependencyGraph<T> implements DependencyGraph {
     final List<Node<T>> addedNodes = infos.stream().flatMap(info -> info.nodes.stream())
         .collect(Collectors.toCollection(ArrayList::new));
 
-    //pruning(infos, addedNodes);
-
+    // We do not have to add edges for intermediate node.
+    // We will find the edges of intermediate nodes after tracking the edges of final nodes
     addedNodes.parallelStream().forEach(node -> addEdge(node));
 
-    // Adjust partial nodes!
-    adjustPartialNodes();
+    // Add edges for selected intermediate nodes
+    final AtomicBoolean isChanged = new AtomicBoolean(false);
+    do {
+      isChanged.set(false);
+      nodeList.parallelStream()
+          .flatMap(List::stream)
+          .filter(node -> node.refCnt.get() > 0 && node.getDependencies().size() == 0)
+          .forEach(node -> {
+            addEdge(node);
+            isChanged.set(true);
+          });
+    } while (isChanged.get());
+
+    // Remove unnecessary intermediate nodes
+    nodeList.parallelStream().forEach(nList -> {
+      for (final Node<T> node : nList) {
+        if (node.refCnt.get() == 0) {
+          finalTimespans.deleteOutput(node.start, node.end);
+        }
+      }
+    });
+
+    // Remove partial nodes that have reference count 1
+    removeUnnecessaryPartialNodes();
   }
 
   private void addEdge(final Node<T> parent) {

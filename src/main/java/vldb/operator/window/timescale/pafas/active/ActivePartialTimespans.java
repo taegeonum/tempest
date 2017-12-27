@@ -178,6 +178,16 @@ public final class ActivePartialTimespans<T> implements PartialTimespans {
     }
   }
 
+  @Override
+  public boolean removePartialNode(final long startTime) {
+    throw new RuntimeException("Not implemented");
+  }
+
+  @Override
+  public boolean addPartialNode(final long startTime, final long endTime) {
+    throw new RuntimeException("Not implemented");
+  }
+
   private long adjStartTime(final long time) {
     if (time < startTime) {
       return time + period;
