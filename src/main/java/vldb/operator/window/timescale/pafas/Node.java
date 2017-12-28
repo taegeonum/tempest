@@ -180,6 +180,17 @@ public final class Node<T> {
   }
 
   public String toString() {
+    final StringBuilder sb = new StringBuilder();
+    sb.append("[");
+    sb.append(start);
+    sb.append(", ");
+    sb.append(end);
+    sb.append(")");
+    return sb.toString();
+  }
+
+  /*
+  public String toString() {
     final boolean outputExists = !(output == null);
     final StringBuilder sb = new StringBuilder();
     sb.append("(init: " + initialRefCnt + ", refCnt: ");
@@ -193,6 +204,7 @@ public final class Node<T> {
     sb.append(", #_child: " + dependencies.size() + ")");
     return sb.toString();
   }
+  */
 
   public T getOutput() {
     return output;

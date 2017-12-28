@@ -18,8 +18,8 @@ package vldb.operator.window.timescale.flatfit;
 import org.apache.reef.tang.formats.ConfigurationModule;
 import vldb.operator.window.timescale.TimescaleWindowBaseConfiguration;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
-import vldb.operator.window.timescale.pafas.DefaultPartialTimespans;
 import vldb.operator.window.timescale.pafas.PartialTimespans;
+import vldb.operator.window.timescale.pafas.vldb2018.SizeOnePartialTimespans;
 
 /**
  * A helper class for static MTS window configuration.
@@ -29,6 +29,6 @@ public final class FlatFitMWOConfiguration extends TimescaleWindowBaseConfigurat
     public static final ConfigurationModule CONF = new FlatFitMWOConfiguration()
         .merge(TimescaleWindowBaseConfiguration.CONF)
         .bindImplementation(TimescaleWindowOperator.class, FlatFitMWO.class)
-        .bindImplementation(PartialTimespans.class, DefaultPartialTimespans.class)
+        .bindImplementation(PartialTimespans.class, SizeOnePartialTimespans.class)
         .build();
 }

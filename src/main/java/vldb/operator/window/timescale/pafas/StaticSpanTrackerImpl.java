@@ -116,8 +116,8 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
   @Override
   public List<T> getDependentAggregates(final Timespan timespan) {
     final Node<T> node = dependencyGraph.getNode(timespan);
-    //System.out.println("PARENT NODE: " + node);
     final List<Node<T>> dependentNodes = node.getDependencies();
+    //System.out.println(timespan + "=>" + dependentNodes);
 
     //System.out.println(timespan + " DEP_NODES: " + dependentNodes);
     final List<T> aggregates = new ArrayList<>(dependentNodes.size());

@@ -21,6 +21,7 @@ import vldb.operator.OutputEmitter;
 import vldb.operator.window.aggregator.CAAggregator;
 import vldb.operator.window.timescale.*;
 import vldb.operator.window.timescale.common.DepOutputAndResult;
+import vldb.operator.window.timescale.common.Timespan;
 import vldb.operator.window.timescale.pafas.PartialTimespans;
 import vldb.operator.window.timescale.pafas.dynamic.WindowManager;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
@@ -69,6 +70,8 @@ public final class FlatFitMWO<I, V> implements TimescaleWindowOperator<I, V> {
 
   private final List<Integer> pointers;
 
+  private final List<Timespan> timespans;
+
   private final Stack<Integer> positions;
 
   private int currInd;
@@ -109,6 +112,7 @@ public final class FlatFitMWO<I, V> implements TimescaleWindowOperator<I, V> {
     this.outputHandler = outputHandler;
     this.partials = new ArrayList<V>((int)wSize);
     this.pointers = new ArrayList<>(wSize);
+    this.timespans = new ArrayList<>(wSize);
     this.positions = new Stack<>();
     this.nextSliceTime = partialTimespans.getNextSliceTime(startTime);
 
@@ -116,6 +120,7 @@ public final class FlatFitMWO<I, V> implements TimescaleWindowOperator<I, V> {
     for (int i = 0; i < wSize; i++) {
       partials.add(aggregator.init());
       pointers.add(i + 1);
+      timespans.add(new Timespan(0, 0, null));
     }
     pointers.set(wSize - 1, 0);
     currInd = 0;
@@ -172,15 +177,27 @@ public final class FlatFitMWO<I, V> implements TimescaleWindowOperator<I, V> {
     return endWindows;
   }
 
+  private Timespan mergeTs(final Timespan ts1, final Timespan ts2) {
+    if (ts1.startTime < ts2.startTime) {
+      return new Timespan(ts1.startTime, ts2.endTime, null);
+    } else {
+      return new Timespan(ts2.startTime, ts1.endTime, null);
+    }
+  }
+
   private void execution(final V newPartial, final long tickTime) {
+
 
     //System.out.println( "tickTime: " + tickTime);
     partials.set(prevInd, newPartial);
     pointers.set(prevInd, currInd);
+    timespans.set(prevInd, new Timespan(tickTime - 1, tickTime, null));
 
     // get final timespans
     final List<Timescale> queriesToAnswer = getWindows(tickTime);
     for (final Timescale query : queriesToAnswer) {
+      final List<Timespan> childNodes = new LinkedList<>();
+
       int startInd = currInd - wSizeMap.get(query);
       if (startInd < 0) {
         startInd += wSize;
@@ -191,19 +208,43 @@ public final class FlatFitMWO<I, V> implements TimescaleWindowOperator<I, V> {
         startInd = pointers.get(startInd);
       } while (startInd != currInd);
 
-      V answer = partials.get(positions.pop());
+      final int ind = positions.pop();
+      V answer = partials.get(ind);
+      Timespan ts = timespans.get(ind);
+      childNodes.add(ts);
       while (positions.size() > 1) {
         int tempInd = positions.pop();
+        Timespan tempTs = timespans.get(tempInd);
+        childNodes.add(tempTs);
         final List<V> l = new ArrayList<>(2);
         l.add(answer); l.add(partials.get(tempInd));
         answer = aggregator.aggregate(l);
         partials.set(tempInd, answer);
         pointers.set(tempInd, currInd);
+
+        final Timespan newTs = mergeTs(ts, tempTs);
+        //System.out.println("Store "  + newTs +
+        //    ", for [" + (tickTime - query.windowSize) + ", " + tickTime + ")");
+
+        timespans.set(tempInd, newTs);
       }
 
+      final int uu = positions.pop();
       final List<V> l = new ArrayList<>(2);
-      l.add(answer); l.add(partials.get(positions.pop()));
+      l.add(answer); l.add(partials.get(uu));
       answer = aggregator.aggregate(l);
+      childNodes.add(timespans.get(uu));
+
+
+      final Iterator<Timespan> iter = childNodes.iterator();
+      while (iter.hasNext()) {
+        final Timespan tt = iter.next();
+        if (tt.startTime == 0 && tt.endTime == 0) {
+          iter.remove();
+        }
+      }
+
+      //System.out.println("[" + (tickTime - query.windowSize) + ", " + tickTime + ") =>" + childNodes);
 
       outputHandler.execute(new TimescaleWindowOutput<V>(query,
           new DepOutputAndResult<V>(0, answer),
