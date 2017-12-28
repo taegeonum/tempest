@@ -56,6 +56,7 @@ public final class TestRunner {
     FastWeight, // fast pruning while updating weight
     OTFSta,
     OTFDyn,
+    FastActive,
     TriOps,
     Naivee,
     Cuttyy,
@@ -69,22 +70,22 @@ public final class TestRunner {
                                                final String timescaleString) {
     switch (operatorType) {
       case FastSt:
-        return StaticActiveSingleMWOConfiguration.CONF
-            .set(StaticActiveSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
-            .set(StaticActiveSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(StaticActiveSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
-            .set(StaticActiveSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
-            .set(StaticActiveSingleMWOConfiguration.DEPENDENCY_GRAPH, StaticDependencyGraphImpl.class)
-            .set(StaticActiveSingleMWOConfiguration.START_TIME, "0")
-            .build();
-      case FastInter:
         return StaticSingleMWOConfiguration.CONF
             .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(StaticSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
             .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
-            .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, AdjustPartialDependencyGraph.class)
+            .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, StaticDependencyGraphImpl.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
+            .build();
+      case FastActive:
+        return StaticActiveSingleMWOConfiguration.CONF
+            .set(StaticActiveSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(StaticActiveSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(StaticActiveSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
+            .set(StaticActiveSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
+            .set(StaticActiveSingleMWOConfiguration.DEPENDENCY_GRAPH, AdjustPartialDependencyGraph.class)
+            .set(StaticActiveSingleMWOConfiguration.START_TIME, "0")
             .build();
       case FastWeight:
         return StaticSingleMWOConfiguration.CONF
