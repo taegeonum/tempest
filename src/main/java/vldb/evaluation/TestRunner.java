@@ -23,6 +23,9 @@ import vldb.operator.window.timescale.pafas.active.*;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicDPOutputLookupTableImpl;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicOptimizedDependencyGraphImpl;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
+import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedDependencyGraph;
+import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedMWOConfiguration;
+import vldb.operator.window.timescale.pafas.vldb2018.InterNodeDPSelectionAlgorithm;
 import vldb.operator.window.timescale.parameter.*;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
 import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
@@ -60,7 +63,8 @@ public final class TestRunner {
     TriOps,
     Naivee,
     Cuttyy,
-    FltFit
+    FltFit,
+    FastFit
   }
 
   @NamedParameter(short_name="window_change_period", default_value = "10")
@@ -77,6 +81,15 @@ public final class TestRunner {
             .set(StaticSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, StaticDependencyGraphImpl.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
+            .build();
+      case FastFit:
+        return FlatFitCombinedMWOConfiguration.CONF
+            .set(FlatFitCombinedMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(FlatFitCombinedMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(FlatFitCombinedMWOConfiguration.SELECTION_ALGORITHM, InterNodeDPSelectionAlgorithm.class)
+            .set(FlatFitCombinedMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
+            .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, FlatFitCombinedDependencyGraph.class)
+            .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
             .build();
       case FastAc:
         return StaticActiveSingleMWOConfiguration.CONF
