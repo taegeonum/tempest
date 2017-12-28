@@ -56,7 +56,7 @@ public final class TestRunner {
     FastWeight, // fast pruning while updating weight
     OTFSta,
     OTFDyn,
-    FastActive,
+    FastAc,
     TriOps,
     Naivee,
     Cuttyy,
@@ -78,7 +78,7 @@ public final class TestRunner {
             .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, StaticDependencyGraphImpl.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
             .build();
-      case FastActive:
+      case FastAc:
         return StaticActiveSingleMWOConfiguration.CONF
             .set(StaticActiveSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(StaticActiveSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
