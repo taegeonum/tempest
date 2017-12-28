@@ -406,8 +406,94 @@ public final class FlatFitCombinedDependencyGraph<T> implements DependencyGraph 
       }
     });
 
+    // Build intermediate nodes
+    adjustPartialNodes();
+
     // Remove partial nodes that have reference count 1
     removeUnnecessaryPartialNodes();
+  }
+
+  private void adjustPartialNodes() {
+    for (long start = startTime; start < period; start = partialTimespans.getNextSliceTime(start)) {
+      adjustNodes(start);
+    }
+  }
+
+  private void adjustNodes(final long startTime) {
+    final Node<T> initialNode = partialTimespans.getNextPartialTimespanNode(startTime);
+    final Set<Node<T>> currentParents = new HashSet<>(initialNode.parents);
+    final List<Node<T>> currentChild = new LinkedList<>();
+    currentChild.add(initialNode);
+
+    for (long start = partialTimespans.getNextSliceTime(startTime);
+         start < period && currentParents.size() > 0; start = partialTimespans.getNextSliceTime(start)) {
+      final Node<T> partial = partialTimespans.getNextPartialTimespanNode(start);
+      final Set<Node<T>> removedParents = new HashSet<>(currentParents);
+      removedParents.removeAll(partial.parents);
+
+      currentParents.removeAll(removedParents);
+
+      if (removedParents.isEmpty()) {
+        currentChild.add(partial);
+      } else {
+        if (currentChild.size() > 1) {
+          final Node<T> newIntermediate =
+              new Node<T>(currentChild.get(0).start, currentChild.get(currentChild.size()-1).end, 1);
+
+          try {
+            // If the node already exists, stop
+            finalTimespans.lookup(newIntermediate.start, newIntermediate.end);
+            break;
+          } catch (final NotFoundException e) {
+            finalTimespans.saveOutput(newIntermediate.start, newIntermediate.end, newIntermediate);
+          }
+
+          // new intermedate node
+          // child ....
+          // Add dependency
+          for (final Node<T> child : currentChild) {
+            newIntermediate.addDependency(child);
+          }
+
+          // Adjust dependency
+          for (final Node<T> parent : removedParents) {
+            final List<Node<T>> parentChild = parent.getDependencies();
+            // Remove prev child
+            for (final Node<T> child : currentChild) {
+              parentChild.remove(child);
+              child.refCnt.decrementAndGet();
+              child.initialRefCnt.decrementAndGet();
+              child.parents.remove(parent);
+            }
+
+            // Re-connect the new intermediate node
+            parent.addDependency(newIntermediate);
+          }
+
+          for (final Node<T> parent : currentParents) {
+            final List<Node<T>> parentChild = parent.getDependencies();
+            // Remove prev child
+            for (final Node<T> child : currentChild) {
+              parentChild.remove(child);
+              child.refCnt.decrementAndGet();
+              child.initialRefCnt.decrementAndGet();
+              child.parents.remove(parent);
+            }
+
+            // Re-connect the new intermediate node
+            parent.addDependency(newIntermediate);
+          }
+
+          // Remove current child
+          currentChild.clear();
+          currentChild.add(newIntermediate);
+
+          //System.out.println("Intermediate: " + newIntermediate + ", parent: " + newIntermediate.parents + ", child: " +newIntermediate.getDependencies());
+        }
+
+        currentChild.add(partial);
+      }
+    }
   }
 
   private void addEdge(final Node<T> parent) {
