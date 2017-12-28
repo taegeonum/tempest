@@ -100,10 +100,6 @@ public final class ComputeByKeyAggregator<I, K, V> implements CAAggregator<I, Ma
     //long numAgg = 0;
     //System.out.print("FINAL_PARTIALS ");
     for (final Map<K, V> partial : partials) {
-      // optimize
-      if (partials.size() == 1) {
-        return partial;
-      }
       //System.out.print(partial.size() + ", ");
       rollup(result, partial);
     }

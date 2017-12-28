@@ -143,7 +143,7 @@ public class InterNodeDPSelectionAlgorithm<T> implements DependencyGraph.Selecti
       final long endTime = entry.getKey();
 
       if (!finalNode.isNotShared) {
-        if (finalNode.start > end) {
+        if (finalNode.start >= end) {
           availableNodes.add(finalNode);
         } else {
           if (!((endTime - scanStartPoint) == (end - start)) &&

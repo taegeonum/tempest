@@ -384,29 +384,6 @@ public final class InterNodeDependencyGraph<T> implements DependencyGraph {
    * Add DependencyGraphNode and connect dependent nodes.
    */
   private void addOverlappingWindowNodeAndEdge() {
-    final List<Info> infos = timescales.parallelStream().map(timescale -> {
-
-      final List<Node<T>> nodes = new ArrayList<Node<T>>((int)(period / timescale.intervalSize + 1));
-
-      for (long time = timescale.intervalSize + startTime; time <= period + startTime; time += timescale.intervalSize) {
-
-        // create vertex and add it to the table cell of (time, windowsize)
-        final long start = time - timescale.windowSize;
-        final Node parent = new Node(start, time, false, timescale);
-        parent.isNotShared = false;
-
-        nodes.add(parent);
-
-        //table[(int)start+largestWindowSize][(int)time+largestWindowSize] = true;
-        //nodeTable[(int)start+largestWindowSize][(int)time+largestWindowSize] = parent;
-
-        finalTimespans.saveOutput(start, time, parent);
-        LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
-        //LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies2: " + childNodes);
-      }
-
-      return new Info(nodes, timescale);
-    }).collect(Collectors.toCollection(ArrayList::new));
 
     // add intermediate node
     final List<List<Node<T>>> nodeList = new ArrayList<>(largestWindowSize - 2);
@@ -417,22 +394,50 @@ public final class InterNodeDependencyGraph<T> implements DependencyGraph {
     IntStream.range(2, largestWindowSize).parallel()
         .forEach(wSize -> {
           final List<Node<T>> nodes = nodeList.get(wSize - 2);
-          for (long endTime = startTime + wSize; endTime - wSize < startTime + period; endTime += wSize) {
-            final long eTime = Math.min(endTime, startTime + period);
-            if (eTime - (endTime - wSize) > 1) {
-              try {
-                finalTimespans.lookup(endTime - wSize, eTime);
-              } catch (final NotFoundException e) {
-                final Node node = new Node(endTime - wSize, eTime, false, null);
-                nodes.add(node);
-                node.intermediate = true;
-                finalTimespans.saveOutput(endTime - wSize, eTime, node);
+          for (long endTime = largestWindowSize % wSize == 0 ? wSize : largestWindowSize % wSize;
+               endTime <= startTime + period; endTime += wSize) {
+            try {
+              finalTimespans.lookup(endTime - wSize, endTime);
+            } catch (final NotFoundException e) {
+              final Node node = new Node(endTime - wSize, endTime, false, null);
+              nodes.add(node);
+              node.intermediate = true;
+              finalTimespans.saveOutput(endTime - wSize, endTime, node);
               }
-            }
           }
         });
 
 
+    final List<Info> infos = timescales.parallelStream().map(timescale -> {
+
+      final List<Node<T>> nodes = new ArrayList<Node<T>>((int) (period / timescale.intervalSize + 1));
+
+      for (long time = timescale.intervalSize + startTime; time <= period + startTime; time += timescale.intervalSize) {
+
+        // create vertex and add it to the table cell of (time, windowsize)
+        final long start = time - timescale.windowSize;
+        final Node parent = new Node(start, time, false, timescale);
+        parent.isNotShared = false;
+        parent.intermediate = false;
+
+        nodes.add(parent);
+
+        try {
+          final Node<T> node = finalTimespans.lookup(parent.start, parent.end);
+        } catch (final NotFoundException e) {
+          addEdge(parent);
+        }
+
+        //finalTimespans.saveOutput(start, time, parent);
+
+        LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
+        //LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies2: " + childNodes);
+      }
+
+      return new Info(nodes, timescale);
+    }).collect(Collectors.toCollection(ArrayList::new));
+
+    /*
     infos.sort(new Comparator<Info>() {
       @Override
       public int compare(final Info o1, final Info o2) {
@@ -443,31 +448,41 @@ public final class InterNodeDependencyGraph<T> implements DependencyGraph {
         }
       }
     });
+    */
+
+
+     // Add edges for selected intermediate nodes
+    final AtomicBoolean isChanged = new AtomicBoolean(false);
+    do {
+      isChanged.set(false);
+      nodeList.parallelStream()
+                .flatMap(List::stream)
+               .filter(node -> node.refCnt.get() > 0 && node.getDependencies().size() == 0)
+               .forEach(node -> {
+                 addEdge(node);
+                 isChanged.set(true);
+               });
+     } while (isChanged.get());
 
     final List<Node<T>> addedNodes = infos.stream().flatMap(info -> info.nodes.stream())
         .collect(Collectors.toCollection(ArrayList::new));
 
     // We do not have to add edges for intermediate node.
     // We will find the edges of intermediate nodes after tracking the edges of final nodes
-    addedNodes.parallelStream().forEach(node -> addEdge(node));
-
-    // Add edges for selected intermediate nodes
-    final AtomicBoolean isChanged = new AtomicBoolean(false);
-    do {
-      isChanged.set(false);
-      nodeList.parallelStream()
-          .flatMap(List::stream)
-          .filter(node -> node.refCnt.get() > 0 && node.getDependencies().size() == 0)
-          .forEach(node -> {
-            addEdge(node);
-            isChanged.set(true);
-          });
-    } while (isChanged.get());
+    addedNodes.parallelStream().forEach(node -> {
+      try {
+        final Node<T> interNode = finalTimespans.lookup(node.start, node.end);
+        // change inter to final
+        interNode.intermediate = false;
+      } catch (final NotFoundException e) {
+        finalTimespans.saveOutput(node.start, node.end, node);
+      }
+    });
 
     // Remove unnecessary intermediate nodes
     nodeList.parallelStream().forEach(nList -> {
       for (final Node<T> node : nList) {
-        if (node.refCnt.get() == 0) {
+        if (node.refCnt.get() == 0 && node.intermediate) {
           finalTimespans.deleteOutput(node.start, node.end);
         }
       }
@@ -485,6 +500,9 @@ public final class InterNodeDependencyGraph<T> implements DependencyGraph {
     //System.out.println("(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
     for (final Node<T> elem : childNodes) {
       parent.addDependency(elem);
+      if (elem.start == 6 && elem.end == 7) {
+        System.out.println("[6,7) parent: " + parent);
+      }
     }
   }
 

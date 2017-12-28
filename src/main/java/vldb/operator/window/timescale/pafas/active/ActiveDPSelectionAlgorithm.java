@@ -146,7 +146,7 @@ public class ActiveDPSelectionAlgorithm<T> implements DependencyGraph.SelectionA
       final long endTime = entry.getKey();
 
       if (!finalNode.isNotShared) {
-        if (finalNode.start > end) {
+        if (finalNode.start >= end) {
           availableNodes.add(finalNode);
         } else {
           if (!((endTime - scanStartPoint) == (end - start)) &&

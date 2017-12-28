@@ -137,6 +137,7 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
 
         aggregates.add(dependentNode.getOutput());
         dependentNode.decreaseRefCnt();
+
         if (dependentNode.getOutput() == null) {
           if (dependentNode.partial) {
             //System.out.println("Deleted " + dependentNode);
