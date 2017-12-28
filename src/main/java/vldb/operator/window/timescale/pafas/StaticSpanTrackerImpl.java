@@ -83,29 +83,33 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
     return dependencyGraph.getFinalTimespans(t);
   }
 
-  private T createIntermediateAgg(final Node<T> intermediateNode) {
+  private T createIntermediateAgg(final Node<T> intermediateNode, final Timespan timespan) {
     final List<Node<T>> intermediateChildren = intermediateNode.getDependencies();
     final Collection<T> intermediateAgg = new ArrayList<>(intermediateChildren.size());
     for (final Node<T> intermediateChild : intermediateChildren) {
-      if (intermediateChild.intermediate && intermediateChild.getOutput() == null) {
-        // Recursive construction
-        intermediateChild.saveOutput(createIntermediateAgg(intermediateChild));
-        metrics.storedInter += 1;
-      } else if (intermediateChild.getOutput() == null) {
-        throw new RuntimeException("null aggregate at: " + intermediateChild + ", when generating " + intermediateNode);
-      }
 
-      intermediateAgg.add(intermediateChild.getOutput());
-      intermediateChild.decreaseRefCnt();
+      if (intermediateChild.end  <= timespan.endTime) {
 
-      if (intermediateChild.getOutput() == null) {
-        if (intermediateChild.partial) {
-          //System.out.println("Deleted " + dependentNode);
-          metrics.storedPartial -= 1;
-        } else if (intermediateChild.intermediate) {
-          metrics.storedInter -= 1;
-        } else {
-          metrics.storedFinal -= 1;
+        if (intermediateChild.intermediate && intermediateChild.getOutput() == null) {
+          // Recursive construction
+          intermediateChild.saveOutput(createIntermediateAgg(intermediateChild, timespan));
+          metrics.storedInter += 1;
+        } else if (intermediateChild.getOutput() == null) {
+          throw new RuntimeException("null aggregate at: " + intermediateChild + ", when generating " + intermediateNode);
+        }
+
+        intermediateAgg.add(intermediateChild.getOutput());
+        intermediateChild.decreaseRefCnt();
+
+        if (intermediateChild.getOutput() == null) {
+          if (intermediateChild.partial) {
+            //System.out.println("Deleted " + dependentNode);
+            metrics.storedPartial -= 1;
+          } else if (intermediateChild.intermediate) {
+            metrics.storedInter -= 1;
+          } else {
+            metrics.storedFinal -= 1;
+          }
         }
       }
     }
@@ -127,7 +131,7 @@ public final class StaticSpanTrackerImpl<I, T> implements SpanTracker<T> {
 
         if (dependentNode.intermediate && dependentNode.getOutput() == null) {
           // Consider intermediate aggregates
-          dependentNode.saveOutput(createIntermediateAgg(dependentNode));
+          dependentNode.saveOutput(createIntermediateAgg(dependentNode, timespan));
           metrics.storedInter += 1;
         }
 

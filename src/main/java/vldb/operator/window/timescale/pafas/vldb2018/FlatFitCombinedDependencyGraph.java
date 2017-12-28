@@ -267,7 +267,7 @@ public final class FlatFitCombinedDependencyGraph<T> implements DependencyGraph 
   private List<Node<T>> getIntermediateNodes() {
     final List<Node<T>> interNodes = new LinkedList<>();
 
-    for (long tickTime = startTime + 1; tickTime <= startTime + period; tickTime++) {
+    for (long tickTime = startTime + 1; tickTime <= startTime; tickTime++) {
       pointers.set(prevInd, currInd);
       timespans.set(prevInd, new Timespan(tickTime - 1, tickTime, null));
 
@@ -300,17 +300,19 @@ public final class FlatFitCombinedDependencyGraph<T> implements DependencyGraph 
 
           timespans.set(tempInd, newTs);
 
-          if (newTs.startTime != 0 && newTs.endTime != 0
-              && (newTs.endTime - newTs.startTime) > 1) {
-            // Add intermediate
-            try {
-              finalTimespans.lookup(newTs.startTime, newTs.endTime);
-            } catch (final NotFoundException e) {
-              final Node<T> newNode = new Node<>(newTs.startTime, newTs.endTime, false);
-              newNode.intermediate = true;
-              interNodes.add(newNode);
+          //if (tickTime > period) {
+            if (newTs.startTime != 0 && newTs.endTime != 0
+                && (newTs.endTime - newTs.startTime) > 1) {
+              // Add intermediate
+              try {
+                finalTimespans.lookup(newTs.startTime, newTs.endTime);
+              } catch (final NotFoundException e) {
+                final Node<T> newNode = new Node<>(newTs.startTime, newTs.endTime, false);
+                newNode.intermediate = true;
+                interNodes.add(newNode);
+              }
             }
-          }
+          //}
         }
 
         final int uu = positions.pop();
@@ -408,6 +410,7 @@ public final class FlatFitCombinedDependencyGraph<T> implements DependencyGraph 
 
     // Remove partial nodes that have reference count 1
     removeUnnecessaryPartialNodes();
+    System.out.println("end");
   }
 
   private void addEdge(final Node<T> parent) {
