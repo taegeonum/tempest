@@ -15,6 +15,7 @@ import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.*;
 import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.cutty.CuttyMWOConfiguration;
+import vldb.operator.window.timescale.flatfit.FlatFitMWOConfiguration;
 import vldb.operator.window.timescale.naive.NaiveMWOConfiguration;
 import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
 import vldb.operator.window.timescale.pafas.*;
@@ -58,6 +59,7 @@ public final class TestRunner {
     TriOps,
     Naivee,
     Cuttyy,
+    FltFit
   }
 
   @NamedParameter(short_name="window_change_period", default_value = "10")
@@ -178,6 +180,12 @@ public final class TestRunner {
             .set(CuttyMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(CuttyMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(CuttyMWOConfiguration.START_TIME, "0")
+            .build();
+      case FltFit:
+        return FlatFitMWOConfiguration.CONF
+            .set(FlatFitMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(FlatFitMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(FlatFitMWOConfiguration.START_TIME, "0")
             .build();
       case TriOps:
         // TriOPs
