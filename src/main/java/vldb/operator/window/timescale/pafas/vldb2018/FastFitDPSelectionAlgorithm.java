@@ -12,12 +12,7 @@ import vldb.operator.window.timescale.parameter.StartTime;
 import vldb.operator.window.timescale.parameter.TradeOffFactor;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.*;
 import java.util.logging.Logger;
 
 public class FastFitDPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorithm<T> {
@@ -78,14 +73,7 @@ public class FastFitDPSelectionAlgorithm<T> implements DependencyGraph.Selection
         final int nodeEndIndex = (int)(adjustTime(reducedEnd, node.end) - start);
         final int nodeStartIndex = (int)(adjustTime(reducedEnd-1, node.start) - start);
 
-        double cost;
-        if (node.partial) {
-          cost = 1 + costArray.get(nodeEndIndex);
-        } else if (node.intermediate) {
-          cost = 1 + costArray.get(nodeEndIndex);
-        } else {
-          cost = 1 + costArray.get(nodeEndIndex);
-        }
+        final double cost = 1 + costArray.get(nodeEndIndex);
 
         if (cost < costArray.get(nodeStartIndex)) {
           costArray.set(nodeStartIndex, cost);
@@ -115,13 +103,12 @@ public class FastFitDPSelectionAlgorithm<T> implements DependencyGraph.Selection
 
   private List<Node<T>> getAvailableNodes(final long start, final long end, final int currIndex, final int length) {
     final List<Node<T>> availableNodes = new LinkedList<>();
-    ConcurrentMap<Long, Node<T>> availableFinalNodes = null;
+    final Map<Long, Node<T>> availableFinalNodes = new HashMap<>();
     final long scanStartPoint = start + currIndex;
-
     try {
-      availableFinalNodes = finalTimespans.lookup(scanStartPoint);
+      final Map<Long, Node<T>> nodes = finalTimespans.lookup(scanStartPoint);
+      availableFinalNodes.putAll(nodes);
     } catch (final NotFoundException e) {
-      availableFinalNodes = new ConcurrentHashMap<>();
     } finally {
       // Add startTime + period nodes
       if (scanStartPoint < startTime) {

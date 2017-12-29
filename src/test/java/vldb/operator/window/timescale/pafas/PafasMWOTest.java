@@ -12,9 +12,9 @@ import vldb.operator.window.timescale.flatfit.FlatFitMWOConfiguration;
 import vldb.operator.window.timescale.pafas.active.ActiveDPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.active.AdjustPartialDependencyGraph;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
+import vldb.operator.window.timescale.pafas.vldb2018.FastFitDPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedDependencyGraph;
 import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedMWOConfiguration;
-import vldb.operator.window.timescale.pafas.vldb2018.FastFitDPSelectionAlgorithm;
 import vldb.operator.window.timescale.parameter.*;
 
 import java.util.LinkedList;
@@ -43,7 +43,7 @@ public final class PafasMWOTest {
     final List<Configuration> configurationList = new LinkedList<>();
     final List<String> operatorIds = new LinkedList<>();
     final String timescaleString3 =  "(4,2)(5,3)(6,4)(10,5)";
-    final String timescaleString4 =  "(5,4)(8,3)(12,7)(16,6)";
+    //final String timescaleString =  "(5,4)(8,3)(12,7)(16,6)(21,6)";
     final String timescaleString11 = "(5,1)(10,1)(20,2)(30,2)(60,4)(90,4)(360,5)(600,5)(900,10)(1800,10)";
     final String timescaleString6 = "(5,2)(6,2)(10,2)";
     final String timescaleString = "(107,60)(170,1)(935,10)(1229,10)(1991,110)(2206,20)(2284,140)(2752,30)(2954,88)(2961,165)(2999,60)(3043,55)(3076,35)(3134,110)(3161,210)(3406,40)(3515,385)(3555,40)(3590,210)(3593,840)";
@@ -200,7 +200,7 @@ public final class PafasMWOTest {
     final int numKey = 10;
     final int numInput = 20000;
     final Random random = new Random();
-    final int tick = numInput / 2000;
+    final int tick = numInput / 5000;
     int tickTime = 1;
     long stored = 0;
     for (i = 0; i < numInput; i++) {

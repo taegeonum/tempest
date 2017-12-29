@@ -42,9 +42,9 @@ import java.util.stream.Collectors;
 /**
  * DependencyGraph shows which nodes are related to each other. This is used so that unnecessary outputs are not saved.
  */
-public final class FlatFitCombinedDependencyGraph<T> implements DependencyGraph {
+public final class FlatFitCombinedOptimizedDependencyGraph<T> implements DependencyGraph {
 
-  private static final Logger LOG = Logger.getLogger(FlatFitCombinedDependencyGraph.class.getName());
+  private static final Logger LOG = Logger.getLogger(FlatFitCombinedOptimizedDependencyGraph.class.getName());
 
   /**
    * A table containing DependencyGraphNode for partial outputs.
@@ -94,15 +94,15 @@ public final class FlatFitCombinedDependencyGraph<T> implements DependencyGraph 
    * @param startTime the initial start time of when the graph is built.
    */
   @Inject
-  private FlatFitCombinedDependencyGraph(final TimescaleParser tsParser,
-                                         @Parameter(StartTime.class) final long startTime,
-                                         final PartialTimespans partialTimespans,
-                                         final PeriodCalculator periodCalculator,
-                                         final OutputLookupTable<Node<T>> outputLookupTable,
-                                         @Parameter(NumThreads.class) final int numThreads,
-                                         final WindowManager windowManager,
-                                         @Parameter(OverlappingRatio.class) final double reusingRatio,
-                                         final SelectionAlgorithm<T> selectionAlgorithm) {
+  private FlatFitCombinedOptimizedDependencyGraph(final TimescaleParser tsParser,
+                                                  @Parameter(StartTime.class) final long startTime,
+                                                  final PartialTimespans partialTimespans,
+                                                  final PeriodCalculator periodCalculator,
+                                                  final OutputLookupTable<Node<T>> outputLookupTable,
+                                                  @Parameter(NumThreads.class) final int numThreads,
+                                                  final WindowManager windowManager,
+                                                  @Parameter(OverlappingRatio.class) final double reusingRatio,
+                                                  final SelectionAlgorithm<T> selectionAlgorithm) {
     this.partialTimespans = partialTimespans;
     this.timescales = tsParser.timescales;
     this.wSizeMap = new HashMap<>();
@@ -383,8 +383,72 @@ public final class FlatFitCombinedDependencyGraph<T> implements DependencyGraph 
     final List<Node<T>> addedNodes = infos.parallelStream().flatMap(info -> info.nodes.stream())
         .collect(Collectors.toCollection(ArrayList::new));
 
+    System.out.println("haha");
     // add final edges
     addedNodes.parallelStream().forEach(node -> addEdge(node));
+
+    // Start 1
+    // Remove intermediate nodes that have reference count 1 and adjust
+    int prevNum = interNodes.size();
+    final HashSet<Node<T>> reselectedParents = new HashSet<>();
+    do {
+      reselectedParents.clear();
+
+      interNodes.parallelStream()
+          .filter(node -> node.refCnt.get() == 1)
+          .forEach(node -> {
+            // Delete it from final timespans
+            try {
+              if (node.start == 6085 && node.end == 6090) {
+                System.out.println("HAHA: " + node);
+              }
+              final Node<T> removableNode = finalTimespans.lookup(node.start, node.end);
+              if (removableNode.intermediate) {
+                if (removableNode != node) {
+                  throw new RuntimeException("not equal: " + removableNode + ", " + node);
+                }
+                // Remove the node from the parent
+                final Iterator<Node<T>> iter = node.parents.iterator();
+                final Node<T> parent = iter.next();
+                iter.remove();
+
+                synchronized (parent) {
+                  parent.getDependencies().remove(node);
+                }
+                node.decreaseRefCntWithoutReset();
+
+                finalTimespans.deleteOutput(removableNode.start, removableNode.end);
+
+                reselectedParents.add(parent);
+              }
+            } catch (final NotFoundException e) {
+              throw new RuntimeException(e);
+            }
+          });
+
+      reselectedParents.parallelStream().forEach(parent -> {
+        for (final Node<T> child : parent.getDependencies()) {
+          child.decreaseRefCntWithoutReset();
+          synchronized (child) {
+            child.parents.remove(parent);
+          }
+        }
+        parent.getDependencies().clear();
+      });
+
+      reselectedParents.parallelStream().forEach(parent -> {
+        addEdge(parent);
+      });
+
+      final int s = reselectedParents.size();
+      if (((prevNum - s) / (double)prevNum) < 0.1) {
+        break;
+      } else {
+        prevNum = s;
+      }
+
+    } while (reselectedParents.size() > 0);
+    // End 1
 
     // Add edges for selected intermediate nodes
     final AtomicBoolean isChanged = new AtomicBoolean(false);

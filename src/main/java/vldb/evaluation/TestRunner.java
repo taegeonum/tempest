@@ -64,7 +64,7 @@ public final class TestRunner {
     Naivee,
     Cuttyy,
     FltFit,
-    FastFitAdj
+    FastFit
   }
 
   @NamedParameter(short_name="window_change_period", default_value = "10")
@@ -82,7 +82,7 @@ public final class TestRunner {
             .set(StaticSingleMWOConfiguration.DEPENDENCY_GRAPH, StaticDependencyGraphImpl.class)
             .set(StaticSingleMWOConfiguration.START_TIME, "0")
             .build();
-      case FastFitAdj:
+      case FastFit:
         return FlatFitCombinedMWOConfiguration.CONF
             .set(FlatFitCombinedMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(FlatFitCombinedMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)

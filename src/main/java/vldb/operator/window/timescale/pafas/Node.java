@@ -123,6 +123,19 @@ public final class Node<T> {
    * and resets the reference count to initial count
    * in order to reuse this node.
    */
+  public void decreaseRefCntWithoutReset() {
+    if (refCnt.get() > 0) {
+      int cnt = refCnt.decrementAndGet();
+      initialRefCnt.decrementAndGet();
+    }
+  }
+
+  /**
+   * Decrease reference count of DependencyGraphNode.
+   * If the reference count is zero, then it removes the saved output
+   * and resets the reference count to initial count
+   * in order to reuse this node.
+   */
   public void decreaseRefCnt() {
     if (refCnt.get() > 0) {
       int cnt = refCnt.decrementAndGet();

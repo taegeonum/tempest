@@ -53,6 +53,10 @@ public final class DPOutputLookupTableImpl<V> implements OutputLookupTable<V> {
       row = table.get(startTime);
     }
     row.putIfAbsent(endTime, output);
+    if (startTime == -3 || startTime == 81 && endTime == 84) {
+      System.out.println("!!!! " + startTime + ", " + endTime + ", " + output);
+      System.out.println("!!!! " + row);
+    }
   }
 
   /**
