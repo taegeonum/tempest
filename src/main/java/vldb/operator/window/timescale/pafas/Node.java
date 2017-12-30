@@ -44,7 +44,7 @@ public final class Node<T> {
 
   public int possibleParentCount = 0;
 
-  public long cost;
+  public double cost = 1;
 
   public int weight;
 
@@ -63,6 +63,8 @@ public final class Node<T> {
   public Node<T> lastChildNode;
 
   public boolean intermediate;
+
+  public boolean costCalculated = false;
   /**
    * DependencyGraphNode.
    * @param start the start time of the node.
@@ -101,6 +103,7 @@ public final class Node<T> {
     parents.clear();
     refCnt.set(0);
     initialRefCnt.set(0);
+    costCalculated = false;
   }
 
   /**
