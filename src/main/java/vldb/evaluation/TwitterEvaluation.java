@@ -15,8 +15,6 @@ import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.parameter.*;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.List;
 import java.util.logging.Logger;
@@ -37,8 +35,7 @@ public final class TwitterEvaluation {
 
     final CommandLine cl = new CommandLine(cb)
         .registerShortNameOfClass(OperatorTypeParam.class)
-        //.registerShortNameOfClass(TimescaleString.class)
-        .registerShortNameOfClass(TimescalePath.class)
+        .registerShortNameOfClass(TimescaleString.class)
         .registerShortNameOfClass(OutputPath.class)
         .registerShortNameOfClass(FileWordGenerator.FileDataPath.class)
         .registerShortNameOfClass(NumThreads.class)
@@ -57,10 +54,6 @@ public final class TwitterEvaluation {
     return cl.getBuilder().build();
   }
 
-  private static String getTimescaleString(final String timescalePath) throws IOException {
-    final BufferedReader br = new BufferedReader(new FileReader(timescalePath));
-    return br.readLine();
-  }
 
   public static void main(final String[] args) throws Exception {
 
@@ -68,8 +61,7 @@ public final class TwitterEvaluation {
     final Injector injector = Tang.Factory.getTang().newInjector(commandLineConf);
 
     // Parameters
-    final String timescalePath = injector.getNamedInstance(TimescalePath.class);
-    final String timescaleString = getTimescaleString(timescalePath);
+    final String timescaleString = injector.getNamedInstance(TimescaleString.class);
      String outputPath = injector.getNamedInstance(OutputPath.class);
     final List<Timescale> timescales = TimescaleParser.parseFromString(timescaleString);
     final int numThreads = injector.getNamedInstance(NumThreads.class);
@@ -83,6 +75,7 @@ public final class TwitterEvaluation {
     final int windowGap = injector.getNamedInstance(WindowGap.class);
     final int sharedFinalNum = injector.getNamedInstance(SharedFinalNum.class);
     final double overlapRatio = injector.getNamedInstance(OverlappingRatio.class);
+    //final long numKey = injector.getNamedInstance(NumOfKey.class);
 
     final TestRunner.OperatorType operatorType = TestRunner.OperatorType.valueOf(
         injector.getNamedInstance(OperatorTypeParam.class));
