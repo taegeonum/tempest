@@ -20,7 +20,6 @@ import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.parameter.TimescaleString;
 
 import javax.inject.Inject;
-import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -52,16 +51,18 @@ public final class TimescaleParser {
    * @return a list of timescales
    */
   public static List<Timescale> parseFromString(final String params) {
-    if (!params.matches(REGEX)) {
+    /*if (!params.matches(REGEX)) {
       throw new InvalidParameterException("Invalid timescales: " + params + " The format should be " + REGEX);
     }
+    */
     return parseToTimescaleList(params);
   }
 
   public static List<Timescale> parseFromStringNoSort(final String params) {
-    if (!params.matches(REGEX)) {
+    /*if (!params.matches(REGEX)) {
       throw new InvalidParameterException("Invalid timescales: " + params + " The format should be " + REGEX);
     }
+    */
     return parseToTimescaleListNoSort(params);
   }
 
