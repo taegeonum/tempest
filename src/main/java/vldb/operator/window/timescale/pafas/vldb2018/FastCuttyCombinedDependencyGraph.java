@@ -267,7 +267,7 @@ public final class FastCuttyCombinedDependencyGraph<T> implements DependencyGrap
     final List<Node<T>> interNodes = new LinkedList<>();
     final long lWindow = timescales.get(timescales.size()-1).windowSize;
     for (long windowSize = 2; windowSize < lWindow; windowSize *= 2) {
-      for (long eTime = startTime + windowSize; eTime <= startTime + period; eTime += windowSize) {
+      for (long eTime = startTime + windowSize; eTime <= startTime + period; eTime += (windowSize/2)) {
         try {
           finalTimespans.lookup(eTime - windowSize, eTime);
         } catch (final NotFoundException e) {
