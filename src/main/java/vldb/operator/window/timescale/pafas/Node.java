@@ -65,6 +65,8 @@ public final class Node<T> {
   public boolean intermediate;
 
   public boolean costCalculated = false;
+
+
   /**
    * DependencyGraphNode.
    * @param start the start time of the node.

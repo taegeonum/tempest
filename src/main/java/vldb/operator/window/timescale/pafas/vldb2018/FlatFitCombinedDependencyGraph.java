@@ -34,6 +34,7 @@ import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -263,6 +264,7 @@ public final class FlatFitCombinedDependencyGraph<T> implements DependencyGraph 
     }
   }
 
+  /*
   private void addIntermediateEdge(final Node<T> parent) {
     //System.out.println("child node start: " + parent);
     final List<Node<T>> childNodes = selectionAlgorithm.selection(parent.start, parent.end);
@@ -270,14 +272,14 @@ public final class FlatFitCombinedDependencyGraph<T> implements DependencyGraph 
     LOG.log(Level.FINE, "(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
     //System.out.println("(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
     for (final Node<T> elem : childNodes) {
-      synchronized (elem) {
-        if (elem.intermediate && elem.getDependencies().size() == 0) {
-          addIntermediateEdge(elem);
-        }
+      if (elem.intermediate && elem.getDependencies().size() == 0 &&
+          elem.childAdded.compareAndSet(false, true)) {
+        addIntermediateEdge(elem);
       }
       parent.addDependency(elem);
     }
   }
+  */
 
   private List<Node<T>> getIntermediateNodes() {
     final List<Node<T>> interNodes = new LinkedList<>();
@@ -402,9 +404,16 @@ public final class FlatFitCombinedDependencyGraph<T> implements DependencyGraph 
     addedNodes.parallelStream().forEach(node -> addEdge(node));
 
     // Add edges for selected intermediate nodes
-    interNodes.parallelStream()
-        .filter(node -> node.refCnt.get() > 0 && node.getDependencies().size() == 0)
-        .forEach(node -> addIntermediateEdge(node));
+    final AtomicBoolean isChanged = new AtomicBoolean(false);
+    do {
+      isChanged.set(false);
+      interNodes.parallelStream()
+          .filter(node -> node.refCnt.get() > 0 && node.getDependencies().size() == 0)
+          .forEach(node -> {
+            addEdge(node);
+            isChanged.set(true);
+          });
+    } while (isChanged.get());
 
     // Remove unnecessary intermediate nodes
     interNodes.parallelStream().forEach(node -> {
