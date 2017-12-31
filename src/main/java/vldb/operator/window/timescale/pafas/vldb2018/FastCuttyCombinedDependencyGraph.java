@@ -41,9 +41,9 @@ import java.util.stream.Collectors;
 /**
  * DependencyGraph shows which nodes are related to each other. This is used so that unnecessary outputs are not saved.
  */
-public final class FlatFitCombinedDependencyGraph<T> implements DependencyGraph {
+public final class FastCuttyCombinedDependencyGraph<T> implements DependencyGraph {
 
-  private static final Logger LOG = Logger.getLogger(FlatFitCombinedDependencyGraph.class.getName());
+  private static final Logger LOG = Logger.getLogger(FastCuttyCombinedDependencyGraph.class.getName());
 
   /**
    * A table containing DependencyGraphNode for partial outputs.
@@ -93,15 +93,15 @@ public final class FlatFitCombinedDependencyGraph<T> implements DependencyGraph 
    * @param startTime the initial start time of when the graph is built.
    */
   @Inject
-  private FlatFitCombinedDependencyGraph(final TimescaleParser tsParser,
-                                         @Parameter(StartTime.class) final long startTime,
-                                         final PartialTimespans partialTimespans,
-                                         final PeriodCalculator periodCalculator,
-                                         final OutputLookupTable<Node<T>> outputLookupTable,
-                                         @Parameter(NumThreads.class) final int numThreads,
-                                         final WindowManager windowManager,
-                                         @Parameter(OverlappingRatio.class) final double reusingRatio,
-                                         final SelectionAlgorithm<T> selectionAlgorithm) {
+  private FastCuttyCombinedDependencyGraph(final TimescaleParser tsParser,
+                                           @Parameter(StartTime.class) final long startTime,
+                                           final PartialTimespans partialTimespans,
+                                           final PeriodCalculator periodCalculator,
+                                           final OutputLookupTable<Node<T>> outputLookupTable,
+                                           @Parameter(NumThreads.class) final int numThreads,
+                                           final WindowManager windowManager,
+                                           @Parameter(OverlappingRatio.class) final double reusingRatio,
+                                           final SelectionAlgorithm<T> selectionAlgorithm) {
     this.partialTimespans = partialTimespans;
     this.timescales = tsParser.timescales;
     this.wSizeMap = new HashMap<>();
@@ -263,6 +263,23 @@ public final class FlatFitCombinedDependencyGraph<T> implements DependencyGraph 
     }
   }
 
+  private List<Node<T>> getIntermediateNodes() {
+    final List<Node<T>> interNodes = new LinkedList<>();
+    final long lWindow = timescales.get(timescales.size()-1).windowSize;
+    for (long windowSize = 2; windowSize < lWindow; windowSize *= 2) {
+      for (long eTime = startTime + windowSize; eTime <= startTime + period; eTime += windowSize) {
+        try {
+          finalTimespans.lookup(eTime - windowSize, eTime);
+        } catch (final NotFoundException e) {
+          final Node<T> node = new Node(eTime - windowSize, eTime, false);
+          node.intermediate = true;
+          interNodes.add(node);
+        }
+      }
+    }
+    return interNodes;
+  }
+
   private void addIntermediateEdge(final Node<T> parent) {
     //System.out.println("child node start: " + parent);
     final List<Node<T>> childNodes = selectionAlgorithm.selection(parent.start, parent.end);
@@ -277,68 +294,6 @@ public final class FlatFitCombinedDependencyGraph<T> implements DependencyGraph 
       }
       parent.addDependency(elem);
     }
-  }
-
-  private List<Node<T>> getIntermediateNodes() {
-    final List<Node<T>> interNodes = new LinkedList<>();
-
-    for (long tickTime = startTime + 1; tickTime <= startTime + period; tickTime++) {
-      pointers.set(prevInd, currInd);
-      timespans.set(prevInd, new Timespan(tickTime - 1, tickTime, null));
-
-      // get final timespans
-      final List<Timescale> queriesToAnswer = getWindows(tickTime);
-      for (final Timescale query : queriesToAnswer) {
-
-        int startInd = currInd - wSizeMap.get(query);
-        if (startInd < 0) {
-          startInd += wSize;
-        }
-
-        do {
-          positions.push(startInd);
-          startInd = pointers.get(startInd);
-        } while (startInd != currInd);
-
-        final int ind = positions.pop();
-        final Timespan ts = timespans.get(ind);
-
-        while (positions.size() > 1) {
-          final int tempInd = positions.pop();
-          final Timespan tempTs = timespans.get(tempInd);
-
-          pointers.set(tempInd, currInd);
-
-          final Timespan newTs = mergeTs(ts, tempTs);
-          //System.out.println("Store "  + newTs +
-          //    ", for [" + (tickTime - query.windowSize) + ", " + tickTime + ")");
-
-          timespans.set(tempInd, newTs);
-
-          if (newTs.startTime != 0 && newTs.endTime != 0
-              && (newTs.endTime - newTs.startTime) > 1) {
-            // Add intermediate
-            try {
-              finalTimespans.lookup(newTs.startTime, newTs.endTime);
-            } catch (final NotFoundException e) {
-              final Node<T> newNode = new Node<>(newTs.startTime, newTs.endTime, false);
-              newNode.intermediate = true;
-              interNodes.add(newNode);
-            }
-          }
-        }
-
-        final int uu = positions.pop();
-      }
-
-      prevInd = currInd;
-      currInd += 1;
-      if (currInd == wSize) {
-        currInd = 0;
-      }
-    }
-
-    return interNodes;
   }
   /**
    * Add DependencyGraphNode and connect dependent nodes.
