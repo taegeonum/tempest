@@ -108,6 +108,8 @@ public final class DefaultPartialAggregator<I, V> implements PartialAggregator<I
     if (val instanceof WindowTimeEvent) {
       final long tickTime = ((WindowTimeEvent) val).time;
       if (isSliceTime(tickTime)) {
+        final long statTime = System.currentTimeMillis();
+
         final V partialAggregation = bucket;
         bucket = aggregator.init();
         //System.out.println("PARTIAL_SIZE: " + ((Map)partialAggregation).size() + "\t" + (prevSliceTime) + "-" + (nextSliceTime));
@@ -116,8 +118,9 @@ public final class DefaultPartialAggregator<I, V> implements PartialAggregator<I
         prevSliceTime = nextSliceTime;
         nextSliceTime = spanTracker.getNextSliceTime(prevSliceTime);
         spanTracker.putAggregate(partialAggregation, new Timespan(prev, next, null));
+
         final List<Timespan> finalTimespans = spanTracker.getFinalTimespans(next);
-        finalAggregator.triggerFinalAggregation(finalTimespans);
+        finalAggregator.triggerFinalAggregation(finalTimespans, statTime);
       }
     } else {
       final long st = System.nanoTime();

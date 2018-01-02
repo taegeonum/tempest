@@ -102,7 +102,8 @@ public final class DefaultActiveFinalAggregatorImpl<V> implements ActiveFinalAgg
   }
 
   @Override
-  public void triggerFinalAggregation(final List<Timespan> finalTimespans) {
+  public void triggerFinalAggregation(final List<Timespan> finalTimespans,
+                                      final long actualTriggerTime) {
     Collections.sort(finalTimespans, timespanComparator);
     for (final Timespan timespan : finalTimespans) {
       //System.out.println("BEFORE_GET: " + timespan);
@@ -118,7 +119,7 @@ public final class DefaultActiveFinalAggregatorImpl<V> implements ActiveFinalAgg
           //System.out.println("PUT_TIMESPAN: " + timespan);
           spanTracker.putAggregate(finalResult, timespan);
           outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,
-              new DepOutputAndResult<V>(aggregates.size(), finalResult),
+              actualTriggerTime, new DepOutputAndResult<V>(aggregates.size(), finalResult),
               timespan.startTime, timespan.endTime, timespan.startTime >= startTime));
         } catch (Exception e) {
           e.printStackTrace();
@@ -129,7 +130,9 @@ public final class DefaultActiveFinalAggregatorImpl<V> implements ActiveFinalAgg
   }
 
   @Override
-  public void triggerFinalAggregation(final List<Timespan> finalTimespans, final V activePartial) {
+  public void triggerFinalAggregation(final List<Timespan> finalTimespans,
+                                      final long actualTriggerTime,
+                                      final V activePartial) {
     Collections.sort(finalTimespans, timespanComparator);
     for (final Timespan timespan : finalTimespans) {
       //System.out.println("BEFORE_GET: " + timespan);
@@ -148,7 +151,7 @@ public final class DefaultActiveFinalAggregatorImpl<V> implements ActiveFinalAgg
         //System.out.println("PUT_TIMESPAN: " + timespan);
         spanTracker.putAggregate(finalResult, timespan);
         outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,
-            new DepOutputAndResult<V>(aggregates.size(), finalResult),
+            actualTriggerTime, new DepOutputAndResult<V>(aggregates.size(), finalResult),
             timespan.startTime, timespan.endTime, timespan.startTime >= startTime));
       } catch (Exception e) {
         e.printStackTrace();

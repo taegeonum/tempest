@@ -62,7 +62,7 @@ public final class TwitterEvaluation {
 
     // Parameters
     final String timescaleString = injector.getNamedInstance(TimescaleString.class);
-     String outputPath = injector.getNamedInstance(OutputPath.class);
+    String outputPath = injector.getNamedInstance(OutputPath.class);
     final List<Timescale> timescales = TimescaleParser.parseFromString(timescaleString);
     final int numThreads = injector.getNamedInstance(NumThreads.class);
     final double inputRate = injector.getNamedInstance(InputRate.class);

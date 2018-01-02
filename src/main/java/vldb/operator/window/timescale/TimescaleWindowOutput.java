@@ -46,6 +46,7 @@ public final class TimescaleWindowOutput<V> {
    */
   public final boolean fullyProcessed;
 
+  public final long actualStartTime;
 
   /**
    * TimeWindowOutput.
@@ -56,12 +57,14 @@ public final class TimescaleWindowOutput<V> {
    * @param fullyProcessed is this output fully processed or not
    */
   public TimescaleWindowOutput(final Timescale ts,
+                               final long actualStartTime,
                                final DepOutputAndResult<V> output,
                                final long startTime,
                                final long endTime,
                                final boolean fullyProcessed) {
     this.timescale = ts;
     this.output = output;
+    this.actualStartTime = actualStartTime;
     this.startTime = startTime;
     this.endTime = endTime;
     this.fullyProcessed = fullyProcessed;

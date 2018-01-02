@@ -187,6 +187,7 @@ public final class FlatFitMWO<I, V> implements TimescaleWindowOperator<I, V> {
 
   private void execution(final V newPartial, final long tickTime) {
 
+    final long actualTriggerTime = System.currentTimeMillis();
 
     //System.out.println( "tickTime: " + tickTime);
     partials.set(prevInd, newPartial);
@@ -247,7 +248,7 @@ public final class FlatFitMWO<I, V> implements TimescaleWindowOperator<I, V> {
       //System.out.println("[" + (tickTime - query.windowSize) + ", " + tickTime + ") =>" + childNodes);
 
       outputHandler.execute(new TimescaleWindowOutput<V>(query,
-          new DepOutputAndResult<V>(0, answer),
+              actualTriggerTime, new DepOutputAndResult<V>(0, answer),
           tickTime - query.windowSize, tickTime, true));
     }
 

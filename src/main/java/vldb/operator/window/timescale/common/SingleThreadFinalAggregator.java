@@ -104,7 +104,8 @@ public final class SingleThreadFinalAggregator<V> implements FinalAggregator<V> 
   }
 
   @Override
-  public void triggerFinalAggregation(final List<Timespan> finalTimespans) {
+  public void triggerFinalAggregation(final List<Timespan> finalTimespans,
+                                      final long actualTriggerTime) {
     Collections.sort(finalTimespans, timespanComparator);
     for (final Timespan timespan : finalTimespans) {
       //System.out.println("BEFORE_GET: " + timespan);
@@ -123,7 +124,7 @@ public final class SingleThreadFinalAggregator<V> implements FinalAggregator<V> 
           //System.out.println("PUT_TIMESPAN: " + timespan);
           spanTracker.putAggregate(finalResult, timespan);
           outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,
-              new DepOutputAndResult<V>(aggregates.size(), finalResult),
+              actualTriggerTime, new DepOutputAndResult<V>(aggregates.size(), finalResult),
               timespan.startTime, timespan.endTime, timespan.startTime >= startTime));
         } catch (Exception e) {
           e.printStackTrace();

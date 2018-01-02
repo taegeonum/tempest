@@ -24,14 +24,15 @@ import vldb.operator.window.timescale.pafas.dynamic.DynamicDPOutputLookupTableIm
 import vldb.operator.window.timescale.pafas.dynamic.DynamicOptimizedDependencyGraphImpl;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.pafas.vldb2018.FastCuttyCombinedDependencyGraph;
+import vldb.operator.window.timescale.pafas.vldb2018.FastFitDPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedDependencyGraph;
 import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedMWOConfiguration;
-import vldb.operator.window.timescale.pafas.vldb2018.FastFitDPSelectionAlgorithm;
 import vldb.operator.window.timescale.parameter.*;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
 import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -635,7 +636,7 @@ public final class TestRunner {
         // adjust input rate
       //}
     }
-    //countDownLatch.await();
+    countDownLatch.await();
     final long endTime = System.currentTimeMillis();
     metrics.setElapsedTime(endTime - currTime);
     mwo.close();
@@ -694,33 +695,28 @@ public final class TestRunner {
 
     @Override
     public void execute(final TimescaleWindowOutput<I> val) {
-      /*if (val.endTime <= totalTime) {
+      if (val.endTime <= totalTime) {
         if (countDownLatch != null) {
           countDownLatch.countDown();
         }
-      }*/
-      /*
+      }
+
       try {
-        writer.writeLine(prefix + "/" + val.timescale, System.currentTimeMillis()+"\t" + val.startTime + "\t" + val.endTime);
-      } catch (IOException e) {
+        final long endTime = System.currentTimeMillis();
+        final long elapsedTime = endTime - val.actualStartTime;
+        final StringBuilder sb = new StringBuilder();
+        sb.append(elapsedTime);
+        sb.append("\t");
+        sb.append(val.startTime);
+        sb.append("\t");
+        sb.append(val.endTime);
+
+        writer.writeLine(prefix + "/" + val.timescale, sb.toString());
+
+      } catch (final IOException e) {
         e.printStackTrace();
         throw new RuntimeException(e);
       }
-      */
-      /*
-      if (val.endTime % 100 == 0) {
-        final StringBuilder sb = new StringBuilder();
-        sb.append(id);
-        sb.append(" ts: ");
-        sb.append(val.timescale);
-        sb.append(", timespan: [");
-        sb.append(val.startTime);
-        sb.append(", ");
-        sb.append(val.endTime);
-        sb.append(")");
-        System.out.println(sb.toString());
-      }
-      */
     }
 
     @Override

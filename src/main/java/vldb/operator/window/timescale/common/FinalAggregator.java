@@ -29,5 +29,5 @@ public interface FinalAggregator<V> extends AutoCloseable {
    * Trigger final aggregations of the final timespans.
    * @param finalTimespans final timespans
    */
-  void triggerFinalAggregation(List<Timespan> finalTimespans);
+  void triggerFinalAggregation(List<Timespan> finalTimespans, long actualTriggerTime);
 }

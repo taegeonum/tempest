@@ -147,6 +147,9 @@ public final class CuttyMWO<I, V> implements TimescaleWindowOperator<I, V> {
   @Override
   public void execute(final I val) {
     if (val instanceof WindowTimeEvent) {
+
+      final long actualTriggerTime = System.currentTimeMillis();
+
       final long tickTime = ((WindowTimeEvent) val).time;
 
       final Tuple2<List<Timespan>, List<Timespan>> windows = startAndEndWindows(tickTime);
@@ -176,7 +179,7 @@ public final class CuttyMWO<I, V> implements TimescaleWindowOperator<I, V> {
         timeMonitor.finalTime += (ett - stt);
 
         outputHandler.execute(new TimescaleWindowOutput<V>(endWindow.timescale,
-            new DepOutputAndResult<V>(0, agg),
+                actualTriggerTime, new DepOutputAndResult<V>(0, agg),
             endWindow.startTime, endWindow.endTime, endWindow.startTime >= startTime));
       }
     } else {

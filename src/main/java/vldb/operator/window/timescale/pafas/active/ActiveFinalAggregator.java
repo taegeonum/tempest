@@ -16,5 +16,6 @@ public interface ActiveFinalAggregator<V> extends FinalAggregator<V> {
    * Trigger final aggregations of the final timespans.
    * @param finalTimespans final timespans
    */
-  void triggerFinalAggregation(List<Timespan> finalTimespans, V activePartial);
+  void triggerFinalAggregation(List<Timespan> finalTimespans,
+                               long actualTriggerTime, V activePartial);
 }

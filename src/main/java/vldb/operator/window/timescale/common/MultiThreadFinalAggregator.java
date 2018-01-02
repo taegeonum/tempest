@@ -119,7 +119,8 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
   }
 
   @Override
-  public void triggerFinalAggregation(final List<Timespan> finalTimespans) {
+  public void triggerFinalAggregation(final List<Timespan> finalTimespans,
+                                      final long actualTriggerTime) {
     Collections.sort(finalTimespans, timespanComparator);
     final Map<Node<List<V>>, DependencyGroup> timespanGroupMap = new HashMap<>(finalTimespans.size());
     final List<DependencyGroup> groups = new LinkedList<>();
@@ -159,7 +160,7 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
     final CountDownLatch countDownLatch = new CountDownLatch(groups.size());
     //final List<ForkJoinTask<Integer>> forkJoinTasks = new ArrayList<>(groups.size());
     for (final DependencyGroup group : groups) {
-      forkJoinPool.submit(new AggregateTask(group, countDownLatch));
+      forkJoinPool.submit(new AggregateTask(group, countDownLatch, actualTriggerTime));
     }
 
     try {
@@ -211,10 +212,14 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
 
     private final DependencyGroup group;
     private final CountDownLatch countDownLatch;
+    private final long actualTriggerTime;
 
-    public AggregateTask(final DependencyGroup group, final CountDownLatch countDownLatch) {
+    public AggregateTask(final DependencyGroup group,
+                         final CountDownLatch countDownLatch,
+                         final long actualTriggerTime) {
       this.group = group;
       this.countDownLatch = countDownLatch;
+      this.actualTriggerTime = actualTriggerTime;
     }
     @Override
     public Integer getRawResult() {
@@ -242,7 +247,7 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
         }
         spanTracker.putAggregate(finalResult, timespan);
         outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,
-            new DepOutputAndResult<V>(aggregates.size(), finalResult.get(0)),
+            actualTriggerTime, new DepOutputAndResult<V>(aggregates.size(), finalResult.get(0)),
             timespan.startTime, timespan.endTime, timespan.startTime >= startTime));
       }
       setRawResult(1);
