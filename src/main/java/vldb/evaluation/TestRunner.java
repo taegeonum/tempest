@@ -695,6 +695,7 @@ public final class TestRunner {
 
     @Override
     public void execute(final TimescaleWindowOutput<I> val) {
+
       if (val.endTime <= totalTime) {
         if (countDownLatch != null) {
           countDownLatch.countDown();
@@ -710,8 +711,10 @@ public final class TestRunner {
         sb.append(val.startTime);
         sb.append("\t");
         sb.append(val.endTime);
+        sb.append("\t");
+        sb.append(val.timescale);
 
-        writer.writeLine(prefix + "/" + val.timescale, sb.toString());
+        writer.writeLine(prefix + "_latency", sb.toString());
 
       } catch (final IOException e) {
         e.printStackTrace();
