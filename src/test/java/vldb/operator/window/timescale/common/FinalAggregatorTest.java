@@ -65,7 +65,7 @@ public final class FinalAggregatorTest {
     when(spanTracker.getDependentAggregates(new Timespan(0, 4, ts1))).thenReturn(input1);
     when(spanTracker.getDependentAggregates(new Timespan(-3, 2, ts2))).thenReturn(input2);
 
-    finalAggregator.triggerFinalAggregation(finalTimespans2);
+    finalAggregator.triggerFinalAggregation(finalTimespans2, 0);
     countDownLatch.await();
     verify(spanTracker).putAggregate(result.get(0), new Timespan(0, 4, ts1));
     verify(spanTracker).putAggregate(result.get(1), new Timespan(-3, 2, ts1));

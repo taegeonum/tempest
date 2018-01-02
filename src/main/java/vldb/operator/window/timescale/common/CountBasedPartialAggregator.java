@@ -102,6 +102,7 @@ public final class CountBasedPartialAggregator<I, V> implements PartialAggregato
     metrics.incrementPartial();
     count += 1;
     if (count == (nextSliceTime - prevSliceTime) * 100) {
+      final long actualTriggerTime = System.currentTimeMillis();
       final V partialAggregation = bucket;
       bucket = aggregator.init();
       //System.out.println("PARTIAL_SIZE: " + ((Map)partialAggregation).size() + "\t" + (prevSliceTime) + "-" + (nextSliceTime));
@@ -111,7 +112,7 @@ public final class CountBasedPartialAggregator<I, V> implements PartialAggregato
       nextSliceTime = spanTracker.getNextSliceTime(prevSliceTime);
       spanTracker.putAggregate(partialAggregation, new Timespan(prev, next, null));
       final List<Timespan> finalTimespans = spanTracker.getFinalTimespans(next);
-      finalAggregator.triggerFinalAggregation(finalTimespans);
+      finalAggregator.triggerFinalAggregation(finalTimespans, actualTriggerTime);
       count = 0;
     }
   }

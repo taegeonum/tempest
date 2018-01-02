@@ -30,7 +30,7 @@ public final class PartialAggregatorTest {
     final CountDownLatch countDownLatch = new CountDownLatch(3);
     final FinalAggregator<Map<Integer, Long>> finalAggregator = new FinalAggregator<Map<Integer, Long>>() {
       @Override
-      public void triggerFinalAggregation(final List<Timespan> finalTimespans) {
+      public void triggerFinalAggregation(final List<Timespan> finalTimespans, final long r) {
         result.add(finalTimespans);
         countDownLatch.countDown();
       }
