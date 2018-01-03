@@ -40,6 +40,7 @@ public final class PartialAggregatorTest {
 
       }
     };
+
     final Timescale ts1 = new Timescale(4, 2);
     final Timescale ts2 = new Timescale(5, 2);
     final Timescale ts3 = new Timescale(6, 3);

@@ -38,6 +38,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by taegeonum on 4/28/16.
@@ -431,8 +435,13 @@ public final class TestRunner {
     final Injector newInjector = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), conf));
     final Generator wordGenerator = newInjector.getInstance(FileWordGenerator.class);
 
+    final Lock lock = new ReentrantLock();
+    final Condition canProceed = lock.newCondition();
+    final AtomicLong tickTime = new AtomicLong(0);
+
     newInjector.bindVolatileInstance(TimeWindowOutputHandler.class,
-        new EvaluationHandler<>(operatorType.name(), null, totalTime, writer, prefix));
+        new EvaluationHandler<>(operatorType.name(), null, totalTime, writer, prefix,
+            tickTime, lock, canProceed));
     final TimescaleWindowOperator<Object, Map<String, Long>> mwo = newInjector.getInstance(TimescaleWindowOperator.class);
     final AggregationCounter aggregationCounter = newInjector.getInstance(AggregationCounter.class);
     final TimeMonitor timeMonitor = newInjector.getInstance(TimeMonitor.class);
@@ -545,11 +554,19 @@ public final class TestRunner {
     jcb.bindNamedParameter(OverlappingRatio.class, overlappingRatio + "");
 
     Collections.sort(timescales);
+
+    long totalOutputSize = 0;
+
     int numOutputs = 0;
     for (final Timescale ts : timescales) {
       numOutputs += (totalTime / ts.intervalSize);
+      totalOutputSize += (totalTime / ts.intervalSize) * ts.windowSize;
+      for (long etime = ts.intervalSize; etime < ts.windowSize; etime += ts.intervalSize) {
+        totalOutputSize += (etime - ts.windowSize);
+      }
     }
-    writer.writeLine(prefix + "_num_outputs", numOutputs+"");
+
+    writer.writeLine(prefix + "_num_outputs", numOutputs+"\t" + totalOutputSize);
     final CountDownLatch countDownLatch = new CountDownLatch(numOutputs);
 
     final String timescaleString = TimescaleParser.parseToString(timescales);
@@ -566,8 +583,14 @@ public final class TestRunner {
     final Injector newInjector = Tang.Factory.getTang().newInjector(Configurations.merge(jcb.build(), conf));
     final Generator wordGenerator = newInjector.getInstance(FileWordGenerator.class);
 
+    final Lock lock = new ReentrantLock();
+    final Condition canProceed = lock.newCondition();
+    final AtomicLong processedTickTime = new AtomicLong(0);
+
     newInjector.bindVolatileInstance(TimeWindowOutputHandler.class,
-        new EvaluationHandler<>(operatorType.name(), countDownLatch, totalTime, writer, prefix));
+        new EvaluationHandler<>(operatorType.name(), countDownLatch, totalTime, writer, prefix,
+            processedTickTime, lock, canProceed));
+
     final TimeMonitor timeMonitor = newInjector.getInstance(TimeMonitor.class);
     final long bst = System.nanoTime();
     final TimescaleWindowOperator<Object, Map<String, Long>> mwo = newInjector.getInstance(TimescaleWindowOperator.class);
@@ -596,7 +619,18 @@ public final class TestRunner {
 
     final long currTime = System.currentTimeMillis();
     long currInput = 0;
+
     while (tick <= totalTime) {
+
+      // Wait until all outputs are generated
+      if (tick > processedTickTime.get() + 3) {
+        lock.lock();
+        if (tick <= processedTickTime.get() + 3) {
+          canProceed.await();
+        }
+        lock.unlock();
+      }
+
       //System.out.println("totalTime: " + (totalTime*1000) + ", elapsed: " + (System.currentTimeMillis() - currTime));
       final String word = wordGenerator.nextString();
       final long cTime = System.nanoTime();
@@ -636,6 +670,7 @@ public final class TestRunner {
         // adjust input rate
       //}
     }
+
     countDownLatch.await();
     final long endTime = System.currentTimeMillis();
     metrics.setElapsedTime(endTime - currTime);
@@ -682,19 +717,40 @@ public final class TestRunner {
     private final long totalTime;
     private final OutputWriter writer;
     private final String prefix;
+    private final AtomicLong tickTime;
+    private final Lock lock;
+    private final Condition canProceed;
+    private final AtomicLong totalOutputSize;
 
-    public EvaluationHandler(final String id, final CountDownLatch countDownLatch, final long totalTime,
+    public EvaluationHandler(final String id, final CountDownLatch countDownLatch,
+                             final long totalTime,
                              final OutputWriter writer,
-                             final String prefix) {
+                             final String prefix,
+                             final AtomicLong tickTime,
+                             final Lock lock,
+                             final Condition canProceed) {
       this.id = id;
       this.countDownLatch = countDownLatch;
       this.totalTime = totalTime;
       this.writer = writer;
       this.prefix = prefix;
+      this.tickTime = tickTime;
+      this.lock = lock;
+      this.canProceed = canProceed;
+      this.totalOutputSize = new AtomicLong(0);
     }
 
     @Override
     public void execute(final TimescaleWindowOutput<I> val) {
+
+      final long ttime = tickTime.get();
+      if (ttime <= val.endTime) {
+        if (tickTime.compareAndSet(ttime, val.endTime + 1)) {
+          lock.lock();
+          canProceed.signal();
+          lock.unlock();
+        }
+      }
 
       if (val.endTime <= totalTime) {
         if (countDownLatch != null) {
