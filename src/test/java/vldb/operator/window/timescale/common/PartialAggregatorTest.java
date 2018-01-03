@@ -10,6 +10,7 @@ import vldb.operator.window.aggregator.CAAggregator;
 import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
 import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.Timescale;
+import vldb.operator.window.timescale.pafas.Node;
 import vldb.operator.window.timescale.parameter.StartTime;
 import vldb.test.util.IntegerExtractor;
 
@@ -33,6 +34,11 @@ public final class PartialAggregatorTest {
       public void triggerFinalAggregation(final List<Timespan> finalTimespans, final long r) {
         result.add(finalTimespans);
         countDownLatch.countDown();
+      }
+
+      @Override
+      public void triggerFinalAggregation(final Map<Long, Node<Map<Integer, Long>>> nodes, final long endTime, final long actualTriggerTime) {
+
       }
 
       @Override

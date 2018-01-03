@@ -21,6 +21,7 @@ import vldb.operator.OutputEmitter;
 import vldb.operator.window.aggregator.CAAggregator;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOutput;
+import vldb.operator.window.timescale.pafas.Node;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.StartTime;
 
@@ -28,6 +29,7 @@ import javax.inject.Inject;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
@@ -129,6 +131,11 @@ public final class DefaultFinalAggregator<V> implements FinalAggregator<V> {
         });
       }
     }
+  }
+
+  @Override
+  public void triggerFinalAggregation(final Map<Long, Node<V>> nodes, final long endTime, final long actualTriggerTime) {
+    throw new RuntimeException("Not supported");
   }
 
   @Override

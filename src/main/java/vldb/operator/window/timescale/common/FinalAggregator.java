@@ -16,8 +16,10 @@
 package vldb.operator.window.timescale.common;
 
 import org.apache.reef.tang.annotations.DefaultImplementation;
+import vldb.operator.window.timescale.pafas.Node;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * FinalAggregator does final aggregates.
@@ -30,4 +32,6 @@ public interface FinalAggregator<V> extends AutoCloseable {
    * @param finalTimespans final timespans
    */
   void triggerFinalAggregation(List<Timespan> finalTimespans, long actualTriggerTime);
+
+  void triggerFinalAggregation(Map<Long, Node<V>> nodes, long endTime, long actualTriggerTime);
 }

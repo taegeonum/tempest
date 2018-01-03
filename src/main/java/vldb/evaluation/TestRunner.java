@@ -38,6 +38,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -709,7 +711,6 @@ public final class TestRunner {
     }
   }
 
-
   public static final class EvaluationHandler<I, O> implements TimeWindowOutputHandler<I, O> {
 
     private final String id;
@@ -720,7 +721,8 @@ public final class TestRunner {
     private final AtomicLong tickTime;
     private final Lock lock;
     private final Condition canProceed;
-    private final AtomicLong totalOutputSize;
+
+    private final ExecutorService executorService;
 
     public EvaluationHandler(final String id, final CountDownLatch countDownLatch,
                              final long totalTime,
@@ -737,7 +739,7 @@ public final class TestRunner {
       this.tickTime = tickTime;
       this.lock = lock;
       this.canProceed = canProceed;
-      this.totalOutputSize = new AtomicLong(0);
+      this.executorService = Executors.newSingleThreadExecutor();
     }
 
     @Override
@@ -752,30 +754,35 @@ public final class TestRunner {
         }
       }
 
-      if (val.endTime <= totalTime) {
-        if (countDownLatch != null) {
-          countDownLatch.countDown();
+      executorService.submit(new Runnable() {
+        @Override
+        public void run() {
+          if (val.endTime <= totalTime) {
+            if (countDownLatch != null) {
+              countDownLatch.countDown();
+            }
+          }
+
+          try {
+            final long endTime = System.currentTimeMillis();
+            final long elapsedTime = endTime - val.actualStartTime;
+            final StringBuilder sb = new StringBuilder();
+            sb.append(elapsedTime);
+            sb.append("\t");
+            sb.append(val.startTime);
+            sb.append("\t");
+            sb.append(val.endTime);
+            sb.append("\t");
+            sb.append(val.timescale);
+
+            writer.writeLine(prefix + "_latency", sb.toString());
+
+          } catch (final IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+          }
         }
-      }
-
-      try {
-        final long endTime = System.currentTimeMillis();
-        final long elapsedTime = endTime - val.actualStartTime;
-        final StringBuilder sb = new StringBuilder();
-        sb.append(elapsedTime);
-        sb.append("\t");
-        sb.append(val.startTime);
-        sb.append("\t");
-        sb.append(val.endTime);
-        sb.append("\t");
-        sb.append(val.timescale);
-
-        writer.writeLine(prefix + "_latency", sb.toString());
-
-      } catch (final IOException e) {
-        e.printStackTrace();
-        throw new RuntimeException(e);
-      }
+      });
     }
 
     @Override

@@ -21,6 +21,7 @@ import vldb.operator.window.aggregator.CAAggregator;
 import javax.inject.Inject;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -96,9 +97,16 @@ public final class ComputeByKeyAggregator<I, K, V> implements CAAggregator<I, Ma
    */
   @Override
   public Map<K, V> aggregate(final Collection<Map<K, V>> partials) {
+
+    if (partials.size() == 1) {
+      final Iterator<Map<K, V>> iter = partials.iterator();
+      return iter.next();
+    }
+
     final Map<K, V> result = new HashMap<>();
     //long numAgg = 0;
     //System.out.print("FINAL_PARTIALS ");
+
     for (final Map<K, V> partial : partials) {
       //System.out.print(partial.size() + ", ");
       rollup(result, partial);

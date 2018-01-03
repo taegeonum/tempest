@@ -47,16 +47,12 @@ public final class DPOutputLookupTableImpl<V> implements OutputLookupTable<V> {
    * @param output an output
    */
   public void saveOutput(final long startTime, final long endTime, final V output) {
-    ConcurrentHashMap<Long, V> row = table.get(startTime);
+    ConcurrentHashMap<Long, V> row = table.get(endTime);
     if (row == null) {
-      table.putIfAbsent(startTime, new ConcurrentHashMap<Long, V>());
-      row = table.get(startTime);
+      table.putIfAbsent(endTime, new ConcurrentHashMap<Long, V>());
+      row = table.get(endTime);
     }
-    row.putIfAbsent(endTime, output);
-    if (startTime == -3 || startTime == 81 && endTime == 84) {
-      System.out.println("!!!! " + startTime + ", " + endTime + ", " + output);
-      System.out.println("!!!! " + row);
-    }
+    row.putIfAbsent(startTime, output);
   }
 
   /**
@@ -69,7 +65,7 @@ public final class DPOutputLookupTableImpl<V> implements OutputLookupTable<V> {
   public V lookup(final long startTime, final long endTime) throws NotFoundException {
     final V entry;
     try {
-      entry = table.get(startTime).get(endTime);
+      entry = table.get(endTime).get(startTime);
     } catch (final Exception e) {
       throw new NotFoundException("Cannot find element: at (" + startTime + ", " + endTime + ")");
     }
@@ -82,15 +78,15 @@ public final class DPOutputLookupTableImpl<V> implements OutputLookupTable<V> {
 
   /**
    * Lookup multiple outputs which start at the startTime.
-   * @param startTime start time of the outputs
-   * @return outputs which start at the startTime.
+   * @param endTime end time of the outputs
+   * @return outputs which start at the endTime.
    * @throws edu.snu.tempest.operator.common.NotFoundException
    */
-  public ConcurrentMap<Long, V> lookup(final long startTime) throws NotFoundException {
-    if (table.get(startTime) == null) {
-      throw new NotFoundException("Not found startTime: " + startTime);
+  public ConcurrentMap<Long, V> lookup(final long endTime) throws NotFoundException {
+    if (table.get(endTime) == null) {
+      throw new NotFoundException("Not found endTime: " + endTime);
     }
-    return table.get(startTime);
+    return table.get(endTime);
   }
 
   /**
@@ -113,8 +109,8 @@ public final class DPOutputLookupTableImpl<V> implements OutputLookupTable<V> {
    * @param startTime start time of the outputs.
    */
   @Override
-  public void deleteOutputs(final long startTime) {
-    table.remove(startTime);
+  public void deleteOutputs(final long endTime) {
+    table.remove(endTime);
   }
 
   /**
@@ -124,9 +120,9 @@ public final class DPOutputLookupTableImpl<V> implements OutputLookupTable<V> {
    */
   @Override
   public void deleteOutput(final long startTime, final long endTime){
-    ConcurrentMap<Long, V> row = table.get(startTime);
+    ConcurrentMap<Long, V> row = table.get(endTime);
     if (row != null){
-      row.remove(endTime);
+      row.remove(startTime);
     }
   }
 }

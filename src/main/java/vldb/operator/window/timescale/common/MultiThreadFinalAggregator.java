@@ -187,6 +187,11 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
   }
 
   @Override
+  public void triggerFinalAggregation(final Map<Long, Node<V>> nodes, final long endTime, final long actualTriggerTime) {
+    throw new RuntimeException("Not supported");
+  }
+
+  @Override
   public void close() throws Exception {
     if (closed.compareAndSet(false, true)) {
       forkJoinPool.shutdown();

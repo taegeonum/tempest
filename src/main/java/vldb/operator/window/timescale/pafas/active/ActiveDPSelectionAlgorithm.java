@@ -12,8 +12,6 @@ import vldb.operator.window.timescale.parameter.TradeOffFactor;
 
 import javax.inject.Inject;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Logger;
 
 public class ActiveDPSelectionAlgorithm<T> implements DependencyGraph.SelectionAlgorithm<T> {
@@ -74,7 +72,7 @@ public class ActiveDPSelectionAlgorithm<T> implements DependencyGraph.SelectionA
 
     // Initialize
     for (int i = 0; i < length + 1; i++) {
-      if (i == length) {
+      if (i == 0) {
         costArray.add(i, 0.0);
       } else {
         costArray.add(i, Double.POSITIVE_INFINITY);
@@ -83,25 +81,25 @@ public class ActiveDPSelectionAlgorithm<T> implements DependencyGraph.SelectionA
     }
 
     for (int currIndex = length - 1; currIndex >= 0; currIndex -= 1) {
-      final List<Node<T>> availableNodes = getAvailableNodes(start, reducedEnd, currIndex, length);
+      final List<Node<T>> availableNodes = getAvailableNodes(start, reducedEnd, currIndex, (end-start));
 
       // Dynamic programming
       for (final Node<T> node : availableNodes) {
         final int nodeEndIndex = (int)(adjustTime(reducedEnd, node.end) - start);
         final int nodeStartIndex = (int)(adjustTime(reducedEnd-1, node.start) - start);
 
-        final double cost = 1 + costArray.get(nodeEndIndex);
-        if (cost < costArray.get(nodeStartIndex)) {
-          costArray.set(nodeStartIndex, cost);
-          nodeArray.set(nodeStartIndex, node);
+        final double cost = 1 + costArray.get(nodeStartIndex);
+        if (cost < costArray.get(nodeEndIndex)) {
+          costArray.set(nodeEndIndex, cost);
+          nodeArray.set(nodeEndIndex, node);
         }
       }
     }
 
     // Build the solution
     final List<Node<T>> solution = new LinkedList<>();
-    int index = 0;
-    while (index < length) {
+    int index = length;
+    while (index > 0) {
       final Node<T> solutionNode = nodeArray.get(index);
       if (solutionNode == null) {
         // This is active partial point
@@ -109,7 +107,7 @@ public class ActiveDPSelectionAlgorithm<T> implements DependencyGraph.SelectionA
       }
 
       solution.add(solutionNode);
-      index += (solutionNode.end - solutionNode.start);
+      index -= (solutionNode.end - solutionNode.start);
     }
 
     //System.out.println("[" + start + ", " + end + "): " + solution);
@@ -117,20 +115,24 @@ public class ActiveDPSelectionAlgorithm<T> implements DependencyGraph.SelectionA
     return solution;
   }
 
-  private List<Node<T>> getAvailableNodes(final long start, final long end, final int currIndex, final int length) {
+  private List<Node<T>> getAvailableNodes(final long start,
+                                          final long end,
+                                          final int currIndex,
+                                          final long length) {
     final List<Node<T>> availableNodes = new LinkedList<>();
-    ConcurrentMap<Long, Node<T>> availableFinalNodes = null;
-    final long scanStartPoint = start + currIndex;
+    final Map<Long, Node<T>> availableFinalNodes = new HashMap<>();
+    // scanStartPoint is the end time
+    final long scanEndPoint = end - currIndex;
 
     try {
-      availableFinalNodes = finalTimespans.lookup(scanStartPoint);
+      final Map<Long, Node<T>> nodes = finalTimespans.lookup(scanEndPoint);
+      availableFinalNodes.putAll(nodes);
     } catch (final NotFoundException e) {
-      availableFinalNodes = new ConcurrentHashMap<>();
     } finally {
       // Add startTime + period nodes
-      if (scanStartPoint < startTime) {
+      if (scanEndPoint <= startTime) {
         try {
-          final Map<Long, Node<T>> additionalNodes = finalTimespans.lookup(scanStartPoint + period);
+          final Map<Long, Node<T>> additionalNodes = finalTimespans.lookup(scanEndPoint + period);
           if (additionalNodes != null) {
             availableFinalNodes.putAll(additionalNodes);
           }
@@ -143,14 +145,11 @@ public class ActiveDPSelectionAlgorithm<T> implements DependencyGraph.SelectionA
     // Add available finals
     for (final Map.Entry<Long, Node<T>> entry : availableFinalNodes.entrySet()) {
       final Node<T> finalNode = entry.getValue();
-      final long endTime = entry.getKey();
 
       if (!finalNode.isNotShared) {
-        if (finalNode.start >= end) {
-          availableNodes.add(finalNode);
-        } else {
-          if (!((endTime - scanStartPoint) == (end - start)) &&
-              !((scanStartPoint < end) && (entry.getKey() > end))) {
+        if ((start <= finalNode.start && finalNode.end <= end) ||
+            (start + period <= finalNode.start && finalNode.end <= end + period )) {
+          if (finalNode.end - finalNode.start < length) {
             availableNodes.add(finalNode);
           }
         }
@@ -158,9 +157,22 @@ public class ActiveDPSelectionAlgorithm<T> implements DependencyGraph.SelectionA
     }
 
     // Add partials
-    final Node<T> availablePartialNode = partialTimespans.getNextPartialTimespanNode(currIndex + start);
-    if (availablePartialNode != null) {
-      availableNodes.add(availablePartialNode);
+    long partialEndTime = 0;
+    if (end - currIndex <= 0) {
+      partialEndTime = end - currIndex + period;
+    } else {
+      partialEndTime = end - currIndex;
+    }
+
+    for (long i = partialEndTime - 1; i >= start; i--) {
+      final Node<T> availablePartialNode = partialTimespans.getNextPartialTimespanNode(i);
+      if (availablePartialNode != null) {
+        if (availablePartialNode.end == partialEndTime) {
+          availableNodes.add(availablePartialNode);
+        }
+
+        break;
+      }
     }
 
     return availableNodes;

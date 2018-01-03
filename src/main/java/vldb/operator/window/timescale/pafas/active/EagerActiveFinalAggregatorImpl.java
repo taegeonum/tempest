@@ -25,6 +25,7 @@ import vldb.operator.window.timescale.TimescaleWindowOutput;
 import vldb.operator.window.timescale.common.DepOutputAndResult;
 import vldb.operator.window.timescale.common.SpanTracker;
 import vldb.operator.window.timescale.common.Timespan;
+import vldb.operator.window.timescale.pafas.Node;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.StartTime;
 
@@ -32,6 +33,7 @@ import javax.inject.Inject;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
@@ -121,6 +123,11 @@ public final class EagerActiveFinalAggregatorImpl<V> implements ActiveFinalAggre
           actualTriggerTime, new DepOutputAndResult<V>(aggregates.size(), finalResult),
           timespan.startTime, timespan.endTime, timespan.startTime >= startTime));
     }
+  }
+
+  @Override
+  public void triggerFinalAggregation(final Map<Long, Node<V>> nodes, final long endTime, final long actualTriggerTime) {
+    throw new RuntimeException("Not supported");
   }
 
   @Override

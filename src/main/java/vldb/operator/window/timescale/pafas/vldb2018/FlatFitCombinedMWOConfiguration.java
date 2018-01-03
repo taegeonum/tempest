@@ -24,6 +24,7 @@ import vldb.operator.window.timescale.pafas.DependencyGraph;
 import vldb.operator.window.timescale.pafas.PafasMWO;
 import vldb.operator.window.timescale.pafas.PartialTimespans;
 import vldb.operator.window.timescale.pafas.StaticSpanTrackerImpl;
+import vldb.operator.window.timescale.pafas.vldb2018.singlethread.SingleThreadPartialAggregator;
 
 /**
  * A helper class for static MTS window configuration.
@@ -40,7 +41,7 @@ public final class FlatFitCombinedMWOConfiguration extends TimescaleWindowBaseCo
         .bindImplementation(OutputLookupTable.class, OUTPUT_LOOKUP_TABLE)
         .bindImplementation(SpanTracker.class, StaticSpanTrackerImpl.class)
         .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
-        .bindImplementation(PartialAggregator.class, DefaultPartialAggregator.class)
+        .bindImplementation(PartialAggregator.class, SingleThreadPartialAggregator.class)
         .bindImplementation(PartialTimespans.class, SizeOnePartialTimespans.class)
         .bindImplementation(FinalAggregator.class, SingleThreadFinalAggregator.class)
         .bindImplementation(DependencyGraph.class, DEPENDENCY_GRAPH)
