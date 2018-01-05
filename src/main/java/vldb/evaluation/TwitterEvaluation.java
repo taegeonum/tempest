@@ -49,6 +49,7 @@ public final class TwitterEvaluation {
                 .registerShortNameOfClass(WindowGap.class)
                     .registerShortNameOfClass(SharedFinalNum.class)
                         .registerShortNameOfClass(OverlappingRatio.class)
+                            .registerShortNameOfClass(MultiThreadFinalAggregator.ParallelThreshold.class)
         //.registerShortNameOfClass(NumOfKey.class)
         .processCommandLine(args);
 
