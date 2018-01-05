@@ -672,6 +672,8 @@ public final class TestRunner {
         }
         lock.unlock();
 
+        System.out.println("TICK: " + tick + ", processedTickTime: " + processedTickTime.get());
+
         final StringBuilder sb1 = new StringBuilder();
         sb1.append(System.currentTimeMillis()); sb1.append("\t"); sb1.append(Profiler.getMemoryUsage()); sb1.append("\t");
         sb1.append(metrics.storedPartial);
