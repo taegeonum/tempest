@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package vldb.operator.window.timescale.common;
+package vldb.operator.window.timescale.pafas.vldb2018.singlethread;
 
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.evaluation.Metrics;
@@ -23,6 +23,10 @@ import vldb.operator.window.aggregator.CAAggregator;
 import vldb.operator.window.timescale.TimeMonitor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOutput;
+import vldb.operator.window.timescale.common.DepOutputAndResult;
+import vldb.operator.window.timescale.common.FinalAggregator;
+import vldb.operator.window.timescale.common.SpanTracker;
+import vldb.operator.window.timescale.common.Timespan;
 import vldb.operator.window.timescale.pafas.Node;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.StartTime;

@@ -24,6 +24,7 @@ import vldb.operator.window.timescale.pafas.DependencyGraph;
 import vldb.operator.window.timescale.pafas.PafasMWO;
 import vldb.operator.window.timescale.pafas.PartialTimespans;
 import vldb.operator.window.timescale.pafas.StaticSpanTrackerImpl;
+import vldb.operator.window.timescale.pafas.vldb2018.singlethread.SingleThreadFinalAggregator;
 
 /**
  * A helper class for static MTS window configuration.

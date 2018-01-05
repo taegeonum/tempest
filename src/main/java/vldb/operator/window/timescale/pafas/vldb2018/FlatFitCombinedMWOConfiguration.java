@@ -19,7 +19,10 @@ import org.apache.reef.tang.formats.ConfigurationModule;
 import org.apache.reef.tang.formats.RequiredImpl;
 import vldb.operator.window.timescale.TimescaleWindowBaseConfiguration;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
-import vldb.operator.window.timescale.common.*;
+import vldb.operator.window.timescale.common.FinalAggregator;
+import vldb.operator.window.timescale.common.OutputLookupTable;
+import vldb.operator.window.timescale.common.PartialAggregator;
+import vldb.operator.window.timescale.common.SpanTracker;
 import vldb.operator.window.timescale.pafas.DependencyGraph;
 import vldb.operator.window.timescale.pafas.PafasMWO;
 import vldb.operator.window.timescale.pafas.PartialTimespans;
@@ -33,6 +36,7 @@ public final class FlatFitCombinedMWOConfiguration extends TimescaleWindowBaseCo
 
     public static final RequiredImpl<OutputLookupTable> OUTPUT_LOOKUP_TABLE = new RequiredImpl<>();
     public static final RequiredImpl<DependencyGraph> DEPENDENCY_GRAPH = new RequiredImpl<>();
+    public static final RequiredImpl<FinalAggregator> FINAL_AGGREGATOR = new RequiredImpl<>();
 
     public static final RequiredImpl<DependencyGraph.SelectionAlgorithm> SELECTION_ALGORITHM = new RequiredImpl<>();
     public static final ConfigurationModule CONF = new FlatFitCombinedMWOConfiguration()
@@ -43,7 +47,7 @@ public final class FlatFitCombinedMWOConfiguration extends TimescaleWindowBaseCo
         .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
         .bindImplementation(PartialAggregator.class, SingleThreadPartialAggregator.class)
         .bindImplementation(PartialTimespans.class, SizeOnePartialTimespans.class)
-        .bindImplementation(FinalAggregator.class, SingleThreadFinalAggregator.class)
+        .bindImplementation(FinalAggregator.class, FINAL_AGGREGATOR)
         .bindImplementation(DependencyGraph.class, DEPENDENCY_GRAPH)
         .build();
 }

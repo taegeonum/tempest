@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
    * DependencyGraphNode.
@@ -65,6 +66,12 @@ public final class Node<T> {
   public boolean intermediate;
 
   public boolean costCalculated = false;
+
+  public int height = 0;
+
+  public Node<T> dependentNode;
+
+  public final ReentrantLock lock = new ReentrantLock();
 
 
   /**
@@ -169,6 +176,10 @@ public final class Node<T> {
       if (lastChildNode.end < n.end) {
         lastChildNode = n;
       }
+    }
+
+    if (n.end == end) {
+      dependentNode = n;
     }
 
 

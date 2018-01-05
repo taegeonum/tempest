@@ -27,6 +27,8 @@ import vldb.operator.window.timescale.pafas.vldb2018.FastCuttyCombinedDependency
 import vldb.operator.window.timescale.pafas.vldb2018.FastFitDPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedDependencyGraph;
 import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedMWOConfiguration;
+import vldb.operator.window.timescale.pafas.vldb2018.singlethread.MultiThreadFinalAggregator;
+import vldb.operator.window.timescale.pafas.vldb2018.singlethread.SingleThreadFinalAggregator;
 import vldb.operator.window.timescale.parameter.*;
 import vldb.operator.window.timescale.profiler.AggregationCounter;
 import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
@@ -73,6 +75,8 @@ public final class TestRunner {
     Cuttyy,
     FltFit,
     FastFit,
+    CuttyyP, // cutty parallel
+    FastFitP, // fast fit parallel
     FastCutty,
   }
 
@@ -98,6 +102,7 @@ public final class TestRunner {
             .set(FlatFitCombinedMWOConfiguration.SELECTION_ALGORITHM, FastFitDPSelectionAlgorithm.class)
             .set(FlatFitCombinedMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, FastCuttyCombinedDependencyGraph.class)
+            .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, SingleThreadFinalAggregator.class)
             .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
             .build();
       case FastFit:
@@ -107,6 +112,27 @@ public final class TestRunner {
             .set(FlatFitCombinedMWOConfiguration.SELECTION_ALGORITHM, FastFitDPSelectionAlgorithm.class)
             .set(FlatFitCombinedMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, FlatFitCombinedDependencyGraph.class)
+            .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, SingleThreadFinalAggregator.class)
+            .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
+            .build();
+      case FastFitP:
+        return FlatFitCombinedMWOConfiguration.CONF
+            .set(FlatFitCombinedMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(FlatFitCombinedMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(FlatFitCombinedMWOConfiguration.SELECTION_ALGORITHM, FastFitDPSelectionAlgorithm.class)
+            .set(FlatFitCombinedMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
+            .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, FlatFitCombinedDependencyGraph.class)
+            .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, MultiThreadFinalAggregator.class)
+            .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
+            .build();
+      case CuttyyP:
+        return FlatFitCombinedMWOConfiguration.CONF
+            .set(FlatFitCombinedMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(FlatFitCombinedMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(FlatFitCombinedMWOConfiguration.SELECTION_ALGORITHM, FastFitDPSelectionAlgorithm.class)
+            .set(FlatFitCombinedMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
+            .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, FastCuttyCombinedDependencyGraph.class)
+            .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, MultiThreadFinalAggregator.class)
             .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
             .build();
       case FastAc:

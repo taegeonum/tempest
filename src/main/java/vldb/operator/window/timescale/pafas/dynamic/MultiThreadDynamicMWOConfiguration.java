@@ -20,7 +20,7 @@ import org.apache.reef.tang.formats.RequiredImpl;
 import vldb.operator.window.timescale.TimescaleWindowBaseConfiguration;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.common.FinalAggregator;
-import vldb.operator.window.timescale.common.MultiThreadFinalAggregator;
+import vldb.operator.window.timescale.pafas.vldb2018.singlethread.MultiThreadFinalAggregator;
 import vldb.operator.window.timescale.common.SpanTracker;
 import vldb.operator.window.timescale.pafas.DependencyGraph;
 

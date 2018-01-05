@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package vldb.operator.window.timescale.common;
+package vldb.operator.window.timescale.pafas.vldb2018.singlethread;
 
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
 import org.apache.reef.tang.annotations.Parameter;
 import vldb.evaluation.Metrics;
 import vldb.evaluation.parameter.EndTime;
@@ -23,16 +25,15 @@ import vldb.operator.window.aggregator.CAAggregator;
 import vldb.operator.window.timescale.TimeMonitor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOutput;
+import vldb.operator.window.timescale.common.*;
+import vldb.operator.window.timescale.pafas.DependencyGraph;
 import vldb.operator.window.timescale.pafas.Node;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicDependencyGraph;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
@@ -74,9 +75,15 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
 
   private final ForkJoinPool forkJoinPool;
   private final ParallelTreeAggregator<?, V> parallelAggregator;
-  private final DynamicDependencyGraph<List<V>> dependencyGraph;
+  private final DependencyGraph<V> dependencyGraph;
+
+  private final int threshold;
 
   //private final ConcurrentMap<Timescale, ExecutorService> executorServiceMap;
+
+  @NamedParameter(short_name = "pt", default_value = "100")
+  public static final class ParallelThreshold implements Name<Integer> {
+  }
 
   /**
    * Default overlapping window operator.
@@ -84,20 +91,21 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
    */
   @Inject
   private MultiThreadFinalAggregator(final SpanTracker<List<V>> spanTracker,
-                                     final DynamicDependencyGraph<List<V>> dependencyGraph,
+                                     final DependencyGraph<V> dependencyGraph,
                                      final TimeWindowOutputHandler<V, ?> outputHandler,
                                      final CAAggregator<?, V> aggregateFunction,
                                      @Parameter(NumThreads.class) final int numThreads,
                                      @Parameter(StartTime.class) final long startTime,
                                      final Metrics metrics,
                                      final TimeMonitor timeMonitor,
-                                     final SharedForkJoinPool sharedForkJoinPool,
+                                     @Parameter(ParallelThreshold.class) final int threshold,
                                      @Parameter(EndTime.class) final long endTime) {
     LOG.info("START " + this.getClass());
     this.dependencyGraph = dependencyGraph;
     this.timeMonitor = timeMonitor;
+    this.threshold = threshold;
     this.spanTracker = spanTracker;
-    this.forkJoinPool = sharedForkJoinPool.getForkJoinPool();
+    this.forkJoinPool = ForkJoinPool.commonPool();
     this.outputHandler = outputHandler;
     this.parallelAggregator = new ParallelTreeAggregator<>(numThreads, 30 * numThreads, aggregateFunction, forkJoinPool);
     this.numThreads = numThreads;
@@ -118,9 +126,30 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
     return sb.toString();
   }
 
+  private List<Node<V>> getSortedTimespans(final Map<Long, Node<V>> finalTimespans) {
+    final List<Node<V>> list = new ArrayList<>(finalTimespans.size());
+    for (final Map.Entry<Long, Node<V>> ft : finalTimespans.entrySet()) {
+      list.add(ft.getValue());
+    }
+
+    list.sort(new Comparator<Node<V>>() {
+      @Override
+      public int compare(final Node<V> o1, final Node<V> o2) {
+        if (o1.start < o2.start) {
+          return -1;
+        } else {
+          return 1;
+        }
+      }
+    });
+
+    return list;
+  }
+
   @Override
   public void triggerFinalAggregation(final List<Timespan> finalTimespans,
                                       final long actualTriggerTime) {
+    /*
     Collections.sort(finalTimespans, timespanComparator);
     final Map<Node<List<V>>, DependencyGroup> timespanGroupMap = new HashMap<>(finalTimespans.size());
     final List<DependencyGroup> groups = new LinkedList<>();
@@ -152,6 +181,7 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
         }
       }
     }
+
     final long gtEnd = System.nanoTime();
     timeMonitor.groupingTime += (gtEnd - st);
 
@@ -168,6 +198,9 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
+
+    */
+
     /*
     for (final ForkJoinTask<Integer> forkJoinTask : forkJoinTasks) {
       try {
@@ -181,14 +214,37 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
     }
     */
 
+    /*
     // End aggregate
     final long et = System.nanoTime();
     timeMonitor.finalTime += (et - st);
+    */
   }
 
   @Override
-  public void triggerFinalAggregation(final Map<Long, Node<V>> nodes, final long endTime, final long actualTriggerTime) {
-    throw new RuntimeException("Not supported");
+  public void triggerFinalAggregation(final Map<Long, Node<V>> nodes,
+                                      final long endTime,
+                                      final long actualTriggerTime) {
+    final List<Node<V>> sortedNodes = getSortedTimespans(nodes);
+    final List<Node<V>> independentNodes = new LinkedList<>();
+
+    while (!sortedNodes.isEmpty()) {
+      final Node<V> firstNode = sortedNodes.remove(0);
+      independentNodes.add(firstNode);
+
+      Node<V> dependentNode = firstNode.dependentNode;
+
+      while (!dependentNode.partial) {
+        sortedNodes.remove(dependentNode);
+        dependentNode = dependentNode.dependentNode;
+      }
+    }
+
+
+    for (final Node<V> independentNode : independentNodes) {
+      // compute aggregation
+      forkJoinPool.submit(new AggregateTask(independentNode, endTime, actualTriggerTime));
+    }
   }
 
   @Override
@@ -212,129 +268,102 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
     }
   }
 
-  final class AggregateTask extends ForkJoinTask<Integer> {
-    private Integer result;
+  final class RecursiveAggregate extends RecursiveTask<V> {
 
-    private final DependencyGroup group;
-    private final CountDownLatch countDownLatch;
-    private final long actualTriggerTime;
+    private final List<V> aggregates;
 
-    public AggregateTask(final DependencyGroup group,
-                         final CountDownLatch countDownLatch,
-                         final long actualTriggerTime) {
-      this.group = group;
-      this.countDownLatch = countDownLatch;
-      this.actualTriggerTime = actualTriggerTime;
-    }
-    @Override
-    public Integer getRawResult() {
-      return result;
-    }
-
-    @Override
-    protected void setRawResult(final Integer value) {
-      this.result = value;
-    }
-
-    @Override
-    protected boolean exec() {
-      for (final Node<List<V>> myNode : group.group) {
-        final Timespan timespan = new Timespan(myNode.start, myNode.end, myNode.timescale);
-        final List<List<V>> aggregates = spanTracker.getDependentAggregates(timespan);
-        // Start aggregate
-        final List<ForkJoinTask<V>> forkJoinTasks = new ArrayList<>(numThreads);
-        for (int i = 0; i < numThreads; i++) {
-          forkJoinTasks.add(new Task2(i, aggregates).fork());
-        }
-        final List<V> finalResult = new ArrayList<>(numThreads);
-        for (final ForkJoinTask<V> forkJoinTask : forkJoinTasks) {
-          finalResult.add(forkJoinTask.join());
-        }
-        spanTracker.putAggregate(finalResult, timespan);
-        outputHandler.execute(new TimescaleWindowOutput<V>(timespan.timescale,
-            actualTriggerTime, new DepOutputAndResult<V>(aggregates.size(), finalResult.get(0)),
-            timespan.startTime, timespan.endTime, timespan.startTime >= startTime));
-      }
-      setRawResult(1);
-      countDownLatch.countDown();
-      return true;
-    }
-  }
-
-  final class Task2 extends ForkJoinTask<V> {
-
-    private final int index;
-    private final List<List<V>> aggregates;
-
-    private V result;
-
-    public Task2(final int index,
-                 final List<List<V>> aggregates) {
-      this.index = index;
+    public RecursiveAggregate(final List<V> aggregates) {
       this.aggregates = aggregates;
     }
 
-    @Override
-    public V getRawResult() {
-      return result;
+    private Collection<RecursiveAggregate> createSubTasks() {
+      final List<RecursiveAggregate> dividedTasks = new ArrayList<>();
+      dividedTasks.add(new RecursiveAggregate(
+          aggregates.subList(0, aggregates.size() / 2)));
+      dividedTasks.add(new RecursiveAggregate(
+          aggregates.subList(aggregates.size() / 2, aggregates.size())));
+      return dividedTasks;
     }
 
     @Override
-    protected void setRawResult(final V value) {
-      this.result = value;
-    }
-
-    @Override
-    protected boolean exec() {
-      final List<V> subAggregates = new ArrayList<V>(aggregates.size());
-      for (int j = 0; j < aggregates.size(); j++) {
-        subAggregates.add(aggregates.get(j).get(index));
+    protected V compute() {
+      try {
+        if (aggregates.size() > threshold) {
+          final Collection<V> agg = new ArrayList<>(2);
+          final Collection<RecursiveAggregate> tasks = createSubTasks();
+          for (final RecursiveAggregate task : tasks) {
+            agg.add(task.join());
+          }
+          return aggregateFunction.aggregate(agg);
+        } else {
+          return aggregateFunction.aggregate(aggregates);
+        }
+      } catch (final Exception e) {
+        e.printStackTrace();
+        throw new RuntimeException(e);
       }
-      final V result = aggregateFunction.aggregate(subAggregates);
-      //final V result = parallelAggregator.doParallelAggregation(subAggregates);
-      setRawResult(result);
-      return true;
     }
   }
 
-  final class DependencyGroup {
-    private final int id;
-    public final List<Node<List<V>>> group;
-    public DependencyGroup(final int id) {
-      this.id = id;
-      this.group = new LinkedList<>();
-    }
+  final class AggregateTask extends RecursiveTask<V> {
+    private final Node<V> node;
+    private final long endTime;
+    private final long actualTriggerTime;
 
-    public void add(final Node<List<V>> timespan) {
-      group.add(timespan);
-    }
-
-    @Override
-    public String toString() {
-      return "GID: " + id + ", " + group;
+    public AggregateTask(final Node<V> node, final long endTime,
+                         final long actualTriggerTime) {
+      this.node = node;
+      this.endTime = endTime;
+      this.actualTriggerTime = actualTriggerTime;
     }
 
     @Override
-    public boolean equals(final Object o) {
-      if (this == o) {
-        return true;
+    protected V compute() {
+      try {
+        final List<V> aggregates = new ArrayList<>(node.getDependencies().size());
+        for (final Node<V> dependentNode : node.getDependencies()) {
+          if (dependentNode.end <= endTime) {
+            // Do not count first outgoing edge
+            dependentNode.lock.lock();
+            if (dependentNode.getOutput() == null) {
+              // recursive computation
+              aggregates.add(
+                  new AggregateTask(dependentNode, endTime, actualTriggerTime).fork().join());
+            } else {
+              aggregates.add(dependentNode.getOutput());
+            }
+            dependentNode.lock.unlock();
+
+            dependentNode.decreaseRefCnt();
+            if (dependentNode.getOutput() == null) {
+              if (dependentNode.partial) {
+                //System.out.println("Deleted " + dependentNode);
+                metrics.storedPartial -= 1;
+              } else if (dependentNode.intermediate) {
+                metrics.storedInter -= 1;
+              } else {
+                metrics.storedFinal -= 1;
+              }
+            }
+          }
+        }
+
+        final ForkJoinTask<V> task = new RecursiveAggregate(aggregates).fork();
+        final V result = task.join();
+        node.saveOutput(result);
+
+        if (!node.intermediate) {
+          outputHandler.execute(new TimescaleWindowOutput<V>(node.timescale,
+              actualTriggerTime, new DepOutputAndResult<V>(aggregates.size(), result),
+              endTime - (node.end - node.start), endTime, false));
+        }
+
+        return result;
+      } catch (final Exception e) {
+        e.printStackTrace();
+        throw new RuntimeException(e);
       }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-
-      final DependencyGroup that = (DependencyGroup) o;
-
-      if (id != that.id) {
-        return false;
-      }
-
-      return true;
-    }
-
-    @Override
-    public int hashCode() {
-      return id;
     }
   }
+
 }

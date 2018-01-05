@@ -20,6 +20,7 @@ import vldb.operator.window.timescale.TimescaleWindowBaseConfiguration;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.common.*;
 import vldb.operator.window.timescale.pafas.*;
+import vldb.operator.window.timescale.pafas.vldb2018.singlethread.SingleThreadFinalAggregator;
 
 /**
  * A helper class for static MTS window configuration.
