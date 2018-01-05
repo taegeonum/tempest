@@ -13,6 +13,7 @@ import vldb.evaluation.common.FileWordGenerator;
 import vldb.evaluation.parameter.*;
 import vldb.operator.window.timescale.Timescale;
 import vldb.operator.window.timescale.common.TimescaleParser;
+import vldb.operator.window.timescale.pafas.vldb2018.singlethread.MultiThreadFinalAggregator;
 import vldb.operator.window.timescale.parameter.*;
 
 import java.io.IOException;
@@ -75,6 +76,7 @@ public final class TwitterEvaluation {
     final int windowGap = injector.getNamedInstance(WindowGap.class);
     final int sharedFinalNum = injector.getNamedInstance(SharedFinalNum.class);
     final double overlapRatio = injector.getNamedInstance(OverlappingRatio.class);
+    final int threshold = injector.getNamedInstance(MultiThreadFinalAggregator.ParallelThreshold.class);
     //final long numKey = injector.getNamedInstance(NumOfKey.class);
 
     final TestRunner.OperatorType operatorType = TestRunner.OperatorType.valueOf(
@@ -150,7 +152,7 @@ public final class TwitterEvaluation {
     */
     final Metrics metrics = TestRunner.runFileWordTest(timescales,
         numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix,
-        reusingRatio, windowGap, sharedFinalNum, overlapRatio);
+        reusingRatio, windowGap, sharedFinalNum, overlapRatio, threshold);
 
     //writer.writeLine(prefix + "_result", operatorType.name() + "\t" + variable + "\t" + result.partialCount + "\t" + result.finalCount + "\t" + result.processedInput + "\t" + result.elapsedTime + result.timeMonitor);
     if (operatorType == TestRunner.OperatorType.FastOverlap) {

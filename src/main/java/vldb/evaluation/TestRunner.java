@@ -570,7 +570,8 @@ public final class TestRunner {
                                        final double reusingRatio,
                                        final int windowGap,
                                        final int sharedFinalNum,
-                                       final double overlappingRatio) throws Exception {
+                                       final double overlappingRatio,
+                                       final int threshold) throws Exception {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindImplementation(KeyExtractor.class, DefaultExtractor.class);
     jcb.bindNamedParameter(NumThreads.class, numThreads+"");
@@ -580,6 +581,7 @@ public final class TestRunner {
     jcb.bindNamedParameter(WindowGap.class, windowGap+"");
     jcb.bindNamedParameter(SharedFinalNum.class, sharedFinalNum+"");
     jcb.bindNamedParameter(OverlappingRatio.class, overlappingRatio + "");
+    jcb.bindNamedParameter(MultiThreadFinalAggregator.ParallelThreshold.class, threshold + "");
 
     Collections.sort(timescales);
 
