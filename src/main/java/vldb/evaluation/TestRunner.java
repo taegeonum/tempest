@@ -667,7 +667,7 @@ public final class TestRunner {
 
         // Wait until all outputs are generated
         lock.lock();
-        if (tick > processedTickTime.get()) {
+        while (tick > processedTickTime.get()) {
           canProceed.await();
         }
         lock.unlock();
