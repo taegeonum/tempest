@@ -238,7 +238,6 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
       }
     }
 
-
     final List<ForkJoinTask<V>> forkJoinTasks = new ArrayList<>(independentNodes.size());
     for (final Node<V> independentNode : independentNodes) {
       // compute aggregation
@@ -355,8 +354,11 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
           }
         }
 
-        final ForkJoinTask<V> task = new RecursiveAggregate(aggregates).fork();
-        final V result = task.join();
+        // Aggregates in a single thread
+        final V result = aggregateFunction.aggregate(aggregates);
+        //final ForkJoinTask<V> task = new RecursiveAggregate(aggregates).fork();
+        //final V result = task.join();
+        
         node.saveOutput(result);
 
         if (!node.intermediate) {
