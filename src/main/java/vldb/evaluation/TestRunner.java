@@ -35,13 +35,11 @@ import vldb.operator.window.timescale.triops.TriOpsMWOConfiguration;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -469,7 +467,7 @@ public final class TestRunner {
 
     newInjector.bindVolatileInstance(TimeWindowOutputHandler.class,
         new EvaluationHandler<>(operatorType.name(), null, totalTime, writer, prefix,
-            tickTime, lock, canProceed));
+            tickTime, lock, null, canProceed));
     final TimescaleWindowOperator<Object, Map<String, Long>> mwo = newInjector.getInstance(TimescaleWindowOperator.class);
     final AggregationCounter aggregationCounter = newInjector.getInstance(AggregationCounter.class);
     final TimeMonitor timeMonitor = newInjector.getInstance(TimeMonitor.class);
@@ -596,6 +594,17 @@ public final class TestRunner {
       }
     }
 
+    final Map<Long, AtomicInteger> outputCount = new HashMap<>();
+    for (long i = 1; i <= totalTime; i++) {
+      int count = 0;
+      for (final Timescale ts : timescales) {
+        if (i % ts.intervalSize == 0) {
+          count += 1;
+        }
+      }
+      outputCount.put(i, new AtomicInteger(count));
+    }
+
     writer.writeLine(prefix + "_num_outputs", numOutputs+"\t" + totalOutputSize);
     final CountDownLatch countDownLatch = new CountDownLatch(numOutputs);
 
@@ -617,9 +626,11 @@ public final class TestRunner {
     final Condition canProceed = lock.newCondition();
     final AtomicLong processedTickTime = new AtomicLong(0);
 
+    newInjector.bindVolatileInstance(AtomicLong.class, processedTickTime);
+
     newInjector.bindVolatileInstance(TimeWindowOutputHandler.class,
         new EvaluationHandler<>(operatorType.name(), countDownLatch, totalTime, writer, prefix,
-            processedTickTime, lock, canProceed));
+            processedTickTime, lock, outputCount, canProceed));
 
     final TimeMonitor timeMonitor = newInjector.getInstance(TimeMonitor.class);
     final long bst = System.nanoTime();
@@ -669,7 +680,7 @@ public final class TestRunner {
 
         // Wait until all outputs are generated
         lock.lock();
-        while (tick > processedTickTime.get()) {
+        while (outputCount.get(tick).get() > 0) {
           canProceed.await();
         }
         lock.unlock();
@@ -755,12 +766,15 @@ public final class TestRunner {
 
     private final ExecutorService executorService;
 
+    private final Map<Long, AtomicInteger> outputCount;
+
     public EvaluationHandler(final String id, final CountDownLatch countDownLatch,
                              final long totalTime,
                              final OutputWriter writer,
                              final String prefix,
                              final AtomicLong tickTime,
                              final Lock lock,
+                             final Map<Long, AtomicInteger> outputCount,
                              final Condition canProceed) {
       this.id = id;
       this.countDownLatch = countDownLatch;
@@ -769,6 +783,7 @@ public final class TestRunner {
       this.prefix = prefix;
       this.tickTime = tickTime;
       this.lock = lock;
+      this.outputCount = outputCount;
       this.canProceed = canProceed;
       this.executorService = Executors.newSingleThreadExecutor();
     }
@@ -777,12 +792,11 @@ public final class TestRunner {
     public void execute(final TimescaleWindowOutput<I> val) {
 
       final long ttime = tickTime.get();
-      if (ttime <= val.endTime) {
-        if (tickTime.compareAndSet(ttime, val.endTime)) {
-          lock.lock();
-          canProceed.signal();
-          lock.unlock();
-        }
+      final AtomicInteger count = outputCount.get(val.endTime);
+      if (count.decrementAndGet() == 0) {
+        lock.lock();
+        canProceed.signal();
+        lock.unlock();
       }
 
       executorService.submit(new Runnable() {

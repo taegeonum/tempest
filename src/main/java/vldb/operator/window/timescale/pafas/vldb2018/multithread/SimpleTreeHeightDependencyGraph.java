@@ -34,7 +34,6 @@ import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -403,18 +402,6 @@ public final class SimpleTreeHeightDependencyGraph<T> implements DependencyGraph
     // add final edges
     addedNodes.parallelStream().forEach(node -> addEdge(node));
 
-    // Add edges for selected intermediate nodes
-    final AtomicBoolean isChanged = new AtomicBoolean(false);
-    do {
-      isChanged.set(false);
-      interNodes.parallelStream()
-          .filter(node -> node.refCnt.get() > 0 && node.getDependencies().size() == 0)
-          .forEach(node -> {
-            addEdge(node);
-            isChanged.set(true);
-          });
-    } while (isChanged.get());
-
     // Remove unnecessary intermediate nodes
     interNodes.parallelStream().forEach(node -> {
       if (node.refCnt.get() == 0 && node.intermediate) {
@@ -518,9 +505,26 @@ public final class SimpleTreeHeightDependencyGraph<T> implements DependencyGraph
     //System.out.println("child node end: " + parent);
     LOG.log(Level.FINE, "(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
     //System.out.println("(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
+    int maxHeight = 0;
+
     for (final Node<T> elem : childNodes) {
+      if (elem.partial) {
+        elem.height = 1;
+      } else {
+        elem.lock.lock();
+        if (elem.height == 0) {
+          addEdge(elem);
+        }
+        elem.lock.unlock();
+      }
+
       parent.addDependency(elem);
+      if (maxHeight < elem.height) {
+        maxHeight = elem.height;
+      }
     }
+
+    parent.height = maxHeight;
   }
 
   private void addEdges(final Collection<Node<T>> parentNodes) {

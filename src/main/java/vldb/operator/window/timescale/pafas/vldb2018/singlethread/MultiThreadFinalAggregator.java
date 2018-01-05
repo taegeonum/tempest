@@ -239,10 +239,19 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
     }
 
 
+    final List<ForkJoinTask<V>> forkJoinTasks = new ArrayList<>(independentNodes.size());
     for (final Node<V> independentNode : independentNodes) {
       // compute aggregation
-      forkJoinPool.submit(new AggregateTask(independentNode, endTime, actualTriggerTime));
+      forkJoinTasks.add(
+          forkJoinPool.submit(new AggregateTask(independentNode, endTime, actualTriggerTime)));
     }
+
+    for (final ForkJoinTask<V> forkJoinTask : forkJoinTasks) {
+      forkJoinTask.join();
+    }
+
+    // Signal
+
   }
 
   @Override

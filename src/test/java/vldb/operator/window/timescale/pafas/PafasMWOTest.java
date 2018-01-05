@@ -9,14 +9,11 @@ import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.flatfit.FlatFitMWOConfiguration;
-import vldb.operator.window.timescale.pafas.active.ActiveDPSelectionAlgorithm;
-import vldb.operator.window.timescale.pafas.active.AdjustPartialDependencyGraph;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
-import vldb.operator.window.timescale.pafas.vldb2018.FastCuttyCombinedDependencyGraph;
 import vldb.operator.window.timescale.pafas.vldb2018.FastFitDPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedDependencyGraph;
 import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedMWOConfiguration;
-import vldb.operator.window.timescale.pafas.vldb2018.singlethread.MultiThreadFinalAggregator;
+import vldb.operator.window.timescale.pafas.vldb2018.multithread.SimpleTreeHeightDependencyGraph;
 import vldb.operator.window.timescale.pafas.vldb2018.singlethread.SingleThreadFinalAggregator;
 import vldb.operator.window.timescale.parameter.*;
 
@@ -98,12 +95,23 @@ public final class PafasMWOTest {
         .set(FlatFitCombinedMWOConfiguration.SELECTION_ALGORITHM, FastFitDPSelectionAlgorithm.class)
         .set(FlatFitCombinedMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
         .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, FlatFitCombinedDependencyGraph.class)
-        .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, MultiThreadFinalAggregator.class)
+        .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, SingleThreadFinalAggregator.class)
         .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
         .build());
     operatorIds.add("FAST-fit");
 
+    configurationList.add(FlatFitCombinedMWOConfiguration.CONF
+        .set(FlatFitCombinedMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+        .set(FlatFitCombinedMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+        .set(FlatFitCombinedMWOConfiguration.SELECTION_ALGORITHM, FastFitDPSelectionAlgorithm.class)
+        .set(FlatFitCombinedMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
+        .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, SimpleTreeHeightDependencyGraph.class)
+        .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, SingleThreadFinalAggregator.class)
+        .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
+        .build());
+    operatorIds.add("FAST-height");
 
+/*
     configurationList.add(StaticActiveSingleMWOConfiguration.CONF
         .set(StaticActiveSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .set(StaticActiveSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
@@ -113,6 +121,7 @@ public final class PafasMWOTest {
         .set(StaticActiveSingleMWOConfiguration.START_TIME, "0")
         .build());
     operatorIds.add("FAST-active");
+
 
 
     configurationList.add(FlatFitCombinedMWOConfiguration.CONF
@@ -126,7 +135,6 @@ public final class PafasMWOTest {
         .build());
     operatorIds.add("FAST-Cutty");
 
-/*
     configurationList.add(StaticSingleMWOConfiguration.CONF
         .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .set(StaticSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
