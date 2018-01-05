@@ -650,15 +650,6 @@ public final class TestRunner {
 
     while (tick <= totalTime) {
 
-      // Wait until all outputs are generated
-      if (tick > processedTickTime.get() + 3) {
-        lock.lock();
-        if (tick <= processedTickTime.get() + 3) {
-          canProceed.await();
-        }
-        lock.unlock();
-      }
-
       //System.out.println("totalTime: " + (totalTime*1000) + ", elapsed: " + (System.currentTimeMillis() - currTime));
       final String word = wordGenerator.nextString();
       final long cTime = System.nanoTime();
@@ -673,6 +664,14 @@ public final class TestRunner {
 
       if (currInput >= currInputRate) {
         mwo.execute(new WindowTimeEvent(tick));
+
+        // Wait until all outputs are generated
+        lock.lock();
+        if (tick > processedTickTime.get()) {
+          canProceed.await();
+        }
+        lock.unlock();
+
         final StringBuilder sb1 = new StringBuilder();
         sb1.append(System.currentTimeMillis()); sb1.append("\t"); sb1.append(Profiler.getMemoryUsage()); sb1.append("\t");
         sb1.append(metrics.storedPartial);
@@ -691,6 +690,8 @@ public final class TestRunner {
         if (inputRate == 0) {
           currInputRate = Long.valueOf(poissonFile.nextLine());
         }
+
+
       }
 
       processedInput += 1;
@@ -773,7 +774,7 @@ public final class TestRunner {
 
       final long ttime = tickTime.get();
       if (ttime <= val.endTime) {
-        if (tickTime.compareAndSet(ttime, val.endTime + 1)) {
+        if (tickTime.compareAndSet(ttime, val.endTime)) {
           lock.lock();
           canProceed.signal();
           lock.unlock();

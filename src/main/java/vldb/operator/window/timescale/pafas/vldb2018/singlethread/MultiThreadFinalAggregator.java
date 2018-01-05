@@ -74,7 +74,6 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
   //private final ExecutorService executorService;
 
   private final ForkJoinPool forkJoinPool;
-  private final ParallelTreeAggregator<?, V> parallelAggregator;
   private final DependencyGraph<V> dependencyGraph;
 
   private final int threshold;
@@ -107,7 +106,6 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
     this.spanTracker = spanTracker;
     this.forkJoinPool = ForkJoinPool.commonPool();
     this.outputHandler = outputHandler;
-    this.parallelAggregator = new ParallelTreeAggregator<>(numThreads, 30 * numThreads, aggregateFunction, forkJoinPool);
     this.numThreads = numThreads;
     //this.executorService = Executors.newFixedThreadPool(numThreads);
     this.aggregateFunction = aggregateFunction;
