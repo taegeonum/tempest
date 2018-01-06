@@ -393,7 +393,7 @@ public final class SimpleTreeHeightDependencyGraph<T> implements DependencyGraph
       }
     });
 
-    nodes.stream().forEach(nodesAtTimeT -> {
+    nodes.parallelStream().forEach(nodesAtTimeT -> {
       if (nodesAtTimeT != null) {
         for (final Node<T> node : nodesAtTimeT) {
           addEdge(node);
