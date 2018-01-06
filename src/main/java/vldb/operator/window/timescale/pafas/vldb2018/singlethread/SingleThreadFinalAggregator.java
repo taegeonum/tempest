@@ -136,7 +136,7 @@ public final class SingleThreadFinalAggregator<V> implements FinalAggregator<V> 
         // Do not count first outgoing edge
 
         if (dependentNode.getOutput() == null) {
-          throw new RuntimeException("null aggregate at: " + dependentNode + ", when generating [" + endTime + ", " + (endTime - (node.end - node.start)) + ")");
+          throw new RuntimeException("null aggregate at: " + dependentNode + ", when generating [" + (endTime - (node.end - node.start)) + ", " + endTime + ")");
         }
 
         aggregates.add(dependentNode.getOutput());

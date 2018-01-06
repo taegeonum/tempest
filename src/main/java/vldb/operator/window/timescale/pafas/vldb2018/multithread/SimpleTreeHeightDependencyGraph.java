@@ -34,9 +34,9 @@ import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 /**
  * DependencyGraph shows which nodes are related to each other. This is used so that unnecessary outputs are not saved.
@@ -346,68 +346,80 @@ public final class SimpleTreeHeightDependencyGraph<T> implements DependencyGraph
    */
   private void addOverlappingWindowNodeAndEdge() {
 
-    final List<Info> infos = timescales.parallelStream().map(timescale -> {
+    final List<List<Node<T>>> nodes = new ArrayList<List<Node<T>>>((int)period+1);
 
-      final List<Node<T>> nodes = new ArrayList<Node<T>>((int) (period / timescale.intervalSize + 1));
+    for (int i = 0; i <= period; i++) {
+      nodes.add(null);
+    }
 
-      for (long time = timescale.intervalSize + startTime; time <= period + startTime; time += timescale.intervalSize) {
+    for (long endTime = 1; endTime <= period; endTime += 1) {
+      final List<Node<T>> nodesAtTimeT = new LinkedList<>();
+      for (final Timescale ts : timescales) {
+        if (endTime % ts.intervalSize == 0) {
+          final long startTime = endTime - ts.windowSize;
+          final Node node = new Node(startTime, endTime, false, ts);
+          node.isNotShared = false;
+          node.intermediate = false;
+          nodesAtTimeT.add(node);
 
-        // create vertex and add it to the table cell of (time, windowsize)
-        final long start = time - timescale.windowSize;
-        final Node parent = new Node(start, time, false, timescale);
-        parent.isNotShared = false;
-        parent.intermediate = false;
-
-        nodes.add(parent);
-
-        /*
-        try {
-          final Node<T> node = finalTimespans.lookup(parent.start, parent.end);
-        } catch (final NotFoundException e) {
-          addEdge(parent);
-        }
-        */
-
-        finalTimespans.saveOutput(start, time, parent);
-
-        LOG.log(Level.FINE, "Saved to table : (" + start + " , " + time + ") refCount : " + parent.refCnt);
-        //LOG.log(Level.FINE, "(" + start + ", " + time + ") dependencies2: " + childNodes);
-      }
-
-      return new Info(nodes, timescale);
-    }).collect(Collectors.toCollection(ArrayList::new));
-
-
-    infos.sort(new Comparator<Info>() {
-      @Override
-      public int compare(final Info o1, final Info o2) {
-        if (o1.timescale.windowSize - o2.timescale.windowSize < 0) {
-          return -1;
-        } else {
-          return 1;
+          finalTimespans.saveOutput(startTime, endTime, node);
         }
       }
-    });
+
+      nodes.set((int)endTime, nodesAtTimeT);
+    }
 
     // Add intermediate nodes
     final List<Node<T>> interNodes = getIntermediateNodes();
-
     interNodes.parallelStream().forEach(interNode -> {
-      finalTimespans.saveOutput(interNode.start, interNode.end, interNode);
-    });
+      final List<Node<T>> nodesAtTimeT = nodes.get((int)interNode.end);
+      synchronized (nodesAtTimeT) {
+        int index = 0;
+        for (final Node<T> nodeAtTimeT : nodesAtTimeT) {
+          if (nodeAtTimeT.start > interNode.start) {
+            index += 1;
+          } else if (nodeAtTimeT.start < interNode.start) {
+            break;
+          } else {
+            // same. we dont have to add internode
+            index = -1;
+          }
+        }
 
-    final List<Node<T>> addedNodes = infos.parallelStream().flatMap(info -> info.nodes.stream())
-        .collect(Collectors.toCollection(ArrayList::new));
-
-    // add final edges
-    addedNodes.parallelStream().forEach(node -> addEdge(node));
-
-    // Remove unnecessary intermediate nodes
-    interNodes.parallelStream().forEach(node -> {
-      if (node.refCnt.get() == 0 && node.intermediate) {
-        finalTimespans.deleteOutput(node.start, node.end);
+        if (index >= 0) {
+          nodesAtTimeT.add(index, interNode);
+          finalTimespans.saveOutput(interNode.start, interNode.end, interNode);
+        }
       }
     });
+
+    nodes.stream().forEach(nodesAtTimeT -> {
+      if (nodesAtTimeT != null) {
+        for (final Node<T> node : nodesAtTimeT) {
+          addEdge(node);
+        }
+      }
+    });
+
+    // Remove unnecessary intermediate nodes
+    final AtomicBoolean isChanged = new AtomicBoolean(false);
+    do {
+      isChanged.set(false);
+      interNodes.parallelStream()
+          .filter(node -> node.refCnt.get() == 0 && node.getDependencies().size() > 0)
+          .forEach(node -> {
+            finalTimespans.deleteOutput(node.start, node.end);
+            for (final Node<T> child : node.getDependencies()) {
+              child.decreaseRefCntWithoutReset();
+              synchronized (child.parents) {
+                child.parents.remove(node);
+              }
+            }
+            node.getDependencies().clear();
+            isChanged.set(true);
+          });
+    } while (isChanged.get());
+
 
     // Build intermediate nodes
     //adjustPartialNodes();
@@ -505,26 +517,14 @@ public final class SimpleTreeHeightDependencyGraph<T> implements DependencyGraph
     //System.out.println("child node end: " + parent);
     LOG.log(Level.FINE, "(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
     //System.out.println("(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
-    int maxHeight = 0;
 
+    // Find dependent node
     for (final Node<T> elem : childNodes) {
-      if (elem.partial) {
-        elem.height = 1;
-      } else {
-        elem.lock.lock();
-        if (elem.height == 0) {
-          addEdge(elem);
-        }
-        elem.lock.unlock();
-      }
-
       parent.addDependency(elem);
-      if (maxHeight < elem.height) {
-        maxHeight = elem.height;
+      if (elem.end == parent.end) {
+        parent.height = elem.height + 1;
       }
     }
-
-    parent.height = maxHeight;
   }
 
   private void addEdges(final Collection<Node<T>> parentNodes) {

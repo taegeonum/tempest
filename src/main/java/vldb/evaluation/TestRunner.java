@@ -27,6 +27,8 @@ import vldb.operator.window.timescale.pafas.vldb2018.FastCuttyCombinedDependency
 import vldb.operator.window.timescale.pafas.vldb2018.FastFitDPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedDependencyGraph;
 import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedMWOConfiguration;
+import vldb.operator.window.timescale.pafas.vldb2018.multithread.SimpleTreeHeightDPSelectionAlgorithm;
+import vldb.operator.window.timescale.pafas.vldb2018.multithread.SimpleTreeHeightDependencyGraph;
 import vldb.operator.window.timescale.pafas.vldb2018.singlethread.MultiThreadFinalAggregator;
 import vldb.operator.window.timescale.pafas.vldb2018.singlethread.SingleThreadFinalAggregator;
 import vldb.operator.window.timescale.parameter.*;
@@ -75,6 +77,7 @@ public final class TestRunner {
     FastFit,
     CuttyyP, // cutty parallel
     FastFitP, // fast fit parallel
+    FastH, // fast tree height threshold
     FastCutty,
   }
 
@@ -111,6 +114,16 @@ public final class TestRunner {
             .set(FlatFitCombinedMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, FlatFitCombinedDependencyGraph.class)
             .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, SingleThreadFinalAggregator.class)
+            .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
+            .build();
+      case FastH:
+        return FlatFitCombinedMWOConfiguration.CONF
+            .set(FlatFitCombinedMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(FlatFitCombinedMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(FlatFitCombinedMWOConfiguration.SELECTION_ALGORITHM, SimpleTreeHeightDPSelectionAlgorithm.class)
+            .set(FlatFitCombinedMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
+            .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, SimpleTreeHeightDependencyGraph.class)
+            .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, MultiThreadFinalAggregator.class)
             .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
             .build();
       case FastFitP:

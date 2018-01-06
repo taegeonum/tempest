@@ -356,9 +356,10 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
 
         // Aggregates in a single thread
         final V result = aggregateFunction.aggregate(aggregates);
+        // TODO: work stealing
         //final ForkJoinTask<V> task = new RecursiveAggregate(aggregates).fork();
         //final V result = task.join();
-        
+
         node.saveOutput(result);
 
         if (!node.intermediate) {
