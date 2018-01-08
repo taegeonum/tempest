@@ -111,6 +111,8 @@ public final class TwitterEvaluation {
       } else {
         prefix = outputPath + testName + "/" + variable + "/" + operatorType.name() + "/" + sharedFinalNum;
       }
+    } else if (operatorType == TestRunner.OperatorType.FastH) {
+      prefix = outputPath + testName + "/" + variable + "/" + operatorType.name() + "-" + threshold;
     } else {
       if (operatorType == TestRunner.OperatorType.FastInter) {
         prefix = outputPath + testName + "/" + variable + "/" + operatorType.name() + "-" + sharedFinalNum;
