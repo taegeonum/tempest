@@ -50,7 +50,8 @@ public final class TwitterEvaluation {
                     .registerShortNameOfClass(SharedFinalNum.class)
                         .registerShortNameOfClass(OverlappingRatio.class)
                             .registerShortNameOfClass(MultiThreadFinalAggregator.ParallelThreshold.class)
-        //.registerShortNameOfClass(NumOfKey.class)
+        .registerShortNameOfClass(MultiThreadFinalAggregator.ParallelThresholdLow.class)
+            //.registerShortNameOfClass(NumOfKey.class)
         .processCommandLine(args);
 
     return cl.getBuilder().build();
@@ -78,6 +79,7 @@ public final class TwitterEvaluation {
     final int sharedFinalNum = injector.getNamedInstance(SharedFinalNum.class);
     final double overlapRatio = injector.getNamedInstance(OverlappingRatio.class);
     final int threshold = injector.getNamedInstance(MultiThreadFinalAggregator.ParallelThreshold.class);
+    final int ptl = injector.getNamedInstance(MultiThreadFinalAggregator.ParallelThresholdLow.class);
     //final long numKey = injector.getNamedInstance(NumOfKey.class);
 
     final TestRunner.OperatorType operatorType = TestRunner.OperatorType.valueOf(
@@ -155,7 +157,7 @@ public final class TwitterEvaluation {
     */
     final Metrics metrics = TestRunner.runFileWordTest(timescales,
         numThreads, dataPath, operatorType, inputRate, endTime, writer, prefix,
-        reusingRatio, windowGap, sharedFinalNum, overlapRatio, threshold);
+        reusingRatio, windowGap, sharedFinalNum, overlapRatio, threshold, ptl);
 
     //writer.writeLine(prefix + "_result", operatorType.name() + "\t" + variable + "\t" + result.partialCount + "\t" + result.finalCount + "\t" + result.processedInput + "\t" + result.elapsedTime + result.timeMonitor);
     if (operatorType == TestRunner.OperatorType.FastOverlap) {

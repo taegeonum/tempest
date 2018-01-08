@@ -25,6 +25,7 @@ public class SimpleTreeHeightDPSelectionAlgorithm<T> implements DependencyGraph.
   private final long gcd;
   private final double tradeOffFactor;
   private final int threshold;
+  private final int ptl;
 
   @Inject
   private SimpleTreeHeightDPSelectionAlgorithm(final PartialTimespans<T> partialTimespans,
@@ -33,6 +34,7 @@ public class SimpleTreeHeightDPSelectionAlgorithm<T> implements DependencyGraph.
                                                @Parameter(StartTime.class) long startTime,
                                                @Parameter(GCD.class) long gcd,
                                                @Parameter(MultiThreadFinalAggregator.ParallelThreshold.class) final int threshold,
+                                               @Parameter(MultiThreadFinalAggregator.ParallelThresholdLow.class) final int ptl,
                                                @Parameter(TradeOffFactor.class) double tradeOffFactor) {
     this.partialTimespans = partialTimespans;
     this.finalTimespans = finalTimespans;
@@ -40,6 +42,7 @@ public class SimpleTreeHeightDPSelectionAlgorithm<T> implements DependencyGraph.
     this.period = periodCalculator.getPeriod();
     this.gcd = gcd;
     this.threshold = threshold;
+    this.ptl = ptl;
     this.tradeOffFactor = tradeOffFactor;
   }
 
@@ -76,7 +79,7 @@ public class SimpleTreeHeightDPSelectionAlgorithm<T> implements DependencyGraph.
       for (final Node<T> node : availableNodes) {
 
         if (node.end == end) {
-          if (node.height < threshold) {
+          if (node.height < threshold && node.height > ptl) {
             final int nodeEndIndex = (int)(adjustTime(reducedEnd, node.end) - start);
             final int nodeStartIndex = (int)(adjustTime(reducedEnd-1, node.start) - start);
 

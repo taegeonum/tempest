@@ -84,6 +84,10 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
   public static final class ParallelThreshold implements Name<Integer> {
   }
 
+  @NamedParameter(short_name = "ptl", default_value = "0")
+  public static final class ParallelThresholdLow implements Name<Integer> {
+  }
+
   /**
    * Default overlapping window operator.
    * @param spanTracker a computation reuser for final aggregation
