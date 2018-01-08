@@ -10,11 +10,11 @@ import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.flatfit.FlatFitMWOConfiguration;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
+import vldb.operator.window.timescale.pafas.vldb2018.FastFitDPSelectionAlgorithm;
+import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedDependencyGraph;
 import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedMWOConfiguration;
-import vldb.operator.window.timescale.pafas.vldb2018.multithread.SimpleTreeHeightDPSelectionAlgorithm;
-import vldb.operator.window.timescale.pafas.vldb2018.multithread.SimpleTreeHeightDependencyGraph;
+import vldb.operator.window.timescale.pafas.vldb2018.multithread.MultiThreadImprovedFinalAggregator;
 import vldb.operator.window.timescale.pafas.vldb2018.singlethread.MultiThreadFinalAggregator;
-import vldb.operator.window.timescale.pafas.vldb2018.singlethread.SingleThreadFinalAggregator;
 import vldb.operator.window.timescale.parameter.*;
 
 import java.util.LinkedList;
@@ -88,7 +88,7 @@ public final class PafasMWOTest {
         .set(InterNodeMWOConfiguration.START_TIME, "0")
         .build());
     operatorIds.add("FAST-inter");
-
+*/
 
     configurationList.add(FlatFitCombinedMWOConfiguration.CONF
         .set(FlatFitCombinedMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
@@ -96,11 +96,12 @@ public final class PafasMWOTest {
         .set(FlatFitCombinedMWOConfiguration.SELECTION_ALGORITHM, FastFitDPSelectionAlgorithm.class)
         .set(FlatFitCombinedMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
         .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, FlatFitCombinedDependencyGraph.class)
-        .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, SingleThreadFinalAggregator.class)
+        .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, MultiThreadImprovedFinalAggregator.class)
         .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
         .build());
     operatorIds.add("FAST-fit");
-*/
+
+    /*
     configurationList.add(FlatFitCombinedMWOConfiguration.CONF
         .set(FlatFitCombinedMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .set(FlatFitCombinedMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
@@ -112,7 +113,7 @@ public final class PafasMWOTest {
         .build());
     operatorIds.add("FAST-height");
 
-/*
+
     configurationList.add(StaticActiveSingleMWOConfiguration.CONF
         .set(StaticActiveSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .set(StaticActiveSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
@@ -122,8 +123,6 @@ public final class PafasMWOTest {
         .set(StaticActiveSingleMWOConfiguration.START_TIME, "0")
         .build());
     operatorIds.add("FAST-active");
-
-
 
     configurationList.add(FlatFitCombinedMWOConfiguration.CONF
         .set(FlatFitCombinedMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
@@ -231,7 +230,7 @@ public final class PafasMWOTest {
     final int numKey = 100;
     final int numInput = 100000;
     final Random random = new Random();
-    final int tick = numInput / 100;
+    final int tick = numInput / 200;
     int tickTime = 1;
     long stored = 0;
     for (i = 0; i < numInput; i++) {

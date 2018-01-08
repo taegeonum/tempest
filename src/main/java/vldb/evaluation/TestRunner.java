@@ -27,6 +27,7 @@ import vldb.operator.window.timescale.pafas.vldb2018.FastCuttyCombinedDependency
 import vldb.operator.window.timescale.pafas.vldb2018.FastFitDPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedDependencyGraph;
 import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedMWOConfiguration;
+import vldb.operator.window.timescale.pafas.vldb2018.multithread.MultiThreadImprovedFinalAggregator;
 import vldb.operator.window.timescale.pafas.vldb2018.multithread.SimpleTreeHeightDPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.vldb2018.multithread.SimpleTreeHeightDependencyGraph;
 import vldb.operator.window.timescale.pafas.vldb2018.singlethread.MultiThreadFinalAggregator;
@@ -124,7 +125,7 @@ public final class TestRunner {
             .set(FlatFitCombinedMWOConfiguration.SELECTION_ALGORITHM, SimpleTreeHeightDPSelectionAlgorithm.class)
             .set(FlatFitCombinedMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, SimpleTreeHeightDependencyGraph.class)
-            .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, MultiThreadFinalAggregator.class)
+            .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, MultiThreadImprovedFinalAggregator.class)
             .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
             .build();
       case FastHS:
@@ -144,7 +145,7 @@ public final class TestRunner {
             .set(FlatFitCombinedMWOConfiguration.SELECTION_ALGORITHM, FastFitDPSelectionAlgorithm.class)
             .set(FlatFitCombinedMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, FlatFitCombinedDependencyGraph.class)
-            .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, MultiThreadFinalAggregator.class)
+            .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, MultiThreadImprovedFinalAggregator.class)
             .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
             .build();
       case CuttyyP:
@@ -154,7 +155,7 @@ public final class TestRunner {
             .set(FlatFitCombinedMWOConfiguration.SELECTION_ALGORITHM, FastFitDPSelectionAlgorithm.class)
             .set(FlatFitCombinedMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, FastCuttyCombinedDependencyGraph.class)
-            .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, MultiThreadFinalAggregator.class)
+            .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, MultiThreadImprovedFinalAggregator.class)
             .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
             .build();
       case FastAc:
@@ -814,6 +815,7 @@ public final class TestRunner {
 
     @Override
     public void execute(final TimescaleWindowOutput<I> val) {
+      final long endTime = System.currentTimeMillis();
 
       final long ttime = tickTime.get();
       final AtomicInteger count = outputCount.get(val.endTime);
@@ -833,7 +835,6 @@ public final class TestRunner {
           }
 
           try {
-            final long endTime = System.currentTimeMillis();
             final long elapsedTime = endTime - val.actualStartTime;
             final StringBuilder sb = new StringBuilder();
             sb.append(elapsedTime);
