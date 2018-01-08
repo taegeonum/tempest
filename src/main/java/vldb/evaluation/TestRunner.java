@@ -697,7 +697,7 @@ public final class TestRunner {
         break;
       }
 
-      mwo.execute(word);
+      mwo.execute(Integer.valueOf(word));
       currInput += 1;
 
       if (currInput >= currInputRate) {
