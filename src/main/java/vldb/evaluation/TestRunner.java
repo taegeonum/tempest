@@ -704,11 +704,13 @@ public final class TestRunner {
         mwo.execute(new WindowTimeEvent(tick));
 
         // Wait until all outputs are generated
+        /*
         lock.lock();
         while (outputCount.get(tick).get() > 0) {
           canProceed.await();
         }
         lock.unlock();
+         */
 
         System.out.println("TICK: " + tick + ", processedTickTime: " + processedTickTime.get());
 
@@ -740,7 +742,8 @@ public final class TestRunner {
       //}
     }
 
-    countDownLatch.await();
+    //countDownLatch.await();
+
     final long endTime = System.currentTimeMillis();
     metrics.setElapsedTime(endTime - currTime);
     mwo.close();
@@ -817,6 +820,7 @@ public final class TestRunner {
     public void execute(final TimescaleWindowOutput<I> val) {
       final long endTime = System.currentTimeMillis();
 
+      /*
       final long ttime = tickTime.get();
       final AtomicInteger count = outputCount.get(val.endTime);
       if (count.decrementAndGet() == 0) {
@@ -824,15 +828,19 @@ public final class TestRunner {
         canProceed.signal();
         lock.unlock();
       }
+      */
 
       executorService.submit(new Runnable() {
         @Override
         public void run() {
+
+          /*
           if (val.endTime <= totalTime) {
             if (countDownLatch != null) {
               countDownLatch.countDown();
             }
           }
+          */
 
           try {
             final long elapsedTime = endTime - val.actualStartTime;
