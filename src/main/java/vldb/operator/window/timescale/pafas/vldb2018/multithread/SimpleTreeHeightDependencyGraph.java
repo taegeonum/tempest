@@ -341,6 +341,7 @@ public final class SimpleTreeHeightDependencyGraph<T> implements DependencyGraph
 
     return interNodes;
   }
+
   /**
    * Add DependencyGraphNode and connect dependent nodes.
    */

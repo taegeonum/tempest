@@ -242,9 +242,9 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
       //parentSetMap.put(node, getPossibleParents(node, startTimeTree, endTimeTree));
 
       //node.possibleParentCount = parentSetMap.get(node).size();
-      node.possibleParentCount = getPossibleParents(node, infos).size();
+      //node.possibleParentCount = getPossibleParents(node, infos).size();
 
-      node.cost = node.possibleParentCount * (node.end - node.start);
+      //node.cost = node.possibleParentCount * (node.end - node.start);
       node.isNotShared = true;
     });
 
@@ -252,6 +252,8 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
     final Comparator<Node<T>> addComparator = new Comparator<Node<T>>() {
       @Override
       public int compare(final Node<T> o1, final Node<T> o2) {
+        return 1;
+        /*
         if (o1.cost < o2.cost) {
           return -1;
         } else if (o1.cost > o2.cost) {
@@ -267,12 +269,13 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
             return 0;
           }
         }
+        */
       }
     };
 
     final List<Node<T>> filteredNodes = addedNodes
         .parallelStream()
-        .filter(node -> node.cost > 0)
+        .filter(node -> 1 > 0)
         .collect(Collectors.toCollection(ArrayList::new));
 
     long numSelection = selectNum;//add ? selectNum : filteredNodes.size() - selectNum;
@@ -315,15 +318,15 @@ public final class PruningParallelMaxDependencyGraphImpl<T> implements Dependenc
             }
 
             includedNodeParent.removeAll(nParentSet);
-            includedNode.possibleParentCount = includedNodeParent.size();
-            includedNode.cost = includedNode.possibleParentCount * (includedNode.end - includedNode.start);
+            //includedNode.possibleParentCount = includedNodeParent.size();
+            //includedNode.cost = includedNode.possibleParentCount * (includedNode.end - includedNode.start);
 
           });
 
       System.out.println("Future time: " + (System.currentTimeMillis() - s1));
 
-      maxNode.possibleParentCount = 0;
-      maxNode.cost = 0;
+      //maxNode.possibleParentCount = 0;
+     // maxNode.cost = 0;
       currentNum += 1;
     }
 

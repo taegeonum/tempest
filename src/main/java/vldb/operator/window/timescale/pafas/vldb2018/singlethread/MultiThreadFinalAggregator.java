@@ -330,7 +330,7 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
         for (final Node<V> dependentNode : node.getDependencies()) {
           if (dependentNode.end <= endTime) {
             // Do not count first outgoing edge
-            dependentNode.lock.lock();
+            //dependentNode.lock.lock();
             if (dependentNode.getOutput() == null) {
               // recursive computation
               aggregates.add(
@@ -338,7 +338,7 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
             } else {
               aggregates.add(dependentNode.getOutput());
             }
-            dependentNode.lock.unlock();
+            //dependentNode.lock.unlock();
 
             dependentNode.decreaseRefCnt();
             if (dependentNode.getOutput() == null) {

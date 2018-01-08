@@ -134,7 +134,8 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
         new Comparator<Node<T>>() {
           @Override
           public int compare(final Node<T> o1, final Node<T> o2) {
-            return o1.weight - o2.weight;
+            //return o1.weight - o2.weight;
+            return -1;
           }
         });
 
@@ -155,7 +156,7 @@ public final class FineGrainedPruningDependencyGraphImpl<T> implements Dependenc
     */
 
     for (final Node<T> node : addedNodes) {
-      node.weight = calculateWeight(node);
+      //node.weight = calculateWeight(node);
       priorityQueue.add(node);
     }
 

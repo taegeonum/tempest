@@ -336,7 +336,7 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
           prevChildNodes.add(child);
         }
         parentNode.getDependencies().clear();
-        parentNode.lastChildNode = null;
+        //parentNode.lastChildNode = null;
         //finalTimespans.deleteOutput(timespan.startTime, timespan.endTime, timespan.timescale);
       } catch (NotFoundException e) {
         e.printStackTrace();
@@ -480,7 +480,7 @@ public final class DynamicOptimizedDependencyGraphImpl<T> implements DynamicDepe
         prevChildNodes.add(child);
       }
       parentNode.getDependencies().clear();
-      parentNode.lastChildNode = null;
+     // parentNode.lastChildNode = null;
     }
 
     //System.out.println("findingEdgeNode: " + findingEdgeNodes);

@@ -155,7 +155,7 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
           }
         }
 
-        node.possibleParentCount = cnt * (int)(node.end - node.start);
+        //node.possibleParentCount = cnt * (int)(node.end - node.start);
         //System.out.println("Node cnt: " + node + " , " + cnt);
       });
     }
@@ -176,6 +176,7 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
     Arrays.parallelSort(array, new Comparator<Node<T>>() {
       @Override
       public int compare(final Node<T> o1, final Node<T> o2) {
+        /*
         if (o1.possibleParentCount < o2.possibleParentCount) {
           return -1;
         } else if (o1.possibleParentCount > o2.possibleParentCount) {
@@ -183,6 +184,8 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
         } else {
           return 0;
         }
+        */
+        return 1;
       }
     });
 
@@ -237,7 +240,8 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
         new Comparator<Node<T>>() {
           @Override
           public int compare(final Node<T> o1, final Node<T> o2) {
-            return o1.weight - o2.weight;
+            //return o1.weight - o2.weight;
+            return 1;
           }
         });
 
@@ -262,7 +266,7 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
       if (node.refCnt.get() == 0) {
         node.isNotShared = true;
       } else {
-        node.weight = calculateWeight(node);
+        //node.weight = calculateWeight(node);
         priorityQueue.add(node);
         sharedNum += 1;
       }
@@ -300,7 +304,7 @@ public final class FineGrainedPruningRebuildDependencyGraphImpl<T> implements De
         // Update child
         for (final Node<T> updatedNode : updatedNodes) {
           if (priorityQueue.remove(updatedNode)) {
-            updatedNode.weight = calculateWeight(updatedNode);
+            //updatedNode.weight = calculateWeight(updatedNode);
             priorityQueue.add(updatedNode);
           }
         }

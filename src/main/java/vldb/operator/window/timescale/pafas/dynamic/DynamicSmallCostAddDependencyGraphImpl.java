@@ -426,7 +426,7 @@ public final class DynamicSmallCostAddDependencyGraphImpl<T> implements DynamicD
         prevChildNodes.add(child);
       }
       parentNode.getDependencies().clear();
-      parentNode.lastChildNode = null;
+      //parentNode.lastChildNode = null;
     }
 
     //System.out.println("findingEdgeNode: " + findingEdgeNodes);

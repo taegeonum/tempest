@@ -192,6 +192,7 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
       priorityQueue = new PriorityBlockingQueue<>(addedNodes.size(), new Comparator<Node<T>>() {
         @Override
         public int compare(final Node<T> o1, final Node<T> o2) {
+          /*
           if (o1.cost < o2.cost) {
             return 1;
           } else if (o1.cost > o2.cost) {
@@ -207,12 +208,15 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
               return 0;
             }
           }
+          */
+          return 1;
         }
       });
     } else {
       priorityQueue = new PriorityBlockingQueue<>(addedNodes.size(), new Comparator<Node<T>>() {
         @Override
         public int compare(final Node<T> o1, final Node<T> o2) {
+          /*
           if (o1.cost < o2.cost) {
             return -1;
           } else if (o1.cost > o2.cost) {
@@ -228,6 +232,8 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
               return 0;
             }
           }
+          */
+          return 1;
         }
       });
     }
@@ -259,9 +265,9 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
         //parentSetMap.put(node, getPossibleParents(node, startTimeTree, endTimeTree));
 
         //node.possibleParentCount = parentSetMap.get(node).size();
-        node.possibleParentCount = getPossibleParents(node, startTimeTree, endTimeTree).size();
+        //node.possibleParentCount = getPossibleParents(node, startTimeTree, endTimeTree).size();
 
-        node.cost = node.possibleParentCount * (node.end - node.start);
+        //node.cost = node.possibleParentCount * (node.end - node.start);
         node.isNotShared = add;
         priorityQueue.add(node);
       });
@@ -314,8 +320,8 @@ public final class PruningDependencyGraphImpl<T> implements DependencyGraph {
             final Set<Node<T>> includedNodeParent = possibleParentMap.get(includedNode);
 
             includedNodeParent.removeAll(nParentSet);
-            includedNode.possibleParentCount = includedNodeParent.size();
-            includedNode.cost = includedNode.possibleParentCount * (includedNode.end - includedNode.start);
+            //includedNode.possibleParentCount = includedNodeParent.size();
+            //includedNode.cost = includedNode.possibleParentCount * (includedNode.end - includedNode.start);
 
             priorityQueue.remove(includedNode);
             priorityQueue.add(includedNode);

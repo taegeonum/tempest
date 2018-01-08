@@ -10,7 +10,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
    * DependencyGraphNode.
@@ -43,12 +42,6 @@ public final class Node<T> {
 
   public boolean isNotShared = false;
 
-  public int possibleParentCount = 0;
-
-  public double cost = 1;
-
-  public int weight;
-
   /**
    * The start time of the node.
    */
@@ -61,18 +54,11 @@ public final class Node<T> {
 
   public final boolean partial;
 
-  public Node<T> lastChildNode;
-
   public boolean intermediate;
-
-  public boolean costCalculated = false;
 
   public int height = 0;
 
   public Node<T> dependentNode;
-
-  public final ReentrantLock lock = new ReentrantLock();
-
 
   /**
    * DependencyGraphNode.
@@ -112,7 +98,6 @@ public final class Node<T> {
     parents.clear();
     refCnt.set(0);
     initialRefCnt.set(0);
-    costCalculated = false;
   }
 
   /**
@@ -170,6 +155,7 @@ public final class Node<T> {
       throw new NullPointerException();
     }
     dependencies.add(n);
+    /*
     if (lastChildNode == null) {
       lastChildNode = n;
     } else {
@@ -177,6 +163,7 @@ public final class Node<T> {
         lastChildNode = n;
       }
     }
+    */
 
     if (n.end == end) {
       dependentNode = n;

@@ -176,6 +176,8 @@ public final class MemoryOptimizedDependencyGraphImpl<T> implements DependencyGr
         new Comparator<Node<T>>() {
           @Override
           public int compare(final Node<T> o1, final Node<T> o2) {
+            return 1;
+            /*
             if (o1.cost < o2.cost) {
               return -1;
             } else if (o1.cost > o2.cost) {
@@ -183,6 +185,7 @@ public final class MemoryOptimizedDependencyGraphImpl<T> implements DependencyGr
             } else {
               return 0;
             }
+            */
           }
         });
 
@@ -203,7 +206,7 @@ public final class MemoryOptimizedDependencyGraphImpl<T> implements DependencyGr
     */
 
     for (final Node<T> node : addedNodes) {
-      node.cost = calculateWeight(node);
+      //node.cost = calculateWeight(node);
       priorityQueue.add(node);
     }
 
@@ -212,9 +215,9 @@ public final class MemoryOptimizedDependencyGraphImpl<T> implements DependencyGr
     while (removedNum < pruningNum) {
       final Node<T> pruningNode = priorityQueue.poll();
 
-      if (pruningNode.cost < 0) {
+      if (1 < 0) {
         final Set<Node<T>> updatedNodes = new HashSet<>();
-        System.out.println("cost " + pruningNode.cost);
+        //System.out.println("cost " + pruningNode.cost);
 
         pruningNode.initialRefCnt.set(0);
 
