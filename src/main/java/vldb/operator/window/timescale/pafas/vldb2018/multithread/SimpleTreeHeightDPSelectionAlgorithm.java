@@ -109,7 +109,7 @@ public class SimpleTreeHeightDPSelectionAlgorithm<T> implements DependencyGraph.
         break;
       }
 
-      solution.add(solutionNode);
+      solution.add(0, solutionNode);
       index -= (solutionNode.end - solutionNode.start);
     }
 

@@ -91,7 +91,7 @@ public class FastFitDPSelectionAlgorithm<T> implements DependencyGraph.Selection
         break;
       }
 
-      solution.add(solutionNode);
+      solution.add(0, solutionNode);
       index -= (solutionNode.end - solutionNode.start);
     }
 
