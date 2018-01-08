@@ -77,9 +77,9 @@ public class SimpleTreeHeightDPSelectionAlgorithm<T> implements DependencyGraph.
 
       // Dynamic programming
       for (final Node<T> node : availableNodes) {
-
         if (node.end == end) {
-          if (node.height < threshold && node.height > ptl) {
+          final int maxheight = availableNodes.size();
+          if (node.height < threshold && node.height > maxheight / 2) {
             final int nodeEndIndex = (int)(adjustTime(reducedEnd, node.end) - start);
             final int nodeStartIndex = (int)(adjustTime(reducedEnd-1, node.start) - start);
 
