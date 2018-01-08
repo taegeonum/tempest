@@ -238,7 +238,7 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
       }
     }
 
-    final List<ForkJoinTask<V>> forkJoinTasks = new ArrayList<>(independentNodes.size());
+    final List<ForkJoinTask<V>> forkJoinTasks  = new ArrayList<>(independentNodes.size());
     for (final Node<V> independentNode : independentNodes) {
       // compute aggregation
       forkJoinTasks.add(

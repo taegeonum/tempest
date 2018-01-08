@@ -78,6 +78,7 @@ public final class TestRunner {
     CuttyyP, // cutty parallel
     FastFitP, // fast fit parallel
     FastH, // fast tree height threshold
+    FastHS, // fast tree height threshold in a single thread
     FastCutty,
   }
 
@@ -124,6 +125,16 @@ public final class TestRunner {
             .set(FlatFitCombinedMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, SimpleTreeHeightDependencyGraph.class)
             .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, MultiThreadFinalAggregator.class)
+            .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
+            .build();
+      case FastHS:
+        return FlatFitCombinedMWOConfiguration.CONF
+            .set(FlatFitCombinedMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(FlatFitCombinedMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(FlatFitCombinedMWOConfiguration.SELECTION_ALGORITHM, SimpleTreeHeightDPSelectionAlgorithm.class)
+            .set(FlatFitCombinedMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
+            .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, SimpleTreeHeightDependencyGraph.class)
+            .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, SingleThreadFinalAggregator.class)
             .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
             .build();
       case FastFitP:
