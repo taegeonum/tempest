@@ -78,8 +78,7 @@ public class SimpleTreeHeightDPSelectionAlgorithm<T> implements DependencyGraph.
       // Dynamic programming
       for (final Node<T> node : availableNodes) {
         if (node.end == end) {
-          final int maxheight = availableNodes.size();
-          if (node.height < threshold && node.height > maxheight / 2) {
+          if (node.height < threshold) {
             final int nodeEndIndex = (int)(adjustTime(reducedEnd, node.end) - start);
             final int nodeStartIndex = (int)(adjustTime(reducedEnd-1, node.start) - start);
 
@@ -87,6 +86,12 @@ public class SimpleTreeHeightDPSelectionAlgorithm<T> implements DependencyGraph.
             if (cost < costArray.get(nodeEndIndex)) {
               costArray.set(nodeEndIndex, cost);
               nodeArray.set(nodeEndIndex, node);
+            } else if (cost == costArray.get(nodeEndIndex)) {
+              final Node<T> prevOpt = nodeArray.get(nodeEndIndex);
+              if (node.end - node.start > prevOpt.end - prevOpt.start) {
+                costArray.set(nodeEndIndex, cost);
+                nodeArray.set(nodeEndIndex, node);
+              }
             }
           }
         } else {
@@ -97,6 +102,12 @@ public class SimpleTreeHeightDPSelectionAlgorithm<T> implements DependencyGraph.
           if (cost < costArray.get(nodeEndIndex)) {
             costArray.set(nodeEndIndex, cost);
             nodeArray.set(nodeEndIndex, node);
+          } else if (cost == costArray.get(nodeEndIndex)) {
+            final Node<T> prevOpt = nodeArray.get(nodeEndIndex);
+            if (node.end - node.start > prevOpt.end - prevOpt.start) {
+              costArray.set(nodeEndIndex, cost);
+              nodeArray.set(nodeEndIndex, node);
+            }
           }
         }
       }
