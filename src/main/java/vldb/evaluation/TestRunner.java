@@ -697,7 +697,7 @@ public final class TestRunner {
         break;
       }
 
-      mwo.execute(Integer.valueOf(word));
+      mwo.execute((int)(Long.valueOf(word) % Integer.MAX_VALUE));
       currInput += 1;
 
       if (currInput >= currInputRate) {
