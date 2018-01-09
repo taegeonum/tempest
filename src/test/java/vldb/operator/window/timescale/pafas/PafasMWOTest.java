@@ -41,7 +41,7 @@ public final class PafasMWOTest {
     jcb.bindNamedParameter(WindowGap.class, "25");
     jcb.bindNamedParameter(SharedFinalNum.class, "1000000");
     jcb.bindNamedParameter(OverlappingRatio.class, "0.0");
-    jcb.bindNamedParameter(MultiThreadFinalAggregator.ParallelThreshold.class, "30");
+    jcb.bindNamedParameter(MultiThreadFinalAggregator.ParallelThreshold.class, "10");
 
     final long currTime = 0;
     final List<Configuration> configurationList = new LinkedList<>();
