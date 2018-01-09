@@ -84,8 +84,8 @@ public final class MultiThreadFinalAggregator<V> implements FinalAggregator<V> {
   public static final class ParallelThreshold implements Name<Integer> {
   }
 
-  @NamedParameter(short_name = "ptl", default_value = "0")
-  public static final class ParallelThresholdLow implements Name<Integer> {
+  @NamedParameter(short_name = "lt", default_value = "100")
+  public static final class LeafThreshold implements Name<Integer> {
   }
 
   /**

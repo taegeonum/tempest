@@ -34,7 +34,7 @@ public class SimpleTreeHeightDPSelectionAlgorithm<T> implements DependencyGraph.
                                                @Parameter(StartTime.class) long startTime,
                                                @Parameter(GCD.class) long gcd,
                                                @Parameter(MultiThreadFinalAggregator.ParallelThreshold.class) final int threshold,
-                                               @Parameter(MultiThreadFinalAggregator.ParallelThresholdLow.class) final int ptl,
+                                               @Parameter(MultiThreadFinalAggregator.LeafThreshold.class) final int ptl,
                                                @Parameter(TradeOffFactor.class) double tradeOffFactor) {
     this.partialTimespans = partialTimespans;
     this.finalTimespans = finalTimespans;

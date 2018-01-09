@@ -50,7 +50,7 @@ public final class TwitterEvaluation {
                     .registerShortNameOfClass(SharedFinalNum.class)
                         .registerShortNameOfClass(OverlappingRatio.class)
                             .registerShortNameOfClass(MultiThreadFinalAggregator.ParallelThreshold.class)
-        .registerShortNameOfClass(MultiThreadFinalAggregator.ParallelThresholdLow.class)
+        .registerShortNameOfClass(MultiThreadFinalAggregator.LeafThreshold.class)
             //.registerShortNameOfClass(NumOfKey.class)
         .processCommandLine(args);
 
@@ -79,7 +79,7 @@ public final class TwitterEvaluation {
     final int sharedFinalNum = injector.getNamedInstance(SharedFinalNum.class);
     final double overlapRatio = injector.getNamedInstance(OverlappingRatio.class);
     final int threshold = injector.getNamedInstance(MultiThreadFinalAggregator.ParallelThreshold.class);
-    final int ptl = injector.getNamedInstance(MultiThreadFinalAggregator.ParallelThresholdLow.class);
+    final int ptl = injector.getNamedInstance(MultiThreadFinalAggregator.LeafThreshold.class);
     //final long numKey = injector.getNamedInstance(NumOfKey.class);
 
     final TestRunner.OperatorType operatorType = TestRunner.OperatorType.valueOf(
@@ -168,6 +168,8 @@ public final class TwitterEvaluation {
       } else {
         writer.writeLine(prefix + "_result", sharedFinalNum + "\t" + metrics);
       }
+    } else if (operatorType == TestRunner.OperatorType.FastH) {
+      writer.writeLine(prefix + "-" + threshold + "_result", overlapRatio + "\t" + metrics);
     }
     else {
       if (operatorType == TestRunner.OperatorType.FastInter) {

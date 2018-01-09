@@ -606,7 +606,7 @@ public final class TestRunner {
     jcb.bindNamedParameter(SharedFinalNum.class, sharedFinalNum+"");
     jcb.bindNamedParameter(OverlappingRatio.class, overlappingRatio + "");
     jcb.bindNamedParameter(MultiThreadFinalAggregator.ParallelThreshold.class, threshold + "");
-    jcb.bindNamedParameter(MultiThreadFinalAggregator.ParallelThresholdLow.class, ptl + "");
+    jcb.bindNamedParameter(MultiThreadFinalAggregator.LeafThreshold.class, ptl + "");
 
     Collections.sort(timescales);
 

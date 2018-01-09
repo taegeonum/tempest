@@ -82,6 +82,7 @@ public final class MultiThreadImprovedFinalAggregator<V> implements FinalAggrega
 
   private final int threshold;
 
+  private final int leafThreshold;
   //private final ConcurrentMap<Timescale, ExecutorService> executorServiceMap;
 
   /**
@@ -99,6 +100,7 @@ public final class MultiThreadImprovedFinalAggregator<V> implements FinalAggrega
                                              final TimeMonitor timeMonitor,
                                              @Parameter(MultiThreadFinalAggregator.ParallelThreshold.class)
                                              final int threshold,
+                                             @Parameter(MultiThreadFinalAggregator.LeafThreshold.class) final int leafThreshold,
                                              @Parameter(EndTime.class) final long endTime) {
     LOG.info("START " + this.getClass());
     this.dependencyGraph = dependencyGraph;
@@ -108,6 +110,7 @@ public final class MultiThreadImprovedFinalAggregator<V> implements FinalAggrega
     this.forkJoinPool = ForkJoinPool.commonPool();
     this.outputHandler = outputHandler;
     this.numThreads = numThreads;
+    this.leafThreshold = leafThreshold;
     //this.executorService = Executors.newFixedThreadPool(numThreads);
     this.aggregateFunction = aggregateFunction;
     //this.executorServiceMap = new ConcurrentHashMap<>();
@@ -306,7 +309,7 @@ public final class MultiThreadImprovedFinalAggregator<V> implements FinalAggrega
     @Override
     protected V compute() {
       try {
-        if (aggregates.size() > threshold / 2) {
+        if (aggregates.size() > leafThreshold) {
           final Collection<V> agg = new ArrayList<>(2);
           final Collection<RecursiveAggregate> tasks = createSubTasks();
           for (final RecursiveAggregate task : tasks) {
