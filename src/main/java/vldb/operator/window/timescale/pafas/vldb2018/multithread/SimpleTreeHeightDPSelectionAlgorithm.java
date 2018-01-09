@@ -57,7 +57,7 @@ public class SimpleTreeHeightDPSelectionAlgorithm<T> implements DependencyGraph.
   private Node<T> getNodeLessThanHeight(final List<Node<T>> nodes, final int height) {
     Node<T> n = null;
     for (final Node<T> node : nodes) {
-      if (node.height < height) {
+      if (node.height < 40) {
         n = node;
       } else {
         break;
