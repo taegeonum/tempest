@@ -306,7 +306,7 @@ public final class MultiThreadImprovedFinalAggregator<V> implements FinalAggrega
     @Override
     protected V compute() {
       try {
-        if (aggregates.size() > 20) {
+        if (aggregates.size() > threshold / 2) {
           final Collection<V> agg = new ArrayList<>(2);
           final Collection<RecursiveAggregate> tasks = createSubTasks();
           for (final RecursiveAggregate task : tasks) {
