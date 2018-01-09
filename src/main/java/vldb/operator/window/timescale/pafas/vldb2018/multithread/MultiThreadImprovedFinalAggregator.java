@@ -306,7 +306,7 @@ public final class MultiThreadImprovedFinalAggregator<V> implements FinalAggrega
     @Override
     protected V compute() {
       try {
-        if (aggregates.size() > threshold) {
+        if (aggregates.size() > 20) {
           final Collection<V> agg = new ArrayList<>(2);
           final Collection<RecursiveAggregate> tasks = createSubTasks();
           for (final RecursiveAggregate task : tasks) {
@@ -367,10 +367,11 @@ public final class MultiThreadImprovedFinalAggregator<V> implements FinalAggrega
         }
 
         // Aggregates in a single thread
-        final V result = aggregateFunction.aggregate(aggregates);
+        //final V result = aggregateFunction.aggregate(aggregates);
+
         // TODO: work stealing
-        //final ForkJoinTask<V> task = new RecursiveAggregate(aggregates).fork();
-        //final V result = task.join();
+        final ForkJoinTask<V> task = new RecursiveAggregate(aggregates).fork();
+        final V result = task.join();
 
         node.saveOutput(result);
 
