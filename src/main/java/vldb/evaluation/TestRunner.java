@@ -15,6 +15,7 @@ import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.*;
 import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.cutty.CuttyMWOConfiguration;
+import vldb.operator.window.timescale.cutty.CuttyParallelMWOConfiguration;
 import vldb.operator.window.timescale.flatfit.FlatFitMWOConfiguration;
 import vldb.operator.window.timescale.naive.NaiveMWOConfiguration;
 import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
@@ -149,14 +150,10 @@ public final class TestRunner {
             .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
             .build();
       case CuttyyP:
-        return FlatFitCombinedMWOConfiguration.CONF
-            .set(FlatFitCombinedMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
-            .set(FlatFitCombinedMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-            .set(FlatFitCombinedMWOConfiguration.SELECTION_ALGORITHM, FastFitDPSelectionAlgorithm.class)
-            .set(FlatFitCombinedMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
-            .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, FastCuttyCombinedDependencyGraph.class)
-            .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, MultiThreadImprovedFinalAggregator.class)
-            .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
+        return CuttyParallelMWOConfiguration.CONF
+            .set(CuttyParallelMWOConfiguration.START_TIME, "0")
+            .set(CuttyParallelMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(CuttyParallelMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .build();
       case FastAc:
         return StaticActiveSingleMWOConfiguration.CONF
