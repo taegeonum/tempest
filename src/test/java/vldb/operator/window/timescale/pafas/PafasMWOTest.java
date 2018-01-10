@@ -136,7 +136,7 @@ public final class PafasMWOTest {
         .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, SingleThreadFinalAggregator.class)
         .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
         .build());
-    operatorIds.add("FAST-Cutty");ß
+    operatorIds.add("FAST-Cutty");
 
     configurationList.add(StaticSingleMWOConfiguration.CONF
         .set(StaticSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)

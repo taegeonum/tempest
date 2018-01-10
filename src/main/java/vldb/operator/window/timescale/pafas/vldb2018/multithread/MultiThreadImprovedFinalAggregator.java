@@ -356,16 +356,6 @@ public final class MultiThreadImprovedFinalAggregator<V> implements FinalAggrega
             aggregates.add(dependentNode.getOutput());
             dependentNode.decreaseRefCnt();
 
-            if (dependentNode.getOutput() == null) {
-              if (dependentNode.partial) {
-                //System.out.println("Deleted " + dependentNode);
-                metrics.storedPartial -= 1;
-              } else if (dependentNode.intermediate) {
-                metrics.storedInter -= 1;
-              } else {
-                metrics.storedFinal -= 1;
-              }
-            }
           }
         }
 

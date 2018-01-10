@@ -123,12 +123,14 @@ public final class ComputeByKeyAggregator<I, K, V> implements CAAggregator<I, Ma
       if (oldVal == null) {
         //oldVal = computeFunc.init();
         first.put(entry.getKey(), entry.getValue());
-        metrics.incrementFinal();
+        //TODO: remove comment
+        //metrics.incrementFinal();
       } else {
         //numAgg += 1;
         first.put(entry.getKey(), computeFunc.compute(oldVal, entry.getValue()));
         //aggregationCounter.incrementFinalAggregation();
-        metrics.incrementFinal();
+        //TODO: remove comment
+        //metrics.incrementFinal();
       }
     }
     return first;
