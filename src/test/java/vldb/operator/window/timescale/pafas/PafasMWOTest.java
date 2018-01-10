@@ -8,12 +8,9 @@ import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
 import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
+import vldb.operator.window.timescale.cutty.CuttyParallelMWOConfiguration;
 import vldb.operator.window.timescale.flatfit.FlatFitMWOConfiguration;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
-import vldb.operator.window.timescale.pafas.vldb2018.FastCuttyCombinedDependencyGraph;
-import vldb.operator.window.timescale.pafas.vldb2018.FastFitDPSelectionAlgorithm;
-import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedMWOConfiguration;
-import vldb.operator.window.timescale.pafas.vldb2018.multithread.MultiThreadImprovedFinalAggregator;
 import vldb.operator.window.timescale.pafas.vldb2018.singlethread.MultiThreadFinalAggregator;
 import vldb.operator.window.timescale.parameter.*;
 
@@ -155,14 +152,10 @@ public final class PafasMWOTest {
         .build());
     operatorIds.add("FlatFIT");
 
-    configurationList.add(FlatFitCombinedMWOConfiguration.CONF
-        .set(FlatFitCombinedMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
-        .set(FlatFitCombinedMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-        .set(FlatFitCombinedMWOConfiguration.SELECTION_ALGORITHM, FastFitDPSelectionAlgorithm.class)
-        .set(FlatFitCombinedMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
-        .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, FastCuttyCombinedDependencyGraph.class)
-        .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, MultiThreadImprovedFinalAggregator.class)
-        .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
+    configurationList.add(CuttyParallelMWOConfiguration.CONF
+        .set(CuttyParallelMWOConfiguration.START_TIME, currTime)
+        .set(CuttyParallelMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+        .set(CuttyParallelMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .build());
     operatorIds.add("CuttyP");
     /*
