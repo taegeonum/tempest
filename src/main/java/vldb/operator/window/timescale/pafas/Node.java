@@ -47,6 +47,8 @@ public final class Node<T> {
    */
   public final long start;
 
+  public int cost = 1;
+
   /**
    * The end time of the node.
    */

@@ -376,6 +376,7 @@ public final class MultiThreadImprovedFinalAggregator<V> implements FinalAggrega
         final ForkJoinTask<V> task = new RecursiveAggregate(aggregates).fork();
         final V result = task.join();
 
+        System.out.println("Agg: " + node);
         node.saveOutput(result);
 
         if (!node.intermediate) {

@@ -10,14 +10,11 @@ import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.flatfit.FlatFitMWOConfiguration;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
-import vldb.operator.window.timescale.pafas.vldb2018.FastFitDPSelectionAlgorithm;
-import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedDependencyGraph;
 import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedMWOConfiguration;
 import vldb.operator.window.timescale.pafas.vldb2018.multithread.MultiThreadImprovedFinalAggregator;
 import vldb.operator.window.timescale.pafas.vldb2018.multithread.SimpleTreeHeightDPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.vldb2018.multithread.SimpleTreeHeightDependencyGraph;
 import vldb.operator.window.timescale.pafas.vldb2018.singlethread.MultiThreadFinalAggregator;
-import vldb.operator.window.timescale.pafas.vldb2018.singlethread.SingleThreadFinalAggregator;
 import vldb.operator.window.timescale.parameter.*;
 
 import java.util.LinkedList;
@@ -94,7 +91,7 @@ public final class PafasMWOTest {
         .set(InterNodeMWOConfiguration.START_TIME, "0")
         .build());
     operatorIds.add("FAST-inter");
-*/
+
 
     configurationList.add(FlatFitCombinedMWOConfiguration.CONF
         .set(FlatFitCombinedMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
@@ -106,7 +103,7 @@ public final class PafasMWOTest {
         .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
         .build());
     operatorIds.add("FAST-fit");
-
+*/
 
     configurationList.add(FlatFitCombinedMWOConfiguration.CONF
         .set(FlatFitCombinedMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
@@ -114,7 +111,7 @@ public final class PafasMWOTest {
         .set(FlatFitCombinedMWOConfiguration.SELECTION_ALGORITHM, SimpleTreeHeightDPSelectionAlgorithm.class)
         .set(FlatFitCombinedMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
         .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, SimpleTreeHeightDependencyGraph.class)
-        .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, SingleThreadFinalAggregator.class)
+        .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, MultiThreadImprovedFinalAggregator.class)
         .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
         .build());
     operatorIds.add("FAST-height");

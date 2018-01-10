@@ -520,12 +520,21 @@ public final class SimpleTreeHeightDependencyGraph<T> implements DependencyGraph
     //System.out.println("(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
 
     // Find dependent node
+    int cost = 0;
     for (final Node<T> elem : childNodes) {
       parent.addDependency(elem);
       if (elem.end == parent.end) {
         parent.height = elem.height + 1;
       }
+
+      if (elem.end == parent.end) {
+        cost += elem.cost;
+      } else {
+        cost += 1;
+      }
     }
+
+    parent.cost = cost;
   }
 
   private void addEdges(final Collection<Node<T>> parentNodes) {
