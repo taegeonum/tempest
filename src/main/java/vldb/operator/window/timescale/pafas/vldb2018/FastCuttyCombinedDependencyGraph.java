@@ -357,7 +357,7 @@ public final class FastCuttyCombinedDependencyGraph<T> implements DependencyGrap
         .collect(Collectors.toCollection(ArrayList::new));
 
     // add final edges
-    addedNodes.stream().forEach(node -> addEdge(node));
+    addedNodes.parallelStream().forEach(node -> addEdge(node));
 
     // Add edges for selected intermediate nodes
     final AtomicBoolean isChanged = new AtomicBoolean(false);
@@ -376,6 +376,13 @@ public final class FastCuttyCombinedDependencyGraph<T> implements DependencyGrap
       try {
         final Node<T> n = finalTimespans.lookup(node.start, node.end);
         n.intermediate = false;
+        for (final Node<T> childnode : node.getDependencies()) {
+          childnode.decreaseRefCntWithoutReset();
+          synchronized (childnode.parents) {
+            childnode.parents.remove(node);
+          }
+        }
+        node.getDependencies().clear();
       } catch (final NotFoundException e) {
         finalTimespans.saveOutput(node.start, node.end, node);
       }
