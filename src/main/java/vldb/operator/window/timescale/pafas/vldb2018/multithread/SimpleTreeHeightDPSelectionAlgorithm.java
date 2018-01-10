@@ -89,7 +89,7 @@ public class SimpleTreeHeightDPSelectionAlgorithm<T> implements DependencyGraph.
     for (int currIndex = length - 1; currIndex >= 0; currIndex -= 1) {
       final List<Node<T>> availableNodes = getAvailableNodes(start, reducedEnd, currIndex, (end-start));
 
-      if (currIndex == 0) {
+      if (currIndex == 0 && availableNodes.size() > threshold) {
         availableNodes.sort(new Comparator<Node<T>>() {
           @Override
           public int compare(final Node<T> o1, final Node<T> o2) {
@@ -103,10 +103,7 @@ public class SimpleTreeHeightDPSelectionAlgorithm<T> implements DependencyGraph.
           }
         });
 
-        final int partitionNum = 10;
-        final int index = availableNodes.size() / partitionNum;
-
-        final Node<T> node = availableNodes.get(index);
+        final Node<T> node = availableNodes.get(0);
         final int nodeEndIndex = (int)(adjustTime(reducedEnd, node.end) - start);
         final int nodeStartIndex = (int)(adjustTime(reducedEnd-1, node.start) - start);
         final double cost = 1 + costArray.get(nodeStartIndex);
