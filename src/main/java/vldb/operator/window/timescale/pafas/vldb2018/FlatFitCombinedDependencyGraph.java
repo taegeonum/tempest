@@ -247,13 +247,15 @@ public final class FlatFitCombinedDependencyGraph<T> implements DependencyGraph 
 
   private final List<Timescale> getWindows(final long time) {
     final List<Timescale> endWindows = new LinkedList<>();
-    for (final Timescale timescale : windowManager.timescales) {
+    for (int i = windowManager.timescales.size() - 1; i >= 0; i--) {
+      final Timescale timescale = windowManager.timescales.get(i);
       if ((time - startTime) % timescale.intervalSize == 0) {
         endWindows.add(timescale);
       }
     }
     return endWindows;
   }
+
 
 
   private Timespan mergeTs(final Timespan ts1, final Timespan ts2) {
@@ -330,7 +332,9 @@ public final class FlatFitCombinedDependencyGraph<T> implements DependencyGraph 
           }
         }
 
-        final int uu = positions.pop();
+        if (positions.size() > 0) {
+          final int uu = positions.pop();
+        }
       }
 
       prevInd = currInd;

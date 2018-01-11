@@ -167,6 +167,19 @@ public final class FlatFitMWO<I, V> implements TimescaleWindowOperator<I, V> {
     }
   }
 
+
+  private final List<Timescale> getWindows(final long time) {
+    final List<Timescale> endWindows = new LinkedList<>();
+    for (int i = windowManager.timescales.size() - 1; i >= 0; i--) {
+      final Timescale timescale = windowManager.timescales.get(i);
+      if ((time - startTime) % timescale.intervalSize == 0) {
+        endWindows.add(timescale);
+      }
+    }
+    return endWindows;
+  }
+
+  /*
   private final List<Timescale> getWindows(final long time) {
     final List<Timescale> endWindows = new LinkedList<>();
     for (final Timescale timescale : windowManager.timescales) {
@@ -176,6 +189,7 @@ public final class FlatFitMWO<I, V> implements TimescaleWindowOperator<I, V> {
     }
     return endWindows;
   }
+  */
 
   private Timespan mergeTs(final Timespan ts1, final Timespan ts2) {
     if (ts1.startTime < ts2.startTime) {
@@ -230,12 +244,14 @@ public final class FlatFitMWO<I, V> implements TimescaleWindowOperator<I, V> {
         timespans.set(tempInd, newTs);
       }
 
-      final int uu = positions.pop();
-      final List<V> l = new ArrayList<>(2);
-      l.add(answer); l.add(partials.get(uu));
-      answer = aggregator.aggregate(l);
-      childNodes.add(timespans.get(uu));
-
+      if (positions.size() > 0) {
+        final int uu = positions.pop();
+        final List<V> l = new ArrayList<>(2);
+        l.add(answer);
+        l.add(partials.get(uu));
+        answer = aggregator.aggregate(l);
+        childNodes.add(timespans.get(uu));
+      }
 
       final Iterator<Timespan> iter = childNodes.iterator();
       while (iter.hasNext()) {
