@@ -69,6 +69,7 @@ public final class ComputeByKeyAggregator<I, K, V> implements CAAggregator<I, Ma
     this.computeFunc = computeFunc;
     this.metrics = metrics;
     this.isParallel = isParallel;
+    System.out.println("IS Parallel: " + isParallel);
   }
 
   /**

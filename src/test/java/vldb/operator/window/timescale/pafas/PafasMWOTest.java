@@ -8,9 +8,12 @@ import vldb.operator.window.aggregator.impl.CountByKeyAggregator;
 import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
-import vldb.operator.window.timescale.cutty.CuttyParallelMWOConfiguration;
 import vldb.operator.window.timescale.flatfit.FlatFitMWOConfiguration;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
+import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedMWOConfiguration;
+import vldb.operator.window.timescale.pafas.vldb2018.multithread.MultiThreadImprovedFinalAggregator;
+import vldb.operator.window.timescale.pafas.vldb2018.multithread.SimpleTreeHeightDPSelectionAlgorithm;
+import vldb.operator.window.timescale.pafas.vldb2018.multithread.SimpleTreeHeightDependencyGraph;
 import vldb.operator.window.timescale.pafas.vldb2018.singlethread.MultiThreadFinalAggregator;
 import vldb.operator.window.timescale.parameter.*;
 
@@ -101,7 +104,7 @@ public final class PafasMWOTest {
         .build());
     operatorIds.add("FAST-fit");
 */
-    /*
+
     configurationList.add(FlatFitCombinedMWOConfiguration.CONF
         .set(FlatFitCombinedMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .set(FlatFitCombinedMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
@@ -110,10 +113,10 @@ public final class PafasMWOTest {
         .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, SimpleTreeHeightDependencyGraph.class)
         .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, MultiThreadImprovedFinalAggregator.class)
         .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
-        .set(FlatFitCombinedMWOConfiguration.IS_PARALLEL, "false")
+        .set(FlatFitCombinedMWOConfiguration.IS_PARALLEL, "true")
         .build());
     operatorIds.add("FAST-height");
-
+    /*
     configurationList.add(StaticActiveSingleMWOConfiguration.CONF
         .set(StaticActiveSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .set(StaticActiveSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
@@ -151,14 +154,14 @@ public final class PafasMWOTest {
         .set(FlatFitMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .build());
     operatorIds.add("FlatFIT");
-
+    operatorIds.add("CuttyP");
+    /*
     configurationList.add(CuttyParallelMWOConfiguration.CONF
         .set(CuttyParallelMWOConfiguration.START_TIME, currTime)
         .set(CuttyParallelMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(CuttyParallelMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .build());
-    operatorIds.add("CuttyP");
-    /*
+
     configurationList.add(CuttyMWOConfiguration.CONF
         .set(CuttyMWOConfiguration.START_TIME, currTime)
         .set(CuttyMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
