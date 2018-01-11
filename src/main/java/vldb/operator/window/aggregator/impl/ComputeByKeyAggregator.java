@@ -15,7 +15,9 @@
  */
 package vldb.operator.window.aggregator.impl;
 
+import org.apache.reef.tang.annotations.Parameter;
 import vldb.evaluation.Metrics;
+import vldb.evaluation.parameter.IsParallel;
 import vldb.operator.window.aggregator.CAAggregator;
 
 import javax.inject.Inject;
@@ -48,6 +50,8 @@ public final class ComputeByKeyAggregator<I, K, V> implements CAAggregator<I, Ma
 
   private final Metrics metrics;
 
+  private final boolean isParallel;
+
   /**
    * Compute the input by key.
    * @param keyExtractor a key extractor
@@ -58,11 +62,13 @@ public final class ComputeByKeyAggregator<I, K, V> implements CAAggregator<I, Ma
   private ComputeByKeyAggregator(final KeyExtractor<I, K> keyExtractor,
                                 final ValueExtractor<I, V> valueExtractor,
                                 final ComputeByKeyFunc<V> computeFunc,
+                                @Parameter(IsParallel.class) final boolean isParallel,
                                 final Metrics metrics) {
     this.keyExtractor = keyExtractor;
     this.valueExtractor = valueExtractor;
     this.computeFunc = computeFunc;
     this.metrics = metrics;
+    this.isParallel = isParallel;
   }
 
   /**
@@ -123,14 +129,16 @@ public final class ComputeByKeyAggregator<I, K, V> implements CAAggregator<I, Ma
       if (oldVal == null) {
         //oldVal = computeFunc.init();
         first.put(entry.getKey(), entry.getValue());
-        //TODO: remove comment
-        //metrics.incrementFinal();
+        if (!isParallel) {
+          metrics.incrementFinal();
+        }
       } else {
         //numAgg += 1;
         first.put(entry.getKey(), computeFunc.compute(oldVal, entry.getValue()));
         //aggregationCounter.incrementFinalAggregation();
-        //TODO: remove comment
-        //metrics.incrementFinal();
+        if (!isParallel) {
+          metrics.incrementFinal();
+        }
       }
     }
     return first;

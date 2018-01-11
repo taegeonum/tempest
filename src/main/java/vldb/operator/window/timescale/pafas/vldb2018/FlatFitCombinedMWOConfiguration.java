@@ -17,6 +17,8 @@ package vldb.operator.window.timescale.pafas.vldb2018;
 
 import org.apache.reef.tang.formats.ConfigurationModule;
 import org.apache.reef.tang.formats.RequiredImpl;
+import org.apache.reef.tang.formats.RequiredParameter;
+import vldb.evaluation.parameter.IsParallel;
 import vldb.operator.window.timescale.TimescaleWindowBaseConfiguration;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.common.FinalAggregator;
@@ -37,6 +39,7 @@ public final class FlatFitCombinedMWOConfiguration extends TimescaleWindowBaseCo
     public static final RequiredImpl<OutputLookupTable> OUTPUT_LOOKUP_TABLE = new RequiredImpl<>();
     public static final RequiredImpl<DependencyGraph> DEPENDENCY_GRAPH = new RequiredImpl<>();
     public static final RequiredImpl<FinalAggregator> FINAL_AGGREGATOR = new RequiredImpl<>();
+    public static final RequiredParameter<Boolean> IS_PARALLEL = new RequiredParameter<>();
 
     public static final RequiredImpl<DependencyGraph.SelectionAlgorithm> SELECTION_ALGORITHM = new RequiredImpl<>();
     public static final ConfigurationModule CONF = new FlatFitCombinedMWOConfiguration()
@@ -47,6 +50,7 @@ public final class FlatFitCombinedMWOConfiguration extends TimescaleWindowBaseCo
         .bindImplementation(TimescaleWindowOperator.class, PafasMWO.class)
         .bindImplementation(PartialAggregator.class, SingleThreadPartialAggregator.class)
         .bindImplementation(PartialTimespans.class, SizeOnePartialTimespans.class)
+        .bindNamedParameter(IsParallel.class, IS_PARALLEL)
         .bindImplementation(FinalAggregator.class, FINAL_AGGREGATOR)
         .bindImplementation(DependencyGraph.class, DEPENDENCY_GRAPH)
         .build();

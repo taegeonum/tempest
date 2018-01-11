@@ -110,9 +110,9 @@ public final class PafasMWOTest {
         .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, SimpleTreeHeightDependencyGraph.class)
         .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, MultiThreadImprovedFinalAggregator.class)
         .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
+        .set(FlatFitCombinedMWOConfiguration.IS_PARALLEL, "false")
         .build());
     operatorIds.add("FAST-height");
-
 
     configurationList.add(StaticActiveSingleMWOConfiguration.CONF
         .set(StaticActiveSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)

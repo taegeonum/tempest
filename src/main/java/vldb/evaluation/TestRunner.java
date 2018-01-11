@@ -108,6 +108,7 @@ public final class TestRunner {
             .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, FastCuttyCombinedDependencyGraph.class)
             .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, SingleThreadFinalAggregator.class)
             .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
+            .set(FlatFitCombinedMWOConfiguration.IS_PARALLEL, "false")
             .build();
       case FastFit:
         return FlatFitCombinedMWOConfiguration.CONF
@@ -118,6 +119,7 @@ public final class TestRunner {
             .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, FlatFitCombinedDependencyGraph.class)
             .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, SingleThreadFinalAggregator.class)
             .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
+            .set(FlatFitCombinedMWOConfiguration.IS_PARALLEL, "false")
             .build();
       case FastH:
         return FlatFitCombinedMWOConfiguration.CONF
@@ -128,6 +130,7 @@ public final class TestRunner {
             .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, SimpleTreeHeightDependencyGraph.class)
             .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, MultiThreadImprovedFinalAggregator.class)
             .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
+            .set(FlatFitCombinedMWOConfiguration.IS_PARALLEL, "true")
             .build();
       case FastHS:
         return FlatFitCombinedMWOConfiguration.CONF
@@ -138,6 +141,7 @@ public final class TestRunner {
             .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, SimpleTreeHeightDependencyGraph.class)
             .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, SingleThreadFinalAggregator.class)
             .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
+            .set(FlatFitCombinedMWOConfiguration.IS_PARALLEL, "false")
             .build();
       case FastFitP:
         return FlatFitCombinedMWOConfiguration.CONF
@@ -148,6 +152,7 @@ public final class TestRunner {
             .set(FlatFitCombinedMWOConfiguration.DEPENDENCY_GRAPH, FlatFitCombinedDependencyGraph.class)
             .set(FlatFitCombinedMWOConfiguration.FINAL_AGGREGATOR, MultiThreadImprovedFinalAggregator.class)
             .set(FlatFitCombinedMWOConfiguration.START_TIME, "0")
+            .set(FlatFitCombinedMWOConfiguration.IS_PARALLEL, "true")
             .build();
       case CuttyyP:
         return CuttyParallelMWOConfiguration.CONF

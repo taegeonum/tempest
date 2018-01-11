@@ -16,6 +16,7 @@
 package vldb.operator.window.timescale.cutty;
 
 import org.apache.reef.tang.formats.ConfigurationModule;
+import vldb.evaluation.parameter.IsParallel;
 import vldb.operator.window.timescale.TimescaleWindowBaseConfiguration;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 
@@ -28,5 +29,6 @@ public final class CuttyParallelMWOConfiguration extends TimescaleWindowBaseConf
         .merge(TimescaleWindowBaseConfiguration.CONF)
         .bindImplementation(TimescaleWindowOperator.class, CuttyParallelMWO.class)
         .bindImplementation(Fat.class, CuttyFlatFat.class)
+        .bindNamedParameter(IsParallel.class, "true")
         .build();
 }
