@@ -109,6 +109,7 @@ public final class FlatFitMWO<I, V> implements TimescaleWindowOperator<I, V> {
     this.pointers = new ArrayList<>(wSize);
     this.timespans = new ArrayList<>(wSize);
     this.positions = new Stack<>();
+    this.nextSliceTime = startTime + 1;
 
     // Initialize
     for (int i = 0; i < wSize; i++) {
@@ -133,15 +134,7 @@ public final class FlatFitMWO<I, V> implements TimescaleWindowOperator<I, V> {
   private int findWsize(final List<Timescale> timescales) {
     int max = 0;
     for (final Timescale timescale : timescales) {
-      int count = 0;
-      long t = startTime;
-      count =  (int)timescale.windowSize;
-      /*
-      while ((t = partialTimespans.getNextSliceTime(t)) <= timescale.windowSize + startTime) {
-        count += 1;
-      }
-      */
-
+      int count = (int)timescale.windowSize;
       wSizeMap.put(timescale, count);
 
       if (max < count) {
@@ -287,8 +280,7 @@ public final class FlatFitMWO<I, V> implements TimescaleWindowOperator<I, V> {
         //System.out.println("PARTIAL_SIZE: " + ((Map)partialAggregation).size() + "\t" + (prevSliceTime) + "-" + (nextSliceTime));
         final long next = nextSliceTime;
         final long prev = prevSliceTime;
-        prevSliceTime = nextSliceTime;
-        nextSliceTime = prevSliceTime + 1;
+        nextSliceTime += 1;
 
         // do execution
         execution(newPartial, tickTime);
