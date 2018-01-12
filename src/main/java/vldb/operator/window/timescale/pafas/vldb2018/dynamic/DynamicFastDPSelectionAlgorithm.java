@@ -133,12 +133,7 @@ public class DynamicFastDPSelectionAlgorithm<T> implements DependencyGraph.Selec
     }
 
     // Add partials
-    long partialEndTime = 0;
-    if (end - currIndex <= 0) {
-      partialEndTime = end - currIndex + period;
-    } else {
-      partialEndTime = end - currIndex;
-    }
+    long partialEndTime = end - currIndex;
 
     for (long i = partialEndTime - 1; i >= start; i--) {
       final Node<T> availablePartialNode = partialTimespans.getNextPartialTimespanNode(i);

@@ -101,7 +101,8 @@ public final class DynamicAdjustPartialDependencyGraphImpl<T> implements Dynamic
     final List<Node<T>> addedNodes = new LinkedList<>();
     currBuildingIndex = until;
     for (final Timescale timescale : timescales) {
-      final long align = curr + (timescale.intervalSize - (curr - windowManager.timescaleStartTime(timescale)) % timescale.intervalSize);
+      final long align = curr + (timescale.intervalSize
+          - (curr - windowManager.timescaleStartTime(timescale)) % timescale.intervalSize);
       for (long time = align; time <= until; time += timescale.intervalSize) {
         // create vertex and add it to the table cell of (time, windowsize)
         final long start = Math.max(time - timescale.windowSize, windowManager.timescaleStartTime(timescale));
@@ -133,9 +134,9 @@ public final class DynamicAdjustPartialDependencyGraphImpl<T> implements Dynamic
   }
 
   private void adjustPartialNodes(final long curr, final long until) {
-    for (long start = curr; start < until; start = partialTimespans.getNextSliceTime(start)) {
-      buildIntermediateNodes(start, until);
-    }
+    //for (long start = curr; start < until; start = partialTimespans.getNextSliceTime(start)) {
+      buildIntermediateNodes(curr, until);
+    //}
   }
 
   private void buildIntermediateNodes(final long startTime, final long endTime) {
@@ -218,6 +219,16 @@ public final class DynamicAdjustPartialDependencyGraphImpl<T> implements Dynamic
 
   private void addEdges(final Collection<Node<T>> parentNodes) {
     // Add edges
+
+    for (final Node<T> parent : parentNodes) {
+      final List<Node<T>> childNodes = selectionAlgorithm.selection(parent.start, parent.end);
+      LOG.log(Level.FINE, "(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
+      //System.out.println("(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
+      for (final Node<T> elem : childNodes) {
+        parent.addDependency(elem);
+      }
+    }
+    /*
     parentNodes.stream().forEach(parent -> {
       final List<Node<T>> childNodes = selectionAlgorithm.selection(parent.start, parent.end);
       LOG.log(Level.FINE, "(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
@@ -226,6 +237,7 @@ public final class DynamicAdjustPartialDependencyGraphImpl<T> implements Dynamic
         parent.addDependency(elem);
       }
     });
+    */
   }
 
   @Override
