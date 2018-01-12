@@ -128,7 +128,7 @@ public final class DynamicAdjustPartialDependencyGraphImpl<T> implements Dynamic
     addEdges(addedNodes);
 
     // Adjust partial nodes!
-    adjustPartialNodes(until - rebuildSize, until);
+    //adjustPartialNodes(until - rebuildSize, until);
 
     //System.out.println("Build end");
   }
