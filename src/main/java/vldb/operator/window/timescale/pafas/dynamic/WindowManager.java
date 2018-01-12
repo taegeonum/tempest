@@ -6,10 +6,7 @@ import vldb.operator.window.timescale.common.TimescaleParser;
 import vldb.operator.window.timescale.parameter.StartTime;
 
 import javax.inject.Inject;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by taegeonum on 8/16/16.
@@ -23,6 +20,18 @@ public final class WindowManager {
   private WindowManager(final TimescaleParser tsParser,
                         @Parameter(StartTime.class) final long startTime) {
     this.timescales = tsParser.timescales;
+    timescales.sort(new Comparator<Timescale>() {
+      @Override
+      public int compare(final Timescale o1, final Timescale o2) {
+        if (o1.windowSize < o2.windowSize) {
+          return -1;
+        } else if (o1.windowSize > o2.windowSize) {
+          return 1;
+        } else {
+          return 0;
+        }
+      }
+    });
     this.startTimeMap = new HashMap<>();
     for (final Timescale ts : timescales) {
       startTimeMap.put(ts, startTime);

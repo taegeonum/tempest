@@ -22,7 +22,8 @@ import vldb.operator.window.timescale.common.OutputLookupTable;
 import vldb.operator.window.timescale.common.WindowTimeAndOutput;
 
 import javax.inject.Inject;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
@@ -34,12 +35,16 @@ public final class DynamicFastGreedyOutputLookupTableImpl<V> implements OutputLo
 
   /**
    * A data structure for saving outputs.
+   * This is for end time.
    */
-  public final ConcurrentMap<Long, ConcurrentSkipListMap<Long, V>> table;
+  public final Map<Long, ConcurrentSkipListMap<Long, V>> table;
+
+  public final Map<Long, ConcurrentSkipListMap<Long, V>> startTimeTable;
 
   @Inject
   private DynamicFastGreedyOutputLookupTableImpl() {
-    table = new ConcurrentHashMap<>();
+    table = new HashMap<>();
+    startTimeTable = new HashMap<>();
   }
 
   /**
@@ -50,11 +55,20 @@ public final class DynamicFastGreedyOutputLookupTableImpl<V> implements OutputLo
    */
   public void saveOutput(final long startTime, final long endTime, final V output) {
     ConcurrentSkipListMap<Long, V> row = table.get(endTime);
+    ConcurrentSkipListMap<Long, V> row2 = startTimeTable.get(startTime);
+
     if (row == null) {
       table.putIfAbsent(endTime, new ConcurrentSkipListMap<Long, V>(new LongComparator()));
       row = table.get(endTime);
     }
-    row.putIfAbsent(startTime, output);
+    row.put(startTime, output);
+
+    if (row2 == null) {
+      startTimeTable.putIfAbsent(startTime, new ConcurrentSkipListMap<Long, V>(new LongComparator()));
+      row2 = startTimeTable.get(startTime);
+    }
+
+    row2.put(endTime, output);
   }
 
   /**
@@ -91,6 +105,13 @@ public final class DynamicFastGreedyOutputLookupTableImpl<V> implements OutputLo
     return table.get(endTime);
   }
 
+  public ConcurrentMap<Long, V> lookupStart(final long startTime) throws NotFoundException {
+    if (startTimeTable.get(startTime) == null) {
+      throw new NotFoundException("Not found startTime: " + startTime);
+    }
+    return startTimeTable.get(startTime);
+  }
+
   /**
    * Lookup an output having largest endTime within outputs which start at startTime.
    * e.g) if this table has [s=3, e=4] [s=3, e=5], [s=3, e=7] outputs
@@ -116,6 +137,21 @@ public final class DynamicFastGreedyOutputLookupTableImpl<V> implements OutputLo
     return new WindowTimeAndOutput<>(lowestKey, endTime, row.get(lowestKey));
   }
 
+  public WindowTimeAndOutput<V> lookupLargestSizeStartOutput(final long startTime, final long endTime)
+      throws NotFoundException {
+    final ConcurrentSkipListMap<Long, V> row = startTimeTable.get(startTime);
+    if (row == null) {
+      throw new NotFoundException("Cannot lookup startTime " + startTime + " in lookupLargestSizeOutput");
+    }
+
+    final Long highestKey = row.floorKey(endTime);
+    if (highestKey == null) {
+      throw new NotFoundException("not found " + startTime + "-" + endTime);
+    }
+
+    return new WindowTimeAndOutput<>(startTime, highestKey, row.get(highestKey));
+  }
+
   /**
    * Delete outputs which start at startTime.
    * @param startTime start time of the outputs.
@@ -123,6 +159,10 @@ public final class DynamicFastGreedyOutputLookupTableImpl<V> implements OutputLo
   @Override
   public void deleteOutputs(final long endTime) {
     table.remove(endTime);
+  }
+
+  public void deleteStartOutputs(final long startTime) {
+    startTimeTable.remove(startTime);
   }
 
   /**
@@ -135,6 +175,10 @@ public final class DynamicFastGreedyOutputLookupTableImpl<V> implements OutputLo
     ConcurrentMap<Long, V> row = table.get(endTime);
     if (row != null){
       row.remove(startTime);
+    }
+    ConcurrentMap<Long, V> row2 = startTimeTable.get(startTime);
+    if (row2 != null) {
+      row2.remove(endTime);
     }
   }
 }

@@ -89,14 +89,14 @@ public final class DynamicAdjustPartialDependencyGraphImpl<T> implements Dynamic
     this.finalTimespans = outputLookupTable;
     this.selectionAlgorithm = selectionAlgorithm;
     this.period = periodCalculator.getPeriod();
-    addOverlappingWindowNodeAndEdge(startTime, startTime + rebuildSize);
+    addOverlappingWindowNodeAndEdge(startTime, startTime + rebuildSize, true);
     //System.out.println("End of DynamicDependencyGraphImpl");
   }
 
   /**
    * Add DependencyGraphNode and connect dependent nodes.
    */
-  private void addOverlappingWindowNodeAndEdge(final long curr, final long until) {
+  private void addOverlappingWindowNodeAndEdge(final long curr, final long until, final boolean isStart) {
     //System.out.println("curr: " + curr + ", until: " + until);
     final List<Node<T>> addedNodes = new LinkedList<>();
     currBuildingIndex = until;
@@ -111,7 +111,7 @@ public final class DynamicAdjustPartialDependencyGraphImpl<T> implements Dynamic
         try {
           parent = finalTimespans.lookup(start, time);
           parent.timescales.add(timescale);
-        } catch (NotFoundException e) {
+        } catch (final NotFoundException e) {
           //System.out.println("ADD Node (" + start + ", " + time + ")" + ", curr: " + curr + ", until: " + until);
           parent = new Node(start, time, false, timescale);
           finalTimespans.saveOutput(start, time, parent);
@@ -125,7 +125,18 @@ public final class DynamicAdjustPartialDependencyGraphImpl<T> implements Dynamic
     }
 
     // Add edges
-    addEdges(addedNodes);
+    if (isStart) {
+      addedNodes.stream().forEach(parent -> {
+        final List<Node<T>> childNodes = selectionAlgorithm.selection(parent.start, parent.end);
+        LOG.log(Level.FINE, "(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
+        //System.out.println("(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
+        for (final Node<T> elem : childNodes) {
+          parent.addDependency(elem);
+        }
+      });
+    } else {
+      addEdges(addedNodes);
+    }
 
     // Adjust partial nodes!
     adjustPartialNodes(until - rebuildSize, until);
@@ -259,7 +270,7 @@ public final class DynamicAdjustPartialDependencyGraphImpl<T> implements Dynamic
     if (t + rebuildSize > currBuildingIndex) {
       // Incremental build dependency graph
       final long s = System.nanoTime();
-      addOverlappingWindowNodeAndEdge(currBuildingIndex, t + rebuildSize);
+      addOverlappingWindowNodeAndEdge(currBuildingIndex, t + rebuildSize, false);
       final long e = System.nanoTime();
       timeMonitor.continuousTime += (e-s);
       currBuildingIndex = t + rebuildSize;
@@ -335,7 +346,7 @@ public final class DynamicAdjustPartialDependencyGraphImpl<T> implements Dynamic
 
     // Create new nodes and edges
     rebuildSize = windowManager.getRebuildSize();
-    addOverlappingWindowNodeAndEdge(addTime, addTime + rebuildSize);
+    addOverlappingWindowNodeAndEdge(addTime, addTime + rebuildSize, false);
 
     // Remove child nodes which have zero reference count
     for (final Node<T> child : prevChildNodes) {
@@ -402,7 +413,7 @@ public final class DynamicAdjustPartialDependencyGraphImpl<T> implements Dynamic
 
     // Create new nodes and edges
     rebuildSize = windowManager.getRebuildSize();
-    addOverlappingWindowNodeAndEdge(deleteTime, deleteTime + rebuildSize);
+    addOverlappingWindowNodeAndEdge(deleteTime, deleteTime + rebuildSize, false);
 
     // Remove child nodes which have zero reference count
     for (final Node<T> child : prevChildNodes) {

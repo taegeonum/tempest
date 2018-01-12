@@ -27,6 +27,7 @@ import vldb.operator.window.timescale.TimescaleWindowOutput;
 import vldb.operator.window.timescale.common.*;
 import vldb.operator.window.timescale.pafas.Node;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicPartialTimespans;
+import vldb.operator.window.timescale.pafas.dynamic.WindowManager;
 import vldb.operator.window.timescale.parameter.NumThreads;
 import vldb.operator.window.timescale.parameter.StartTime;
 
@@ -75,6 +76,10 @@ public final class DynamicSingleThreadFinalAggregator<V> implements FinalAggrega
 
   private final OutputLookupTable<Node<V>> outputLookupTable;
 
+  private long gcTime;
+
+  private final WindowManager windowManager;
+
   /**
    * Default overlapping window operator.
    */
@@ -87,6 +92,7 @@ public final class DynamicSingleThreadFinalAggregator<V> implements FinalAggrega
                                              final DynamicPartialTimespans partialTimespans,
                                              final OutputLookupTable<Node<V>> outputLookupTable,
                                              final TimeMonitor timeMonitor,
+                                             final WindowManager windowManager,
                                              final SpanTracker<V> spanTracker,
                                              @Parameter(EndTime.class) final long endTime) {
     LOG.info("START " + this.getClass());
@@ -96,10 +102,12 @@ public final class DynamicSingleThreadFinalAggregator<V> implements FinalAggrega
     this.aggregateFunction = aggregateFunction;
     //this.executorServiceMap = new ConcurrentHashMap<>();
     this.startTime = startTime;
+    this.gcTime = startTime;
     this.metrics = metrics;
     this.endTime = endTime;
     this.spanTracker = spanTracker;
     this.partialTimespans = partialTimespans;
+    this.windowManager = windowManager;
     this.outputLookupTable = outputLookupTable;
     this.timespanComparator = new TimespanComparator();
   }
@@ -214,6 +222,7 @@ public final class DynamicSingleThreadFinalAggregator<V> implements FinalAggrega
       }
       //}
     }
+
   }
 
 
@@ -257,6 +266,15 @@ public final class DynamicSingleThreadFinalAggregator<V> implements FinalAggrega
           throw new RuntimeException(e);
         }
       //}
+    }
+
+    // GC
+    if (gcTime < endTime - windowManager.getRebuildSize()) {
+      outputLookupTable.deleteOutputs(gcTime);
+      if (outputLookupTable instanceof DynamicFastGreedyOutputLookupTableImpl) {
+        ((DynamicFastGreedyOutputLookupTableImpl)outputLookupTable).deleteStartOutputs(gcTime);
+      }
+      gcTime = endTime - windowManager.getRebuildSize();
     }
   }
 

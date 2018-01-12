@@ -30,7 +30,6 @@ import vldb.operator.window.timescale.common.Timespan;
 import vldb.operator.window.timescale.pafas.Node;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicDependencyGraph;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicPartialTimespans;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicSpanTrackerImpl;
 import vldb.operator.window.timescale.pafas.dynamic.WindowManager;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.NumThreads;
@@ -69,8 +68,6 @@ public final class DynamicFastMWO<I, V> implements TimescaleWindowOperator<I, V>
    */
   private V bucket;
 
-  private final DynamicSpanTrackerImpl<I, V> spanTracker;
-
   private final FinalAggregator<V> finalAggregator;
 
   private long nextRealTime;
@@ -97,7 +94,6 @@ public final class DynamicFastMWO<I, V> implements TimescaleWindowOperator<I, V>
   @Inject
   private DynamicFastMWO(
       final CAAggregator<I, V> aggregator,
-      final DynamicSpanTrackerImpl<I, V> spanTracker,
       final DynamicPartialTimespans partialTimespans,
       final FinalAggregator<V> finalAggregator,
       final DynamicDependencyGraph<V> dependencyGraph,
@@ -116,8 +112,7 @@ public final class DynamicFastMWO<I, V> implements TimescaleWindowOperator<I, V>
     this.windowManager = windowManager;
     this.outputLookupTable = outputLookupTable;
     this.dependencyGraph = dependencyGraph;
-    this.spanTracker = spanTracker;
-    this.nextSliceTime = spanTracker.getNextSliceTime(startTime);
+    this.nextSliceTime = partialTimespans.getNextSliceTime(startTime);
     this.finalAggregator = finalAggregator;
     this.timeMonitor = timeMonitor;
   }

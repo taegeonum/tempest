@@ -26,10 +26,7 @@ import vldb.operator.window.timescale.pafas.vldb2018.FastCuttyCombinedDependency
 import vldb.operator.window.timescale.pafas.vldb2018.FastFitDPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedDependencyGraph;
 import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedMWOConfiguration;
-import vldb.operator.window.timescale.pafas.vldb2018.dynamic.DynamicFastDPSelectionAlgorithm;
-import vldb.operator.window.timescale.pafas.vldb2018.dynamic.DynamicFastGreedyOutputLookupTableImpl;
-import vldb.operator.window.timescale.pafas.vldb2018.dynamic.DynamicFastGreedySelectionAlgorithm;
-import vldb.operator.window.timescale.pafas.vldb2018.dynamic.DynamicFastMWOConfiguration;
+import vldb.operator.window.timescale.pafas.vldb2018.dynamic.*;
 import vldb.operator.window.timescale.pafas.vldb2018.multithread.MultiThreadImprovedFinalAggregator;
 import vldb.operator.window.timescale.pafas.vldb2018.multithread.SimpleTreeHeightDPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.vldb2018.multithread.SimpleTreeHeightDependencyGraph;
@@ -61,6 +58,7 @@ public final class TestRunner {
     FastSt, // fast static
     FastDy, // fast dynamic
     FastDyG, // fast dynamic with greedy
+    FastDyGMult, // fast dynamic with greedy multiple selection
     FastSm, // fast static memory
     FastInter, // fast intermediate aggregate by adjusting partials
     FastEg, // fast eager agg
@@ -258,6 +256,14 @@ public final class TestRunner {
             .set(DynamicFastMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(DynamicFastMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicFastGreedyOutputLookupTableImpl.class)
             .set(DynamicFastMWOConfiguration.SELECTION_ALGORITHM, DynamicFastGreedySelectionAlgorithm.class)
+            .set(DynamicFastMWOConfiguration.START_TIME, "0")
+            .build();
+      case FastDyGMult:
+        return DynamicFastMWOConfiguration.CONF
+            .set(DynamicFastMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(DynamicFastMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(DynamicFastMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicFastGreedyOutputLookupTableImpl.class)
+            .set(DynamicFastMWOConfiguration.SELECTION_ALGORITHM, DynamicFastGreedyMultipleSelectionAlgorithm.class)
             .set(DynamicFastMWOConfiguration.START_TIME, "0")
             .build();
         /*
