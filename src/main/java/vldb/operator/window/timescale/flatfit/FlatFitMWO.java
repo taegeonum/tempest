@@ -22,7 +22,6 @@ import vldb.operator.window.aggregator.CAAggregator;
 import vldb.operator.window.timescale.*;
 import vldb.operator.window.timescale.common.DepOutputAndResult;
 import vldb.operator.window.timescale.common.Timespan;
-import vldb.operator.window.timescale.pafas.PartialTimespans;
 import vldb.operator.window.timescale.pafas.dynamic.WindowManager;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.parameter.StartTime;
@@ -62,8 +61,6 @@ public final class FlatFitMWO<I, V> implements TimescaleWindowOperator<I, V> {
 
   private final TimeWindowOutputHandler<V, ?> outputHandler;
 
-  private final PartialTimespans partialTimespans;
-
   private final int wSize;
 
   private final List<V> partials;
@@ -92,7 +89,6 @@ public final class FlatFitMWO<I, V> implements TimescaleWindowOperator<I, V> {
    */
   @Inject
   private FlatFitMWO(
-      final PartialTimespans partialTimespans,
       final CAAggregator<I, V> aggregator,
       final Metrics metrics,
       @Parameter(StartTime.class) final Long startTime,
@@ -101,7 +97,6 @@ public final class FlatFitMWO<I, V> implements TimescaleWindowOperator<I, V> {
       final TimeWindowOutputHandler<V, ?> outputHandler) {
     this.metrics = metrics;
     this.wSizeMap = new HashMap<>();
-    this.partialTimespans = partialTimespans;
     this.aggregator = aggregator;
     this.bucket = initBucket();
     this.startTime = startTime;
@@ -114,7 +109,6 @@ public final class FlatFitMWO<I, V> implements TimescaleWindowOperator<I, V> {
     this.pointers = new ArrayList<>(wSize);
     this.timespans = new ArrayList<>(wSize);
     this.positions = new Stack<>();
-    this.nextSliceTime = partialTimespans.getNextSliceTime(startTime);
 
     // Initialize
     for (int i = 0; i < wSize; i++) {
@@ -141,9 +135,13 @@ public final class FlatFitMWO<I, V> implements TimescaleWindowOperator<I, V> {
     for (final Timescale timescale : timescales) {
       int count = 0;
       long t = startTime;
+      count =  (int)timescale.windowSize;
+      /*
       while ((t = partialTimespans.getNextSliceTime(t)) <= timescale.windowSize + startTime) {
         count += 1;
       }
+      */
+
       wSizeMap.put(timescale, count);
 
       if (max < count) {
@@ -290,7 +288,7 @@ public final class FlatFitMWO<I, V> implements TimescaleWindowOperator<I, V> {
         final long next = nextSliceTime;
         final long prev = prevSliceTime;
         prevSliceTime = nextSliceTime;
-        nextSliceTime = partialTimespans.getNextSliceTime(prevSliceTime);
+        nextSliceTime = prevSliceTime + 1;
 
         // do execution
         execution(newPartial, tickTime);
