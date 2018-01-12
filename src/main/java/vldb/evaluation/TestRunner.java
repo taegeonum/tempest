@@ -21,13 +21,12 @@ import vldb.operator.window.timescale.naive.NaiveMWOConfiguration;
 import vldb.operator.window.timescale.onthefly.OntheflyMWOConfiguration;
 import vldb.operator.window.timescale.pafas.*;
 import vldb.operator.window.timescale.pafas.active.*;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicDPOutputLookupTableImpl;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicOptimizedDependencyGraphImpl;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.pafas.vldb2018.FastCuttyCombinedDependencyGraph;
 import vldb.operator.window.timescale.pafas.vldb2018.FastFitDPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedDependencyGraph;
 import vldb.operator.window.timescale.pafas.vldb2018.FlatFitCombinedMWOConfiguration;
+import vldb.operator.window.timescale.pafas.vldb2018.dynamic.DynamicFastMWOConfiguration;
 import vldb.operator.window.timescale.pafas.vldb2018.multithread.MultiThreadImprovedFinalAggregator;
 import vldb.operator.window.timescale.pafas.vldb2018.multithread.SimpleTreeHeightDPSelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.vldb2018.multithread.SimpleTreeHeightDependencyGraph;
@@ -242,6 +241,12 @@ public final class TestRunner {
             .set(EagerMWOConfiguration.START_TIME, "0")
             .build();
       case FastDy:
+        return DynamicFastMWOConfiguration.CONF
+            .set(DynamicFastMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(DynamicFastMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(DynamicFastMWOConfiguration.START_TIME, "0")
+            .build();
+        /*
         return ActiveDynamicMWOConfiguration.CONF
             .set(ActiveDynamicMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
             .set(ActiveDynamicMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
@@ -250,6 +255,7 @@ public final class TestRunner {
             .set(ActiveDynamicMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicOptimizedDependencyGraphImpl.class)
             .set(ActiveDynamicMWOConfiguration.START_TIME, "0")
             .build();
+            */
       case FastSm:
         throw new RuntimeException("not supported yet");
       case OTFSta:

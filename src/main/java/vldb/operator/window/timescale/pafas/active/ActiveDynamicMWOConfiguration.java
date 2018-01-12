@@ -20,10 +20,10 @@ import org.apache.reef.tang.formats.RequiredImpl;
 import vldb.operator.window.timescale.TimescaleWindowBaseConfiguration;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.common.FinalAggregator;
+import vldb.operator.window.timescale.common.OutputLookupTable;
 import vldb.operator.window.timescale.common.SpanTracker;
 import vldb.operator.window.timescale.pafas.DependencyGraph;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicDependencyGraph;
-import vldb.operator.window.timescale.pafas.dynamic.DynamicOutputLookupTable;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicPartialTimespans;
 import vldb.operator.window.timescale.pafas.dynamic.DynamicSpanTrackerImpl;
 
@@ -33,13 +33,13 @@ import vldb.operator.window.timescale.pafas.dynamic.DynamicSpanTrackerImpl;
 public final class ActiveDynamicMWOConfiguration extends TimescaleWindowBaseConfiguration {
 
     public static final RequiredImpl<DependencyGraph.SelectionAlgorithm> SELECTION_ALGORITHM = new RequiredImpl<>();
-    public static final RequiredImpl<DynamicOutputLookupTable> OUTPUT_LOOKUP_TABLE = new RequiredImpl<>();
+    public static final RequiredImpl<OutputLookupTable> OUTPUT_LOOKUP_TABLE = new RequiredImpl<>();
     public static final RequiredImpl<DynamicDependencyGraph> DYNAMIC_DEPENDENCY = new RequiredImpl<>();
 
     public static final ConfigurationModule CONF = new ActiveDynamicMWOConfiguration()
         .merge(TimescaleWindowBaseConfiguration.CONF)
         .bindImplementation(DependencyGraph.SelectionAlgorithm.class, SELECTION_ALGORITHM)
-        .bindImplementation(DynamicOutputLookupTable.class, OUTPUT_LOOKUP_TABLE)
+        .bindImplementation(OutputLookupTable.class, OUTPUT_LOOKUP_TABLE)
         .bindImplementation(DynamicDependencyGraph.class, DYNAMIC_DEPENDENCY)
         .bindImplementation(DynamicPartialTimespans.class, DynamicActivePartialTimespans.class)
         .bindImplementation(SpanTracker.class, DynamicSpanTrackerImpl.class)

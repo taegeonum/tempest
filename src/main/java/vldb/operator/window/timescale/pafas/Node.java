@@ -31,6 +31,8 @@ public final class Node<T> {
    */
   public AtomicInteger initialRefCnt;
 
+  public final List<Timescale> timescales = new LinkedList<>();
+
   /**
    * An output.
    */
