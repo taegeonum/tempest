@@ -367,6 +367,8 @@ public final class AdjustPartialDependencyGraph<T> implements DependencyGraph {
 
     // Adjust partial nodes!
     adjustPartialNodes();
+
+    System.out.println("build end");
   }
 
   private void addEdge(final Node<T> parent) {

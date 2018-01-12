@@ -405,7 +405,7 @@ public final class FlatFitCombinedDependencyGraph<T> implements DependencyGraph 
         .collect(Collectors.toCollection(ArrayList::new));
 
     // add final edges
-    addedNodes.parallelStream().forEach(node -> addEdge(node));
+    addedNodes.stream().forEach(node -> addEdge(node));
 
     // Add edges for selected intermediate nodes
     final AtomicBoolean isChanged = new AtomicBoolean(false);

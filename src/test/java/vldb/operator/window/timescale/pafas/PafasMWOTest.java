@@ -9,6 +9,8 @@ import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.flatfit.FlatFitMWOConfiguration;
+import vldb.operator.window.timescale.pafas.active.ActiveDPSelectionAlgorithm;
+import vldb.operator.window.timescale.pafas.active.AdjustPartialDependencyGraph;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
 import vldb.operator.window.timescale.pafas.vldb2018.dynamic.DynamicFastMWOConfiguration;
 import vldb.operator.window.timescale.pafas.vldb2018.singlethread.MultiThreadFinalAggregator;
@@ -42,9 +44,9 @@ public final class PafasMWOTest {
     final List<String> operatorIds = new LinkedList<>();
     //final String timescaleString =  "(4,2)(5,3)(6,4)(10,5)";
     //final String timescaleString =  "(5,1)(8,3)(12,7)(16,6)(21,8)";
-    //final String timescaleString = "(5,1)(10,1)(20,2)(30,2)(60,4)(90,4)(360,5)(600,5)(900,10)(1800,10)";
+    final String timescaleString = "(5,1)(10,1)(20,2)(30,2)(60,4)(90,4)(360,5)(600,5)(900,10)(1800,10)";
     //final String timescaleString = "(5,1)(10,1)(20,2)(30,2)(60,4)(90,4)";
-    final String timescaleString = "(5,1)(6,2)(10,2)";
+    //final String timescaleString = "(5,1)(6,2)(10,2)";
     //final String timescaleString = "(107,60)(170,1)(935,10)(1229,10)(1991,110)(2206,20)(2284,140)(2752,30)(2954,88)(2961,165)(2999,60)(3043,55)(3076,35)(3134,110)(3161,210)(3406,40)(3515,385)(3555,40)(3590,210)(3593,840)";
     final String timescaleString0 = "(107,60)(170,1)(179,11)(411,15)(656,15)(868,140)(886,15)(915,40)(935,10)(1229,10)(1396,20)(1430,20)(1828,60)(1991,110)(2032,22)(2150,30)(2206,20)(2262,120)(2284,140)(2344,40)(2534,140)(2752,30)(2812,40)(2843,35)(2954,88)(2961,165)(2999,60)(3027,42)(3043,55)(3076,35)(3110,70)(3134,110)(3148,35)(3161,210)(3166,30)(3289,55)(3303,35)(3317,110)(3404,35)(3406,40)(3409,35)(3450,165)(3515,385)(3530,120)(3543,35)(3555,40)(3558,40)(3566,660)(3590,210)(3593,840)";
     //final String timescaleString = "(3,2)(4,1)(6,3)";
@@ -69,7 +71,7 @@ public final class PafasMWOTest {
     //final String timescaleString = "(2,1)(3,1)(4,1)(5,1)";
     //final String timescaleString = "(2,1)(3,1)(4,1)(5,1)(6,1)(7,1)(8,1)(9,1)(10,1)(11,1)(12,1)(13,1)(14,1)(15,1)(16,1)(17,1)(18,1)(19,1)(20,1)(21,1)(22,1)(23,1)(24,1)(25,1)(26,1)(27,1)(28,1)(29,1)(30,1)(31,1)(32,1)(33,1)(34,1)(35,1)(36,1)(37,1)(38,1)(39,1)(40,1)(41,1)(42,1)(43,1)(44,1)(45,1)(46,1)(47,1)(48,1)(49,1)(50,1)(51,1)(52,1)(53,1)(54,1)(55,1)(56,1)(57,1)(58,1)(59,1)(60,1)(61,1)(62,1)(63,1)(64,1)(65,1)(66,1)(67,1)(68,1)(69,1)(70,1)(71,1)(72,1)(73,1)(74,1)(75,1)(76,1)(77,1)(78,1)(79,1)(80,1)(81,1)(82,1)(83,1)(84,1)(85,1)(86,1)(87,1)(88,1)(89,1)(90,1)(91,1)(92,1)(93,1)(94,1)(95,1)(96,1)(97,1)(98,1)(99,1)(100,1)(101,1)(102,1)(103,1)(104,1)(105,1)(106,1)(107,1)(108,1)(109,1)(110,1)(111,1)(112,1)(113,1)(114,1)(115,1)(116,1)(117,1)(118,1)(119,1)(120,1)(121,1)(122,1)(123,1)(124,1)(125,1)(126,1)(127,1)(128,1)(129,1)(130,1)(131,1)(132,1)(133,1)(134,1)(135,1)(136,1)(137,1)(138,1)(139,1)(140,1)(141,1)(142,1)(143,1)(144,1)(145,1)(146,1)(147,1)(148,1)(149,1)(150,1)(151,1)(152,1)(153,1)(154,1)(155,1)(156,1)(157,1)(158,1)(159,1)(160,1)(161,1)(162,1)(163,1)(164,1)(165,1)(166,1)(167,1)(168,1)(169,1)(170,1)(171,1)(172,1)(173,1)(174,1)(175,1)(176,1)(177,1)(178,1)(179,1)(180,1)(181,1)(182,1)(183,1)(184,1)(185,1)(186,1)(187,1)(188,1)(189,1)(190,1)(191,1)(192,1)(193,1)(194,1)(195,1)(196,1)(197,1)(198,1)(199,1)(200,1)";
 
-    /*
+  /*
     configurationList.add(EagerMWOConfiguration.CONF
         .set(EagerMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .set(EagerMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
@@ -104,6 +106,16 @@ public final class PafasMWOTest {
     operatorIds.add("FAST-fit");
 */
 
+    configurationList.add(StaticActiveSingleMWOConfiguration.CONF
+        .set(StaticActiveSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+        .set(StaticActiveSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+        .set(StaticActiveSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
+        .set(StaticActiveSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
+        .set(StaticActiveSingleMWOConfiguration.DEPENDENCY_GRAPH, AdjustPartialDependencyGraph.class)
+        .set(StaticActiveSingleMWOConfiguration.START_TIME, "0")
+        .build());
+    operatorIds.add("FAST-active");
+
     configurationList.add(DynamicFastMWOConfiguration.CONF
         .set(DynamicFastMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .set(DynamicFastMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
@@ -123,15 +135,6 @@ public final class PafasMWOTest {
         .build());
     operatorIds.add("FAST-height");
 
-    configurationList.add(StaticActiveSingleMWOConfiguration.CONF
-        .set(StaticActiveSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
-        .set(StaticActiveSingleMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
-        .set(StaticActiveSingleMWOConfiguration.SELECTION_ALGORITHM, ActiveDPSelectionAlgorithm.class)
-        .set(StaticActiveSingleMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
-        .set(StaticActiveSingleMWOConfiguration.DEPENDENCY_GRAPH, AdjustPartialDependencyGraph.class)
-        .set(StaticActiveSingleMWOConfiguration.START_TIME, "0")
-        .build());
-    operatorIds.add("FAST-active");
 
     configurationList.add(FlatFitCombinedMWOConfiguration.CONF
         .set(FlatFitCombinedMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
@@ -207,8 +210,6 @@ public final class PafasMWOTest {
         .build());
     operatorIds.add("PAFAS-DP");
 
-
-
     // On-the-fly operator
     configurationList.add(OntheflyMWOConfiguration.CONF
         .set(OntheflyMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
@@ -225,7 +226,6 @@ public final class PafasMWOTest {
         .build());
     operatorIds.add("TriOps");
 */
-
   
     int i = 0;
     final List<TimescaleWindowOperator> mwos = new LinkedList<>();
@@ -245,7 +245,7 @@ public final class PafasMWOTest {
     final int numKey = 100;
     final int numInput = 100000;
     final Random random = new Random();
-    final int tick = numInput / 10000;
+    final int tick = numInput / 100;
     int tickTime = 1;
     long stored = 0;
     for (i = 0; i < numInput; i++) {
