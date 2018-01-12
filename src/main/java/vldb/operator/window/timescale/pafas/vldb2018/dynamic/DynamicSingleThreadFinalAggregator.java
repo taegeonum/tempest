@@ -162,6 +162,9 @@ public final class DynamicSingleThreadFinalAggregator<V> implements FinalAggrega
             outputLookupTable.deleteOutput(dependentNode.start, dependentNode.end);
             metrics.storedFinal -= 1;
           }
+
+          dependentNode.parents.clear();
+          dependentNode.getDependencies().clear();
         }
 
       }
@@ -240,7 +243,15 @@ public final class DynamicSingleThreadFinalAggregator<V> implements FinalAggrega
                   endTime - (node.end - node.start), endTime, false));
             }
           }
-        } catch (Exception e) {
+
+          if (node.initialRefCnt.get() == 0) {
+            // Remove!
+            node.getDependencies().clear();
+            node.dependentNode = null;
+            outputLookupTable.deleteOutput(node.start, node.end);
+          }
+
+        } catch (final Exception e) {
           e.printStackTrace();
           System.out.println(e);
           throw new RuntimeException(e);

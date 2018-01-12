@@ -9,9 +9,10 @@ import vldb.operator.window.aggregator.impl.KeyExtractor;
 import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.flatfit.FlatFitMWOConfiguration;
-import vldb.operator.window.timescale.pafas.active.ActiveDPSelectionAlgorithm;
-import vldb.operator.window.timescale.pafas.active.AdjustPartialDependencyGraph;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
+import vldb.operator.window.timescale.pafas.vldb2018.dynamic.DynamicFastDPSelectionAlgorithm;
+import vldb.operator.window.timescale.pafas.vldb2018.dynamic.DynamicFastGreedyOutputLookupTableImpl;
+import vldb.operator.window.timescale.pafas.vldb2018.dynamic.DynamicFastGreedySelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.vldb2018.dynamic.DynamicFastMWOConfiguration;
 import vldb.operator.window.timescale.pafas.vldb2018.singlethread.MultiThreadFinalAggregator;
 import vldb.operator.window.timescale.parameter.*;
@@ -44,10 +45,10 @@ public final class PafasMWOTest {
     final List<String> operatorIds = new LinkedList<>();
     //final String timescaleString =  "(4,2)(5,3)(6,4)(10,5)";
     //final String timescaleString =  "(5,1)(8,3)(12,7)(16,6)(21,8)";
-    final String timescaleString = "(5,1)(10,1)(20,2)(30,2)(60,4)(90,4)(360,5)(600,5)(900,10)(1800,10)";
+    //final String timescaleString = "(5,1)(10,1)(20,2)(30,2)(60,4)(90,4)(360,5)(600,5)(900,10)(1800,10)";
     //final String timescaleString = "(5,1)(10,1)(20,2)(30,2)(60,4)(90,4)";
     //final String timescaleString = "(5,1)(6,2)(10,2)";
-    //final String timescaleString = "(107,60)(170,1)(935,10)(1229,10)(1991,110)(2206,20)(2284,140)(2752,30)(2954,88)(2961,165)(2999,60)(3043,55)(3076,35)(3134,110)(3161,210)(3406,40)(3515,385)(3555,40)(3590,210)(3593,840)";
+    final String timescaleString = "(107,60)(170,1)(935,10)(1229,10)(1991,110)(2206,20)(2284,140)(2752,30)(2954,88)(2961,165)(2999,60)(3043,55)(3076,35)(3134,110)(3161,210)(3406,40)(3515,385)(3555,40)(3590,210)(3593,840)";
     final String timescaleString0 = "(107,60)(170,1)(179,11)(411,15)(656,15)(868,140)(886,15)(915,40)(935,10)(1229,10)(1396,20)(1430,20)(1828,60)(1991,110)(2032,22)(2150,30)(2206,20)(2262,120)(2284,140)(2344,40)(2534,140)(2752,30)(2812,40)(2843,35)(2954,88)(2961,165)(2999,60)(3027,42)(3043,55)(3076,35)(3110,70)(3134,110)(3148,35)(3161,210)(3166,30)(3289,55)(3303,35)(3317,110)(3404,35)(3406,40)(3409,35)(3450,165)(3515,385)(3530,120)(3543,35)(3555,40)(3558,40)(3566,660)(3590,210)(3593,840)";
     //final String timescaleString = "(3,2)(4,1)(6,3)";
 
@@ -104,7 +105,7 @@ public final class PafasMWOTest {
         .set(FlatFitCombinedMWOConfiguration.IS_PARALLEL, "false")
         .build());
     operatorIds.add("FAST-fit");
-*/
+
 
     configurationList.add(StaticActiveSingleMWOConfiguration.CONF
         .set(StaticActiveSingleMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
@@ -115,13 +116,25 @@ public final class PafasMWOTest {
         .set(StaticActiveSingleMWOConfiguration.START_TIME, "0")
         .build());
     operatorIds.add("FAST-active");
+*/
+    configurationList.add(DynamicFastMWOConfiguration.CONF
+        .set(DynamicFastMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+        .set(DynamicFastMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+        .set(DynamicFastMWOConfiguration.START_TIME, "0")
+        .set(DynamicFastMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
+        .set(DynamicFastMWOConfiguration.SELECTION_ALGORITHM, DynamicFastDPSelectionAlgorithm.class)
+        .build());
+    operatorIds.add("FAST-Dy");
+
 
     configurationList.add(DynamicFastMWOConfiguration.CONF
         .set(DynamicFastMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .set(DynamicFastMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(DynamicFastMWOConfiguration.START_TIME, "0")
+        .set(DynamicFastMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicFastGreedyOutputLookupTableImpl.class)
+        .set(DynamicFastMWOConfiguration.SELECTION_ALGORITHM, DynamicFastGreedySelectionAlgorithm.class)
         .build());
-    operatorIds.add("FAST-Dy");
+    operatorIds.add("FAST-DyG");
 /*
     configurationList.add(FlatFitCombinedMWOConfiguration.CONF
         .set(FlatFitCombinedMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
@@ -134,7 +147,6 @@ public final class PafasMWOTest {
         .set(FlatFitCombinedMWOConfiguration.IS_PARALLEL, "true")
         .build());
     operatorIds.add("FAST-height");
-
 
     configurationList.add(FlatFitCombinedMWOConfiguration.CONF
         .set(FlatFitCombinedMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
@@ -245,7 +257,7 @@ public final class PafasMWOTest {
     final int numKey = 100;
     final int numInput = 100000;
     final Random random = new Random();
-    final int tick = numInput / 100;
+    final int tick = numInput / 300;
     int tickTime = 1;
     long stored = 0;
     for (i = 0; i < numInput; i++) {

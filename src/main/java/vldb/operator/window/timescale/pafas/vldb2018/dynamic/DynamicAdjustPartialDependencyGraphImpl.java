@@ -128,7 +128,7 @@ public final class DynamicAdjustPartialDependencyGraphImpl<T> implements Dynamic
     addEdges(addedNodes);
 
     // Adjust partial nodes!
-    //adjustPartialNodes(until - rebuildSize, until);
+    adjustPartialNodes(until - rebuildSize, until);
 
     //System.out.println("Build end");
   }
@@ -221,6 +221,7 @@ public final class DynamicAdjustPartialDependencyGraphImpl<T> implements Dynamic
     // Add edges
 
     for (final Node<T> parent : parentNodes) {
+      //System.out.println("Select " + parent);
       final List<Node<T>> childNodes = selectionAlgorithm.selection(parent.start, parent.end);
       LOG.log(Level.FINE, "(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
       //System.out.println("(" + parent.start + ", " + parent.end + ") dependencies1: " + childNodes);
