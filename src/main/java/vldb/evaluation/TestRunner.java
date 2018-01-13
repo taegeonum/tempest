@@ -58,6 +58,7 @@ public final class TestRunner {
     FastSt, // fast static
     FastDy, // fast dynamic
     FastDyG, // fast dynamic with greedy
+    FastDyP, // fast dynamic with onthefly selection
     FastDyGMult, // fast dynamic with greedy multiple selection
     FastSm, // fast static memory
     FastInter, // fast intermediate aggregate by adjusting partials
@@ -248,6 +249,14 @@ public final class TestRunner {
             .set(DynamicFastMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(DynamicFastMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(DynamicFastMWOConfiguration.SELECTION_ALGORITHM, DynamicFastDPSelectionAlgorithm.class)
+            .set(DynamicFastMWOConfiguration.START_TIME, "0")
+            .build();
+      case FastDyP:
+        return DynamicFastMWOConfiguration.CONF
+            .set(DynamicFastMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(DynamicFastMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(DynamicFastMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
+            .set(DynamicFastMWOConfiguration.SELECTION_ALGORITHM, DynamicOntheFlySelectionAlgorithm.class)
             .set(DynamicFastMWOConfiguration.START_TIME, "0")
             .build();
       case FastDyG:

@@ -168,52 +168,57 @@ public final class DynamicAdjustPartialDependencyGraphImpl<T> implements Dynamic
         currentChild.add(partial);
       } else {
         if (currentChild.size() > 1) {
-          final Node<T> newIntermediate =
-              new Node<T>(currentChild.get(0).start, currentChild.get(currentChild.size()-1).end, 1);
-          newIntermediate.intermediate = true;
+          Node<T> newIntermediate = null;
+          final long newStart = currentChild.get(0).start;
+          final long newEnd = currentChild.get(currentChild.size()-1).end;
+
 
           try {
             // If the node already exists, stop
-            finalTimespans.lookup(newIntermediate.start, newIntermediate.end);
-            break;
+            newIntermediate = finalTimespans.lookup(newStart, newEnd);
           } catch (final NotFoundException e) {
-            finalTimespans.saveOutput(newIntermediate.start, newIntermediate.end, newIntermediate);
+            newIntermediate = new Node<T>(newStart, newEnd, 1);
+            newIntermediate.intermediate = true;
+            finalTimespans.saveOutput(newIntermediate.start, newIntermediate.end, newIntermediate);          // new intermedate node
+            // child ....
+            // Add dependency
+            for (final Node<T> child : currentChild) {
+              newIntermediate.addDependency(child);
+            }
           }
 
-          // new intermedate node
-          // child ....
-          // Add dependency
-          for (final Node<T> child : currentChild) {
-            newIntermediate.addDependency(child);
-          }
 
           // Adjust dependency
           for (final Node<T> parent : removedParents) {
-            final List<Node<T>> parentChild = parent.getDependencies();
-            // Remove prev child
-            for (final Node<T> child : currentChild) {
-              parentChild.remove(child);
-              child.refCnt.decrementAndGet();
-              child.initialRefCnt.decrementAndGet();
-              child.parents.remove(parent);
-            }
+            if (parent != newIntermediate) {
+              final List<Node<T>> parentChild = parent.getDependencies();
+              // Remove prev child
+              for (final Node<T> child : currentChild) {
+                parentChild.remove(child);
+                child.refCnt.decrementAndGet();
+                child.initialRefCnt.decrementAndGet();
+                child.parents.remove(parent);
+              }
 
-            // Re-connect the new intermediate node
-            parent.addDependency(newIntermediate);
+              // Re-connect the new intermediate node
+              parent.addDependency(newIntermediate);
+            }
           }
 
           for (final Node<T> parent : currentParents) {
-            final List<Node<T>> parentChild = parent.getDependencies();
-            // Remove prev child
-            for (final Node<T> child : currentChild) {
-              parentChild.remove(child);
-              child.refCnt.decrementAndGet();
-              child.initialRefCnt.decrementAndGet();
-              child.parents.remove(parent);
-            }
+            if (parent != newIntermediate) {
+              final List<Node<T>> parentChild = parent.getDependencies();
+              // Remove prev child
+              for (final Node<T> child : currentChild) {
+                parentChild.remove(child);
+                child.refCnt.decrementAndGet();
+                child.initialRefCnt.decrementAndGet();
+                child.parents.remove(parent);
+              }
 
-            // Re-connect the new intermediate node
-            parent.addDependency(newIntermediate);
+              // Re-connect the new intermediate node
+              parent.addDependency(newIntermediate);
+            }
           }
 
           // Remove current child

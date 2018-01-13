@@ -10,7 +10,8 @@ import vldb.operator.window.timescale.TimeWindowOutputHandler;
 import vldb.operator.window.timescale.TimescaleWindowOperator;
 import vldb.operator.window.timescale.flatfit.FlatFitMWOConfiguration;
 import vldb.operator.window.timescale.pafas.event.WindowTimeEvent;
-import vldb.operator.window.timescale.pafas.vldb2018.dynamic.*;
+import vldb.operator.window.timescale.pafas.vldb2018.dynamic.DynamicFastMWOConfiguration;
+import vldb.operator.window.timescale.pafas.vldb2018.dynamic.DynamicOntheFlySelectionAlgorithm;
 import vldb.operator.window.timescale.pafas.vldb2018.singlethread.MultiThreadFinalAggregator;
 import vldb.operator.window.timescale.parameter.*;
 
@@ -113,17 +114,17 @@ public final class PafasMWOTest {
         .set(StaticActiveSingleMWOConfiguration.START_TIME, "0")
         .build());
     operatorIds.add("FAST-active");
-
+*/
     configurationList.add(DynamicFastMWOConfiguration.CONF
         .set(DynamicFastMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .set(DynamicFastMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
         .set(DynamicFastMWOConfiguration.START_TIME, "0")
         .set(DynamicFastMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
-        .set(DynamicFastMWOConfiguration.SELECTION_ALGORITHM, DynamicFastDPSelectionAlgorithm.class)
+        .set(DynamicFastMWOConfiguration.SELECTION_ALGORITHM, DynamicOntheFlySelectionAlgorithm.class)
         .build());
     operatorIds.add("FAST-Dy");
-*/
 
+/*
     configurationList.add(DynamicFastMWOConfiguration.CONF
         .set(DynamicFastMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .set(DynamicFastMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
@@ -132,7 +133,7 @@ public final class PafasMWOTest {
         .set(DynamicFastMWOConfiguration.SELECTION_ALGORITHM, DynamicFastGreedySelectionAlgorithm.class)
         .build());
     operatorIds.add("FAST-DyG");
-/*
+
     configurationList.add(FlatFitCombinedMWOConfiguration.CONF
         .set(FlatFitCombinedMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
         .set(FlatFitCombinedMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
