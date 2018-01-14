@@ -59,6 +59,7 @@ public final class TestRunner {
     FastDy, // fast dynamic
     FastDyG, // fast dynamic with greedy
     FastDyP, // fast dynamic with onthefly selection
+    FastDyGC, // fast dynamic with greedy and flat fit combined
     FastDyGMult, // fast dynamic with greedy multiple selection
     FastSm, // fast static memory
     FastInter, // fast intermediate aggregate by adjusting partials
@@ -249,6 +250,7 @@ public final class TestRunner {
             .set(DynamicFastMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(DynamicFastMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(DynamicFastMWOConfiguration.SELECTION_ALGORITHM, DynamicFastDPSelectionAlgorithm.class)
+            .set(DynamicFastMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicAdjustPartialDependencyGraphImpl.class)
             .set(DynamicFastMWOConfiguration.START_TIME, "0")
             .build();
       case FastDyP:
@@ -257,6 +259,7 @@ public final class TestRunner {
             .set(DynamicFastMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(DynamicFastMWOConfiguration.OUTPUT_LOOKUP_TABLE, DPOutputLookupTableImpl.class)
             .set(DynamicFastMWOConfiguration.SELECTION_ALGORITHM, DynamicOntheFlySelectionAlgorithm.class)
+            .set(DynamicFastMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicAdjustPartialDependencyGraphImpl.class)
             .set(DynamicFastMWOConfiguration.START_TIME, "0")
             .build();
       case FastDyG:
@@ -265,6 +268,7 @@ public final class TestRunner {
             .set(DynamicFastMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
             .set(DynamicFastMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicFastGreedyOutputLookupTableImpl.class)
             .set(DynamicFastMWOConfiguration.SELECTION_ALGORITHM, DynamicFastGreedySelectionAlgorithm.class)
+            .set(DynamicFastMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicAdjustPartialDependencyGraphImpl.class)
             .set(DynamicFastMWOConfiguration.START_TIME, "0")
             .build();
       case FastDyGMult:
@@ -274,6 +278,16 @@ public final class TestRunner {
             .set(DynamicFastMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicFastGreedyOutputLookupTableImpl.class)
             .set(DynamicFastMWOConfiguration.SELECTION_ALGORITHM, DynamicFastGreedyMultipleSelectionAlgorithm.class)
             .set(DynamicFastMWOConfiguration.START_TIME, "0")
+            .set(DynamicFastMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicAdjustPartialDependencyGraphImpl.class)
+            .build();
+      case FastDyGC:
+        return DynamicFastMWOConfiguration.CONF
+            .set(DynamicFastMWOConfiguration.INITIAL_TIMESCALES, timescaleString)
+            .set(DynamicFastMWOConfiguration.CA_AGGREGATOR, CountByKeyAggregator.class)
+            .set(DynamicFastMWOConfiguration.OUTPUT_LOOKUP_TABLE, DynamicFastGreedyOutputLookupTableImpl.class)
+            .set(DynamicFastMWOConfiguration.SELECTION_ALGORITHM, DynamicFastGreedyMultipleSelectionAlgorithm.class)
+            .set(DynamicFastMWOConfiguration.START_TIME, "0")
+            .set(DynamicFastMWOConfiguration.DYNAMIC_DEPENDENCY, DynamicFlatFitCombinedDependencyGraphImpl.class)
             .build();
         /*
         return ActiveDynamicMWOConfiguration.CONF

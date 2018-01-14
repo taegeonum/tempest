@@ -163,9 +163,6 @@ public final class DynamicSingleThreadFinalAggregator<V> implements FinalAggrega
             //System.out.println("Deleted " + dependentNode);
             partialTimespans.removeNode(dependentNode.start);
             metrics.storedPartial -= 1;
-          } else if (dependentNode.intermediate) {
-            outputLookupTable.deleteOutput(dependentNode.start, dependentNode.end);
-            metrics.storedInter -= 1;
           } else {
             outputLookupTable.deleteOutput(dependentNode.start, dependentNode.end);
             metrics.storedFinal -= 1;

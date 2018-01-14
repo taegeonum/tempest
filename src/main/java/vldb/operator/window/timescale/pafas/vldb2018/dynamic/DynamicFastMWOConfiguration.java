@@ -35,13 +35,13 @@ public final class DynamicFastMWOConfiguration extends TimescaleWindowBaseConfig
     public static final RequiredImpl<DependencyGraph.SelectionAlgorithm> SELECTION_ALGORITHM = new RequiredImpl<>();
     public static final RequiredImpl<OutputLookupTable> OUTPUT_LOOKUP_TABLE = new RequiredImpl<>();
     //public static final RequiredImpl<DynamicPartialTimespans> DYNAMIC_PARTIAL = new RequiredImpl<>();
-    //public static final RequiredImpl<DependencyGraph> DYNAMIC_DEPENDENCY = new RequiredImpl<>();
+    public static final RequiredImpl<DynamicDependencyGraph> DYNAMIC_DEPENDENCY = new RequiredImpl<>();
 
     public static final ConfigurationModule CONF = new DynamicFastMWOConfiguration()
         .merge(TimescaleWindowBaseConfiguration.CONF)
         .bindImplementation(DependencyGraph.SelectionAlgorithm.class, SELECTION_ALGORITHM)
         .bindImplementation(OutputLookupTable.class, OUTPUT_LOOKUP_TABLE)
-        .bindImplementation(DynamicDependencyGraph.class, DynamicAdjustPartialDependencyGraphImpl.class)
+        .bindImplementation(DynamicDependencyGraph.class, DYNAMIC_DEPENDENCY)
         .bindImplementation(DynamicPartialTimespans.class, DynamicOptimizedPartialTimespans.class)
         .bindImplementation(SpanTracker.class, DynamicFastSpanTrackerImpl.class)
         .bindImplementation(TimescaleWindowOperator.class, DynamicFastMWO.class)
